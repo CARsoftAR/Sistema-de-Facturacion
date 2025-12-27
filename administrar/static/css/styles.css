@@ -1,0 +1,340 @@
+/* =========================================
+   CARSOFT PROFESSIONAL UI - VARIABLES (Modern Corporate)
+   ========================================= */
+:root {
+  /* COLORS */
+  --primary-color: #4361ee;
+  /* Vibrant Blue */
+  --primary-hover: #3a56d4;
+  --secondary-color: #3f37c9;
+  /* Deep Indigo */
+  --accent-color: #4cc9f0;
+  /* Cyan Accent */
+  --success-color: #10b981;
+  /* Emerald */
+  --danger-color: #ef4444;
+  /* Rose Red */
+  --warning-color: #f59e0b;
+  /* Amber */
+  --info-color: #3b82f6;
+  /* Sky Blue */
+
+  /* BACKGROUNDS */
+  --bg-body: #f3f4f6;
+  /* Cool Gray 100 */
+  --bg-surface: #ffffff;
+  --bg-sidebar: #111827;
+  /* Gray 900 */
+
+  /* TEXT */
+  --text-main: #1f2937;
+  /* Gray 800 */
+  --text-muted: #6b7280;
+  /* Gray 500 */
+  --text-light: #f9fafb;
+  /* Gray 50 */
+
+  /* COMPONENTS */
+  --card-radius: 12px;
+  --btn-radius: 8px;
+  --input-radius: 8px;
+
+  /* SHADOWS */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-hover: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
+  /* TRANSITIONS */
+  --transition-fast: 0.2s ease;
+  --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* =========================================
+   GLOBAL RESET & TYPOGRAPHY
+   ========================================= */
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: var(--bg-body);
+  color: var(--text-main);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: -0.025em;
+  margin-bottom: 0.5em;
+}
+
+a {
+  text-decoration: none;
+  transition: var(--transition-fast);
+}
+
+/* =========================================
+   NAVBAR (Premium Dark)
+   ========================================= */
+.navbar {
+  background-color: var(--bg-sidebar) !important;
+  /* Override inline styles if any */
+  box-shadow: var(--shadow-md);
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+  backdrop-filter: blur(10px);
+  /* Subtle glass feel if transparency were used */
+}
+
+.navbar-brand {
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: #fff !important;
+  letter-spacing: -0.5px;
+}
+
+.nav-link {
+  font-weight: 500;
+  color: #9ca3af !important;
+  /* Gray 400 */
+  padding: 0.5rem 1rem !important;
+  border-radius: var(--btn-radius);
+}
+
+.nav-link:hover,
+.nav-link.active {
+  color: #fff !important;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.dropdown-menu {
+  border: none;
+  border-radius: var(--card-radius);
+  box-shadow: var(--shadow-lg);
+  padding: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.dropdown-item {
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  font-weight: 500;
+  color: var(--text-main);
+}
+
+.dropdown-item:hover {
+  background-color: #f3f4f6;
+  color: var(--primary-color);
+}
+
+.dropdown-item i {
+  color: var(--text-muted);
+  margin-right: 0.5rem;
+  width: 1.25rem;
+  text-align: center;
+}
+
+.dropdown-item:hover i {
+  color: var(--primary-color);
+}
+
+/* =========================================
+   CARDS & CONTAINERS
+   ========================================= */
+.card {
+  background-color: var(--bg-surface);
+  border: none;
+  border-radius: var(--card-radius);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  overflow: hidden;
+  /* For inner borders/headers */
+}
+
+/* Hover effect for interactive cards */
+.card-hover:hover,
+a .card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+.card-header {
+  background-color: transparent;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  padding: 1.25rem 1.5rem;
+}
+
+.card-body {
+  padding: 1.5rem;
+}
+
+/* Stat Cards (Dashboard) - Overrides */
+.stat-card.border-start {
+  border-left-width: 5px !important;
+}
+
+.icon-shape {
+  width: 3rem;
+  height: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px !important;
+  /* Soft square instead of circle usually looks more modern, but circle is classic */
+}
+
+/* =========================================
+   BUTTONS & INPUTS
+   ========================================= */
+.btn {
+  border-radius: var(--btn-radius);
+  padding: 0.5rem 1.25rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  transition: all var(--transition-fast);
+  border-width: 1px;
+  /* Ensure consistency */
+}
+
+.btn-primary {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+  box-shadow: 0 4px 6px rgba(67, 97, 238, 0.3);
+  /* Colored shadow */
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-hover);
+  border-color: var(--primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 8px rgba(67, 97, 238, 0.4);
+}
+
+.btn-success {
+  background-color: var(--success-color);
+  border-color: var(--success-color);
+}
+
+.btn-outline-primary {
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.btn-outline-primary:hover {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.form-control,
+.form-select {
+  border-radius: var(--input-radius);
+  border: 1px solid #e5e7eb;
+  padding: 0.625rem 1rem;
+  font-size: 0.95rem;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.15);
+}
+
+/* =========================================
+   TABLES
+   ========================================= */
+.table {
+  margin-bottom: 0;
+}
+
+.table thead th {
+  background-color: #f9fafb;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 1rem 1.5rem;
+}
+
+.table tbody td {
+  padding: 1rem 1.5rem;
+  vertical-align: middle;
+  border-bottom: 1px solid #f3f4f6;
+  color: var(--text-main);
+  font-size: 0.95rem;
+}
+
+.table-hover tbody tr:hover {
+  background-color: #f9fafb;
+}
+
+/* Badge Tweaks */
+.badge {
+  padding: 0.4em 0.8em;
+  border-radius: 6px;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+}
+
+.badge-activo {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: var(--success-color);
+}
+
+.badge-inactivo {
+  background-color: rgba(107, 114, 128, 0.1);
+  color: var(--text-muted);
+}
+
+/* Soft Badges */
+.badge-soft-primary {
+  background-color: #e0e7ff !important;
+  /* Indigo 100 */
+  color: var(--secondary-color) !important;
+  /* Deep Indigo */
+}
+
+.badge-soft-warning {
+  background-color: #fef3c7 !important;
+  /* Amber 100 */
+  color: #d97706 !important;
+  /* Amber 600 */
+}
+
+.badge-soft-info {
+  background-color: #e0f2fe !important;
+  /* Sky 100 */
+  color: #0284c7 !important;
+  /* Sky 600 */
+}
+
+/* =========================================
+   UTILITIES & EXTRAS
+   ========================================= */
+.text-primary {
+  color: var(--primary-color) !important;
+}
+
+.bg-primary {
+  background-color: var(--primary-color) !important;
+}
+
+.shadow-soft {
+  box-shadow: var(--shadow-md) !important;
+}
+
+main.container {
+  max-width: 1280px;
+  /* Limit width on huge screens for readability */
+}
+
+/* Specific ID Overrides */
+#salesChart {
+  max-height: 350px;
+}

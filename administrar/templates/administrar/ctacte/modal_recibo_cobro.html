@@ -1,0 +1,381 @@
+<!-- Modal Mejorado para Registrar Recibo de Cobro -->
+<div class="modal fade" id="modalReciboCobro" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-cash-coin me-2"></i>Registrar Recibo de Cobro
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formReciboCobro">
+                    <input type="hidden" id="recibo_cliente_id">
+
+                    <!-- Información del Cliente -->
+                    <div class="alert alert-info d-flex align-items-center mb-3">
+                        <i class="bi bi-person-circle me-2 fs-4"></i>
+                        <div>
+                            <strong id="recibo_cliente_nombre">Cliente</strong><br>
+                            <small>Saldo actual: <span id="recibo_cliente_saldo" class="fw-bold">$0.00</span></small>
+                        </div>
+                    </div>
+
+                    <!-- Fecha -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Fecha del Recibo</label>
+                            <input type="date" class="form-control" id="recibo_fecha" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Total a Cobrar</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" id="recibo_total_esperado"
+                                    placeholder="Opcional" step="0.01" min="0">
+                            </div>
+                            <small class="text-muted">Dejar vacío para cualquier monto</small>
+                        </div>
+                    </div>
+
+                    <!-- Formas de Pago -->
+                    <div class="card border-primary mb-3">
+                        <div
+                            class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                            <strong>Formas de Pago</strong>
+                            <button type="button" class="btn btn-sm btn-light" onclick="agregarFormaPago()">
+                                <i class="bi bi-plus-circle"></i> Agregar Forma de Pago
+                            </button>
+                        </div>
+                        <div class="card-body" id="formasPagoContainer">
+                            <div class="text-muted text-center py-3">
+                                Click en "Agregar Forma de Pago" para comenzar
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Resumen de Total -->
+                    <div class="alert alert-secondary">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <strong class="fs-5">TOTAL DEL RECIBO:</strong>
+                            <span class="fs-4 fw-bold" id="recibo_total_calculado">$ 0.00</span>
+                        </div>
+                        <small class="text-muted" id="diferencia_msg"></small>
+                    </div>
+
+                    <!-- Observaciones -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Observaciones</label>
+                        <textarea class="form-control" id="recibo_observaciones" rows="2"
+                            placeholder="Ej: Pago parcial Factura #123"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-success" onclick="guardarReciboCobro()">
+                    <i class="bi bi-check-circle"></i> Generar Recibo
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Template para Forma de Pago (oculto) -->
+<template id="template-forma-pago">
+    <div class="forma-pago-item mb-3 p-3 border rounded position-relative">
+        <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2"
+            onclick="eliminarFormaPago(this)">
+            <i class="bi bi-trash"></i>
+        </button>
+
+        <div class="row">
+            <div class="col-md-4 mb-2">
+                <label class="form-label">Forma de Pago</label>
+                <select class="form-select forma-pago-tipo" onchange="ajustarCamposFormaPago(this)" required>
+                    <option value="">Seleccione...</option>
+                    <option value="EFECTIVO">Efectivo</option>
+                    <option value="CHEQUE">Cheque</option>
+                    <option value="TRANSFERENCIA">Transferencia</option>
+                    <option value="DEBITO">Tarjeta de Débito</option>
+                    <option value="CREDITO">Tarjeta de Crédito</option>
+                    <option value="CREDITO">Tarjeta de Crédito</option>
+                    <option value="RETENCION">Retención Impositiva</option>
+                    <option value="OTRO">Otro</option>
+                </select>
+            </div>
+            <div class="col-md-3 mb-2">
+                <label class="form-label">Monto</label>
+                <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input type="number" class="form-control forma-pago-monto" step="0.01" min="0.01"
+                        onchange="calcularTotalRecibo()" required>
+                </div>
+            </div>
+            <div class="col-md-5 campos-extra-container"></div>
+        </div>
+    </div>
+</template>
+
+<script>
+    // Variables globales para el modal de recibo
+    let chequesDisponibles = [];
+    let contadorFormasPago = 0;
+
+    // Abrir modal de recibo de cobro
+    function abrirModalReciboCobro() {
+        // Obtener datos del cliente desde el contexto (ya están cargados en la página)
+        const clienteId = document.getElementById('clienteId').value;
+        const clienteNombre = document.getElementById('clienteNombre').textContent;
+        const clienteSaldo = document.getElementById('saldoActual').textContent;
+
+        // Precargar datos en el modal
+        document.getElementById('recibo_cliente_id').value = clienteId;
+        document.getElementById('recibo_cliente_nombre').textContent = clienteNombre;
+        document.getElementById('recibo_cliente_saldo').textContent = clienteSaldo;
+
+        // Fecha de hoy por defecto
+        document.getElementById('recibo_fecha').valueAsDate = new Date();
+
+        // Limpiar formas de pago previas
+        document.getElementById('formasPagoContainer').innerHTML = `
+        <div class="text-muted text-center py-3">
+            Click en "Agregar Forma de Pago" para comenzar
+        </div>
+    `;
+        contadorFormasPago = 0;
+        calcularTotalRecibo();
+
+        // Cargar cheques disponibles
+        cargarChequesDisponibles();
+
+        // Mostrar modal
+        const modal = new bootstrap.Modal(document.getElementById('modalReciboCobro'));
+        modal.show();
+    }
+
+    // Cargar cheques disponibles en cartera
+    function cargarChequesDisponibles() {
+        fetch('/api/cheques/listar/?estado=CARTERA&tipo=TERCERO')
+            .then(r => r.json())
+            .then(data => {
+                if (data.ok) {
+                    chequesDisponibles = data.cheques;
+                }
+            })
+            .catch(err => console.error('Error cargando cheques:', err));
+    }
+
+    // Agregar una nueva forma de pago
+    function agregarFormaPago() {
+        const template = document.getElementById('template-forma-pago');
+        const clone = template.content.cloneNode(true);
+
+        // Limpiar mensaje inicial si existe
+        const container = document.getElementById('formasPagoContainer');
+        if (contadorFormasPago === 0) {
+            container.innerHTML = '';
+        }
+
+        container.appendChild(clone);
+        contadorFormasPago++;
+    }
+
+    // Eliminar forma de pago
+    function eliminarFormaPago(btn) {
+        btn.closest('.forma-pago-item').remove();
+        contadorFormasPago--;
+
+        if (contadorFormasPago === 0) {
+            document.getElementById('formasPagoContainer').innerHTML = `
+            <div class="text-muted text-center py-3">
+                Click en "Agregar Forma de Pago" para comenzar
+            </div>
+        `;
+        }
+
+        calcularTotalRecibo();
+    }
+
+    // Ajustar campos según el tipo de forma de pago
+    function ajustarCamposFormaPago(select) {
+        const tipo = select.value;
+        const container = select.closest('.forma-pago-item');
+        const extraContainer = container.querySelector('.campos-extra-container');
+
+        let html = '';
+
+        if (tipo === 'CHEQUE') {
+            // Selector de cheques disponibles
+            html = `
+            <label class="form-label">Cheque</label>
+            <select class="form-select forma-pago-cheque">
+                <option value="">Seleccionar cheque de cartera...</option>
+                ${chequesDisponibles.map(ch => `
+                    <option value="${ch.id}">
+                        ${ch.banco} - Nº ${ch.numero} - $${ch.monto.toLocaleString()} - Vto: ${ch.fecha_pago}
+                    </option>
+                `).join('')}
+            </select>
+        `;
+        } else if (tipo === 'TRANSFERENCIA') {
+            html = `
+            <div class="row">
+                <div class="col-6">
+                    <label class="form-label">Banco</label>
+                    <input type="text" class="form-control forma-pago-banco" placeholder="Ej: Santander">
+                </div>
+                <div class="col-6">
+                    <label class="form-label">Referencia</label>
+                    <input type="text" class="form-control forma-pago-referencia" placeholder="Nº operación">
+                </div>
+            </div>
+        `;
+        } else if (tipo === 'DEBITO' || tipo === 'CREDITO') {
+            html = `
+            <label class="form-label">Nº Operación / Cupón</label>
+            <input type="text" class="form-control forma-pago-referencia" placeholder="Nº de cupón">
+        `;
+        } else if (tipo === 'RETENCION') {
+            html = `
+            <div class="row">
+                <div class="col-6">
+                    <label class="form-label">Tipo Retención</label>
+                    <select class="form-select forma-pago-retencion-tipo">
+                        <option value="IIBB">Ingresos Brutos</option>
+                        <option value="GANANCIAS">Ganancias</option>
+                        <option value="IVA">IVA</option>
+                        <option value="SUSS">SUSS</option>
+                        <option value="OTRA">Otra</option>
+                    </select>
+                </div>
+                <div class="col-6">
+                    <label class="form-label">Nº Certificado</label>
+                    <input type="text" class="form-control forma-pago-retencion-numero" placeholder="Ej: 12345678">
+                </div>
+            </div>
+        `;
+        }
+
+        extraContainer.innerHTML = html;
+    }
+
+    // Calcular total del recibo
+    function calcularTotalRecibo() {
+        const montos = document.querySelectorAll('.forma-pago-monto');
+        let total = 0;
+
+        montos.forEach(input => {
+            const valor = parseFloat(input.value) || 0;
+            total += valor;
+        });
+
+        document.getElementById('recibo_total_calculado').textContent = `$ ${total.toFixed(2)}`;
+
+        // Verificar diferencia con total esperado (si se especificó)
+        const esperado = parseFloat(document.getElementById('recibo_total_esperado').value) || 0;
+        const diffMsg = document.getElementById('diferencia_msg');
+
+        if (esperado > 0) {
+            const diferencia = total - esperado;
+            if (Math.abs(diferencia) < 0.01) {
+                diffMsg.innerHTML = '<i class="bi bi-check-circle text-success"></i> El total coincide';
+                diffMsg.className = 'text-success';
+            } else {
+                diffMsg.innerHTML = `<i class="bi bi-exclamation-triangle"></i> Diferencia: $${Math.abs(diferencia).toFixed(2)} ${diferencia > 0 ? '(exceso)' : '(falta)'}`;
+                diffMsg.className = 'text-warning';
+            }
+        } else {
+            diffMsg.innerHTML = '';
+        }
+    }
+
+    // Guardar recibo de cobro
+    function guardarReciboCobro() {
+        const clienteId = document.getElementById('recibo_cliente_id').value;
+        const fecha = document.getElementById('recibo_fecha').value;
+        const observaciones = document.getElementById('recibo_observaciones').value;
+
+        // Recolectar formas de pago
+        const items = [];
+        document.querySelectorAll('.forma-pago-item').forEach(item => {
+            const tipo = item.querySelector('.forma-pago-tipo').value;
+            const monto = parseFloat(item.querySelector('.forma-pago-monto').value);
+
+            if (!tipo || !monto || monto <= 0) {
+                return; // Saltar items incompletos
+            }
+
+            const formaPago = {
+                forma_pago: tipo,
+                monto: monto
+            };
+
+            // Agregar campos específicos según el tipo
+            if (tipo === 'CHEQUE') {
+                const chequeId = item.querySelector('.forma-pago-cheque')?.value;
+                if (chequeId) formaPago.cheque_id = parseInt(chequeId);
+            } else if (tipo === 'TRANSFERENCIA' || tipo === 'DEBITO' || tipo === 'CREDITO') {
+                const banco = item.querySelector('.forma-pago-banco')?.value;
+                const referencia = item.querySelector('.forma-pago-referencia')?.value;
+                if (banco) formaPago.banco = banco;
+                if (banco) formaPago.banco = banco;
+                if (referencia) formaPago.referencia = referencia;
+            } else if (tipo === 'RETENCION') {
+                const retNumero = item.querySelector('.forma-pago-retencion-numero')?.value;
+                const retTipo = item.querySelector('.forma-pago-retencion-tipo')?.value;
+                if (retNumero) formaPago.retencion_numero = retNumero;
+                if (retTipo) formaPago.retencion_tipo = retTipo;
+            }
+
+            items.push(formaPago);
+        });
+
+        // Validaciones
+        if (!fecha) {
+            alert('Debe especificar una fecha');
+            return;
+        }
+
+        if (items.length === 0) {
+            alert('Debe agregar al menos una forma de pago');
+            return;
+        }
+
+        // Enviar al servidor
+        const data = {
+            cliente_id: parseInt(clienteId),
+            fecha: fecha,
+            observaciones: observaciones,
+            items: items
+        };
+
+        fetch('/api/recibos/crear/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+            .then(r => r.json())
+            .then(resp => {
+                if (resp.ok) {
+                    // Cerrar modal
+                    bootstrap.Modal.getInstance(document.getElementById('modalReciboCobro')).hide();
+
+                    // Recargar movimientos y saldo
+                    cargarDetalleCliente();
+
+                    // Mostrar mensaje de éxito (no bloqueante o simplemente abrir)
+                    // alert(`✅ Recibo ${resp.numero} generado exitosamente`);
+
+                    // Abrir impresión DIRECTAMENTE
+                    window.open(`/api/recibos/${resp.recibo_id}/imprimir/`, '_blank');
+                } else {
+                    alert('❌ Error: ' + resp.error);
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('Error de conexión');
+            });
+    }
+</script>

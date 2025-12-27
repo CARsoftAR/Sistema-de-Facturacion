@@ -1,0 +1,205 @@
+{% extends "administrar/base.html" %}
+{% load static %}
+
+{% block content %}
+
+<div class="container-fluid px-4 mt-4">
+
+    <!-- HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="text-primary fw-bold mb-0">
+                <i class="bi bi-calculator"></i> Balance de Sumas y Saldos
+            </h2>
+            <p class="text-muted mb-0">Resumen de movimientos y saldos contables</p>
+        </div>
+        <div>
+            <button class="btn btn-success" id="btnExportarExcel">
+                <i class="bi bi-file-earmark-excel"></i> Exportar a Excel
+            </button>
+            <button class="btn btn-primary" id="btnGenerarBalance">
+                <i class="bi bi-arrow-clockwise"></i> Generar Balance
+            </button>
+        </div>
+    </div>
+
+    <!-- FILTROS -->
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">
+                        <i class="bi bi-calendar-range"></i> Ejercicio Contable
+                    </label>
+                    <select class="form-select" id="filtroEjercicio" required>
+                        <option value="">Seleccione un ejercicio</option>
+                        <!-- Se llena dinámicamente -->
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-bold">Fecha Desde</label>
+                    <input type="date" class="form-control" id="filtroFechaDesde">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-bold">Fecha Hasta</label>
+                    <input type="date" class="form-control" id="filtroFechaHasta">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">
+                        <i class="bi bi-funnel"></i> Nivel
+                    </label>
+                    <select class="form-select" id="filtroNivel">
+                        <option value="">Todos</option>
+                        <option value="1">Nivel 1</option>
+                        <option value="2">Nivel 2</option>
+                        <option value="3">Nivel 3</option>
+                        <option value="4">Nivel 4</option>
+                        <option value="5">Nivel 5</option>
+                    </select>
+                </div>
+            </div>
+            <div class="row g-3 mt-2">
+                <div class="col-md-4">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="soloConMovimientos" checked>
+                        <label class="form-check-label" for="soloConMovimientos">
+                            Solo mostrar cuentas con movimientos
+                        </label>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="incluirSubtotales" checked>
+                        <label class="form-check-label" for="incluirSubtotales">
+                            Incluir subtotales por nivel
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RESUMEN -->
+    <div class="row g-3 mb-3" id="resumenBalance" style="display: none;">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm bg-success text-white">
+                <div class="card-body">
+                    <h6 class="card-title mb-2">Total Debe</h6>
+                    <h3 class="mb-0" id="totalDebe">$0.00</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm bg-danger text-white">
+                <div class="card-body">
+                    <h6 class="card-title mb-2">Total Haber</h6>
+                    <h3 class="mb-0" id="totalHaber">$0.00</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm bg-primary text-white">
+                <div class="card-body">
+                    <h6 class="card-title mb-2">Saldo Deudor</h6>
+                    <h3 class="mb-0" id="saldoDeudor">$0.00</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm bg-info text-white">
+                <div class="card-body">
+                    <h6 class="card-title mb-2">Saldo Acreedor</h6>
+                    <h3 class="mb-0" id="saldoAcreedor">$0.00</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TABLA DE BALANCE -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover table-sm align-middle" id="tablaBalance">
+                    <thead class="table-light sticky-top">
+                        <tr>
+                            <th style="width: 15%;">Código</th>
+                            <th style="width: 35%;">Cuenta</th>
+                            <th style="width: 12%;" class="text-end">Debe</th>
+                            <th style="width: 12%;" class="text-end">Haber</th>
+                            <th style="width: 13%;" class="text-end">Saldo Deudor</th>
+                            <th style="width: 13%;" class="text-end">Saldo Acreedor</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="6" class="text-center py-5 text-muted">
+                                <i class="bi bi-info-circle fs-3 d-block mb-2"></i>
+                                Seleccione un ejercicio y haga clic en "Generar Balance"
+                            </td>
+                        </tr>
+                    </tbody>
+                    <tfoot class="table-light fw-bold" id="footerBalance" style="display: none;">
+                        <tr>
+                            <td colspan="2" class="text-end">TOTALES:</td>
+                            <td class="text-end text-success" id="footerDebe">$0.00</td>
+                            <td class="text-end text-danger" id="footerHaber">$0.00</td>
+                            <td class="text-end text-primary" id="footerSaldoDeudor">$0.00</td>
+                            <td class="text-end text-info" id="footerSaldoAcreedor">$0.00</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<style>
+    .sticky-top {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background-color: #f8f9fa;
+    }
+
+    .nivel-1 {
+        font-weight: bold;
+        font-size: 1.05em;
+        background-color: #e9ecef;
+    }
+
+    .nivel-2 {
+        font-weight: 600;
+        padding-left: 20px;
+    }
+
+    .nivel-3 {
+        padding-left: 40px;
+    }
+
+    .nivel-4 {
+        padding-left: 60px;
+    }
+
+    .nivel-5 {
+        padding-left: 80px;
+    }
+
+    .subtotal-row {
+        background-color: #f8f9fa;
+        font-weight: 600;
+        border-top: 2px solid #dee2e6;
+    }
+
+    .total-row {
+        background-color: #e9ecef;
+        font-weight: bold;
+        border-top: 3px solid #495057;
+    }
+</style>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/administrar/balance.js' %}"></script>
+{% endblock %}

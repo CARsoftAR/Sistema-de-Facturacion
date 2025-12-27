@@ -1,0 +1,148 @@
+{% extends 'administrar/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Detalle de Venta #{{ venta.id }}</h1>
+        <div>
+            <a href="{% url 'invoice_print' venta.id %}" target="_blank" class="btn btn-primary btn-sm shadow-sm">
+                <i class="fas fa-print fa-sm text-white-50"></i> Imprimir Factura
+            </a>
+            <a href="{% url 'crear_remito' venta.id %}" class="btn btn-info btn-sm shadow-sm">
+                <i class="fas fa-truck fa-sm text-white-50"></i> Generar Remito
+            </a>
+            <a href="{% url 'crear_nota_credito' venta.id %}" class="btn btn-danger btn-sm shadow-sm">
+                <i class="fas fa-undo fa-sm text-white-50"></i> Generar Nota de Crédito
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Información de la Venta -->
+        <div class="col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Información General</h6>
+                </div>
+                <div class="card-body">
+                    <p><strong>Fecha:</strong> {{ venta.fecha|date:"d/m/Y H:i" }}</p>
+                    <p><strong>Cliente:</strong> {{ venta.cliente.nombre }}</p>
+                    <p><strong>CUIT:</strong> {{ venta.cliente.cuit }}</p>
+                    <p><strong>Tipo Comprobante:</strong> {{ venta.tipo_comprobante }}</p>
+
+                    <!-- Fix: Usando texto simple negrita en lugar de badge para evitar problemas de contraste -->
+                    <p><strong>Estado:</strong> <b>{{ venta.estado }}</b></p>
+
+                    {% if venta.cae %}
+                    <p><strong>CAE:</strong> {{ venta.cae }}</p>
+                    {% endif %}
+
+                    {% if venta.pedido_origen %}
+                    <!-- Fix: Usando enlace simple visible -->
+                    <p><strong>Origen:</strong> <a href="#" class="font-weight-bold text-info"><i
+                                class="fas fa-box"></i> Pedido #{{ venta.pedido_origen.id }}</a></p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Totales -->
+        <div class="col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Totales</h6>
+                </div>
+                <div class="card-body">
+                    <h2 class="text-right text-primary font-weight-bold">${{ venta.total }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detalles de Productos -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Productos</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Producto</th>
+                            <th>Cantidad</th>
+                            <th>Precio Unitario</th>
+                            <th>Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for detalle in venta.detalles.all %}
+                        <tr>
+                            <td>{{ detalle.producto.descripcion }}</td>
+                            <td>{{ detalle.cantidad }}</td>
+                            <td>${{ detalle.precio_unitario }}</td>
+                            <td>${{ detalle.subtotal }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Documentos Asociados -->
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Remitos Asociados</h6>
+                </div>
+                <div class="card-body">
+                    {% if venta.remitos.exists %}
+                    <ul class="list-group">
+                        {% for remito in venta.remitos.all %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Remito {{ remito.numero_formateado }} - {{ remito.estado }}
+                            <span class="badge badge-primary badge-pill">{{ remito.fecha|date:"d/m/Y" }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="text-muted">No hay remitos generados.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-danger">Notas de Crédito/Débito</h6>
+                </div>
+                <div class="card-body">
+                    {% if venta.notas_credito.exists or venta.notas_debito.exists %}
+                    <ul class="list-group">
+                        {% for nc in venta.notas_credito.all %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            NC {{ nc.numero_formateado }} - {{ nc.estado }}
+                            <span class="badge badge-danger badge-pill">${{ nc.total }}</span>
+                        </li>
+                        {% endfor %}
+                        {% for nd in venta.notas_debito.all %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            ND {{ nd.numero_formateado }} - {{ nd.estado }}
+                            <span class="badge badge-warning badge-pill">${{ nd.total }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="text-muted">No hay notas de crédito/débito asociadas.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

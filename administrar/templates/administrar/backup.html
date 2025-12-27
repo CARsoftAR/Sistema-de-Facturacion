@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Backup y Restauración - Panel de Administración</title>
+
+  <!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+
+  <style>
+    body {
+      background-color: #f4f5f7;
+      font-family: "Segoe UI", sans-serif;
+    }
+
+    .navbar {
+      background: linear-gradient(90deg, #20c997, #0d6efd);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+
+    .navbar-brand, .nav-link {
+      color: white !important;
+    }
+
+    .nav-link:hover {
+      color: #ffc107 !important;
+    }
+
+    .page-header {
+      margin-top: 80px;
+      text-align: center;
+    }
+
+    .page-header h2 {
+      font-weight: 700;
+      color: #0d6efd;
+    }
+
+    .card {
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      margin-bottom: 25px;
+    }
+
+    .table thead {
+      background: #0d6efd;
+      color: white;
+    }
+
+    .btn-backup {
+      background: linear-gradient(90deg, #20c997, #0d6efd);
+      color: white;
+      font-weight: 600;
+      border: none;
+    }
+
+    .btn-backup:hover {
+      background: linear-gradient(90deg, #0d6efd, #20c997);
+    }
+
+    .btn-restore {
+      background: linear-gradient(90deg, #ffc107, #fd7e14);
+      color: white;
+      font-weight: 600;
+      border: none;
+    }
+
+    .btn-restore:hover {
+      background: linear-gradient(90deg, #fd7e14, #ffc107);
+    }
+
+    footer {
+      text-align: center;
+      padding: 20px;
+      color: #6c757d;
+      font-size: 0.9rem;
+      margin-top: 40px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar navbar-expand-lg fixed-top">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="#">💾 Panel de Backup</a>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item"><a class="nav-link" href="/panel">Inicio</a></li>
+          <li class="nav-item"><a class="nav-link" href="/seguridad">Seguridad</a></li>
+          <li class="nav-item"><a class="nav-link" href="/backup">Backup</a></li>
+          <li class="nav-item"><a class="nav-link" href="#">Cerrar Sesión</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ENCABEZADO -->
+  <div class="container page-header">
+    <h2><i class="bi bi-hdd-stack"></i> Backup y Restauración</h2>
+    <p class="text-muted">Creá copias de seguridad, restaurá bases de datos y configurá backups automáticos</p>
+  </div>
+
+  <div class="container mt-4">
+
+    <!-- CREAR BACKUP -->
+    <div class="card p-4">
+      <h5 class="fw-bold text-success"><i class="bi bi-cloud-arrow-down"></i> Crear Backup Manual</h5>
+      <hr>
+      <p>Generá una copia completa de la base de datos actual. El archivo se descargará automáticamente una vez generado.</p>
+      <button class="btn btn-backup"><i class="bi bi-download"></i> Crear Backup Ahora</button>
+    </div>
+
+    <!-- RESTAURAR BACKUP -->
+    <div class="card p-4">
+      <h5 class="fw-bold text-warning"><i class="bi bi-upload"></i> Restaurar una Copia de Seguridad</h5>
+      <hr>
+      <p>Seleccioná un archivo de backup (.sql o .zip) para restaurar los datos del sistema.</p>
+      <form>
+        <div class="row align-items-center">
+          <div class="col-md-8">
+            <input type="file" class="form-control" accept=".sql,.zip">
+          </div>
+          <div class="col-md-4">
+            <button class="btn btn-restore w-100"><i class="bi bi-arrow-repeat"></i> Restaurar Backup</button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- HISTORIAL DE BACKUPS -->
+    <div class="card p-4">
+      <h5 class="fw-bold text-primary"><i class="bi bi-clock-history"></i> Historial de Backups Realizados</h5>
+      <hr>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead>
+            <tr>
+              <th>Fecha / Hora</th>
+              <th>Usuario</th>
+              <th>Tamaño</th>
+              <th>Archivo</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>10/11/2025 - 10:45</td>
+              <td>admin@empresa.com</td>
+              <td>12.4 MB</td>
+              <td>backup_2025_11_10_1045.sql</td>
+              <td>
+                <button class="btn btn-sm btn-success"><i class="bi bi-download"></i> Descargar</button>
+                <button class="btn btn-sm btn-danger"><i class="bi bi-trash"></i> Eliminar</button>
+              </td>
+            </tr>
+            <tr>
+              <td>09/11/2025 - 18:30</td>
+              <td>admin@empresa.com</td>
+              <td>11.8 MB</td>
+              <td>backup_2025_11_09_1830.sql</td>
+              <td>
+                <button class="btn btn-sm btn-success"><i class="bi bi-download"></i> Descargar</button>
+                <button class="btn btn-sm btn-danger"><i class="bi bi-trash"></i> Eliminar</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+            <input type="time" class="form-control" value="02:00">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Destino de Copias</label>
+            <select class="form-select">
+              <option>Local (servidor)</option>
+              <option>Nube (Google Drive)</option>
+              <option>Nube (Dropbox)</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn btn-primary"><i class="bi bi-save"></i> Guardar Configuración</button>
+      </form>
+    </div>
+
+  </div>
+
+  <footer>
+    © 2025 Sistema Comercial Argentina | Backup y Restauración
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

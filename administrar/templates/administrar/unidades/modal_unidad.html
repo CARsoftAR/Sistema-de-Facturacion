@@ -1,0 +1,49 @@
+{% load static %}
+<!-- MODAL UNIDAD -->
+<div class="modal fade" id="modalUnidad" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+
+            <!-- HEADER -->
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold" id="modalUnidadTitle">
+                    <i class="bi bi-bounding-box me-2"></i> Nueva Unidad
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+            </div>
+
+            <!-- BODY -->
+            <div class="modal-body p-4">
+                <form id="formUnidad" class="needs-validation" novalidate>
+                    {% csrf_token %}
+                    <input type="hidden" name="id" id="unidadId">
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Nombre <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="nombre" id="nombre" required
+                            placeholder="Ej: Kilogramo, Litro, Caja">
+                        <div class="invalid-feedback">
+                            El nombre es obligatorio.
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Descripción</label>
+                        <textarea class="form-control" name="descripcion" id="descripcion" rows="3"
+                            placeholder="Opcional"></textarea>
+                    </div>
+                </form>
+            </div>
+
+            <!-- FOOTER -->
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary px-4" id="btnGuardarUnidad">
+                    <i class="bi bi-save"></i> Guardar
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>

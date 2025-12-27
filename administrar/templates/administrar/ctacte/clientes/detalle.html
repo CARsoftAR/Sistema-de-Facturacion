@@ -1,0 +1,163 @@
+{% extends 'administrar/base.html' %}
+{% load static %}
+
+{% block content %}
+<input type="hidden" id="clienteId" value="{{ cliente_id }}">
+<div class="container-fluid px-4 mt-4">
+    <!-- Encabezado Cliente -->
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div class="d-flex align-items-center">
+            <a href="{% url 'cc_clientes_lista' %}" class="btn btn-outline-secondary btn-sm me-3">
+                <i class="bi bi-arrow-left"></i>
+            </a>
+            <div>
+                <h2 class="text-primary fw-bold mb-0">
+                    <i class="bi bi-person-lines-fill me-2"></i>Estado de Cuenta
+                </h2>
+                <h5 class="text-muted mb-0 mt-1" id="clienteNombre">Cargando...</h5>
+            </div>
+        </div>
+        <div>
+            <button class="btn btn-success me-2 shadow-sm" onclick="abrirModalReciboCobro()">
+                <i class="bi bi-receipt me-1"></i> Generar Recibo de Cobro
+            </button>
+            <button class="btn btn-warning shadow-sm" onclick="abrirModalMovimiento('DEBE')">
+                <i class="bi bi-pencil-square me-1"></i> Ajuste (Nota Débito)
+            </button>
+        </div>
+    </div>
+
+    <!-- Info Resumen -->
+    <div class="row mb-4">
+        <div class="col-md-5">
+            <div class="card border-0 shadow-sm h-100 border-start border-4 border-primary">
+                <div class="card-body">
+                    <small class="text-uppercase text-muted fw-bold tracking-wider">Información</small>
+                    <p class="mb-0 mt-2 text-dark opacity-75" id="clienteInfo">...</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100 border-start border-4 border-danger">
+                <div class="card-body text-center">
+                    <small class="text-uppercase text-muted fw-bold tracking-wider">Saldo (Deuda)</small>
+                    <h3 class="display-6 fw-bold mb-0 text-primary" id="saldoActual">$ 0.00</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 border-start border-4 border-secondary">
+                <div class="card-body text-center">
+                    <small class="text-uppercase text-muted fw-bold tracking-wider">Estado / Límite</small>
+                    <h4 class="mb-0 fw-bold mt-2" id="estadoCuenta">-</h4>
+                    <small class="text-muted" id="limiteCredito">Límite: $0</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card Tabla Movimientos -->
+    <div class="card border-0 shadow mb-5">
+        <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 fw-bold text-secondary">
+                <i class="bi bi-clock-history me-2"></i>Últimos Movimientos
+            </h5>
+            <div class="d-flex gap-2">
+                <input type="date" class="form-control form-control-sm" id="fechaDesde">
+                <input type="date" class="form-control form-control-sm" id="fechaHasta">
+                <button class="btn btn-sm btn-outline-secondary" onclick="cargarMovimientos()">
+                    <i class="bi bi-filter"></i> Filtrar
+                </button>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="tablaMovimientos">
+                    <thead class="bg-light text-secondary">
+                        <tr>
+                            <th class="ps-4">Fecha</th>
+                            <th>Tipo</th>
+                            <th>Descripción</th>
+                            <th class="text-end">Debe</th>
+                            <th class="text-end">Haber</th>
+                            <th class="text-end pe-4">Saldo</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbodyMovimientos">
+                        <tr>
+                            <td colspan="6" class="text-center py-5 text-muted">Aguarde...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center p-3 border-top bg-light">
+                <div id="paginacion"></div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Modal Nuevo Movimiento Manual -->
+<div class="modal fade" id="modalMovimiento" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTitulo">Registrar Movimiento</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formMovimiento">
+                    <input type="hidden" id="movTipo"> <!-- DEBE o HABER -->
+
+                    <div class="mb-3">
+                        <label class="form-label">Fecha</label>
+                        <input type="date" class="form-control" id="movFecha" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Monto</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" class="form-control" id="movMonto" step="0.01" min="0.01" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Descripción</label>
+                        <textarea class="form-control" id="movDescripcion" rows="2" required></textarea>
+                    </div>
+
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="checkCaja" checked>
+                        <label class="form-check-label" for="checkCaja">Impactar en Caja (Movimiento de
+                            dinero)</label>
+                    </div>
+
+                    <div class="alert alert-info d-flex align-items-center" role="alert">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <div id="movInfoSaldo">
+                            Este movimiento actualizará el saldo del cliente.
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="guardarMovimiento()">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Incluir Modal de Recibo Mejorado -->
+{% include 'administrar/ctacte/modal_recibo_cobro.html' %}
+
+<script src="{% static 'js/administrar/cc_clientes.js' %}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        cargarDetalleCliente();
+    });
+</script>
+{% endblock %}

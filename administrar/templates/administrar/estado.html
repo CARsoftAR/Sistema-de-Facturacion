@@ -1,0 +1,122 @@
+{% extends "administrar/base.html" %}
+{% load static %}
+
+{% block content %}
+
+<div class="container-fluid px-4 mt-4">
+
+  <!-- HEADER -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="text-primary fw-bold mb-0">
+        <i class="bi bi-speedometer2"></i> Estado General del Sistema
+      </h2>
+      <p class="text-muted mb-0">Monitoreá la salud del servidor y las conexiones activas</p>
+    </div>
+  </div>
+
+  <!-- TARJETAS DE ESTADO -->
+  <div class="row g-4">
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body text-center p-4">
+          <div class="mb-3">
+            <i class="bi bi-hdd-stack text-primary fs-1"></i>
+          </div>
+          <h5 class="card-title">Uso de Base de Datos</h5>
+          <div class="progress mt-3 mb-2" style="height: 10px;">
+            <!-- Simulamos un porcentaje visual basado en un tope arbitrario de 500MB para visualización -->
+            <div class="progress-bar bg-primary" role="progressbar" style="width: {% widthratio db_size 500 100 %}%"
+              aria-valuenow="{{ db_size }}" aria-valuemin="0" aria-valuemax="500"></div>
+          </div>
+          <p class="text-muted small mb-0">Tamaño actual: {{ db_size }} MB / {{ db_name }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body text-center p-4">
+          <div class="mb-3">
+            <i class="bi bi-cloud-check text-success fs-1"></i>
+          </div>
+          <h5 class="card-title">Conexión AFIP</h5>
+          <p class="{{ afip_class }} fw-bold mt-3 mb-0">{{ afip_status }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body text-center p-4">
+          <div class="mb-3">
+            <i class="bi bi-cpu-fill text-warning fs-1"></i>
+          </div>
+          <h5 class="card-title">Uso del Servidor</h5>
+
+          <div class="d-flex justify-content-between align-items-center mt-3 mb-1">
+            <small class="text-muted">CPU</small>
+            <small class="fw-bold">{{ cpu_usage }}%</small>
+          </div>
+          <div class="progress" style="height: 6px;">
+            <div class="progress-bar bg-warning" role="progressbar" style="width: {{ cpu_usage }}%"
+              aria-valuenow="{{ cpu_usage }}" aria-valuemin="0" aria-valuemax="100"></div>
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center mt-3 mb-1">
+            <small class="text-muted">RAM</small>
+            <small class="fw-bold">{{ ram_usage }}%</small>
+          </div>
+          <div class="progress" style="height: 6px;">
+            <div class="progress-bar bg-info" role="progressbar" style="width: {{ ram_usage }}%"
+              aria-valuenow="{{ ram_usage }}" aria-valuemin="0" aria-valuemax="100"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DETALLES DEL SISTEMA -->
+  <div class="card border-0 shadow-sm mt-4">
+    <div class="card-header bg-white py-3">
+      <h5 class="mb-0 text-primary fw-bold"><i class="bi bi-gear"></i> Información del Sistema</h5>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <tr>
+            <th class="w-25">Servidor:</th>
+            <td>{{ server_software }}</td>
+          </tr>
+          <tr>
+            <th>Versión Python:</th>
+            <td>{{ python_version }}</td>
+          </tr>
+          <tr>
+            <th>Versión Django:</th>
+            <td>{{ django_version }}</td>
+          </tr>
+          <tr>
+            <th>Motor Base de Datos:</th>
+            <td>{{ db_engine }}</td>
+          </tr>
+          <tr>
+            <th>Último Backup:</th>
+            <td>{{ last_backup }}</td>
+          </tr>
+          <tr>
+            <th>Estado de Red:</th>
+            <td><span class="badge {{ network_class }}">{{ network_status }}</span></td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <footer class="text-center p-4 text-muted mt-4 border-top">
+    <small>© {% now "Y" %} Sistema Comercial Argentina | Estado del Sistema</small>
+  </footer>
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,122 @@
+{% load static %}
+<!-- MODAL PROVEEDOR FULLSCREEN -->
+<div class="modal fade" id="modalProveedor" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content bg-light">
+
+            <!-- HEADER -->
+            <div class="modal-header bg-primary text-white shadow-sm">
+                <h5 class="modal-title fw-bold" id="modalProveedorTitle">
+                    <i class="bi bi-building-add me-2"></i> Nuevo Proveedor
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+            </div>
+
+            <!-- BODY -->
+            <div class="modal-body p-0">
+                <div class="container h-100">
+                    <div class="row justify-content-center h-100 align-items-center py-4">
+                        <div class="col-lg-10">
+                            <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+                                <div class="card-body p-5">
+
+                                    <form id="formProveedor" class="needs-validation" novalidate>
+                                        {% csrf_token %}
+                                        <input type="hidden" name="id" id="proveedorId">
+
+                                        <div class="row g-4">
+                                            <!-- COLUMNA IZQUIERDA -->
+                                            <div class="col-md-6 border-end pe-md-5">
+                                                <h6 class="text-primary fw-bold mb-4 border-bottom pb-2">Datos
+                                                    Principales</h6>
+
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-bold">Nombre / Razón Social <span
+                                                            class="text-danger">*</span></label>
+                                                    <input type="text" class="form-control form-control-lg"
+                                                        name="nombre" id="nombre" required
+                                                        placeholder="Ej: Distribuidora S.A.">
+                                                </div>
+
+                                                <div class="row g-3">
+                                                    <div class="col-md-6">
+                                                        <label class="form-label fw-bold">CUIT</label>
+                                                        <input type="text" class="form-control" name="cuit" id="cuit"
+                                                            placeholder="Sin guiones">
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label fw-bold">Teléfono</label>
+                                                        <input type="text" class="form-control" name="telefono"
+                                                            id="telefono">
+                                                    </div>
+                                                </div>
+
+                                                <div class="mb-3 mt-3">
+                                                    <label class="form-label fw-bold">Email</label>
+                                                    <input type="email" class="form-control" name="email" id="email">
+                                                </div>
+                                            </div>
+
+                                            <!-- COLUMNA DERECHA -->
+                                            <div class="col-md-6 ps-md-5">
+                                                <h6 class="text-primary fw-bold mb-4 border-bottom pb-2">Ubicación y
+                                                    Notas</h6>
+
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-bold">Dirección</label>
+                                                    <input type="text" class="form-control" name="direccion"
+                                                        id="direccion">
+                                                </div>
+
+                                                <div class="row g-3 mb-3">
+                                                    <div class="col-md-6">
+                                                        <label class="form-label fw-bold">Provincia</label>
+                                                        <select class="form-select" name="provincia" id="provincia">
+                                                            <option value="">Seleccionar...</option>
+                                                            <!-- Se llena vía JS o desde backend si se pasa el contexto -->
+                                                            {% for p in provincias %}
+                                                            <option value="{{ p.id }}">{{ p.nombre }}</option>
+                                                            {% endfor %}
+                                                        </select>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label fw-bold">Localidad</label>
+                                                        <select class="form-select" name="localidad" id="localidad"
+                                                            disabled>
+                                                            <option value="">Seleccionar provincia primero</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-bold">Notas</label>
+                                                    <textarea class="form-control" name="notas" id="notas"
+                                                        rows="4"></textarea>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </form>
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FOOTER -->
+            <div class="modal-footer bg-light py-3 shadow-lg">
+                <div class="container d-flex justify-content-end gap-3">
+                    <button type="button" class="btn btn-secondary btn-lg px-4" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> Cancelar
+                    </button>
+                    <button type="button" class="btn btn-primary btn-lg px-5" id="btnGuardarProveedor">
+                        <i class="bi bi-save"></i> Guardar Proveedor
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>

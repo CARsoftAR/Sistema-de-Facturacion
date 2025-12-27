@@ -1,0 +1,259 @@
+{% extends "administrar/base.html" %}
+{% load static %}
+
+{% block content %}
+
+<div class="container-fluid px-4 mt-4">
+
+  <!-- HEADER -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="text-primary fw-bold mb-0">
+        <i class="bi bi-speedometer2"></i> Centro de Comando
+      </h2>
+      <p class="text-muted mb-0">Resumen en tiempo real de tu negocio</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'ventas' %}" class="btn btn-outline-primary"><i class="bi bi-cart"></i> Ventas</a>
+      <a href="{% url 'caja' %}" class="btn btn-outline-success"><i class="bi bi-wallet2"></i> Caja</a>
+      <a href="{% url 'menu' %}" class="btn btn-secondary"><i class="bi bi-grid-fill"></i> Menú</a>
+    </div>
+  </div>
+
+  <!-- KPI CARDS -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm border-start border-primary border-4 h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h6 class="text-muted text-uppercase mb-1">Ventas Hoy</h6>
+              <h3 class="fw-bold text-primary mb-0">${{ ventas_hoy|floatformat:0|default:"0" }}</h3>
+            </div>
+            <div class="icon-shape bg-primary text-white rounded-circle p-3">
+              <i class="bi bi-cart-check fs-4"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm border-start border-success border-4 h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h6 class="text-muted text-uppercase mb-1">Caja del Día</h6>
+              <h3 class="fw-bold text-success mb-0">${{ caja_hoy|floatformat:0|default:"0" }}</h3>
+            </div>
+            <div class="icon-shape bg-success text-white rounded-circle p-3">
+              <i class="bi bi-cash-coin fs-4"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <a href="{% url 'pedidos' %}?estado=PENDIENTE,PREPARACION" class="text-decoration-none">
+        <div class="stat-card card border-0 shadow-sm border-start border-warning border-4 h-100">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <h6 class="text-muted text-uppercase mb-1">Pedidos Pendientes</h6>
+                <h3 class="fw-bold text-warning mb-0">{{ pedidos_pendientes }}</h3>
+              </div>
+              <div class="icon-shape bg-warning text-dark rounded-circle p-3">
+                <i class="bi bi-hourglass-split fs-4"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-md-3">
+      <a href="{% url 'productos' %}?stock=bajo" class="text-decoration-none">
+        <div class="stat-card card border-0 shadow-sm border-start border-danger border-4 h-100">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <h6 class="text-muted text-uppercase mb-1">Alertas Stock</h6>
+                <h3 class="fw-danger text-danger mb-0">{{ stock_bajo }}</h3>
+              </div>
+              <div class="icon-shape bg-danger text-white rounded-circle p-3">
+                <i class="bi bi-exclamation-triangle fs-4"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT ROW -->
+  <div class="row g-4 mb-4">
+    <!-- CHART -->
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+          <h5 class="fw-bold mb-0">Evolución Semanal de Ventas</h5>
+          <small class="text-muted"><i class="bi bi-calendar3"></i> Últimos 7 días</small>
+        </div>
+        <div class="card-body">
+          <canvas id="salesChart" height="100"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- QUICK ACTIONS -->
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-white py-3">
+          <h5 class="fw-bold mb-0">Accesos Rápidos</h5>
+        </div>
+        <div class="card-body">
+          <div class="d-grid gap-3">
+            <a href="{% url 'ventas' %}" class="btn btn-primary d-flex align-items-center justify-content-center py-3">
+              <i class="bi bi-cart-plus me-2 fs-5"></i> Registrar Nueva Venta
+            </a>
+            <a href="{% url 'compras' %}"
+              class="btn btn-outline-dark d-flex align-items-center justify-content-center py-3">
+              <i class="bi bi-bag-plus me-2 fs-5"></i> Registrar Compra
+            </a>
+            <a href="{% url 'api_caja_movimiento_crear' %}"
+              class="btn btn-outline-secondary d-flex align-items-center justify-content-center py-3"
+              data-bs-toggle="modal" data-bs-target="#modalMovimientoCaja">
+              <i class="bi bi-journal-plus me-2 fs-5"></i> Movimiento Caja
+            </a>
+            <a href="{% url 'productos' %}"
+              class="btn btn-light d-flex align-items-center justify-content-center py-3 text-start border">
+              <i class="bi bi-box-seam me-2 fs-5 text-muted"></i> Gestionar Productos
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECONDARY CONTENT ROW -->
+  <div class="row g-4">
+    <!-- RECENT ACTIVITY -->
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-white py-3">
+          <h5 class="fw-bold mb-0">Actividad Reciente</h5>
+        </div>
+        <div class="list-group list-group-flush">
+          {% for item in actividad_reciente %}
+          <div class="list-group-item d-flex align-items-center py-3 px-4">
+            <div class="bg-light rounded-circle p-2 me-3 text-{{ item.color }}">
+              <i class="bi {{ item.icono }} fs-5"></i>
+            </div>
+            <div>
+              <h6 class="mb-0 fw-bold">{{ item.texto }}</h6>
+              <small class="text-muted">{{ item.subtexto }} &bull; {{ item.fecha|timesince }} atrás</small>
+            </div>
+          </div>
+          {% empty %}
+          <div class="text-center py-4 text-muted">No hay actividad reciente</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- TOP PRODUCTS -->
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-white py-3">
+          <h5 class="fw-bold mb-0">Productos Más Vendidos (30d)</h5>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th class="ps-4">Producto</th>
+                <th class="text-end pe-4">Unidades</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for p in top_productos %}
+              <tr>
+                <td class="ps-4 fw-medium text-truncate" style="max-width: 250px;">{{ p.producto__descripcion }}</td>
+                <td class="text-end pe-4 fw-bold text-primary">{{ p.total_vendido }}</td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="2" class="text-center py-4 text-muted">Sin datos suficientes</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const ctx = document.getElementById('salesChart').getContext('2d');
+
+    // Gradient
+    const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+    gradient.addColorStop(0, 'rgba(13, 110, 253, 0.2)');
+    gradient.addColorStop(1, 'rgba(13, 110, 253, 0)');
+
+    const labels = JSON.parse('{{ chart_labels|safe }}');
+    const data = JSON.parse('{{ chart_data|safe }}');
+
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Ventas ($)',
+          data: data,
+          borderColor: '#0d6efd',
+          backgroundColor: gradient,
+          borderWidth: 2,
+          pointBackgroundColor: '#ffffff',
+          pointBorderColor: '#0d6efd',
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          fill: true,
+          tension: 0.4
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => '$' + ctx.raw.toLocaleString()
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            grid: { borderDash: [5, 5] },
+            ticks: {
+              callback: (val) => '$' + val
+            }
+          },
+          x: {
+            grid: { display: false }
+          }
+        }
+      }
+    });
+  });
+</script>
+{% endblock %}

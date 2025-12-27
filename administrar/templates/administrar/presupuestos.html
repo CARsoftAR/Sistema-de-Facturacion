@@ -1,0 +1,100 @@
+{% extends "administrar/base.html" %}
+{% load static %}
+
+{% block content %}
+
+<div class="container-fluid px-4 mt-4">
+
+    <!-- HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="text-primary fw-bold mb-0">
+                <i class="bi bi-file-earmark-text-fill"></i> Presupuestos
+            </h2>
+            <p class="text-muted mb-0">Administra tus cotizaciones y presupuesto.</p>
+        </div>
+        <a href="{% url 'presupuesto_nuevo' %}" class="btn btn-primary btn-lg shadow-sm">
+            <i class="bi bi-plus-circle-fill"></i> Nuevo Presupuesto
+        </a>
+    </div>
+
+    <!-- FILTROS -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body bg-light rounded">
+            <div class="row g-3">
+                <div class="col-md-5">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
+                        <input type="text" id="filtroBusqueda" class="form-control border-start-0"
+                            placeholder="Buscar por cliente...">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <select id="filtroEstado" class="form-select">
+                        <option value="">Todos los estados</option>
+                        <option value="PENDIENTE" selected>Pendiente</option>
+                        <option value="APROBADO">Aprobado (Venta)</option>
+                        <option value="VENCIDO">Vencido</option>
+                        <option value="CANCELADO">Cancelado</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-outline-secondary w-100" id="btnLimpiarFiltros">
+                        Limpiar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TABLA -->
+    <div class="card border-0 shadow mb-5">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="tablaPresupuestos">
+                    <thead class="bg-light text-secondary">
+                        <tr>
+                            <th class="ps-4 py-3"># ID</th>
+                            <th>Fecha</th>
+                            <th>Cliente</th>
+                            <th>Vencimiento</th>
+                            <th>Total</th>
+                            <th>Estado</th>
+                            <th class="text-end pe-4">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbodyPresupuestos">
+                        <!-- Se llena vía JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- PAGINACIÓN Y CONTADOR -->
+            <div class="d-flex justify-content-between align-items-center p-3 border-top bg-light">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="text-muted small" id="contadorRegistros">Mostrando 0 presupuestos</span>
+                    <select id="selectorRegistros" class="form-select form-select-sm border-secondary-subtle"
+                        style="width: 70px;">
+                        <option value="5">5</option>
+                        <option value="10" selected>10</option>
+                        <option value="20">20</option>
+                        <option value="50">50</option>
+                    </select>
+                    <span class="text-muted small">por pág.</span>
+                </div>
+                <!-- Paginación simplificada por ahora -->
+                <nav>
+                    <ul class="pagination pagination-sm mb-0" id="paginacion"></ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="{% static 'js/administrar/presupuestos.js' %}?v=1.0"></script>
+{% endblock %}

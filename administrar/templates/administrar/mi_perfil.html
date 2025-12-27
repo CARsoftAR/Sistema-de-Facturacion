@@ -1,0 +1,241 @@
+{% extends 'administrar/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+
+    <!-- HEADER -->
+    <div class="d-flex align-items-center mb-4">
+        <div class="bg-primary bg-opacity-10 p-3 rounded-circle me-3 text-primary">
+            <i class="bi bi-person-circle fs-3"></i>
+        </div>
+        <div>
+            <h2 class="fw-bold text-primary mb-1">Mi Perfil</h2>
+            <p class="text-muted mb-0">Gestiona tu información personal y seguridad</p>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- USER INFO CARD -->
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white py-3 border-bottom-0">
+                    <h5 class="fw-bold mb-0 text-secondary">Mis Datos</h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4 position-relative">
+                        <!-- Avatar -->
+                        <div class="d-inline-block position-relative">
+                            {% if user.perfilusuario.imagen %}
+                            <img src="{{ user.perfilusuario.imagen.url }}" class="rounded-circle shadow-sm"
+                                style="width: 120px; height: 120px; object-fit: cover; cursor: pointer;"
+                                onclick="document.getElementById('inputImagen').click();">
+                            {% else %}
+                            <div class="bg-primary bg-opacity-10 rounded-circle text-primary d-flex align-items-center justify-content-center mx-auto"
+                                style="width: 120px; height: 120px; cursor: pointer;"
+                                onclick="document.getElementById('inputImagen').click();">
+                                <i class="bi bi-person-circle display-1"></i>
+                            </div>
+                            {% endif %}
+
+                            <!-- Edit Badge -->
+                            <span
+                                class="position-absolute bottom-0 end-0 bg-white border rounded-circle p-1 shadow-sm fs-6 text-muted"
+                                style="cursor: pointer;" onclick="document.getElementById('inputImagen').click();">
+                                <i class="bi bi-camera-fill"></i>
+                            </span>
+                        </div>
+
+                        <!-- Hidden Input -->
+                        <input type="file" id="inputImagen" class="d-none" accept="image/*"
+                            onchange="subirImagen(this)">
+
+                        <h4 class="fw-bold mt-3">{{ user.first_name }}</h4>
+                        <span class="badge badge-soft-primary px-3 py-2 rounded-pill">{{ user.email }}</span>
+                    </div>
+
+                    <div class="list-group list-group-flush">
+                        <div class="list-group-item px-0 py-3 border-light">
+                            <small class="text-muted d-block uppercase-text">Usuario</small>
+                            <span class="fw-medium">{{ user.username }}</span>
+                        </div>
+                        <div class="list-group-item px-0 py-3 border-light">
+                            <small class="text-muted d-block uppercase-text">Rol</small>
+                            {% if user.is_superuser %}
+                            <span class="badge bg-danger">Super Administrador</span>
+                            {% elif user.is_staff %}
+                            <span class="badge bg-info text-dark">Administrador</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Usuario Estándar</span>
+                            {% endif %}
+                        </div>
+                        <div class="list-group-item px-0 py-3 border-light">
+                            <small class="text-muted d-block uppercase-text">Último Acceso</small>
+                            <span class="fw-medium">{{ user.last_login|default:"Nunca" }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECURITY CARD -->
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white py-3 border-bottom-0">
+                    <h5 class="fw-bold mb-0 text-secondary"><i class="bi bi-shield-lock me-2"></i> Seguridad</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-light border-0 d-flex align-items-center mb-4">
+                        <i class="bi bi-info-circle text-info fs-4 me-3"></i>
+                        <div>
+                            <strong>Cambiar Contraseña</strong>
+                            <div class="small text-muted">Es recomendable usar una contraseña segura y cambiarla
+                                periódicamente.</div>
+                        </div>
+                    </div>
+
+                    <form id="formPassword" onsubmit="event.preventDefault(); cambiarPassword();">
+                        <div class="mb-3">
+                            <label class="form-label text-muted small fw-bold">Contraseña Actual</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0"><i class="bi bi-key"></i></span>
+                                <input type="password" class="form-control border-start-0 ps-0 bg-light"
+                                    id="current_password" required placeholder="Ingresa tu clave actual">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label text-muted small fw-bold">Nueva Contraseña</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white border-end-0"><i
+                                            class="bi bi-lock"></i></span>
+                                    <input type="password" class="form-control border-start-0 ps-0" id="new_password"
+                                        required minlength="4" placeholder="Nueva clave">
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-4">
+                                <label class="form-label text-muted small fw-bold">Confirmar Nueva Contraseña</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white border-end-0"><i
+                                            class="bi bi-check2-circle"></i></span>
+                                    <input type="password" class="form-control border-start-0 ps-0"
+                                        id="confirm_password" required minlength="4" placeholder="Repetir clave">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-grid d-md-flex justify-content-md-end">
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class="bi bi-save me-2"></i> Actualizar Contraseña
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    function subirImagen(input) {
+        if (input.files && input.files[0]) {
+            const formData = new FormData();
+            formData.append('imagen', input.files[0]);
+
+            Swal.fire({
+                title: 'Subiendo imagen...',
+                didOpen: () => { Swal.showLoading() }
+            });
+
+            fetch('/api/mi-perfil/imagen/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.ok) {
+                    Swal.fire({
+                        title: 'Éxito',
+                        text: 'Imagen actualizada',
+                        icon: 'success',
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(() => {
+                        location.reload();
+                    });
+                } else {
+                    Swal.fire('Error', data.error, 'error');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                Swal.fire('Error', 'Error de conexión', 'error');
+            });
+        }
+    }
+
+    function cambiarPassword() {
+        const current = document.getElementById('current_password').value;
+        const nueva = document.getElementById('new_password').value;
+        const confirm = document.getElementById('confirm_password').value;
+
+        if (nueva !== confirm) {
+            Swal.fire('Error', 'Las contraseñas nuevas no coinciden', 'error');
+            return;
+        }
+
+        Swal.fire({
+            title: 'Actualizando...',
+            didOpen: () => { Swal.showLoading() }
+        });
+
+        fetch('/api/mi-perfil/password/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                current_password: current,
+                new_password: nueva,
+                confirm_password: confirm
+            })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.ok) {
+                    Swal.fire('Éxito', 'Contraseña actualizada correctamente', 'success')
+                        .then(() => {
+                            document.getElementById('formPassword').reset();
+                        });
+                } else {
+                    Swal.fire('Error', data.error, 'error');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                Swal.fire('Error', 'Error de conexión', 'error');
+            });
+    }
+</script>
+{% endblock %}

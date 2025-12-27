@@ -1,0 +1,40 @@
+{% extends 'administrar/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1 class="h3 mb-4 text-gray-800">Generar Nota de Crédito</h1>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Anular Venta #{{ venta.id }}</h6>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle"></i>
+                <strong>Atención:</strong> Esta acción generará una Nota de Crédito por el total de la venta y devolverá
+                los productos al stock.
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Cliente:</strong> {{ venta.cliente.nombre }}</p>
+                    <p><strong>Fecha Venta:</strong> {{ venta.fecha|date:"d/m/Y H:i" }}</p>
+                    <p><strong>Total Venta:</strong> ${{ venta.total }}</p>
+                </div>
+            </div>
+
+            <form method="post">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="motivo">Motivo de la Nota de Crédito:</label>
+                    <textarea class="form-control" id="motivo" name="motivo" rows="3" required></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-danger">Generar Nota de Crédito</button>
+                <a href="{% url 'detalle_venta' venta.id %}" class="btn btn-secondary">Cancelar</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

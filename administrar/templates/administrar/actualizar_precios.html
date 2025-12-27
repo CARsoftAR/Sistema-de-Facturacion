@@ -1,0 +1,179 @@
+{% extends "administrar/base.html" %}
+{% load static %}
+
+{% block content %}
+
+<div class="container-fluid px-4 mt-4">
+
+    <!-- HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="text-success fw-bold mb-0">
+                <i class="bi bi-calculator"></i> Actualización Masiva de Precios
+            </h2>
+            <p class="text-muted mb-0">Actualiza precios y costos de múltiples productos simultáneamente.</p>
+        </div>
+    </div>
+
+    <!-- CARD 1: TIPO DE ACTUALIZACIÓN -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0"><i class="bi bi-gear"></i> Tipo de Actualización</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Método de Actualización</label>
+                    <div class="btn-group w-100" role="group">
+                        <input type="radio" class="btn-check" name="tipoActualizacion" id="radioMonto" value="MONTO"
+                            checked>
+                        <label class="btn btn-outline-success" for="radioMonto">
+                            <i class="bi bi-cash"></i> Monto Fijo ($)
+                        </label>
+
+                        <input type="radio" class="btn-check" name="tipoActualizacion" id="radioPorcentaje"
+                            value="PORCENTAJE">
+                        <label class="btn btn-outline-success" for="radioPorcentaje">
+                            <i class="bi bi-percent"></i> Porcentaje (%)
+                        </label>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label for="inputValor" class="form-label fw-bold">Valor</label>
+                    <div class="input-group input-group-lg">
+                        <span class="input-group-text bg-success text-white" id="simboloValor">$</span>
+                        <input type="number" class="form-control" id="inputValor" placeholder="Ingrese el valor"
+                            step="0.01">
+                    </div>
+                    <small class="text-muted">Use valores negativos para descuentos</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CARD 2: FILTROS DE PRODUCTOS -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0"><i class="bi bi-funnel"></i> Filtros de Productos</h5>
+        </div>
+        <div class="card-body">
+            <!-- Búsqueda de productos específicos -->
+            <div class="mb-4 pb-4 border-bottom">
+                <label for="inputBuscarProducto" class="form-label fw-bold">
+                    <i class="bi bi-search"></i> Buscar Productos Específicos
+                </label>
+                <div class="input-group">
+                    <span class="input-group-text bg-white"><i class="bi bi-upc-scan"></i></span>
+                    <input type="text" class="form-control" id="inputBuscarProducto"
+                        placeholder="Buscar por código o nombre..." autocomplete="off">
+                </div>
+                <div id="listaResultadosBusqueda" class="list-group mt-2 position-relative"
+                    style="max-height: 200px; overflow-y: auto; display: none;"></div>
+
+                <!-- Productos seleccionados -->
+                <div id="productosSeleccionados" class="mt-3"></div>
+                <small class="text-muted">Si seleccionas productos específicos, se ignorarán los filtros de
+                    rubro/marca</small>
+            </div>
+
+            <div class="text-center mb-3">
+                <span class="badge bg-secondary">O filtrar por categorías:</span>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="selectRubros" class="form-label fw-bold">Rubros</label>
+                    <select class="form-select" id="selectRubros" multiple size="5">
+                        {% for rubro in rubros %}
+                        <option value="{{ rubro.id }}">{{ rubro.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                    <small class="text-muted">Mantén Ctrl para seleccionar múltiples. Dejar vacío = todos</small>
+                </div>
+                <div class="col-md-6">
+                    <label for="selectMarcas" class="form-label fw-bold">Marcas</label>
+                    <select class="form-select" id="selectMarcas" multiple size="5">
+                        {% for marca in marcas %}
+                        <option value="{{ marca.id }}">{{ marca.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                    <small class="text-muted">Mantén Ctrl para seleccionar múltiples. Dejar vacío = todas</small>
+                </div>
+            </div>
+            <div class="alert alert-info mt-3 mb-0">
+                <i class="bi bi-info-circle"></i> Si no seleccionas ningún filtro, se aplicará a <strong>todos los
+                    productos</strong>.
+            </div>
+        </div>
+    </div>
+
+    <!-- CARD 3: CAMPOS A ACTUALIZAR -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-warning text-dark">
+            <h5 class="mb-0"><i class="bi bi-check2-square"></i> Campos a Actualizar</h5>
+        </div>
+        <div class="card-body">
+            <p class="text-muted mb-3">Selecciona al menos un campo para actualizar:</p>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="checkCosto" value="costo">
+                        <label class="form-check-label fw-bold" for="checkCosto">
+                            <i class="bi bi-tag"></i> Costo
+                        </label>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="checkEfectivo" value="precio_efectivo">
+                        <label class="form-check-label fw-bold" for="checkEfectivo">
+                            <i class="bi bi-cash-coin"></i> Precio Efectivo
+                        </label>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="checkTarjeta" value="precio_tarjeta">
+                        <label class="form-check-label fw-bold" for="checkTarjeta">
+                            <i class="bi bi-credit-card"></i> Precio Tarjeta
+                        </label>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="checkCtaCte" value="precio_ctacte">
+                        <label class="form-check-label fw-bold" for="checkCtaCte">
+                            <i class="bi bi-journal-text"></i> Precio Cuenta Corriente
+                        </label>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="checkLista4" value="precio_lista4">
+                        <label class="form-check-label fw-bold" for="checkLista4">
+                            <i class="bi bi-list-ol"></i> Precio Mayorista
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- BOTONES DE ACCIÓN -->
+    <div class="d-flex justify-content-end gap-3 mb-5">
+        <button class="btn btn-outline-secondary btn-lg" id="btnLimpiar">
+            <i class="bi bi-x-circle"></i> Limpiar
+        </button>
+        <button class="btn btn-success btn-lg shadow" id="btnAplicar">
+            <i class="bi bi-check-circle-fill"></i> Aplicar Cambios
+        </button>
+    </div>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="{% static 'js/administrar/actualizar_precios.js' %}"></script>
+{% endblock %}

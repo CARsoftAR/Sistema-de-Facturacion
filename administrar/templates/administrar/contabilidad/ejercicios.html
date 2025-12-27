@@ -1,0 +1,170 @@
+{% extends "administrar/base.html" %}
+{% load static %}
+
+{% block content %}
+
+<div class="container-fluid px-4 mt-4">
+
+    <!-- HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="text-primary fw-bold mb-0">
+                <i class="bi bi-calendar-range"></i> Ejercicios Contables
+            </h2>
+            <p class="text-muted mb-0">Gestión de períodos contables</p>
+        </div>
+        <div>
+            <button class="btn btn-primary" id="btnNuevoEjercicio">
+                <i class="bi bi-plus-lg"></i> Nuevo Ejercicio
+            </button>
+        </div>
+    </div>
+
+    <!-- FILTROS Y BÚSQUEDA -->
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-5">
+                    <label class="form-label fw-bold">
+                        <i class="bi bi-search"></i> Buscar
+                    </label>
+                    <input type="text" class="form-control" id="filtroTexto" placeholder="Buscar por descripción...">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-bold">
+                        <i class="bi bi-funnel"></i> Estado
+                    </label>
+                    <select class="form-select" id="filtroEstado">
+                        <option value="">Todos</option>
+                        <option value="abierto">Abiertos</option>
+                        <option value="cerrado">Cerrados</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">
+                        <i class="bi bi-calendar"></i> Año
+                    </label>
+                    <select class="form-select" id="filtroAnio">
+                        <option value="">Todos</option>
+                        <!-- Se llena dinámicamente -->
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-bold d-block">&nbsp;</label>
+                    <button class="btn btn-outline-secondary w-100" id="btnLimpiarFiltros">
+                        <i class="bi bi-x-circle"></i> Limpiar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+
+            <!-- TABLA DE EJERCICIOS -->
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Descripción</th>
+                            <th>Fecha Inicio</th>
+                            <th>Fecha Fin</th>
+                            <th>Duración</th>
+                            <th>Estado</th>
+                            <th class="text-end">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaEjercicios">
+                        <tr>
+                            <td colspan="6" class="text-center py-4">
+                                <div class="spinner-border text-primary" role="status"></div>
+                                <span class="ms-2">Cargando...</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- INFO DE RESULTADOS Y PAGINACIÓN -->
+            <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
+                <div>
+                    <span class="text-muted">
+                        Mostrando <strong id="rangoInicio">0</strong>-<strong id="rangoFin">0</strong> de <strong
+                            id="ejerciciosTotales">0</strong> ejercicios
+                    </span>
+                    <select class="form-select form-select-sm d-inline-block ms-2" id="itemsPorPagina"
+                        style="width: auto;">
+                        <option value="5">5</option>
+                        <option value="10" selected>10</option>
+                        <option value="15">15</option>
+                        <option value="20">20</option>
+                    </select>
+                    <span class="text-muted ms-1">por pág.</span>
+                </div>
+                <div>
+                    <nav aria-label="Paginación">
+                        <ul class="pagination pagination-sm mb-0" id="paginacion">
+                            <!-- Se llena dinámicamente -->
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+<!-- MODAL NUEVO/EDITAR EJERCICIO -->
+<div class="modal fade" id="modalEjercicio" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalEjercicioTitle">Nuevo Ejercicio</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formEjercicio">
+                    <input type="hidden" id="ejercicioId">
+
+                    <div class="mb-3">
+                        <label class="form-label">Descripción</label>
+                        <input type="text" class="form-control" id="descripcion" required
+                            placeholder="Ej: Ejercicio 2025">
+                    </div>
+
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <label class="form-label">Fecha Inicio</label>
+                            <input type="date" class="form-control" id="fecha_inicio" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Fecha Fin</label>
+                            <input type="date" class="form-control" id="fecha_fin" required>
+                        </div>
+                    </div>
+
+                    <div class="form-check form-switch mt-3 mb-3">
+                        <input class="form-check-input" type="checkbox" id="cerrado">
+                        <label class="form-check-label" for="cerrado">Ejercicio Cerrado</label>
+                        <small class="form-text text-muted d-block">Un ejercicio cerrado no permite registrar nuevos
+                            asientos</small>
+                    </div>
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnGuardarEjercicio">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/administrar/ejercicios.js' %}"></script>
+{% endblock %}

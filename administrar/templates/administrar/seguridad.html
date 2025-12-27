@@ -1,0 +1,228 @@
+{% extends "administrar/base.html" %}
+{% load static %}
+
+{% block title %}Seguridad y Accesos{% endblock %}
+
+{% block extra_css %}
+<style>
+    .card {
+        margin-bottom: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .table thead {
+        background: #0d6efd;
+        color: white;
+    }
+
+    .btn-save {
+        background: linear-gradient(90deg, #6610f2, #0d6efd);
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4"><i class="bi bi-shield-lock"></i> Seguridad y Accesos</h2>
+
+    <!-- Cambio de Contraseña -->
+    <div class="card p-4">
+        <h5><i class="bi bi-key-fill"></i> Cambio de Contraseña</h5>
+        <hr>
+        <p class="text-muted small">Actualiza tu contraseña de acceso al sistema para mantener tu cuenta segura.</p>
+        <form id="formCambioContrasena">
+            {% csrf_token %}
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label>Contraseña Actual</label>
+                    <input type="password" class="form-control" id="contrasenaActual" required>
+                </div>
+                <div class="col-md-4">
+                    <label>Nueva Contraseña</label>
+                    <input type="password" class="form-control" id="nuevaContrasena" required>
+                    <div id="indicadorFortaleza" class="small"></div>
+                </div>
+                <div class="col-md-4">
+                    <label>Confirmar Contraseña</label>
+                    <input type="password" class="form-control" id="confirmarContrasena" required>
+                    <div id="indicadorCoincidencia" class="small"></div>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-save"><i class="bi bi-save"></i> Actualizar Contraseña</button>
+        </form>
+    </div>
+
+    <!-- Historial de Login -->
+    <div class="card p-4">
+        <h5><i class="bi bi-clock-history"></i> Historial de Inicios de Sesión</h5>
+        <hr>
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Usuario</th>
+                        <th>IP</th>
+                        <th>Fecha/Hora</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody id="tablaHistorialLogin">
+                    <tr>
+                        <td colspan="4" class="text-center">Cargando...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Sesiones Activas -->
+    <div class="card p-4">
+        <h5><i class="bi bi-person-lines-fill"></i> Sesiones Activas</h5>
+        <hr>
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Usuario</th>
+                        <th>IP</th>
+                        <th>Inicio</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody id="tablaSesionesActivas">
+                    <tr>
+                        <td colspan="4" class="text-center">Cargando...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Bitácora -->
+    <div class="card p-4">
+        <h5><i class="bi bi-journal-text"></i> Bitácora de Actividades</h5>
+        <hr>
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Fecha/Hora</th>
+                        <th>Usuario</th>
+                        <th>Acción</th>
+                        <th>Módulo</th>
+                    </tr>
+                </thead>
+                <tbody id="tablaBitacoraActividades">
+                    <tr>
+                        <td colspan="4" class="text-center">Cargando...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Cargar sesiones activas
+        fetch('/api/seguridad/sesiones-activas/')
+            .then(r => r.json())
+            .then(data => {
+                const tbody = document.getElementById('tablaSesionesActivas');
+                if (data.ok && data.data.length > 0) {
+                    tbody.innerHTML = data.data.map(s =>
+                        `<tr><td>${s.username}</td><td>${s.ip_address}</td><td>${s.login_time}</td><td>-</td></tr>`
+                    ).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-center">No hay sesiones activas</td></tr>';
+                }
+            });
+
+        // Cargar historial de login
+        fetch('/api/seguridad/historial-login/')
+            .then(r => r.json())
+            .then(data => {
+                const tbody = document.getElementById('tablaHistorialLogin');
+                if (data.ok && data.data.length > 0) {
+                    tbody.innerHTML = data.data.map(login =>
+                        `<tr>
+                        <td>${login.username}</td>
+                        <td>${login.ip_address}</td>
+                        <td>${login.timestamp}</td>
+                        <td><span class="badge ${login.success ? 'bg-success' : 'bg-danger'}">
+                            ${login.success ? 'Éxito' : 'Fallido'}
+                        </span></td>
+                    </tr>`
+                    ).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-center">No hay registros</td></tr>';
+                }
+            });
+
+        // Cargar bitácora
+        fetch('/api/seguridad/bitacora/')
+            .then(r => r.json())
+            .then(data => {
+                const tbody = document.getElementById('tablaBitacoraActividades');
+                if (data.ok && data.data.length > 0) {
+                    tbody.innerHTML = data.data.map(log =>
+                        `<tr>
+                        <td>${log.timestamp}</td>
+                        <td>${log.username}</td>
+                        <td>${log.description}</td>
+                        <td><small class="text-muted">${log.module_display}</small></td>
+                    </tr>`
+                    ).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-center">No hay actividades registradas</td></tr>';
+                }
+            });
+
+        // Formulario de cambio de contraseña
+        document.getElementById('formCambioContrasena').addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            const actual = document.getElementById('contrasenaActual').value;
+            const nueva = document.getElementById('nuevaContrasena').value;
+            const confirmar = document.getElementById('confirmarContrasena').value;
+
+            if (nueva !== confirmar) {
+                alert('Las contraseñas no coinciden');
+                return;
+            }
+
+            if (nueva.length < 6) {
+                alert('La contraseña debe tener al menos 6 caracteres');
+                return;
+            }
+
+            const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+            fetch('/api/seguridad/cambiar-contrasena/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify({
+                    contrasena_actual: actual,
+                    nueva_contrasena: nueva,
+                    confirmar_contrasena: confirmar
+                })
+            })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.ok) {
+                        alert('Contraseña actualizada correctamente');
+                        document.getElementById('formCambioContrasena').reset();
+                    } else {
+                        alert('Error: ' + data.error);
+                    }
+                })
+                .catch(e => alert('Error de conexión'));
+        });
+    });
+</script>
+{% endblock %}

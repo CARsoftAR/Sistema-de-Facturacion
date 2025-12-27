@@ -1,0 +1,186 @@
+<!-- MODAL CLIENTE FULLSCREEN -->
+<div class="modal fade" id="modalCliente" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold" id="modalClienteTitle">
+                    <i class="bi bi-person-plus-fill me-2"></i> Nuevo Cliente
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body p-4">
+                <form id="formCliente">
+                    <input type="hidden" name="id" id="clienteId">
+
+                    <!-- DATOS BÁSICOS -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0 fw-bold"><i class="bi bi-card-heading me-2"></i>Datos Básicos</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Nombre / Razón Social <span
+                                            class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" name="nombre" id="nombre" required>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Tipo de Cliente</label>
+                                    <select class="form-select" name="tipo_cliente" id="tipo_cliente">
+                                        <option value="P">Persona Física</option>
+                                        <option value="E">Empresa</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">CUIT / DNI</label>
+                                    <input type="text" class="form-control" name="cuit" id="cuit"
+                                        placeholder="Sin guiones">
+                                </div>
+                                <div class="col-md-12">
+                                    <label class="form-label">Domicilio</label>
+                                    <input type="text" class="form-control" name="domicilio" id="domicilio">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- DATOS FISCALES Y COMERCIALES -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0 fw-bold"><i class="bi bi-bank me-2"></i>Datos Fiscales y Comerciales</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label">Condición Fiscal</label>
+                                    <select class="form-select" name="condicion_fiscal" id="condicion_fiscal">
+                                        <option value="CF">Consumidor Final</option>
+                                        <option value="RI">Responsable Inscripto</option>
+                                        <option value="MT">Monotributo</option>
+                                        <option value="EX">Exento</option>
+                                        <option value="NC">No Categorizado</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Tipo Factura Preferida</label>
+                                    <select class="form-select" name="tipo_factura_preferida"
+                                        id="tipo_factura_preferida">
+                                        <option value="B">Factura B</option>
+                                        <option value="A">Factura A</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Lista de Precios</label>
+                                    <select class="form-select" name="lista_precio" id="lista_precio">
+                                        <option value="1">Efectivo / Contado</option>
+                                        <option value="2">Cuenta Corriente</option>
+                                        <option value="3">Tarjeta</option>
+                                        <option value="4">Mayorista</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Descuento Fijo (%)</label>
+                                    <input type="number" class="form-control" name="descuento_predeterminado"
+                                        id="descuento_predeterminado" value="0" step="0.01">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- DATOS DE CONTACTO -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0 fw-bold"><i class="bi bi-telephone me-2"></i>Datos de Contacto</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label">Teléfono Principal</label>
+                                    <input type="text" class="form-control" name="telefono" id="telefono">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Email Facturación</label>
+                                    <input type="email" class="form-control" name="email" id="email">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Nombre Contacto</label>
+                                    <input type="text" class="form-control" name="contacto_nombre" id="contacto_nombre">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Teléfono Contacto</label>
+                                    <input type="text" class="form-control" name="contacto_telefono"
+                                        id="contacto_telefono">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Email Contacto</label>
+                                    <input type="email" class="form-control" name="contacto_email" id="contacto_email">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CUENTA CORRIENTE Y CONFIGURACIÓN -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0 fw-bold"><i class="bi bi-gear me-2"></i>Cuenta Corriente y Configuración
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <div class="form-check form-switch p-3 bg-light rounded">
+                                        <input class="form-check-input" type="checkbox" name="tiene_ctacte"
+                                            id="tiene_ctacte">
+                                        <label class="form-check-label fw-bold" for="tiene_ctacte">Habilitar Cuenta
+                                            Corriente</label>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-4 ctacte-field d-none">
+                                    <label class="form-label">Límite de Crédito ($)</label>
+                                    <input type="number" class="form-control" name="limite_credito" id="limite_credito"
+                                        value="0" step="0.01">
+                                </div>
+                                <div class="col-md-4 ctacte-field d-none d-flex align-items-end">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="permitir_superar_limite"
+                                            id="permitir_superar_limite">
+                                        <label class="form-check-label" for="permitir_superar_limite">Permitir superar
+                                            límite</label>
+                                    </div>
+                                </div>
+
+                                <div class="col-12">
+                                    <label class="form-label">Notas Internas</label>
+                                    <textarea class="form-control" name="notas" id="notas" rows="3"></textarea>
+                                </div>
+
+                                <div class="col-12">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="activo" id="activo"
+                                            checked>
+                                        <label class="form-check-label fw-bold" for="activo">Cliente Activo</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </form>
+            </div>
+
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary btn-lg" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> Cancelar
+                </button>
+                <button type="button" class="btn btn-primary btn-lg px-5" id="btnGuardarCliente">
+                    <i class="bi bi-save"></i> Guardar Cliente
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>

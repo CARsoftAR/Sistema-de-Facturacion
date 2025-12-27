@@ -1,0 +1,177 @@
+{% load static %}
+<!-- MODAL PRODUCTO FULLSCREEN -->
+<div class="modal fade" id="modalProducto" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-fullscreen">
+        <div class="modal-content">
+
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold" id="modalProductoTitle">
+                    <i class="bi bi-box-seam me-2"></i> Nuevo Producto
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body p-4">
+                <form id="formProducto" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" name="id" id="productoId">
+
+                    <!-- INFORMACIÓN BÁSICA -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0 fw-bold"><i class="bi bi-info-circle me-2"></i>Información Básica</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <label class="form-label fw-bold">Código <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" name="codigo" id="codigo" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Descripción <span
+                                            class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" name="descripcion" id="descripcion"
+                                        required>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Tipo de Bulto</label>
+                                    <select class="form-select" name="tipo_bulto" id="tipo_bulto">
+                                        <option value="UN">Unidad</option>
+                                        <option value="CJ">Caja</option>
+                                        <option value="PA">Paquete</option>
+                                        <option value="LT">Litros</option>
+                                        <option value="KG">Kilogramos</option>
+                                        <option value="MT">Metros</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Marca</label>
+                                    <select class="form-select" name="marca" id="marca">
+                                        <option value="">Sin marca</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Rubro</label>
+                                    <select class="form-select" name="rubro" id="rubro">
+                                        <option value="">Sin rubro</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Proveedor</label>
+                                    <select class="form-select" name="proveedor" id="proveedor">
+                                        <option value="">Sin proveedor</option>
+                                    </select>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">Descripción Larga</label>
+                                    <textarea class="form-control" name="descripcion_larga" id="descripcion_larga"
+                                        rows="2"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- STOCK -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0 fw-bold"><i class="bi bi-boxes me-2"></i>Control de Stock</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <label class="form-label">Stock Inicial</label>
+                                    <input type="number" class="form-control" name="stock_inicial" id="stock_inicial"
+                                        value="0">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Stock Actual</label>
+                                    <input type="number" class="form-control" name="stock" id="stock" value="0">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Stock Mínimo</label>
+                                    <input type="number" class="form-control" name="stock_minimo" id="stock_minimo"
+                                        value="0">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Stock Máximo</label>
+                                    <input type="number" class="form-control" name="stock_maximo" id="stock_maximo"
+                                        value="0">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PRECIOS -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0 fw-bold"><i class="bi bi-currency-dollar me-2"></i>Precios y Costos</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label">Costo</label>
+                                    <input type="number" step="0.01" class="form-control" name="costo" id="costo"
+                                        value="0">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Precio Efectivo</label>
+                                    <input type="number" step="0.01" class="form-control" name="precio_efectivo"
+                                        id="precio_efectivo" value="0">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Precio Tarjeta</label>
+                                    <input type="number" step="0.01" class="form-control" name="precio_tarjeta"
+                                        id="precio_tarjeta" value="0">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Precio Cuenta Corriente</label>
+                                    <input type="number" step="0.01" class="form-control" name="precio_ctacte"
+                                        id="precio_ctacte" value="0">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Precio Mayorista</label>
+                                    <input type="number" step="0.01" class="form-control" name="precio_lista4"
+                                        id="precio_lista4" value="0">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- IMAGEN -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0 fw-bold"><i class="bi bi-image me-2"></i>Imagen del Producto</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Seleccionar Imagen</label>
+                                    <input type="file" class="form-control" name="imagen" id="imagen" accept="image/*">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Vista Previa</label>
+                                    <div>
+                                        <img id="previewImagen" src="/static/img/no-image.png" class="img-thumbnail"
+                                            style="max-height: 150px; border-radius: 10px;">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </form>
+            </div>
+
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary btn-lg" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> Cancelar
+                </button>
+                <button type="button" class="btn btn-primary btn-lg px-5" id="btnGuardarProducto">
+                    <i class="bi bi-save"></i> Guardar Producto
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>

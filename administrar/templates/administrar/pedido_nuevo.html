@@ -1,0 +1,252 @@
+{% extends "administrar/base.html" %}
+{% load static %}
+{% block title %}Nuevo Pedido{% endblock %}
+{% block content %}
+
+<style>
+    .header-pedido {
+        background: linear-gradient(90deg, #fd7e14, #ff9f45);
+        padding: 18px 30px;
+        color: white;
+        border-radius: 10px;
+        margin-bottom: 15px;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+    }
+
+    .seccion {
+        padding: 18px;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        margin-bottom: 25px;
+    }
+
+    .titulo-seccion {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #fd7e14;
+        margin-bottom: 12px;
+    }
+
+    .tabla-detalle thead {
+        background: #fd7e14;
+        color: white;
+    }
+
+    .btn-agregar {
+        background: #fd7e14;
+        color: white;
+        font-weight: 600;
+    }
+
+    .btn-agregar:hover {
+        background: #ff9f45;
+    }
+
+    /* Total fijo arriba */
+    .total-box {
+        background: #fff8ef;
+        border: 2px solid #ffc48d;
+        padding: 12px 18px;
+        border-radius: 12px;
+        font-weight: bold;
+        font-size: 1.3rem;
+        text-align: right;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    /* Todas las secciones del formulario tendrán el mismo ancho */
+    .contenedor-formulario {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    /* Mantener espacio consistente entre secciones */
+    .seccion {
+        margin-bottom: 25px;
+    }
+
+   
+    /* Panel del resumen del cliente - flotante a la derecha */
+    #cliente_resumen {
+        position: fixed;
+        top: 140px;      /* altura donde empieza */
+        right: 10px;     /* separación del borde derecho */
+        width: 340px;
+        z-index: 20000;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+
+
+    /* En pantallas chicas vuelve al flujo normal */
+    @media (max-width: 1200px) {
+        #cliente_resumen {
+            position: static;
+            width: 100%;
+            margin-top: 10px;
+        }
+    }
+
+
+
+</style>
+
+<div class="header-pedido d-flex justify-content-between align-items-center">
+    <div>
+        <h3 class="m-0"><i class="bi bi-plus-circle"></i> Nuevo Pedido</h3>
+        <small>Crear un pedido completo del cliente para preparar o facturar</small>
+    </div>
+
+    <div class="total-box">
+        Total del pedido: <span id="pedido_total">$0.00</span>
+    </div>
+</div>
+
+
+<div class="container contenedor-formulario">
+
+<!-- =========================================
+     DATOS PRINCIPALES (cliente + fechas + lista precio)
+========================================= -->
+<div class="seccion position-relative">
+    <div class="titulo-seccion"><i class="bi bi-person"></i> Datos principales</div>
+
+    <div class="row g-3 align-items-end">
+
+        <!-- CLIENTE -->
+        <div class="col-md-5">
+            <label class="form-label">Cliente</label>
+            <input type="text" id="pedido_buscar_cliente" class="form-control" placeholder="Buscar cliente por nombre, CUIT...">
+            
+            <input type="hidden" id="pedido_cliente_id">
+
+            <div id="lista_clientes_pedido"
+                class="list-group position-absolute w-50"
+                style="z-index: 1000; display:none;">
+            </div>    
+            
+            <div id="cliente_resumen" class="alert alert-info py-2 d-none mt-2"></div>
+        </div>
+
+        
+        <!-- FECHA PEDIDO -->
+        <div class="col-md-2">
+            <label class="form-label">Fecha pedido</label>
+            <input type="date" id="pedido_fecha" class="form-control" value="{{ hoy }}">
+        </div>
+
+        <!-- FECHA ENTREGA -->
+        <div class="col-md-2">
+            <label class="form-label">Entrega</label>
+            <input type="date" id="pedido_entrega" class="form-control">
+        </div>
+
+        <!-- LISTA PRECIO -->
+        <div class="col-md-3">
+            <label class="form-label">Lista de precios</label>
+            <select id="pedido_lista_precio" class="form-select">
+                <option value="1">Efectivo / Contado</option>
+                <option value="2">Cuenta Corriente</option>
+                <option value="3">Tarjeta</option>
+                <option value="4">Mayorista</option>
+            </select>
+        </div>
+
+    </div>
+</div>
+
+<!-- =========================================
+     DATOS ADICIONALES
+========================================= -->
+<div class="seccion">
+    <div class="titulo-seccion"><i class="bi bi-flag"></i> Datos adicionales</div>
+
+    <div class="row g-3">
+        <div class="col-md-3">
+            <label class="form-label">Prioridad</label>
+            <select id="pedido_prioridad" class="form-select">
+                <option value="normal">Normal</option>
+                <option value="alta">Alta</option>
+                <option value="urgente">Urgente</option>
+            </select>
+        </div>
+
+        <div class="col-md-9">
+            <label class="form-label">Dirección de entrega</label>
+            <input type="text" id="pedido_direccion" class="form-control" placeholder="Opcional">
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label">Notas internas</label>
+            <textarea id="pedido_notas_internas" class="form-control" rows="2"></textarea>
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label">Notas para el cliente</label>
+            <textarea id="pedido_notas_cliente" class="form-control" rows="2"></textarea>
+        </div>
+    </div>
+</div>
+
+<!-- =========================================
+     DETALLE DEL PEDIDO
+========================================= -->
+<div class="seccion">
+    <div class="titulo-seccion"><i class="bi bi-cart"></i> Detalle del pedido</div>
+
+    <div class="row g-3 mb-2">
+        <div class="col-md-6">
+            <label class="form-label">Producto</label>
+            <input type="text" id="pedido_buscar_producto" class="form-control" placeholder="Buscar por código o descripción...">
+            <div id="lista_sugerencias" class="list-group position-absolute w-50" style="z-index: 10;"></div>
+        </div>
+
+        <div class="col-md-2">
+            <label class="form-label">Cantidad</label>
+            <input type="number" id="pedido_cantidad" class="form-control" value="1" min="1">
+        </div>
+
+        <div class="col-md-2">
+            <label class="form-label">Precio</label>
+            <input type="text" id="pedido_precio" class="form-control" readonly>
+        </div>
+
+        <div class="col-md-2 d-grid">
+            <label class="form-label">&nbsp;</label>
+            <button class="btn btn-agregar" id="btnAgregarProducto"><i class="bi bi-plus-circle"></i> Agregar</button>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table tabla-detalle align-middle" id="tablaProductosPedido">
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Producto</th>
+                    <th>Cantidad</th>
+                    <th>Precio</th>
+                    <th>Subtotal</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- =========================================
+     BOTONES FINAL
+========================================= -->
+    <div class="seccion text-end">
+        <button class="btn btn-secondary me-2" onclick="window.history.back()">Cancelar</button>
+        <button class="btn btn-primary" id="btnGuardarPedido">
+            <i class="bi bi-save"></i> Guardar Pedido
+        </button>
+    </div>
+
+</div>
+
+
+<script src="{% static 'js/administrar/pedidos.js' %}"></script>
+{% endblock %}

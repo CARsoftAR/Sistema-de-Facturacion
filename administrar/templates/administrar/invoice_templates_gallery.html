@@ -1,0 +1,216 @@
+{% extends "administrar/base.html" %}
+{% load static %}
+
+{% block head %}
+<style>
+    .gallery-header {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        padding: 30px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+
+    .templates-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+    }
+
+    .template-card {
+        width: 300px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        background: white;
+    }
+
+    .template-thumbnail {
+        height: 180px;
+        background: #f7fafc;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .template-card .info {
+        padding: 15px;
+    }
+
+    .template-card .info h4 {
+        margin: 0 0 5px;
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+
+    .template-card .info p {
+        margin: 0 0 15px;
+        font-size: 0.9rem;
+        color: #666;
+        height: 40px;
+        /* Altura fija para alineación */
+        overflow: hidden;
+    }
+
+    .template-card .actions {
+        display: flex;
+        gap: 10px;
+    }
+
+    .btn-use {
+        flex: 1;
+        background: #667eea;
+        color: white;
+        border: none;
+        padding: 8px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .btn-use:hover {
+        background: #5a67d8;
+    }
+
+    .btn-preview {
+        flex: 1;
+        background: #fff;
+        color: #667eea;
+        border: 1px solid #667eea;
+        padding: 8px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .btn-preview:hover {
+        background: #f7fafc;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container" style="margin-top:20px;">
+    <div class="gallery-header">
+        <h2>Galería de Plantillas de Factura</h2>
+        <p>Selecciona una plantilla predefinida para usarla en tus facturas.</p>
+    </div>
+    <div class="templates-grid">
+        {% for tmpl in templates %}
+        <div class="template-card">
+            <div class="template-thumbnail"
+                style="background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); height: 180px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden;">
+                <!-- Representación visual CSS de la plantilla -->
+                {% if "Moderna" in tmpl.title %}
+                <div
+                    style="width: 80%; height: 80%; background: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1); padding: 10px; border-radius: 5px;">
+                    <div
+                        style="height: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); margin-bottom: 10px; border-radius: 3px;">
+                    </div>
+                    <div style="height: 8px; width: 60%; background: #e2e8f0; margin-bottom: 5px;"></div>
+                    <div style="height: 8px; width: 40%; background: #e2e8f0;"></div>
+                </div>
+                {% elif "Clásica" in tmpl.title %}
+                <div
+                    style="width: 80%; height: 80%; background: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1); padding: 10px; border-radius: 0;">
+                    <div style="height: 2px; background: #2c3e50; margin-bottom: 10px;"></div>
+                    <div style="height: 15px; width: 50%; background: #2c3e50; margin-bottom: 10px;"></div>
+                    <div style="height: 8px; width: 100%; background: #ecf0f1; margin-bottom: 5px;"></div>
+                </div>
+                {% elif "Corporativa" in tmpl.title %}
+                <div
+                    style="width: 80%; height: 80%; background: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1); padding: 10px;">
+                    <div
+                        style="height: 30px; background: #1e3a8a; margin-bottom: 10px; margin: -10px -10px 10px -10px;">
+                    </div>
+                    <div style="height: 8px; width: 70%; background: #e2e8f0; margin-bottom: 5px;"></div>
+                </div>
+                {% elif "Creativa" in tmpl.title %}
+                <div
+                    style="width: 80%; height: 80%; background: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1); padding: 10px; border-radius: 10px;">
+                    <div
+                        style="height: 40px; background: linear-gradient(135deg, #f97316 0%, #84cc16 100%); margin: -10px -10px 10px -10px; border-radius: 10px 10px 0 0;">
+                    </div>
+                    <div style="height: 8px; width: 50%; background: #e2e8f0;"></div>
+                </div>
+                {% elif "Elegante" in tmpl.title %}
+                <div
+                    style="width: 80%; height: 80%; background: #1a1a1a; box-shadow: 0 4px 6px rgba(0,0,0,0.3); padding: 10px; border: 1px solid #d4af37;">
+                    <div style="height: 15px; width: 60%; background: #d4af37; margin-bottom: 10px;"></div>
+                    <div style="height: 1px; width: 100%; background: #d4af37; margin-bottom: 10px;"></div>
+                    <div style="height: 5px; width: 80%; background: #333;"></div>
+                </div>
+                {% else %}
+                <!-- Default / Minimalista -->
+                <div style="width: 80%; height: 80%; background: white; border: 1px solid #e2e8f0; padding: 15px;">
+                    <div style="text-align: right; font-size: 20px; color: #cbd5e0; font-weight: bold;">FACTURA</div>
+                    <div style="height: 8px; width: 40%; background: #edf2f7; margin-top: 20px;"></div>
+                </div>
+                {% endif %}
+            </div>
+            <div class="info">
+                <h4>{{ tmpl.title }}</h4>
+                <p>{{ tmpl.description|default:"Sin descripción" }}</p>
+                <div class="actions">
+                    <button class="btn-use" onclick="activate('{{ tmpl.id }}')">Usar</button>
+                    <button class="btn-preview" onclick="preview('{{ tmpl.id }}')">Vista</button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Preview Modal -->
+<div class="modal fade" id="previewModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Vista Previa</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" style="background:#f5f7fa;">
+                <iframe id="previewIframe" style="width:210mm;height:297mm;border:none;"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function activate(id) {
+        if (confirm('¿Activar esta plantilla?')) {
+            // Construir la URL correctamente. Si es un ID numérico o un string, Django lo manejará.
+            // Usamos '0' como placeholder y luego lo reemplazamos, o construimos la URL manualmente si sabemos la estructura.
+            // La estructura en urls.py es: path('plantilla-factura/activar/<str:template_name>/', ...)
+            // Asumimos que estamos en la app 'administrar' o similar. Lo mejor es usar una URL relativa o construirla dinámicamente.
+
+            const url = `{% url 'invoice_template_activate' 'TEMPLATE_ID' %}`.replace('TEMPLATE_ID', id);
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                }
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Plantilla activada');
+                        location.reload();
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .catch(e => { console.error(e); alert('Error'); });
+        }
+    }
+
+    function preview(id) {
+        var modal = new bootstrap.Modal(document.getElementById('previewModal'));
+        document.getElementById('previewIframe').src = `/invoice/preview/?template_id=${id}`;
+        modal.show();
+    }
+</script>
+{% endblock %}

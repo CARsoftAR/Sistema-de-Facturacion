@@ -1,0 +1,304 @@
+{% extends "administrar/base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid px-4 mt-4">
+
+  <!-- PRINT HEADER (Solo visible al imprimir) -->
+  <div class="d-none d-print-block mb-4">
+    <div class="row align-items-center border-bottom pb-3">
+      <div class="col-8">
+        <h1 class="fw-bold mb-0">CARSOFT</h1>
+        <p class="text-muted mb-0">Informe General de Estado</p>
+      </div>
+      <div class="col-4 text-end">
+        <p class="mb-0 text-muted">Generado el:</p>
+        <h5 class="fw-bold" id="printDate"></h5>
+      </div>
+    </div>
+  </div>
+
+  <!-- Header (Oculto al imprimir) -->
+  <div class="d-flex justify-content-between align-items-center mb-4 d-print-none">
+    <div>
+      <h2 class="text-primary fw-bold mb-0">
+        <i class="bi bi-bar-chart-line"></i> Reportes y Estadísticas
+      </h2>
+      <p class="text-muted mb-0">Análisis detallado de tu negocio</p>
+    </div>
+    <div class="d-flex gap-2">
+      <div class="input-group">
+        <span class="input-group-text bg-white"><i class="bi bi-calendar"></i></span>
+        <input type="date" id="fechaDesde" class="form-control" title="Desde">
+        <input type="date" id="fechaHasta" class="form-control" title="Hasta">
+      </div>
+      <button class="btn btn-primary" onclick="actualizarTodo()">
+        <i class="bi bi-arrow-clockwise"></i> Actualizar
+      </button>
+      <div class="dropdown">
+        <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+          <i class="bi bi-download"></i> Exportar
+        </button>
+        <ul class="dropdown-menu">
+          <li><a class="dropdown-item" href="#" onclick="exportarPDF()">PDF</a></li>
+          <li><a class="dropdown-item" href="#" onclick="exportarExcel()">Excel</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs (Oculto al imprimir) -->
+  <ul class="nav nav-tabs mb-4 d-print-none" id="reportesTabs" role="tablist">
+    <li class="nav-item">
+      <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabVentas" type="button"
+        onclick="loadVentas()">
+        <i class="bi bi-cart"></i> Ventas
+      </button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabCompras" type="button" onclick="loadCompras()">
+        <i class="bi bi-bag"></i> Compras
+      </button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabCaja" type="button" onclick="loadCaja()">
+        <i class="bi bi-wallet2"></i> Caja
+      </button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabStock" type="button" onclick="loadStock()">
+        <i class="bi bi-box-seam"></i> Stock
+      </button>
+    </li>
+  </ul>
+
+  <!-- Tab Content -->
+  <div class="tab-content" id="reportesContent">
+    <!-- VENTAS -->
+    <div class="tab-pane fade show active" id="tabVentas">
+      <!-- KPIs -->
+      <div class="row g-3 mb-4 section-to-print">
+        <div class="col-md-4">
+          <div class="card border-0 shadow-sm border-start border-primary border-4 page-break-avoid">
+            <div class="card-body">
+              <h6 class="text-muted text-uppercase mb-1">Total Ventas</h6>
+              <h3 class="fw-bold text-primary mb-0" id="ventasTotal">$0.00</h3>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card border-0 shadow-sm border-start border-success border-4 page-break-avoid">
+            <div class="card-body">
+              <h6 class="text-muted text-uppercase mb-1">Cantidad de Ventas</h6>
+              <h3 class="fw-bold text-success mb-0" id="ventasCantidad">0</h3>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card border-0 shadow-sm border-start border-info border-4 page-break-avoid">
+            <div class="card-body">
+              <h6 class="text-muted text-uppercase mb-1">Promedio por Venta</h6>
+              <h3 class="fw-bold text-info mb-0" id="ventasPromedio">$0.00</h3>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-4 mb-4 section-to-print">
+        <div class="col-md-8">
+          <div class="card border-0 shadow-sm h-100 page-break-inside-avoid">
+            <div class="card-header bg-white py-3">
+              <h5 class="card-title mb-0">Evolución de Ventas</h5>
+            </div>
+            <div class="card-body">
+              <canvas id="chartVentas"></canvas>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card border-0 shadow-sm h-100 page-break-inside-avoid">
+            <div class="card-header bg-white py-3">
+              <h5 class="card-title mb-0">Métodos de Pago</h5>
+            </div>
+            <div class="card-body">
+              <canvas id="chartMetodosPago"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tables -->
+      <div class="row g-4 mt-2 section-to-print">
+        <!-- Top Productos -->
+        <div class="col-md-6">
+          <div class="card border-0 shadow-sm h-100 page-break-inside-avoid">
+            <div class="card-header bg-white py-3">
+              <h5 class="card-title mb-0"><i class="bi bi-trophy text-warning"></i> Top 5 Productos</h5>
+            </div>
+            <div class="table-responsive">
+              <table class="table table-hover mb-0">
+                <thead>
+                  <tr>
+                    <th>Producto</th>
+                    <th class="text-end">Cantidad</th>
+                    <th class="text-end">Total</th>
+                  </tr>
+                </thead>
+                <tbody id="topProductosBody">
+                  <tr>
+                    <td colspan="3" class="text-center text-muted py-3">
+                      <i class="bi bi-hourglass-split"></i> Cargando...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <!-- Top Clientes -->
+        <div class="col-md-6">
+          <div class="card border-0 shadow-sm h-100 page-break-inside-avoid">
+            <div class="card-header bg-white py-3">
+              <h5 class="card-title mb-0"><i class="bi bi-people text-primary"></i> Top 5 Clientes</h5>
+            </div>
+            <div class="table-responsive">
+              <table class="table table-hover mb-0">
+                <thead>
+                  <tr>
+                    <th>Cliente</th>
+                    <th class="text-end">Compras</th>
+                    <th class="text-end">Total</th>
+                  </tr>
+                </thead>
+                <tbody id="topClientesBody">
+                  <tr>
+                    <td colspan="3" class="text-center text-muted py-3">
+                      <i class="bi bi-hourglass-split"></i> Cargando...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- COMPRAS -->
+    <div class="tab-pane fade" id="tabCompras">
+      <h4 class="text-center text-muted py-5"><i class="bi bi-hourglass-split"></i> Cargando...</h4>
+    </div>
+
+    <!-- CAJA -->
+    <div class="tab-pane fade" id="tabCaja">
+      <h4 class="text-center text-muted py-5"><i class="bi bi-hourglass-split"></i> Cargando...</h4>
+    </div>
+
+    <!-- STOCK -->
+    <div class="tab-pane fade" id="tabStock">
+      <h4 class="text-center text-muted py-5"><i class="bi bi-hourglass-split"></i> Cargando...</h4>
+    </div>
+  </div>
+</div>
+
+<script>
+  const API_URLS = {
+    ventas: "{% url 'api_estadisticas_ventas' %}",
+    compras: "{% url 'api_estadisticas_compras' %}",
+    stock: "{% url 'api_estadisticas_stock' %}",
+    caja: "{% url 'api_estadisticas_caja' %}",
+    exportar: "{% url 'api_reportes_exportar' %}"
+  };
+</script>
+
+<style>
+  @media print {
+
+    /* Ocultar elementos de navegación y UI */
+    .navbar,
+    .btn,
+    .d-print-none,
+    .nav-tabs {
+      display: none !important;
+    }
+
+    /* Resetear márgenes y padding para aprovechar la hoja */
+    body,
+    main,
+    .container,
+    .container-fluid {
+      margin: 0 !important;
+      padding: 0 !important;
+      background-color: white !important;
+      font-size: 12pt;
+    }
+
+    /* Asegurar que las charts se vean bien */
+    canvas {
+      max-width: 100% !important;
+      max-height: 100% !important;
+    }
+
+    /* Evitar cortes feos de página */
+    .card,
+    .table,
+    .row {
+      page-break-inside: avoid;
+    }
+
+    .page-break-avoid {
+      page-break-inside: avoid;
+    }
+
+    /* Mostrar tab content aunque sea fade */
+    .tab-pane.fade {
+      display: block !important;
+      opacity: 1 !important;
+    }
+
+    /* Configurar tamaño A4 */
+    @page {
+      size: A4;
+      margin: 1.5cm;
+    }
+
+    /* Colores para impresión */
+    .text-primary,
+    .text-success,
+    .text-danger,
+    .text-info,
+    .text-warning {
+      color: black !important;
+      /* Opcional: forzar negro si la impresora es B/N */
+      -webkit-print-color-adjust: exact;
+    }
+
+    .bg-light {
+      background-color: #f8f9fa !important;
+      -webkit-print-color-adjust: exact;
+    }
+
+    /* Ajustes específicos para header de reporte */
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+      color: #000;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{% static 'js/administrar/reportes.js' %}?v=5"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // Poner fecha actual en el header de impresión
+    const now = new Date();
+    document.getElementById('printDate').textContent = now.toLocaleDateString() + ' ' + now.toLocaleTimeString();
+  });
+</script>
+{% endblock %}

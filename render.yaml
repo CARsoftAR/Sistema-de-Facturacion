@@ -1,0 +1,24 @@
+databases:
+  - name: sistema_facturacion_db
+    databaseName: sistema_facturacion
+    user: sistema_facturacion_user
+    plan: free
+
+services:
+  - type: web
+    name: sistema_facturacion
+    env: python
+    plan: free
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn sistema_comercial.wsgi:application"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.0
+      - key: DATABASE_URL
+        fromDatabase:
+          name: sistema_facturacion_db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: WEB_CONCURRENCY
+        value: 4

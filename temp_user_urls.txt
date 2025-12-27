@@ -1,0 +1,8 @@
+
+    # Usuarios
+    path("usuarios/", views.usuarios_lista, name="usuarios_lista"),
+    path("api/usuarios/listar/", views.api_usuarios_listar, name="api_usuarios_listar"),
+    path("api/usuarios/<int:id>/", views.api_usuario_detalle, name="api_usuario_detalle"),
+    path("api/usuarios/crear/", views.api_usuario_crear, name="api_usuario_crear"),
+    path("api/usuarios/<int:id>/editar/", views.api_usuario_editar, name="api_usuario_editar"),
+    path("api/usuarios/<int:id>/eliminar/", views.api_usuario_eliminar, name="api_usuario_eliminar"),

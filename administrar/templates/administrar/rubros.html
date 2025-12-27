@@ -1,0 +1,133 @@
+{% extends "administrar/base.html" %}
+{% load static %}
+
+{% block content %}
+
+<div class="container-fluid px-4 mt-4">
+
+  <!-- HEADER -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="text-primary fw-bold mb-0">
+        <i class="bi bi-tags"></i> Gestión de Rubros
+      </h2>
+      <p class="text-muted mb-0">Administra las categorías de tus productos.</p>
+    </div>
+    <button class="btn btn-primary btn-lg shadow-sm" id="btnNuevoRubro">
+      <i class="bi bi-plus-circle-fill"></i> Nuevo Rubro
+    </button>
+  </div>
+
+  <!-- FILTROS -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body bg-light rounded">
+      <div class="row g-3">
+        <div class="col-md-10">
+          <div class="input-group">
+            <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
+            <input type="text" id="filtroBusqueda" class="form-control border-start-0"
+              placeholder="Buscar rubro por nombre...">
+          </div>
+        </div>
+        <div class="col-md-2">
+          <button class="btn btn-outline-secondary w-100" id="btnLimpiarFiltros">
+            Limpiar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLA -->
+  <div class="card border-0 shadow mb-5">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" id="tablaRubros">
+          <thead class="bg-light text-secondary">
+            <tr>
+              <th class="ps-4 py-3">Nombre</th>
+              <th>Descripción</th>
+              <th class="text-end pe-4">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyRubros">
+            <!-- Se llena vía JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- CONTADOR Y PAGINACIÓN -->
+      <div class="d-flex justify-content-between align-items-center p-3 border-top bg-light">
+        <div class="d-flex align-items-center gap-3">
+          <span class="text-muted small" id="contadorRegistros">Mostrando 0 rubros</span>
+          <div class="d-flex align-items-center gap-2">
+            <label class="text-muted small mb-0">Registros por página:</label>
+            <select id="selectorRegistros" class="form-select form-select-sm" style="width: auto;">
+              <option value="10">10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+          </div>
+        </div>
+        <nav aria-label="Paginación">
+          <ul class="pagination pagination-sm mb-0" id="paginacionRubros">
+            <!-- Se llena vía JS -->
+          </ul>
+        </nav>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- MODAL -->
+<div class="modal fade" id="modalRubro" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title fw-bold" id="modalRubroTitle">
+          <i class="bi bi-tags me-2"></i> Nuevo Rubro
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body p-4">
+        <form id="formRubro">
+          {% csrf_token %}
+          <input type="hidden" name="id" id="rubroId">
+
+          <div class="mb-3">
+            <label class="form-label fw-bold">Nombre <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" name="nombre" id="nombre" required
+              placeholder="Ej: Electrónica, Repuestos, etc.">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold">Descripción</label>
+            <textarea class="form-control" name="descripcion" id="descripcion" rows="3"
+              placeholder="Descripción opcional del rubro..."></textarea>
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-footer bg-light">
+        <button type="button" class="btn btn-secondary btn-lg" data-bs-dismiss="modal">
+          <i class="bi bi-x-circle"></i> Cancelar
+        </button>
+        <button type="button" class="btn btn-primary btn-lg px-5" id="btnGuardarRubro">
+          <i class="bi bi-save"></i> Guardar Rubro
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="{% static 'js/administrar/rubros.js' %}?v=4"></script>
+{% endblock %}

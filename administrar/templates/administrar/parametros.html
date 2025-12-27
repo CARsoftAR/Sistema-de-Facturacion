@@ -1,0 +1,336 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Parámetros del Sistema</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+
+  <style>
+    body {
+      background-color: #f4f6f9;
+      font-family: "Segoe UI", sans-serif;
+    }
+
+    .navbar {
+      background: linear-gradient(90deg, #0d6efd, #20c997);
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    }
+
+    .navbar-brand,
+    .nav-link {
+      color: white !important;
+    }
+
+    .page-header {
+      margin-top: 80px;
+      text-align: center;
+    }
+
+    .page-header h2 {
+      font-weight: 700;
+      color: #0d6efd;
+    }
+
+    .card {
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .form-label {
+      font-weight: 500;
+    }
+
+    .section-title {
+      font-weight: 600;
+      color: #0d6efd;
+      margin-top: 25px;
+      border-bottom: 2px solid #0d6efd;
+      padding-bottom: 5px;
+    }
+
+    footer {
+      text-align: center;
+      padding: 20px;
+      color: #6c757d;
+      font-size: 0.9rem;
+      margin-top: 40px;
+    }
+
+    .preview-logo {
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      padding: 10px;
+      background-color: white;
+      width: 160px;
+      height: 160px;
+      object-fit: contain;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar navbar-expand-lg fixed-top">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="#">⚙️ Parámetros del Sistema</a>
+    </div>
+  </nav>
+
+  <!-- ENCABEZADO -->
+  <div class="container page-header">
+    <h2><i class="bi bi-sliders"></i> Configuración General</h2>
+    <p class="text-muted">Definí los parámetros básicos de funcionamiento del sistema</p>
+  </div>
+
+  <!-- CONTENIDO -->
+  <div class="container mt-4">
+    <div class="card p-4">
+
+      {% if messages %}
+      {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+      {% endfor %}
+      {% endif %}
+
+      <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <!-- DATOS DE EMPRESA -->
+        <h5 class="section-title"><i class="bi bi-building"></i> Datos de la Empresa</h5>
+        <div class="row mt-3">
+          <div class="col-md-6">
+            <label class="form-label">Nombre / Razón Social</label>
+            <input type="text" name="nombre" class="form-control" value="{{ empresa.nombre }}"
+              placeholder="Ej: Distribuidora Buenos Aires S.R.L.">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">CUIT</label>
+            <input type="text" name="cuit" class="form-control" value="{{ empresa.cuit }}"
+              placeholder="Ej: 30-12345678-9">
+          </div>
+        </div>
+        <div class="row mt-3">
+          <div class="col-md-6">
+            <label class="form-label">Domicilio Fiscal</label>
+            <input type="text" name="direccion" class="form-control" value="{{ empresa.direccion }}"
+              placeholder="Ej: Av. Corrientes 1234, CABA">
+          </div>
+        </div>
+        <div class="row mt-3">
+          <div class="col-md-6">
+            <label class="form-label">Localidad</label>
+            <select name="localidad" class="form-select">
+              <option value="">Seleccione una localidad</option>
+              <option value="CABA" {% if empresa.localidad == "CABA" %}selected{% endif %}>Ciudad Autónoma de Buenos Aires
+              </option>
+              <option value="La Plata" {% if empresa.localidad == "La Plata" %}selected{% endif %}>La Plata</option>
+              <option value="Mar del Plata" {% if empresa.localidad == "Mar del Plata" %}selected{% endif %}>Mar del Plata
+              </option>
+              <option value="Bahía Blanca" {% if empresa.localidad == "Bahía Blanca" %}selected{% endif %}>Bahía Blanca
+              </option>
+              <option value="Córdoba" {% if empresa.localidad == "Córdoba" %}selected{% endif %}>Córdoba</option>
+              <option value="Rosario" {% if empresa.localidad == "Rosario" %}selected{% endif %}>Rosario</option>
+              <option value="Santa Fe" {% if empresa.localidad == "Santa Fe" %}selected{% endif %}>Santa Fe</option>
+              <option value="Paraná" {% if empresa.localidad == "Paraná" %}selected{% endif %}>Paraná</option>
+              <option value="Mendoza" {% if empresa.localidad == "Mendoza" %}selected{% endif %}>Mendoza</option>
+              <option value="San Juan" {% if empresa.localidad == "San Juan" %}selected{% endif %}>San Juan</option>
+              <option value="Tucumán" {% if empresa.localidad == "Tucumán" %}selected{% endif %}>San Miguel de Tucumán
+              </option>
+              <option value="Salta" {% if empresa.localidad == "Salta" %}selected{% endif %}>Salta</option>
+              <option value="Resistencia" {% if empresa.localidad == "Resistencia" %}selected{% endif %}>Resistencia
+              </option>
+              <option value="Corrientes" {% if empresa.localidad == "Corrientes" %}selected{% endif %}>Corrientes</option>
+              <option value="Posadas" {% if empresa.localidad == "Posadas" %}selected{% endif %}>Posadas</option>
+              <option value="Neuquén" {% if empresa.localidad == "Neuquén" %}selected{% endif %}>Neuquén</option>
+              <option value="Otro" {% if empresa.localidad and empresa.localidad not in "CABA,La Plata,Mar del Plata,Bahía Blanca,Córdoba,Rosario,Santa Fe,Paraná,Mendoza,San Juan,Tucumán,Salta,Resistencia,Corrientes,Posadas,Neuquén" %}selected{% endif %}>Otro</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Provincia</label>
+            <select name="provincia" class="form-select">
+              <option value="">Seleccione una provincia</option>
+              <option value="Buenos Aires" {% if empresa.provincia == "Buenos Aires" %}selected{% endif %}>Buenos Aires
+              </option>
+              <option value="CABA" {% if empresa.provincia == "CABA" %}selected{% endif %}>Ciudad Autónoma de Buenos Aires
+              </option>
+              <option value="Catamarca" {% if empresa.provincia == "Catamarca" %}selected{% endif %}>Catamarca</option>
+              <option value="Chaco" {% if empresa.provincia == "Chaco" %}selected{% endif %}>Chaco</option>
+              <option value="Chubut" {% if empresa.provincia == "Chubut" %}selected{% endif %}>Chubut</option>
+              <option value="Córdoba" {% if empresa.provincia == "Córdoba" %}selected{% endif %}>Córdoba</option>
+              <option value="Corrientes" {% if empresa.provincia == "Corrientes" %}selected{% endif %}>Corrientes</option>
+              <option value="Entre Ríos" {% if empresa.provincia == "Entre Ríos" %}selected{% endif %}>Entre Ríos</option>
+              <option value="Formosa" {% if empresa.provincia == "Formosa" %}selected{% endif %}>Formosa</option>
+              <option value="Jujuy" {% if empresa.provincia == "Jujuy" %}selected{% endif %}>Jujuy</option>
+              <option value="La Pampa" {% if empresa.provincia == "La Pampa" %}selected{% endif %}>La Pampa</option>
+              <option value="La Rioja" {% if empresa.provincia == "La Rioja" %}selected{% endif %}>La Rioja</option>
+              <option value="Mendoza" {% if empresa.provincia == "Mendoza" %}selected{% endif %}>Mendoza</option>
+              <option value="Misiones" {% if empresa.provincia == "Misiones" %}selected{% endif %}>Misiones</option>
+              <option value="Neuquén" {% if empresa.provincia == "Neuquén" %}selected{% endif %}>Neuquén</option>
+              <option value="Río Negro" {% if empresa.provincia == "Río Negro" %}selected{% endif %}>Río Negro</option>
+              <option value="Salta" {% if empresa.provincia == "Salta" %}selected{% endif %}>Salta</option>
+              <option value="San Juan" {% if empresa.provincia == "San Juan" %}selected{% endif %}>San Juan</option>
+              <option value="San Luis" {% if empresa.provincia == "San Luis" %}selected{% endif %}>San Luis</option>
+              <option value="Santa Cruz" {% if empresa.provincia == "Santa Cruz" %}selected{% endif %}>Santa Cruz</option>
+              <option value="Santa Fe" {% if empresa.provincia == "Santa Fe" %}selected{% endif %}>Santa Fe</option>
+              <option value="Santiago del Estero" {% if empresa.provincia == "Santiago del Estero" %}selected{% endif %}>
+                Santiago del Estero</option>
+              <option value="Tierra del Fuego" {% if empresa.provincia == "Tierra del Fuego" %}selected{% endif %}>Tierra
+                del Fuego</option>
+              <option value="Tucumán" {% if empresa.provincia == "Tucumán" %}selected{% endif %}>Tucumán</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Condición Fiscal</label>
+            <select name="condicion_fiscal" class="form-select">
+              <option value="RI" {% if empresa.condicion_fiscal == "RI" %}selected{% endif %}>Responsable Inscripto
+              </option>
+              <option value="MT" {% if empresa.condicion_fiscal == "MT" %}selected{% endif %}>Monotributista</option>
+              <option value="EX" {% if empresa.condicion_fiscal == "EX" %}selected{% endif %}>Exento</option>
+            </select>
+          </div>
+        </div>
+        <div class="row mt-3">
+          <div class="col-md-6">
+            <label class="form-label">Ingresos Brutos</label>
+            <input type="text" name="iibb" class="form-control" value="{{ empresa.iibb|default_if_none:'' }}"
+              placeholder="Ej: 901-291823-1">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Inicio de Actividades</label>
+            <input type="date" name="inicio_actividades" class="form-control"
+              value="{{ empresa.inicio_actividades|date:'Y-m-d'|default_if_none:'' }}">
+          </div>
+        </div>
+
+        <!-- MONEDA -->
+        <h5 class="section-title"><i class="bi bi-currency-exchange"></i> Configuración de Moneda</h5>
+        <div class="row mt-3">
+          <div class="col-md-6">
+            <label class="form-label">Moneda Predeterminada</label>
+            <select name="moneda" class="form-select">
+              <option value="ARS" {% if empresa.moneda_predeterminada == "ARS" %}selected{% endif %}>Peso Argentino (ARS)
+              </option>
+              <option value="USD" {% if empresa.moneda_predeterminada == "USD" %}selected{% endif %}>Dólar Estadounidense
+                (USD)</option>
+              <option value="EUR">Euro (EUR)</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Símbolo</label>
+            <input type="text" class="form-control" placeholder="$" readonly>
+          </div>
+        </div>
+
+        <!-- IVA -->
+        <h5 class="section-title"><i class="bi bi-percent"></i> Configuración de IVA</h5>
+        <div class="row mt-3">
+          <div class="col-md-4">
+            <label class="form-label">IVA General (%)</label>
+            <input type="number" class="form-control" placeholder="21" value="21">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">IVA Reducido (%)</label>
+            <input type="number" class="form-control" placeholder="10.5" value="10.5">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">IVA Exento (%)</label>
+            <input type="number" class="form-control" placeholder="0" value="0">
+          </div>
+        </div>
+
+        <!-- COMPROBANTES -->
+        <h5 class="section-title"><i class="bi bi-receipt"></i> Tipos de Comprobantes</h5>
+        <div class="row mt-3">
+          <div class="col-md-3">
+            <div class="form-check"><input class="form-check-input" type="checkbox" checked> <label
+                class="form-check-label">Factura A</label></div>
+          </div>
+          <div class="col-md-3">
+            <div class="form-check"><input class="form-check-input" type="checkbox" checked> <label
+                class="form-check-label">Factura B</label></div>
+          </div>
+          <div class="col-md-3">
+            <div class="form-check"><input class="form-check-input" type="checkbox"> <label
+                class="form-check-label">Factura C</label></div>
+          </div>
+          <div class="col-md-3">
+            <div class="form-check"><input class="form-check-input" type="checkbox"> <label
+                class="form-check-label">Nota de Crédito</label></div>
+          </div>
+          <div class="col-md-3">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="habilita_remitos" {% if empresa.habilita_remitos %}checked{% endif %}>
+              <label class="form-check-label">Remito</label>
+            </div>
+          </div>
+        </div>
+
+        <!-- FACTURACIÓN -->
+        <h5 class="section-title"><i class="bi bi-printer"></i> Configuración de Facturación</h5>
+        <div class="row mt-3">
+          <div class="col-md-6">
+            <label class="form-label">Modo de Facturación</label>
+            <select name="tipo_facturacion" class="form-select">
+              <option value="AFIP" {% if empresa.tipo_facturacion == "AFIP" %}selected{% endif %}>AFIP - Factura
+                Electrónica</option>
+              <option value="FISCAL" {% if empresa.tipo_facturacion == "FISCAL" %}selected{% endif %}>Impresora Fiscal
+              </option>
+              <option value="MANUAL" {% if empresa.tipo_facturacion == "MANUAL" %}selected{% endif %}>Común (Impresión
+                Manual)</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Punto de Venta (AFIP)</label>
+            <input type="text" name="punto_venta" class="form-control" value="{{ empresa.punto_venta }}"
+              placeholder="Ej: 0001">
+          </div>
+        </div>
+
+        <!-- LOGO -->
+        <h5 class="section-title"><i class="bi bi-image"></i> Logo y Personalización Visual</h5>
+        <div class="row mt-3 align-items-center">
+          <div class="col-md-4 text-center">
+            {% if empresa.logo %}
+            <img id="previewLogo" src="{{ empresa.logo.url }}" class="preview-logo" alt="Logo">
+            {% else %}
+            <img id="previewLogo" src="https://via.placeholder.com/150x150?text=Logo" class="preview-logo" alt="Logo">
+            {% endif %}
+            <input type="file" name="logo" class="form-control mt-2" accept="image/*" onchange="previewImage(event)">
+          </div>
+          <div class="col-md-8">
+            <label class="form-label">Color Principal del Sistema</label>
+            <input type="color" class="form-control form-control-color w-25" value="#0d6efd">
+          </div>
+        </div>
+
+        <div class="text-end mt-4">
+          <button type="submit" class="btn btn-success"><i class="bi bi-save"></i> Guardar Cambios</button>
+          <button type="button" class="btn btn-secondary" onclick="window.location.href='/menu'"><i
+              class="bi bi-x-circle"></i> Cancelar</button>
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+
+  <footer>© 2025 Sistema Comercial Argentina | Parámetros Generales</footer>
+
+  <script>
+    function previewImage(event) {
+      const output = document.getElementById('previewLogo');
+      output.src = URL.createObjectURL(event.target.files[0]);
+    }
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

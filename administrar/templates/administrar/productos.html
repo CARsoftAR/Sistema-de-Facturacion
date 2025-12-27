@@ -1,0 +1,126 @@
+{% extends "administrar/base.html" %}
+{% load static %}
+
+{% block content %}
+
+<div class="container-fluid px-4 mt-4">
+
+    <!-- HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="text-primary fw-bold mb-0">
+                <i class="bi bi-box-seam"></i> Gestión de Productos
+            </h2>
+            <p class="text-muted mb-0">Administra tu inventario, precios y stock de productos.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <div class="btn-group" role="group">
+                <button class="btn btn-outline-secondary" id="btnImprimirProductos" title="Imprimir">
+                    <i class="bi bi-printer"></i> Imprimir
+                </button>
+                <button class="btn btn-outline-success" id="btnExportarExcel" title="Exportar a Excel">
+                    <i class="bi bi-file-earmark-excel"></i> Excel
+                </button>
+                <button class="btn btn-outline-danger" id="btnExportarPDF" title="Exportar a PDF">
+                    <i class="bi bi-file-earmark-pdf"></i> PDF
+                </button>
+            </div>
+            <button class="btn btn-primary btn-lg shadow-sm" id="btnNuevoProducto">
+                <i class="bi bi-plus-circle-fill"></i> Nuevo Producto
+            </button>
+        </div>
+    </div>
+
+    <!-- FILTROS -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body bg-light rounded">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
+                        <input type="text" id="filtroDescripcion" class="form-control border-start-0"
+                            placeholder="Buscar por descripción...">
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <input type="text" id="filtroCodigo" class="form-control" placeholder="Buscar por código...">
+                </div>
+                <div class="col-md-2">
+                    <select id="filtroRubro" class="form-select">
+                        <option value="">Todos los rubros</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select id="filtroMarca" class="form-select">
+                        <option value="">Todas las marcas</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select id="filtroStock" class="form-select">
+                        <option value="todos">Todos</option>
+                        <option value="con_stock">Con Stock</option>
+                        <option value="sin_stock">Sin Stock</option>
+                        <option value="stock_bajo">Stock Bajo</option>
+                    </select>
+                </div>
+                <div class="col-md-1">
+                    <button class="btn btn-outline-secondary w-100" id="btnLimpiarFiltros" title="Limpiar Filtros">
+                        <i class="bi bi-eraser"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TABLA -->
+    <div class="card border-0 shadow mb-5">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="tablaProductos">
+                    <thead class="bg-light text-secondary">
+                        <tr>
+                            <th class="ps-4 py-3">Código</th>
+                            <th>Descripción</th>
+                            <th>Marca</th>
+                            <th>Rubro</th>
+                            <th>Stock</th>
+                            <th>Precio Efectivo</th>
+                            <th class="text-end pe-4">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbodyProductos">
+                        <!-- Se llena vía JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- PAGINACIÓN Y CONTADOR -->
+            <div class="d-flex justify-content-between align-items-center p-3 border-top bg-light">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="text-muted small" id="contadorRegistros">Mostrando 0 productos</span>
+                    <select id="selectorRegistros" class="form-select form-select-sm border-secondary-subtle"
+                        style="width: 70px;">
+                        <option value="5">5</option>
+                        <option value="10" selected>10</option>
+                        <option value="20">20</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                    <span class="text-muted small">por pág.</span>
+                </div>
+                <div id="paginacionProductos"></div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Incluir Modal -->
+{% include "administrar/productos/modal_producto.html" %}
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="{% static 'js/administrar/productos_new.js' %}"></script>
+{% endblock %}

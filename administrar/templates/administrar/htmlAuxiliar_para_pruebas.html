@@ -1,0 +1,25 @@
+<nav class="navbar navbar-expand-lg shadow-sm" 
+     style="background: #f4eaff; border-bottom: 2px solid #e2d0ff;">
+    <div class="container-fluid">
+
+        <span class="navbar-brand text-purple fw-bold" style="color:#7c4dff;">
+            Sistema Comercial
+        </span>
+
+        <div class="ms-auto d-flex align-items-center gap-4">
+
+            <a href="/menu-principal/" class="nav-link" style="color:#7c4dff;">
+                Menú
+            </a>
+
+            <span class="text-secondary">
+                Sesión iniciada como <b>{{ request.user.username }}</b>
+            </span>
+
+            <a href="/logout/" class="btn btn-outline-primary btn-sm" style="border-color:#7c4dff; color:#7c4dff;">
+                Salir
+            </a>
+        </div>
+
+    </div>
+</nav>

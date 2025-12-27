@@ -1,0 +1,107 @@
+{% extends "administrar/base.html" %}
+{% load static %}
+
+{% block content %}
+
+<div class="container-fluid px-4 mt-4">
+
+    <!-- HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="text-success fw-bold mb-0">
+                <i class="bi bi-cart-check-fill"></i> Gestión de Ventas
+            </h2>
+            <p class="text-muted mb-0">Registra y administra las ventas de tu negocio.</p>
+        </div>
+        <button class="btn btn-success btn-lg shadow-sm" id="btnNuevaVenta">
+            <i class="bi bi-plus-circle-fill"></i> Nueva Venta
+        </button>
+    </div>
+
+    <!-- FILTROS -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body bg-light rounded">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
+                        <input type="text" id="filtroBusqueda" class="form-control border-start-0"
+                            placeholder="Buscar por cliente o comprobante...">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <select id="filtroEstado" class="form-select">
+                        <option value="">Todos los estados</option>
+                        <option value="Emitida" selected>Emitida</option>
+                        <option value="Anulada">Anulada</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select id="filtroComprobante" class="form-select">
+                        <option value="">Todos los comprobantes</option>
+                        <option value="A">Factura A</option>
+                        <option value="B">Factura B</option>
+                        <option value="C">Factura C</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-outline-secondary w-100" id="btnLimpiarFiltros">
+                        Limpiar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TABLA -->
+    <div class="card border-0 shadow mb-5">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="tablaVentas">
+                    <thead class="bg-light text-secondary">
+                        <tr>
+                            <th class="ps-4 py-3"># Venta</th>
+                            <th>Fecha</th>
+                            <th>Cliente</th>
+                            <th>Comprobante</th>
+                            <th>Total</th>
+                            <th>Estado</th>
+                            <th class="text-end pe-4">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbodyVentas">
+                        <!-- Se llena vía JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- PAGINACIÓN Y CONTADOR -->
+            <div class="d-flex justify-content-between align-items-center p-3 border-top bg-light">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="text-muted small" id="contadorRegistros">Mostrando 0 ventas</span>
+                    <select id="selectorRegistros" class="form-select form-select-sm border-secondary-subtle"
+                        style="width: 70px;">
+                        <option value="5">5</option>
+                        <option value="10" selected>10</option>
+                        <option value="20">20</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                    <span class="text-muted small">por pág.</span>
+                </div>
+                <div id="paginacionVentas"></div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Incluir Modal -->
+{% include "administrar/ventas/modal_venta.html" %}
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="{% static 'js/administrar/ventas.js' %}?v=3"></script>
+{% endblock %}

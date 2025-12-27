@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar Sesión - Sistema Comercial</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --success-color: #27ae60;
+            --gradient-start: #667eea;
+            --gradient-end: #764ba2;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .login-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            max-width: 900px;
+            width: 100%;
+            display: flex;
+        }
+
+        .login-left {
+            flex: 1;
+            background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
+            padding: 60px 40px;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .login-left h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+
+        .login-left p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin-bottom: 30px;
+        }
+
+        .login-left .icon {
+            font-size: 5rem;
+            margin-bottom: 30px;
+            opacity: 0.9;
+        }
+
+        .login-right {
+            flex: 1;
+            padding: 60px 50px;
+        }
+
+        .login-right h2 {
+            color: var(--primary-color);
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .login-right .subtitle {
+            color: #7f8c8d;
+            margin-bottom: 40px;
+        }
+
+        .form-control {
+            border: 2px solid #ecf0f1;
+            border-radius: 10px;
+            padding: 12px 20px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+        }
+
+        .input-group-text {
+            background: transparent;
+            border: 2px solid #ecf0f1;
+            border-right: none;
+            border-radius: 10px 0 0 10px;
+            color: #7f8c8d;
+        }
+
+        .input-group .form-control {
+            border-left: none;
+            border-radius: 0 10px 10px 0;
+        }
+
+        .btn-login {
+            background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 14px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: white;
+            width: 100%;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .alert {
+            border-radius: 10px;
+            border: none;
+        }
+
+        @media (max-width: 768px) {
+            .login-container {
+                flex-direction: column;
+            }
+
+            .login-left {
+                padding: 40px 30px;
+            }
+
+            .login-right {
+                padding: 40px 30px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="login-container">
+        <div class="login-left">
+            <div class="icon">
+                <i class="bi bi-shop"></i>
+            </div>
+            <h1>Sistema Comercial</h1>
+            <p>Gestión integral para tu negocio</p>
+            <div class="mt-4">
+                <small style="opacity: 0.7;">Ventas • Inventario • Contabilidad • Reportes</small>
+            </div>
+        </div>
+
+        <div class="login-right">
+            <h2>Bienvenido</h2>
+            <p class="subtitle">Ingresa tus credenciales para continuar</p>
+
+            {% if messages %}
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+            {% endif %}
+
+            {% if form and form.errors %}
+            <div class="alert alert-danger" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                Usuario o contraseña incorrectos. Por favor, intenta nuevamente.
+            </div>
+            {% endif %}
+
+            <form method="post" action="{% url 'login' %}">
+                {% csrf_token %}
+
+                <div class="mb-4">
+                    <label for="username" class="form-label">Usuario</label>
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="bi bi-person"></i>
+                        </span>
+                        <input type="text" class="form-control" id="username" name="username"
+                            placeholder="Ingresa tu usuario" required autofocus>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label for="password" class="form-label">Contraseña</label>
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="bi bi-lock"></i>
+                        </span>
+                        <input type="password" class="form-control" id="password" name="password"
+                            placeholder="Ingresa tu contraseña" required>
+                    </div>
+                </div>
+
+                <input type="hidden" name="next" value="{{ next }}">
+
+                <button type="submit" class="btn btn-login">
+                    <i class="bi bi-box-arrow-in-right me-2"></i>
+                    Iniciar Sesión
+                </button>
+            </form>
+
+            <div class="text-center mt-4">
+                <small class="text-muted">
+                    © {% now "Y" %} Sistema Comercial Argentina
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden field for force_logout in main form (optional usage) -->
+    <!-- But mainly we use the Modal form for the conflict case -->
+
+    <!-- Modal de Conflicto de Sesión -->
+    {% if conflict %}
+    <div class="modal fade" id="conflictModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title text-dark">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>Sesión Ya Activa
+                    </h5>
+                </div>
+                <div class="modal-body">
+                    <p>El usuario <strong>{{ username_value }}</strong> ya tiene una sesión activa en:</p>
+                    <ul class="list-unstyled bg-light p-3 rounded">
+                        <li><strong>IP:</strong> {{ conflict_data.ip }}</li>
+                        <li><strong>Inicio:</strong> {{ conflict_data.last_activity|date:"d/m/Y H:i" }}</li>
+                        <li><strong>Dispositivo:</strong> <small class="text-muted">
+                                {% if conflict_data.user_agent %}
+                                {{ conflict_data.user_agent|slice:":50" }}...
+                                {% else %}
+                                Desconocido
+                                {% endif %}
+                            </small></li>
+                    </ul>
+                    <p class="mb-0">¿Desea cerrar la otra sesión e ingresar aquí?</p>
+                </div>
+                <div class="modal-footer">
+                    <a href="{% url 'login' %}" class="btn btn-secondary">Cancelar</a>
+
+                    <!-- Formulario específico para Force Logout -->
+                    <form method="post" action="{% url 'login' %}" class="w-100">
+                        {% csrf_token %}
+                        <input type="hidden" name="username" value="{{ username_value }}">
+                        <input type="hidden" name="force_logout" value="true">
+                        <input type="hidden" name="next" value="{{ next }}">
+
+                        <div class="mb-3">
+                            <label for="modal-password" class="form-label">Confirme su contraseña:</label>
+                            <input type="password" class="form-control" id="modal-password" name="password" required
+                                autofocus>
+                        </div>
+
+                        <button type="submit" class="btn btn-danger w-100">
+                            Cerrar otra sesión e ingresar
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Eliminar alertas duplicadas
+            const alerts = document.querySelectorAll('.alert');
+            const seen = new Set();
+            alerts.forEach(alert => {
+                const text = alert.innerText.trim();
+                if (seen.has(text)) {
+                    alert.style.display = 'none';
+                } else {
+                    seen.add(text);
+                }
+            });
+
+            // Mostrar modal de conflicto si existe
+            {% if conflict %}
+            var myModal = new bootstrap.Modal(document.getElementById('conflictModal'));
+            myModal.show();
+            {% endif %}
+        });
+    </script>
+</body>
+
+</html>

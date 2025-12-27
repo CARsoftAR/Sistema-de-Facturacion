@@ -1,0 +1,178 @@
+{% extends "administrar/base.html" %}
+{% load static %}
+
+{% block content %}
+
+<div class="container-fluid px-4 mt-4">
+
+  <!-- HEADER -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="text-primary fw-bold mb-0">
+        <i class="bi bi-people-fill"></i> Usuarios y Permisos
+      </h2>
+      <p class="text-muted mb-0">Gestiona los usuarios del sistema y sus niveles de acceso</p>
+    </div>
+    <button class="btn btn-primary btn-lg shadow-sm" data-bs-toggle="modal" data-bs-target="#modalUsuario"
+      id="btnNuevoUsuario">
+      <i class="bi bi-person-plus-fill"></i> Nuevo Usuario
+    </button>
+  </div>
+
+  <!-- TABLA DE USUARIOS -->
+  <div class="card border-0 shadow mb-5">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" id="tablaUsuarios">
+          <thead class="bg-light text-secondary">
+            <tr>
+              <th class="ps-4 py-3">Nombre</th>
+              <th>Email</th>
+              <th>Rol</th>
+              <th>Estado</th>
+              <th>Último Acceso</th>
+              <th class="text-end pe-4">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyUsuarios">
+            <!-- Se llena vía JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- MODAL USUARIO -->
+<div class="modal fade" id="modalUsuario" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="modalUsuarioTitle">Nuevo Usuario</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="formUsuario">
+          <input type="hidden" id="usuarioId">
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="username" class="form-label">Nombre de Usuario *</label>
+              <input type="text" class="form-control" id="username" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label for="email" class="form-label">Email</label>
+              <input type="email" class="form-control" id="email">
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="first_name" class="form-label">Nombre</label>
+              <input type="text" class="form-control" id="first_name">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label for="last_name" class="form-label">Apellido</label>
+              <input type="text" class="form-control" id="last_name">
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="password" class="form-label">Contraseña <span id="passwordHint" class="text-muted">(dejar en
+                blanco para no cambiar)</span></label>
+            <input type="password" class="form-control" id="password">
+            <small class="text-muted">Mínimo 8 caracteres</small>
+          </div>
+
+          <div class="mb-3">
+            <label for="rol" class="form-label">Rol</label>
+            <select class="form-select" id="rol">
+              <option value="Administrador">Administrador</option>
+              <option value="Vendedor">Vendedor</option>
+              <option value="Contador">Contador</option>
+            </select>
+          </div>
+
+          <div class="d-flex gap-4 mb-3">
+            <div class="form-check">
+              <input type="checkbox" class="form-check-input" id="is_active" checked>
+              <label class="form-check-label" for="is_active">Usuario Activo</label>
+            </div>
+
+            <div class="form-check">
+              <input type="checkbox" class="form-check-input" id="is_staff">
+              <label class="form-check-label" for="is_staff">Acceso al Admin de Django</label>
+            </div>
+          </div>
+
+          <hr>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold mb-3">Permisos de Acceso</label>
+            <div class="row g-3">
+              <div class="col-md-6">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="permisoVentas">
+                  <label class="form-check-label" for="permisoVentas">Ventas</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="permisoCompras">
+                  <label class="form-check-label" for="permisoCompras">Compras</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="permisoProductos">
+                  <label class="form-check-label" for="permisoProductos">Productos</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="permisoClientes">
+                  <label class="form-check-label" for="permisoClientes">Clientes</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="permisoProveedores">
+                  <label class="form-check-label" for="permisoProveedores">Proveedores</label>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="permisoCaja">
+                  <label class="form-check-label" for="permisoCaja">Caja</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="permisoContabilidad">
+                  <label class="form-check-label" for="permisoContabilidad">Contabilidad</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="permisoConfiguracion">
+                  <label class="form-check-label" for="permisoConfiguracion">Configuración</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="permisoUsuarios">
+                  <label class="form-check-label" for="permisoUsuarios">Usuarios</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="permisoReportes">
+                  <label class="form-check-label" for="permisoReportes">Reportes</label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="btnGuardarUsuario">
+          <i class="bi bi-save"></i> Guardar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="{% static 'js/administrar/usuarios.js' %}?v=1"></script>
+{% endblock %}

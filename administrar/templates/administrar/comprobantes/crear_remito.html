@@ -1,0 +1,53 @@
+{% extends 'administrar/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1 class="h3 mb-4 text-gray-800">Generar Remito</h1>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Remito para Venta #{{ venta.id }}</h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Cliente:</strong> {{ venta.cliente.nombre }}</p>
+                    <p><strong>Fecha Venta:</strong> {{ venta.fecha|date:"d/m/Y H:i" }}</p>
+                </div>
+            </div>
+
+            <form method="post">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="direccion_entrega">Dirección de Entrega:</label>
+                    <input type="text" class="form-control" id="direccion_entrega" name="direccion_entrega"
+                        value="{{ venta.cliente.domicilio }}" required>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Producto</th>
+                                <th>Cantidad</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for detalle in venta.detalles.all %}
+                            <tr>
+                                <td>{{ detalle.producto.descripcion }}</td>
+                                <td>{{ detalle.cantidad }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Generar Remito</button>
+                <a href="{% url 'detalle_venta' venta.id %}" class="btn btn-secondary">Cancelar</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

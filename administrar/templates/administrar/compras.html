@@ -1,0 +1,126 @@
+{% extends "administrar/base.html" %}
+{% load static %}
+
+{% block content %}
+
+<div class="container-fluid px-4 mt-4">
+    <style>
+        .nav-tabs .nav-link {
+            color: #212529 !important;
+            /* Negro/gris muy oscuro para inactivos - máxima visibilidad */
+            font-weight: 600 !important;
+        }
+
+        .nav-tabs .nav-link.active {
+            color: #198754 !important;
+            /* Verde para activo */
+            font-weight: 700 !important;
+            border-bottom: 3px solid #198754 !important;
+        }
+
+        .nav-tabs .nav-link:hover {
+            color: #198754 !important;
+            font-weight: 700 !important;
+        }
+    </style>
+
+    <!-- HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="text-success fw-bold mb-0">
+                <i class="bi bi-receipt"></i> Gestión de Compras
+            </h2>
+            <p class="text-muted mb-0">Administra órdenes de compra y recepciones de mercadería.</p>
+        </div>
+        <button class="btn btn-success btn-lg shadow-sm" id="btnNuevaOC">
+            <i class="bi bi-plus-circle-fill"></i> Nueva Orden
+        </button>
+    </div>
+
+    <!-- TABS -->
+    <ul class="nav nav-tabs mb-4" id="comprasTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active fw-bold" id="ordenes-tab" data-bs-toggle="tab" data-bs-target="#ordenes-pane"
+                type="button" role="tab">
+                <i class="bi bi-list-check"></i> Órdenes de Compra
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold" id="compras-tab" data-bs-toggle="tab" data-bs-target="#compras-pane"
+                type="button" role="tab">
+                <i class="bi bi-bag-check"></i> Compras Recibidas
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="comprasTabsContent">
+
+        <!-- PANEL ÓRDENES -->
+        <div class="tab-pane fade show active" id="ordenes-pane" role="tabpanel">
+            <div class="card border-0 shadow mb-5">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0" id="tablaOrdenes">
+                            <thead class="bg-light text-secondary">
+                                <tr>
+                                    <th class="ps-4 py-3"># OC</th>
+                                    <th>Proveedor</th>
+                                    <th>Fecha</th>
+                                    <th>Estado</th>
+                                    <th>Total Est.</th>
+                                    <th class="text-end pe-4">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbodyOrdenes">
+                                <!-- Se llena vía JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="p-3 border-top bg-light text-muted small" id="msgOrdenes">
+                        Cargando órdenes...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PANEL COMPRAS -->
+        <div class="tab-pane fade" id="compras-pane" role="tabpanel">
+            <div class="card border-0 shadow mb-5">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0" id="tablaCompras">
+                            <thead class="bg-light text-secondary">
+                                <tr>
+                                    <th class="ps-4 py-3"># Compra</th>
+                                    <th>Proveedor</th>
+                                    <th>Fecha</th>
+                                    <th>Origen</th>
+                                    <th>Total</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbodyCompras">
+                                <!-- Se llena vía JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="p-3 border-top bg-light text-muted small" id="msgCompras">
+                        Cargando compras...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- Incluir Modal -->
+{% include "administrar/compras/modal_compra.html" %}
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="{% static 'js/administrar/compras.js' %}?v=10"></script>
+{% endblock %}

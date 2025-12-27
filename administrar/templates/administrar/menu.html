@@ -1,0 +1,334 @@
+{% extends "administrar/base.html" %}
+{% load static %}
+{% load admin_tags %}
+
+{% block content %}
+
+<style>
+    body {
+        background: #f4f6f9 !important;
+    }
+
+    .menu-wrapper {
+        max-width: 1400px;
+        margin: 0 auto;
+        margin-top: 40px;
+        padding-bottom: 60px;
+    }
+
+    .menu-header {
+        margin-bottom: 50px;
+    }
+
+    .menu-header h2 {
+        font-weight: 800;
+        color: #212529;
+        font-size: 2rem;
+        letter-spacing: -0.5px;
+    }
+
+    .menu-header p {
+        color: #6c757d;
+        font-size: 1rem;
+    }
+
+    /* ===== MINIMAL GRID ===== */
+    .menu-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 20px;
+    }
+
+    .card-minimal {
+        background: #ffffff;
+        border-radius: 16px;
+        padding: 30px 20px;
+        color: #212529;
+        min-height: 180px;
+        border: 1px solid rgba(0, 0, 0, 0.04);
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+        transition: all 0.25s ease;
+        text-decoration: none !important;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        justify-content: center;
+        position: relative;
+    }
+
+    .card-minimal:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.08);
+        border-color: white;
+    }
+
+    .icon-wrapper {
+        width: 64px;
+        height: 64px;
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+        margin-bottom: 20px;
+        transition: transform 0.2s;
+    }
+
+    .card-minimal:hover .icon-wrapper {
+        transform: scale(1.1) rotate(5deg);
+    }
+
+    .card-title {
+        font-weight: 700;
+        font-size: 1.1rem;
+        margin-bottom: 8px;
+        color: #343a40;
+    }
+
+    .card-desc {
+        font-size: 0.85rem;
+        color: #868e96;
+        line-height: 1.4;
+        margin: 0;
+    }
+
+    /* ===== ACCENT COLORS (Background + Icon Color) ===== */
+
+    .accent-red .icon-wrapper {
+        background-color: #ffebee;
+        color: #e53935;
+    }
+
+    .accent-blue .icon-wrapper {
+        background-color: #e3f2fd;
+        color: #1e88e5;
+    }
+
+    .accent-green .icon-wrapper {
+        background-color: #e8f5e9;
+        color: #43a047;
+    }
+
+    .accent-yellow .icon-wrapper {
+        background-color: #fffde7;
+        color: #fbc02d;
+    }
+
+    .accent-purple .icon-wrapper {
+        background-color: #f3e5f5;
+        color: #8e24aa;
+    }
+
+    .accent-orange .icon-wrapper {
+        background-color: #fff3e0;
+        color: #fb8c00;
+    }
+
+    .accent-teal .icon-wrapper {
+        background-color: #e0f2f1;
+        color: #00897b;
+    }
+
+    .accent-pink .icon-wrapper {
+        background-color: #fce4ec;
+        color: #d81b60;
+    }
+
+    .accent-cyan .icon-wrapper {
+        background-color: #e0f7fa;
+        color: #00acc1;
+    }
+
+    .accent-indigo .icon-wrapper {
+        background-color: #e8eaf6;
+        color: #3949ab;
+    }
+
+    .accent-lime .icon-wrapper {
+        background-color: #f9fbe7;
+        color: #c0ca33;
+    }
+
+    .accent-gray .icon-wrapper {
+        background-color: #eceff1;
+        color: #546e7a;
+    }
+
+    .accent-deep .icon-wrapper {
+        background-color: #ede7f6;
+        color: #5e35b1;
+    }
+
+    /* Special gradient for template gallery */
+    .accent-gradient .icon-wrapper {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        box-shadow: 0 4px 10px rgba(118, 75, 162, 0.3);
+    }
+</style>
+
+<div class="menu-wrapper">
+
+    <div class="menu-header text-center">
+        <h2>Bienvenido a CarSoft</h2>
+        <p>¿Qué tarea deseas realizar hoy?</p>
+    </div>
+
+    <div class="menu-grid">
+
+        <!-- DASHBOARD -->
+        <a href="/dashboard" class="card-minimal accent-red">
+            <div class="icon-wrapper"><i class="bi bi-speedometer2"></i></div>
+            <div class="card-title">Dashboard</div>
+            <p class="card-desc">Métricas clave</p>
+        </a>
+
+        <!-- ESTADO -->
+        {% if user|has_perm:'configuracion' %}
+        <a href="/estado" class="card-minimal accent-blue">
+            <div class="icon-wrapper"><i class="bi bi-hdd-network"></i></div>
+            <div class="card-title">Estado</div>
+            <p class="card-desc">Monitor de sistema</p>
+        </a>
+        {% endif %}
+
+        <!-- VENTAS -->
+        {% if user|has_perm:'ventas' %}
+        <a href="/ventas" class="card-minimal accent-green">
+            <div class="icon-wrapper"><i class="bi bi-cart-check"></i></div>
+            <div class="card-title">Ventas</div>
+            <p class="card-desc">Facturación y POS</p>
+        </a>
+        {% endif %}
+
+        <!-- COMPRAS -->
+        {% if user|has_perm:'compras' %}
+        <a href="/compras" class="card-minimal accent-yellow">
+            <div class="icon-wrapper"><i class="bi bi-bag-plus"></i></div>
+            <div class="card-title">Compras</div>
+            <p class="card-desc">Gastos y stock</p>
+        </a>
+        {% endif %}
+
+        <!-- PRODUCTOS -->
+        {% if user|has_perm:'productos' %}
+        <a href="/productos" class="card-minimal accent-purple">
+            <div class="icon-wrapper"><i class="bi bi-box-seam"></i></div>
+            <div class="card-title">Productos</div>
+            <p class="card-desc">Catálogo y precios</p>
+        </a>
+        {% endif %}
+
+        <!-- PEDIDOS -->
+        {% if user|has_perm:'ventas' %}
+        <a href="/pedidos" class="card-minimal accent-orange">
+            <div class="icon-wrapper"><i class="bi bi-clipboard-data"></i></div>
+            <div class="card-title">Pedidos</div>
+            <p class="card-desc">Seguimiento</p>
+        </a>
+        {% endif %}
+
+        <!-- PRESUPUESTOS -->
+        {% if user|has_perm:'ventas' %}
+        <a href="/presupuestos" class="card-minimal accent-blue">
+            <div class="icon-wrapper"><i class="bi bi-file-earmark-text"></i></div>
+            <div class="card-title">Presupuestos</div>
+            <p class="card-desc">Cotizaciones</p>
+        </a>
+        {% endif %}
+
+        <!-- CLIENTES -->
+        {% if user|has_perm:'clientes' %}
+        <a href="/clientes" class="card-minimal accent-teal">
+            <div class="icon-wrapper"><i class="bi bi-people"></i></div>
+            <div class="card-title">Clientes</div>
+            <p class="card-desc">Base de datos</p>
+        </a>
+        {% endif %}
+
+        <!-- PROVEEDORES -->
+        {% if user|has_perm:'proveedores' %}
+        <a href="/proveedores" class="card-minimal accent-pink">
+            <div class="icon-wrapper"><i class="bi bi-truck"></i></div>
+            <div class="card-title">Proveedores</div>
+            <p class="card-desc">Gestión de compras</p>
+        </a>
+        {% endif %}
+
+        <!-- REPORTES -->
+        {% if user|has_perm:'reportes' %}
+        <a href="/reportes" class="card-minimal accent-cyan">
+            <div class="icon-wrapper"><i class="bi bi-graph-up-arrow"></i></div>
+            <div class="card-title">Reportes</div>
+            <p class="card-desc">Estadísticas</p>
+        </a>
+        {% endif %}
+
+        <!-- CONFIGURACION -->
+        {% if user|has_perm:'configuracion' %}
+        <a href="/parametros" class="card-minimal accent-indigo">
+            <div class="icon-wrapper"><i class="bi bi-gear"></i></div>
+            <div class="card-title">Configuración</div>
+            <p class="card-desc">Ajustes generales</p>
+        </a>
+        {% endif %}
+
+        <!-- USUARIOS -->
+        {% if user|has_perm:'usuarios' %}
+        <a href="/usuarios" class="card-minimal accent-lime">
+            <div class="icon-wrapper"><i class="bi bi-person-badge"></i></div>
+            <div class="card-title">Usuarios</div>
+            <p class="card-desc">Control de acceso</p>
+        </a>
+        {% endif %}
+
+        <!-- SEGURIDAD -->
+        {% if user|has_perm:'usuarios' %}
+        <a href="/seguridad" class="card-minimal accent-gray">
+            <div class="icon-wrapper"><i class="bi bi-shield-lock"></i></div>
+            <div class="card-title">Seguridad</div>
+            <p class="card-desc">Auditoría</p>
+        </a>
+        {% endif %}
+
+        <!-- BANCOS -->
+        {% if user|has_perm:'contabilidad' %}
+        <a href="/bancos" class="card-minimal accent-indigo">
+            <div class="icon-wrapper"><i class="bi bi-bank"></i></div>
+            <div class="card-title">Bancos</div>
+            <p class="card-desc">Cuentas y Conciliación</p>
+        </a>
+        {% endif %}
+
+        <!-- CAJA -->
+        {% if user|has_perm:'caja' %}
+        <a href="/caja" class="card-minimal accent-orange">
+            <div class="icon-wrapper"><i class="bi bi-wallet2"></i></div>
+            <div class="card-title">Caja</div>
+            <p class="card-desc">Movimientos</p>
+        </a>
+        {% endif %}
+
+        <!-- GALERÍA DE PLANTILLAS -->
+        <!-- {% if user|has_perm:'configuracion' %}
+        <a href="/plantilla-factura/" class="card-minimal accent-gradient">
+            <div class="icon-wrapper"><i class="bi bi-palette"></i></div>
+            <div class="card-title">Plantillas</div>
+            <p class="card-desc">Diseño de facturas</p>
+        </a>
+        {% endif %} -->
+
+        <!-- PARAMETROS -->
+        {% if user|has_perm:'configuracion' %}
+        <a href="/ayuda" class="card-minimal accent-deep">
+            <div class="icon-wrapper"><i class="bi bi-question-circle"></i></div>
+            <div class="card-title">Ayuda</div>
+            <p class="card-desc">Soporte y manual</p>
+        </a>
+        {% endif %}
+
+    </div>
+</div>
+
+{% endblock %}

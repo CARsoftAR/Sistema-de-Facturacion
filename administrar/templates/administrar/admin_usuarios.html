@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestión de Usuarios - Panel de Administración</title>
+
+  <!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+  <style>
+    body {
+      background-color: #f8f9fa;
+      font-family: "Segoe UI", sans-serif;
+    }
+
+    .navbar {
+      background: linear-gradient(90deg, #6f42c1, #6610f2);
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    }
+
+    .navbar-brand,
+    .nav-link {
+      color: white !important;
+    }
+
+    .nav-link:hover {
+      color: #ffc107 !important;
+    }
+
+    .page-header {
+      margin-top: 80px;
+      text-align: center;
+    }
+
+    .page-header h2 {
+      font-weight: 700;
+      color: #6f42c1;
+    }
+
+    .card {
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .table thead {
+      background: #6f42c1;
+      color: white;
+    }
+
+    .btn-primary,
+    .btn-success {
+      border: none;
+      font-weight: 600;
+    }
+
+    .badge-activo {
+      background-color: #198754;
+    }
+
+    .badge-inactivo {
+      background-color: #6c757d;
+    }
+
+    footer {
+      text-align: center;
+      padding: 20px;
+      color: #6c757d;
+      font-size: 0.9rem;
+      margin-top: 40px;
+    }
+
+    .btn-add {
+      background: linear-gradient(90deg, #6f42c1, #6610f2);
+      color: white;
+      font-weight: 600;
+    }
+
+    .btn-add:hover {
+      background: linear-gradient(90deg, #6610f2, #6f42c1);
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar navbar-expand-lg fixed-top">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="#">⚙️ Panel de Administración</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item"><a class="nav-link" href="/panel">Inicio</a></li>
+          <li class="nav-item"><a class="nav-link" href="/configuracion">Configuración</a></li>
+          <li class="nav-item"><a class="nav-link" href="/usuarios">Usuarios</a></li>
+          <li class="nav-item"><a class="nav-link" href="#">Cerrar Sesión</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ENCABEZADO -->
+  <div class="container page-header">
+    <h2><i class="bi bi-person-badge"></i> Gestión de Usuarios</h2>
+    <p class="text-muted">Creá, editá y administrá los usuarios del sistema</p>
+  </div>
+
+  <!-- CONTENIDO -->
+  <div class="container mt-4">
+    <div class="card p-4">
+
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="fw-bold text-primary"><i class="bi bi-people-fill"></i> Lista de Usuarios</h5>
+        <button class="btn btn-add" data-bs-toggle="modal" data-bs-target="#modalUsuario">
+          <i class="bi bi-plus-circle"></i> Nuevo Usuario
+        </button>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Email</th>
+              <th>Rol</th>
+              <th>Estado</th>
+              <th>Último acceso</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for u in users %}
+            <tr>
+              <td>{{ u.first_name }} {{ u.last_name }}</td>
+              <td>{{ u.email }}</td>
+              <td>
+                {% if u.is_superuser %}
+                <span class="badge bg-danger">Superadmin</span>
+                {% else %}
+                <span class="badge bg-primary">Usuario</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if u.is_active %}
+                <span class="badge badge-activo">Activo</span>
+                {% else %}
+                <span class="badge badge-inactivo">Inactivo</span>
+                {% endif %}
+              </td>
+              <td>{{ u.last_login|date:"d/m/Y - H:i" }}</td>
+              <td>
+                <button class="btn btn-sm btn-warning" onclick="editarUsuario({{ u.id }})" title="Editar"><i
+                    class="bi bi-pencil-square"></i></button>
+                <button class="btn btn-sm btn-danger" onclick="eliminarUsuario({{ u.id }}, '{{ u.first_name }}')"
+                  title="Eliminar"><i class="bi bi-trash"></i></button>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="6" class="text-center">No hay usuarios registrados.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL NUEVO/EDITAR USUARIO -->
+  <div class="modal fade" id="modalUsuario" tabindex="-1" aria-labelledby="modalUsuarioLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title" id="modalUsuarioLabel"><i class="bi bi-person-plus"></i> Nuevo Usuario</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="formUsuario">
+            <input type="hidden" id="userId">
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label class="form-label">Nombre Completo</label>
+                <input type="text" class="form-control" id="inputNombre" placeholder="Ej: Juan Pérez">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Email (Usuario)</label>
+                <input type="email" class="form-control" id="inputEmail" placeholder="Ej: usuario@empresa.com">
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label class="form-label">Contraseña</label>
+                <input type="password" class="form-control" id="inputPassword" placeholder="********">
+                <small class="text-muted" id="passwordHelp">Dejar en blanco para no cambiar</small>
+              </div>
+              <!-- Rol is purely visual or can be used to preset checkboxes in future. For now, manual checkboxes -->
+            </div>
+
+            <div class="row mb-3">
+              <div class="col-md-12">
+                <label class="form-label">Permisos</label>
+                <div class="row">
+                  <div class="col-md-4">
+                    <div class="form-check"><input class="form-check-input" type="checkbox" id="permVentas"> <label
+                        class="form-check-label" for="permVentas">Ventas</label></div>
+                    <div class="form-check"><input class="form-check-input" type="checkbox" id="permCompras"> <label
+                        class="form-check-label" for="permCompras">Compras</label></div>
+                    <div class="form-check"><input class="form-check-input" type="checkbox" id="permCaja"> <label
+                        class="form-check-label" for="permCaja">Caja</label></div>
+                  </div>
+                  <div class="col-md-4">
+                    <div class="form-check"><input class="form-check-input" type="checkbox" id="permClientes"> <label
+                        class="form-check-label" for="permClientes">Clientes</label></div>
+                    <div class="form-check"><input class="form-check-input" type="checkbox" id="permProveedores"> <label
+                        class="form-check-label" for="permProveedores">Proveedores</label></div>
+                    <div class="form-check"><input class="form-check-input" type="checkbox" id="permProductos"> <label
+                        class="form-check-label" for="permProductos">Productos</label></div>
+                  </div>
+                  <div class="col-md-4">
+                    <div class="form-check"><input class="form-check-input" type="checkbox" id="permContabilidad">
+                      <label class="form-check-label" for="permContabilidad">Contabilidad</label>
+                    </div>
+                    <div class="form-check"><input class="form-check-input" type="checkbox" id="permReportes"> <label
+                        class="form-check-label" for="permReportes">Reportes</label></div>
+                    <div class="form-check"><input class="form-check-input" type="checkbox" id="permConfiguracion">
+                      <label class="form-check-label" for="permConfiguracion">Configuración</label>
+                    </div>
+                    <div class="form-check"><input class="form-check-input" type="checkbox" id="permUsuarios"> <label
+                        class="form-check-label" for="permUsuarios">Usuarios</label></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" id="checkActivo" checked>
+              <label class="form-check-label">Usuario activo</label>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button class="btn btn-primary"><i class="bi bi-save"></i> Guardar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    © 2025 Sistema Comercial Argentina | Gestión de Usuarios
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <script>
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+
+    function limpiarModal() {
+      document.getElementById('userId').value = '';
+      document.getElementById('inputNombre').value = '';
+      document.getElementById('inputEmail').value = '';
+      document.getElementById('inputPassword').value = '';
+      document.getElementById('passwordHelp').innerText = 'Dejar en blanco para no cambiar';
+
+      // Uncheck all
+      document.querySelectorAll('.form-check-input').forEach(el => el.checked = false);
+      // Default checks
+      document.getElementById('checkActivo').checked = true;
+
+      document.getElementById('modalUsuarioLabel').innerHTML = '<i class="bi bi-person-plus"></i> Nuevo Usuario';
+    }
+
+    // Al abrir el modal, si es nuevo, limpiar
+    const modalUsuario = document.getElementById('modalUsuario');
+    modalUsuario.addEventListener('show.bs.modal', event => {
+      if (event.relatedTarget) { // Si el botón que lo abrió es el de "Nuevo"
+        const button = event.relatedTarget;
+        if (button.classList.contains('btn-add')) {
+          limpiarModal();
+        }
+      }
+    });
+
+    function guardarUsuario() {
+      const id = document.getElementById('userId').value;
+      const nombre = document.getElementById('inputNombre').value;
+      const email = document.getElementById('inputEmail').value;
+      const password = document.getElementById('inputPassword').value;
+
+      if (!email || !nombre) {
+        Swal.fire('Error', 'Nombre y Email son obligatorios', 'error');
+        return;
+      }
+
+      const data = {
+        id: id,
+        first_name: nombre,
+        email: email,
+        password: password,
+        acceso_ventas: document.getElementById('permVentas').checked,
+        acceso_compras: document.getElementById('permCompras').checked,
+        acceso_productos: document.getElementById('permProductos').checked,
+        acceso_clientes: document.getElementById('permClientes').checked,
+        acceso_proveedores: document.getElementById('permProveedores').checked,
+        acceso_caja: document.getElementById('permCaja').checked,
+        acceso_contabilidad: document.getElementById('permContabilidad').checked,
+        acceso_configuracion: document.getElementById('permConfiguracion').checked,
+        acceso_usuarios: document.getElementById('permUsuarios').checked,
+        acceso_reportes: document.getElementById('permReportes').checked
+      };
+
+      const url = id ? '/api/usuarios/editar/' : '/api/usuarios/crear/';
+
+      fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify(data)
+      })
+        .then(response => response.json())
+        .then(data => {
+          if (data.ok) {
+            Swal.fire('Éxito', 'Usuario guardado correctamente', 'success').then(() => {
+              location.reload();
+            });
+          } else {
+            Swal.fire('Error', data.error, 'error');
+          }
+        });
+    }
+
+    function editarUsuario(id) {
+      fetch('/api/usuarios/' + id + '/')
+        .then(response => response.json())
+        .then(resp => {
+          if (resp.ok) {
+            const data = resp.data;
+            document.getElementById('userId').value = data.id;
+            document.getElementById('inputNombre').value = data.first_name;
+            document.getElementById('inputEmail').value = data.email;
+            document.getElementById('inputPassword').value = '';
+            document.getElementById('passwordHelp').innerText = 'Dejar en blanco para mantener la actual';
+
+            document.getElementById('permVentas').checked = data.acceso_ventas;
+            document.getElementById('permCompras').checked = data.acceso_compras;
+            document.getElementById('permProductos').checked = data.acceso_productos;
+            document.getElementById('permClientes').checked = data.acceso_clientes;
+            document.getElementById('permProveedores').checked = data.acceso_proveedores;
+            document.getElementById('permCaja').checked = data.acceso_caja;
+            document.getElementById('permContabilidad').checked = data.acceso_contabilidad;
+            document.getElementById('permConfiguracion').checked = data.acceso_configuracion;
+            document.getElementById('permUsuarios').checked = data.acceso_usuarios;
+            document.getElementById('permReportes').checked = data.acceso_reportes;
+
+            document.getElementById('modalUsuarioLabel').innerHTML = '<i class="bi bi-person-gear"></i> Editar Usuario';
+
+            const modalEl = document.getElementById('modalUsuario');
+            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            modal.show();
+          } else {
+            Swal.fire('Error', 'No se pudo cargar el usuario', 'error');
+          }
+        });
+    }
+
+    function eliminarUsuario(id, nombre) {
+      Swal.fire({
+        title: '¿Eliminar usuario?',
+        text: `Se eliminará a ${nombre}. Esta acción no se puede deshacer.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          fetch('/api/usuarios/' + id + '/eliminar/', {
+            method: 'POST',
+            headers: {
+              'X-CSRFToken': getCookie('csrftoken')
+            }
+          })
+            .then(response => response.json())
+            .then(data => {
+              if (data.ok) {
+                Swal.fire('Eliminado', 'Usuario eliminado correctamente', 'success').then(() => {
+                  location.reload();
+                });
+              } else {
+                Swal.fire('Error', data.error, 'error');
+              }
+            });
+        }
+      });
+    }
+
+    // Bind Save Button event if not using onclick in HTML
+    // But I used onclick="guardarUsuario()" in the modal footer HTML (previous step verify)
+    // Wait, in previous step I see: <button class="btn btn-primary"><i class="bi bi-save"></i> Guardar</button>
+    // I did NOT add onclick in step 399/398 replacement content!
+    // I need to fix the Save button onclick as well.
+    // I will use JS to bind it to be safe, or assume I need to update that line too.
+
+    // Binding via JS for robustness in case HTML update missed it
+    document.addEventListener('DOMContentLoaded', function () {
+      const saveBtn = document.querySelector('#modalUsuario .modal-footer .btn-primary');
+      if (saveBtn) {
+        saveBtn.onclick = guardarUsuario;
+      }
+    });
+
+  </script>
+
+</html>

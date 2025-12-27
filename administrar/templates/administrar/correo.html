@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Configuración de Correo y Envío de Facturas</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+
+  <style>
+    body { background-color: #f8f9fa; font-family: "Segoe UI", sans-serif; }
+    .navbar { background: linear-gradient(90deg, #0d6efd, #20c997); box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+    .navbar-brand, .nav-link { color: white !important; }
+    .page-header { margin-top: 80px; text-align: center; }
+    .page-header h2 { color: #0d6efd; font-weight: 700; }
+    .card { border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+    .form-label { font-weight: 500; }
+    .section-title { color: #0d6efd; font-weight: 600; margin-top: 25px; border-bottom: 2px solid #0d6efd; padding-bottom: 5px; }
+    footer { text-align: center; padding: 20px; color: #6c757d; font-size: 0.9rem; margin-top: 40px; }
+  </style>
+</head>
+<body>
+
+  <nav class="navbar navbar-expand-lg fixed-top">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="#">📧 Configuración de Correo</a>
+    </div>
+  </nav>
+
+  <div class="container page-header">
+    <h2><i class="bi bi-envelope-fill"></i> Correo y Envío de Facturas</h2>
+    <p class="text-muted">Configurá el envío automático de comprobantes por email</p>
+  </div>
+
+  <div class="container mt-4">
+    <div class="card p-4">
+
+      <!-- SMTP -->
+      <h5 class="section-title"><i class="bi bi-server"></i> Configuración del Servidor SMTP</h5>
+      <div class="row mt-3">
+        <div class="col-md-6">
+          <label class="form-label">Servidor SMTP</label>
+          <input type="text" class="form-control" placeholder="smtp.gmail.com">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Puerto</label>
+          <input type="text" class="form-control" placeholder="587">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Usar TLS/SSL</label>
+          <select class="form-select">
+            <option>TLS</option>
+            <option>SSL</option>
+            <option>Ninguno</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row mt-3">
+        <div class="col-md-6">
+          <label class="form-label">Correo Remitente</label>
+          <input type="email" class="form-control" placeholder="facturacion@empresa.com">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Contraseña</label>
+          <input type="password" class="form-control" placeholder="••••••••••••">
+        </div>
+      </div>
+
+      <!-- PRUEBA DE ENVÍO -->
+      <div class="row mt-3">
+        <div class="col-md-8">
+          <label class="form-label">Correo de prueba</label>
+          <input type="email" class="form-control" placeholder="cliente@ejemplo.com">
+        </div>
+        <div class="col-md-4 d-flex align-items-end">
+          <button class="btn btn-success w-100"><i class="bi bi-send"></i> Enviar correo de prueba</button>
+        </div>
+      </div>
+
+      <!-- PLANTILLA -->
+      <h5 class="section-title"><i class="bi bi-file-earmark-text"></i> Plantilla de Envío de Factura</h5>
+      <div class="row mt-3">
+        <div class="col-md-12">
+          <label class="form-label">Asunto del correo</label>
+          <input type="text" class="form-control" value="Factura Electrónica N° {{numero_factura}}">
+        </div>
+        <div class="col-md-12 mt-3">
+          <label class="form-label">Cuerpo del mensaje</label>
+          <textarea class="form-control" rows="5">Estimado {{cliente}},&#10;&#10;Adjuntamos la factura N° {{numero_factura}} correspondiente a su compra.&#10;&#10;Muchas gracias.&#10;&#10;Atentamente,&#10;{{empresa}}</textarea>
+        </div>
+      </div>
+
+      <div class="text-end mt-4">
+        <button class="btn btn-primary"><i class="bi bi-save"></i> Guardar configuración</button>
+      </div>
+
+    </div>
+  </div>
+
+  <footer>© 2025 Sistema Comercial Argentina | Módulo de Correo</footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

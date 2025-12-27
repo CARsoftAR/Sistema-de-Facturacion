@@ -1,0 +1,214 @@
+{% extends "administrar/base.html" %}
+{% load static %}
+
+{% block content %}
+
+<div class="container-fluid px-4 mt-4">
+
+    <!-- HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="text-primary fw-bold mb-0">
+                <i class="bi bi-diagram-3"></i> Plan de Cuentas
+            </h2>
+            <p class="text-muted mb-0">Gestión del árbol de cuentas contables</p>
+        </div>
+        <div>
+            <button class="btn btn-primary" id="btnNuevaCuenta">
+                <i class="bi bi-plus-lg"></i> Nueva Cuenta
+            </button>
+        </div>
+    </div>
+
+    <!-- FILTROS Y BÚSQUEDA -->
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">
+                        <i class="bi bi-search"></i> Buscar
+                    </label>
+                    <input type="text" class="form-control" id="filtroTexto"
+                        placeholder="Buscar por código o nombre...">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-bold">
+                        <i class="bi bi-funnel"></i> Tipo de Cuenta
+                    </label>
+                    <select class="form-select" id="filtroTipo">
+                        <option value="">Todos los tipos</option>
+                        <option value="ACTIVO">Activo</option>
+                        <option value="PASIVO">Pasivo</option>
+                        <option value="PN">Patrimonio Neto</option>
+                        <option value="R_POS">Resultado Positivo</option>
+                        <option value="R_NEG">Resultado Negativo</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-bold">
+                        <i class="bi bi-filter"></i> Estado
+                    </label>
+                    <select class="form-select" id="filtroImputable">
+                        <option value="">Todas</option>
+                        <option value="true">Solo Imputables</option>
+                        <option value="false">Solo Rubros</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-bold d-block">&nbsp;</label>
+                    <button class="btn btn-outline-secondary w-100" id="btnLimpiarFiltros">
+                        <i class="bi bi-x-circle"></i> Limpiar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+
+
+
+            <!-- ÁRBOL DE CUENTAS -->
+            <div id="arbolCuentas">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <p class="mt-2 text-muted">Cargando plan de cuentas...</p>
+                </div>
+            </div>
+
+            <!-- INFO DE RESULTADOS Y PAGINACIÓN -->
+            <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
+                <div>
+                    <span class="text-muted">
+                        Mostrando <strong id="rangoInicio">0</strong>-<strong id="rangoFin">0</strong> de <strong
+                            id="cuentasTotales">0</strong> cuentas
+                    </span>
+                    <select class="form-select form-select-sm d-inline-block ms-2" id="itemsPorPagina"
+                        style="width: auto;">
+                        <option value="5">5</option>
+                        <option value="10" selected>10</option>
+                        <option value="15">15</option>
+                        <option value="20">20</option>
+                    </select>
+                    <span class="text-muted ms-1">por pág.</span>
+                </div>
+                <div>
+                    <nav aria-label="Paginación">
+                        <ul class="pagination pagination-sm mb-0" id="paginacion">
+                            <!-- Se llena dinámicamente -->
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+<!-- MODAL NUEVA/EDITAR CUENTA -->
+<div class="modal fade" id="modalCuenta" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalCuentaTitle">Nueva Cuenta</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formCuenta">
+                    <input type="hidden" id="cuentaId">
+
+                    <div class="mb-3">
+                        <label class="form-label">Cuenta Padre</label>
+                        <select class="form-select" id="padreId">
+                            <option value="">-- Ninguna (Cuenta Raíz) --</option>
+                            <!-- Se llena dinámicamente -->
+                        </select>
+                    </div>
+
+                    <div class="row g-2">
+                        <div class="col-md-4">
+                            <label class="form-label">Código</label>
+                            <input type="text" class="form-control" id="codigo" required placeholder="Ej: 1.1.01">
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label">Nombre</label>
+                            <input type="text" class="form-control" id="nombre" required placeholder="Ej: Caja">
+                        </div>
+                    </div>
+
+                    <div class="mb-3 mt-3">
+                        <label class="form-label">Tipo de Cuenta</label>
+                        <select class="form-select" id="tipo" required>
+                            <option value="ACTIVO">Activo</option>
+                            <option value="PASIVO">Pasivo</option>
+                            <option value="PN">Patrimonio Neto</option>
+                            <option value="R_POS">Resultado Positivo</option>
+                            <option value="R_NEG">Resultado Negativo</option>
+                        </select>
+                    </div>
+
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="imputable" checked>
+                        <label class="form-check-label" for="imputable">Es Imputable (recibe asientos)</label>
+                    </div>
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnGuardarCuenta">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .cuenta-item {
+        padding: 8px 12px;
+        border-bottom: 1px solid #eee;
+        transition: background-color 0.2s;
+    }
+
+    .cuenta-item:hover {
+        background-color: #f8f9fa;
+    }
+
+    .cuenta-nivel-1 {
+        font-weight: bold;
+        font-size: 1.1em;
+        background-color: #f0f4f8;
+    }
+
+    .cuenta-nivel-2 {
+        font-weight: 600;
+        padding-left: 30px;
+    }
+
+    .cuenta-nivel-3 {
+        padding-left: 60px;
+    }
+
+    .cuenta-nivel-4 {
+        padding-left: 90px;
+    }
+
+    .cuenta-nivel-5 {
+        padding-left: 120px;
+    }
+
+    .btn-action {
+        padding: 2px 6px;
+        font-size: 0.8rem;
+    }
+</style>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/administrar/plancuentas.js' %}"></script>
+{% endblock %}

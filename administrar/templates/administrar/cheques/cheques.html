@@ -1,0 +1,241 @@
+{% extends "administrar/base.html" %}
+{% load static %}
+
+{% block content %}
+
+<div class="container-fluid px-4 mt-4">
+
+    <!-- HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="text-primary fw-bold mb-0">
+                <i class="bi bi-cash-coin"></i> Gestión de Cheques
+            </h2>
+            <p class="text-muted mb-0">Control de cartera de cheques propios y de terceros</p>
+        </div>
+        <div>
+            <button class="btn btn-primary" onclick="nuevoCheque()">
+                <i class="bi bi-plus-lg"></i> Nuevo Cheque
+            </button>
+        </div>
+    </div>
+
+    <!-- RESUMEN KPIs -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm bg-primary text-white">
+                <div class="card-body">
+                    <h6 class="card-title mb-2">En Cartera (Terceros)</h6>
+                    <h3 class="mb-0" id="kpiCartera">$0.00</h3>
+                    <small id="kpiCarteraCount">0 cheques</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm bg-warning text-dark">
+                <div class="card-body">
+                    <h6 class="card-title mb-2">A Pagar (Propios)</h6>
+                    <h3 class="mb-0" id="kpiPropios">$0.00</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm bg-success text-white">
+                <div class="card-body">
+                    <h6 class="card-title mb-2">Depositados (Mes)</h6>
+                    <h3 class="mb-0" id="kpiDepositados">$0.00</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm bg-danger text-white">
+                <div class="card-body">
+                    <h6 class="card-title mb-2">Rechazados</h6>
+                    <h3 class="mb-0" id="kpiRechazados">$0.00</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FILTROS -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <input type="text" class="form-control" id="buscar"
+                        placeholder="Buscar por número, banco o cliente...">
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select" id="filtroTipo">
+                        <option value="">Todos los Tipos</option>
+                        <option value="TERCERO">Terceros</option>
+                        <option value="PROPIO">Propios</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select" id="filtroEstado">
+                        <option value="">Todos los Estados</option>
+                        <option value="CARTERA">En Cartera</option>
+                        <option value="DEPOSITADO">Depositado</option>
+                        <option value="COBRADO">Cobrado</option>
+                        <option value="ENTREGADO">Entregado</option>
+                        <option value="RECHAZADO">Rechazado</option>
+                        <option value="ANULADO">Anulado</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-outline-secondary w-100" onclick="aplicarFiltros()">
+                        <i class="bi bi-search"></i> Buscar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TABLA -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="tablaCheques">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Fecha Pago</th>
+                            <th>Banco</th>
+                            <th>Nº Cheque</th>
+                            <th>Origen/Destino</th>
+                            <th class="text-end">Importe</th>
+                            <th class="text-center">Tipo</th>
+                            <th class="text-center">Estado</th>
+                            <th class="text-end">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="listaCheques">
+                        <!-- JS Render -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- MODAL NUEVO/EDITAR -->
+<div class="modal fade" id="modalCheque" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTitulo">Nuevo Cheque</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formCheque">
+                    <input type="hidden" id="chequeId">
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Tipo *</label>
+                            <select class="form-select" id="tipo" required>
+                                <option value="TERCERO">Terceros (Recibido)</option>
+                                <option value="PROPIO">Propio (Emitido)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Estado</label>
+                            <select class="form-select" id="estado">
+                                <option value="CARTERA">En Cartera</option>
+                                <option value="DEPOSITADO">Depositado</option>
+                                <option value="COBRADO">Cobrado</option>
+                                <option value="ENTREGADO">Entregado</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4" id="divCuentaBanco" style="display: none;">
+                            <label class="form-label">Cuenta Destino *</label>
+                            <select class="form-select" id="cuenta_bancaria_id">
+                                <option value="">Seleccione Cuenta...</option>
+                                <!-- JS Populate -->
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Monto *</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control text-end" id="monto" step="0.01" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Banco *</label>
+                            <input type="text" class="form-control" id="banco" required list="listaBancos">
+                            <datalist id="listaBancos">
+                                <option value="Nación">
+                                <option value="Galicia">
+                                <option value="Santander">
+                                <option value="BBVA">
+                                <option value="Macro">
+                                <option value="ICBC">
+                                <option value="Provincia">
+                                <option value="Credicoop">
+                            </datalist>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Nº Cheque *</label>
+                            <input type="text" class="form-control" id="numero" required>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Fecha Emisión *</label>
+                            <input type="date" class="form-control" id="fecha_emision" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Fecha Pago *</label>
+                            <input type="date" class="form-control" id="fecha_pago" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Cliente (Origen)</label>
+                        <select class="form-select" id="cliente_id">
+                            <option value="">Seleccione Cliente...</option>
+                            <!-- JS Populate -->
+                        </select>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Firmante (Si es de Tercero)</label>
+                            <input type="text" class="form-control" id="firmante">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">CUIT Firmante</label>
+                            <input type="text" class="form-control" id="cuit_firmante">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Destinatario / Entregado a</label>
+                        <input type="text" class="form-control" id="destinatario">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Observaciones</label>
+                        <textarea class="form-control" id="observaciones" rows="2"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="guardarCheque()">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/administrar/cheques.js' %}?v={% now 'U' %}"></script>
+{% endblock %}

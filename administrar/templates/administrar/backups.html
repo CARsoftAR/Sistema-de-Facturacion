@@ -1,0 +1,385 @@
+{% extends 'administrar/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+
+    <!-- HEADER & ACTIONS -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <h2 class="fw-bold text-primary mb-1"><i class="bi bi-hdd-network"></i> Copias de Seguridad</h2>
+            <p class="text-muted mb-0">Gestiona los respaldos de la base de datos y archivos del sistema</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button id="btnBackupDB" class="btn btn-primary d-flex align-items-center" onclick="crearBackup('DB')">
+                <i class="bi bi-database me-2"></i> SQL
+            </button>
+            <button id="btnBackupDBJson" class="btn btn-warning text-white d-flex align-items-center"
+                onclick="crearBackup('DB_JSON')">
+                <i class="bi bi-file-code me-2"></i> JSON
+            </button>
+            <button id="btnBackupSistema" class="btn btn-info text-white d-flex align-items-center"
+                onclick="crearBackup('SISTEMA')">
+                <i class="bi bi-archive me-2"></i> Archivos
+            </button>
+            <button id="btnSubirBackup" class="btn btn-dark d-flex align-items-center"
+                onclick="document.getElementById('fileUploadInput').click()">
+                <i class="bi bi-upload me-2"></i> Subir
+            </button>
+            <input type="file" id="fileUploadInput" style="display: none;" accept=".zip,.json,.sql"
+                onchange="subirBackup(this)">
+        </div>
+    </div>
+
+    <!-- PROGRESS ALERT -->
+    <div id="backupStatus" class="alert alert-info border-0 shadow-sm" style="display:none;">
+        <div class="d-flex align-items-center mb-2">
+            <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+            <h5 class="alert-heading fw-bold mb-0 text-primary">Generando Backup...</h5>
+        </div>
+        <p class="mb-2 text-muted small">No cierres esta ventana. Procesando solicitud...</p>
+        <div class="d-flex align-items-center">
+            <span class="badge bg-white text-info border border-info me-2">Tiempo: <span
+                    id="backupTimer">0s</span></span>
+        </div>
+    </div>
+
+    <!-- BACKUPS TABLE CARD -->
+    <div class="card border-0 shadow-sm overflow-hidden">
+        <div class="card-header bg-white py-3 border-bottom-0">
+            <h5 class="fw-bold mb-0 text-secondary">Historial de Respaldos</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="tablaBackups">
+                    <thead class="bg-light text-uppercase small text-muted">
+                        <tr>
+                            <th class="ps-4">Nombre</th>
+                            <th>Tipo</th>
+                            <th>Fecha</th>
+                            <th>Tamaño</th>
+                            <th>Ubicación</th>
+                            <th>Usuario</th>
+                            <th class="text-end pe-4">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-backups-body">
+                        <!-- Filled by JS -->
+                        <tr>
+                            <td colspan="7" class="text-center py-5 text-muted">
+                                <div class="spinner-border text-primary" role="status"></div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        cargarBackups();
+    });
+
+    function cargarBackups() {
+        const tbody = document.getElementById('tabla-backups-body');
+
+        // Show loading only if empty
+        if (tbody.childElementCount === 0 || tbody.innerText.includes('Error')) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-5"><div class="spinner-border text-primary"></div></td></tr>';
+        }
+
+        fetch('/api/backups/listar/')
+            .then(response => response.json())
+            .then(data => {
+                tbody.innerHTML = ''; // Clear loading
+
+                if (data.ok) {
+                    if (data.data.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted">No hay backups disponibles</td></tr>';
+                        return;
+                    }
+
+                    data.data.forEach(backup => {
+                        let tipoBadge = '';
+                        let iconClass = '';
+
+                        // Normalizing logic for Type presentation
+                        if (backup.tipo === 'Base de Datos') {
+                            tipoBadge = '<span class="badge badge-soft-primary"><i class="bi bi-database me-1"></i> SQL</span>';
+                        } else if (backup.tipo && backup.tipo.includes('JSON')) {
+                            tipoBadge = '<span class="badge badge-soft-warning"><i class="bi bi-file-code me-1"></i> JSON</span>';
+                        } else {
+                            tipoBadge = '<span class="badge badge-soft-info"><i class="bi bi-archive me-1"></i> Sistema</span>';
+                        }
+
+                        // Check logic for Tipo column if it was empty in previous screenshot
+                        // Assuming backend sends 'tipo' correctly. If not, we might need to infer from name.
+                        // Ideally backend should send correct type.
+
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                        <td class="ps-4 fw-medium text-dark">${backup.nombre}</td>
+                        <td>${tipoBadge}</td>
+                        <td class="text-muted small">${backup.fecha}</td>
+                        <td class="text-muted small">${backup.tamanio}</td>
+                        <td><span class="badge bg-light text-dark border">${backup.ubicacion}</span></td>
+                        <td><small class="text-secondary">${backup.creado_por}</small></td>
+                        <td class="text-end pe-4">
+                            <div class="btn-group">
+                                <a href="/api/backups/${backup.id}/descargar/" class="btn btn-sm btn-outline-primary" data-bs-toggle="tooltip" title="Descargar">
+                                    <i class="bi bi-download"></i>
+                                </a>
+                                <button onclick="restaurarBackup(${backup.id}, '${backup.nombre}', '${backup.tipo}')" class="btn btn-sm btn-outline-warning" data-bs-toggle="tooltip" title="Restaurar">
+                                    <i class="bi bi-arrow-counterclockwise"></i>
+                                </button>
+                                <button onclick="eliminarBackup(${backup.id}, '${backup.nombre}')" class="btn btn-sm btn-outline-danger" data-bs-toggle="tooltip" title="Eliminar">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                        tbody.appendChild(tr);
+                    });
+                } else {
+                    console.error('Error al cargar backups: ' + data.error);
+                    tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-danger"><i class="bi bi-exclamation-triangle"></i> ${data.error}</td></tr>`;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-danger">Error de conexión al cargar datos</td></tr>';
+            });
+    }
+
+    function subirBackup(input) {
+        if (!input.files || !input.files[0]) return;
+
+        const file = input.files[0];
+        const formData = new FormData();
+        formData.append('archivo', file);
+
+        // Mostrar animación de carga
+        const statusDiv = document.getElementById('backupStatus');
+        const statusTitle = statusDiv.querySelector('h5');
+        const statusText = statusDiv.querySelector('p');
+
+        statusDiv.style.display = 'block';
+        statusTitle.innerText = 'Subiendo Backup...';
+        statusText.innerText = 'Por favor espera mientras se sube el archivo.';
+
+        fetch('/api/backups/subir/', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                statusDiv.style.display = 'none';
+                // Reset input
+                input.value = '';
+
+                if (data.ok) {
+                    Swal.fire({
+                        title: '¡Subida Exitosa!',
+                        text: 'El archivo se ha subido correctamente. Ahora puedes restaurarlo.',
+                        icon: 'success',
+                        confirmButtonColor: 'var(--primary-color)'
+                    });
+                    cargarBackups();
+                } else {
+                    Swal.fire('Error', data.error, 'error');
+                }
+            })
+            .catch(error => {
+                statusDiv.style.display = 'none';
+                input.value = '';
+                console.error('Error:', error);
+                Swal.fire('Error', 'Fallo al subir el archivo.', 'error');
+            });
+    }
+
+    let backupTimerInterval;
+
+    function crearBackup(tipo) {
+        // Deshabilitar botones
+        const btnDB = document.getElementById('btnBackupDB');
+        const btnDBJson = document.getElementById('btnBackupDBJson');
+        const btnSys = document.getElementById('btnBackupSistema');
+        const statusDiv = document.getElementById('backupStatus');
+        const timerSpan = document.getElementById('backupTimer');
+
+        btnDB.disabled = true;
+        btnDBJson.disabled = true;
+        btnSys.disabled = true;
+
+        // Show status with animation
+        statusDiv.style.display = 'block';
+        statusDiv.classList.add('animate__animated', 'animate__fadeIn');
+
+        let seconds = 0;
+        if (timerSpan) timerSpan.innerText = '0s';
+
+        if (backupTimerInterval) clearInterval(backupTimerInterval);
+        backupTimerInterval = setInterval(() => {
+            seconds++;
+            if (timerSpan) timerSpan.innerText = seconds + 's';
+        }, 1000);
+
+        fetch('/api/backups/crear/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                tipo: tipo,
+                ubicacion: 'LOCAL'
+            })
+        })
+            .then(response => response.json())
+            .then(data => {
+                statusDiv.style.display = 'none';
+                btnDB.disabled = false;
+                btnDBJson.disabled = false;
+                btnSys.disabled = false;
+                clearInterval(backupTimerInterval);
+
+                if (data.ok) {
+                    Swal.fire({
+                        title: '¡Backup Creado!',
+                        text: 'El archivo de respaldo se generó correctamente.',
+                        icon: 'success',
+                        confirmButtonColor: 'var(--primary-color)'
+                    });
+                    cargarBackups();
+                } else {
+                    Swal.fire('Error', data.error, 'error');
+                }
+            })
+            .catch(error => {
+                statusDiv.style.display = 'none';
+                btnDB.disabled = false;
+                btnDBJson.disabled = false;
+                btnSys.disabled = false;
+                clearInterval(backupTimerInterval);
+                console.error('Error:', error);
+                Swal.fire('Error de Conexión', 'No se pudo generar el backup. Intente nuevamente.', 'error');
+            });
+    }
+
+    function restaurarBackup(id, nombre, tipo) {
+        // Check if DB backup (SQL or JSON)
+        if (tipo !== 'Base de Datos' && !tipo.includes('JSON')) {
+            // Note: Backend might send 'Base de Datos' for SQL. For JSON check consistency.
+            // If type string is unreliable, maybe rely on name extension or improving backend mapper.
+            // For now assume logic: if NOT DB, warn.
+
+            // Wait, looking at JS logic in previous file: if (tipo !== 'Base de Datos') ...
+            // We need to support JSON restoration too.
+            // Let's assume standard 'Base de Datos' covers both or we adjust logic.
+        }
+
+        // Simplified logic: Allow restoration if backend supports it. JS shouldn't block extensively unless sure.
+        // Warning is good though.
+
+        Swal.fire({
+            title: '¿Restaurar Backup?',
+            text: `Vas a restaurar "${nombre}". \nESTO SOBREESCRIBIRÁ LA BASE DE DATOS ACTUAL.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ffc107',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Sí, Restaurar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Show loading
+                Swal.fire({
+                    title: 'Restaurando...',
+                    text: 'Por favor espere. El sistema se reiniciará al finalizar.',
+                    allowOutsideClick: false,
+                    didOpen: () => { Swal.showLoading(); }
+                });
+
+                fetch(`/api/backups/${id}/restaurar/`, {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': getCookie('csrftoken') }
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.ok) {
+                            Swal.fire('Restaurado', 'El sistema ha sido restaurado correctamente.', 'success')
+                                .then(() => { window.location.reload(); });
+                        } else {
+                            // Check for specific "Manual restore needed" msg
+                            if (data.error && data.error.includes("manual")) {
+                                Swal.fire('Información', data.error, 'info');
+                            } else {
+                                Swal.fire('Error', data.error, 'error');
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        Swal.fire('Error', 'Fallo en la comunicación con el servidor.', 'error');
+                    });
+            }
+        });
+    }
+
+    function eliminarBackup(id, nombre) {
+        Swal.fire({
+            title: '¿Eliminar Backup?',
+            text: `Se eliminará el archivo "${nombre}". Esta acción es irreversible.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                fetch(`/api/backups/${id}/eliminar/`, {
+                    method: 'DELETE',
+                    headers: { 'X-CSRFToken': getCookie('csrftoken') }
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.ok) {
+                            // Toast notification instead of heavy alert for delete
+                            const Toast = Swal.mixin({
+                                toast: true,
+                                position: 'top-end',
+                                showConfirmButton: false,
+                                timer: 3000,
+                                timerProgressBar: true
+                            });
+                            Toast.fire({ icon: 'success', title: 'Backup eliminado' });
+                            cargarBackups();
+                        } else {
+                            Swal.fire('Error', data.error, 'error');
+                        }
+                    });
+            }
+        });
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+</script>
+{% endblock %}

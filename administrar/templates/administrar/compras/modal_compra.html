@@ -1,0 +1,82 @@
+<!-- MODAL NUEVA ORDEN DE COMPRA -->
+<div class="modal fade" id="modalNuevaOC" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title fw-bold"><i class="bi bi-cart-plus"></i> Nueva Orden de Compra</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body p-4">
+                <form id="formNuevaOC">
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Proveedor <span class="text-danger">*</span></label>
+                            <div class="input-group position-relative">
+                                <span class="input-group-text bg-light"><i class="bi bi-truck"></i></span>
+                                <input type="text" id="inputBuscarProveedor" class="form-control"
+                                    placeholder="Buscar proveedor..." autocomplete="off" required>
+                                <input type="hidden" id="proveedorIdHidden">
+                                <div id="proveedorAutocompleteResults"
+                                    class="position-absolute w-100 bg-white border rounded shadow-sm"
+                                    style="display:none; max-height:250px; overflow-y:auto; z-index:1000; top:100%; left:0;">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Observaciones</label>
+                            <input type="text" id="inputObservaciones" class="form-control"
+                                placeholder="Notas opcionales...">
+                        </div>
+                    </div>
+
+                    <div class="card border-0 shadow-sm bg-light">
+                        <div class="card-body p-0">
+                            <div>
+                                <table class="table table-hover align-middle mb-0" id="tablaDetalleOC">
+                                    <thead class="bg-secondary text-white">
+                                        <tr>
+                                            <th style="width: 40%;" class="ps-3">Producto</th>
+                                            <th style="width: 15%;">Cantidad</th>
+                                            <th style="width: 15%;">Costo Unit.</th>
+                                            <th style="width: 20%;">Subtotal</th>
+                                            <th style="width: 10%;" class="text-center">Acción</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbodyDetalleOC" class="bg-white">
+                                        <!-- Filas dinámicas -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-white border-top-0 p-3">
+                            <button type="button" class="btn btn-outline-primary btn-sm fw-bold"
+                                id="btnAgregarProducto">
+                                <i class="bi bi-plus-lg"></i> Agregar Producto
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="row mt-4 justify-content-end">
+                        <div class="col-md-4">
+                            <div class="card border-success bg-success-subtle">
+                                <div class="card-body text-center py-3">
+                                    <h6 class="text-success mb-1">Total Estimado</h6>
+                                    <h3 class="fw-bold text-success mb-0" id="totalEstimado">$0.00</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-success px-4" id="btnGuardarOC">
+                    <i class="bi bi-save"></i> Guardar Orden
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

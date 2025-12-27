@@ -1,0 +1,120 @@
+{% extends 'administrar/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1 class="h3 mb-4 text-gray-800">Notas de Crédito y Débito</h1>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Listado de Comprobantes</h6>
+        </div>
+        <div class="card-body">
+            <ul class="nav nav-tabs" id="myTab" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link active" id="nc-tab" data-toggle="tab" href="#nc" role="tab" aria-controls="nc"
+                        aria-selected="true">Notas de Crédito</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="nd-tab" data-toggle="tab" href="#nd" role="tab" aria-controls="nd"
+                        aria-selected="false">Notas de Débito</a>
+                </li>
+            </ul>
+            <div class="tab-content mt-3" id="myTabContent">
+                <div class="tab-pane fade show active" id="nc" role="tabpanel" aria-labelledby="nc-tab">
+                    <div class="table-responsive">
+                        <table class="table table-bordered" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>Número</th>
+                                    <th>Fecha</th>
+                                    <th>Cliente</th>
+                                    <th>Venta Asociada</th>
+                                    <th>Total</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for nc in notas_credito %}
+                                <tr>
+                                    <td>{{ nc.numero_formateado }}</td>
+                                    <td>{{ nc.fecha|date:"d/m/Y H:i" }}</td>
+                                    <td>{{ nc.cliente.nombre }}</td>
+                                    <td>
+                                        {% if nc.venta_asociada %}
+                                        <a href="{% url 'detalle_venta' nc.venta_asociada.id %}">Venta #{{
+                                            nc.venta_asociada.id }}</a>
+                                        {% else %}
+                                        -
+                                        {% endif %}
+                                    </td>
+                                    <td>${{ nc.total }}</td>
+                                    <td>{{ nc.estado }}</td>
+                                    <td>
+                                        <button class="btn btn-info btn-sm" title="Ver Detalle"><i
+                                                class="fas fa-eye"></i></button>
+                                        <button class="btn btn-secondary btn-sm" title="Imprimir"><i
+                                                class="fas fa-print"></i></button>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center">No hay Notas de Crédito registradas.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="nd" role="tabpanel" aria-labelledby="nd-tab">
+                    <div class="table-responsive">
+                        <table class="table table-bordered" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>Número</th>
+                                    <th>Fecha</th>
+                                    <th>Cliente</th>
+                                    <th>Venta Asociada</th>
+                                    <th>Total</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for nd in notas_debito %}
+                                <tr>
+                                    <td>{{ nd.numero_formateado }}</td>
+                                    <td>{{ nd.fecha|date:"d/m/Y H:i" }}</td>
+                                    <td>{{ nd.cliente.nombre }}</td>
+                                    <td>
+                                        {% if nd.venta_asociada %}
+                                        <a href="{% url 'detalle_venta' nd.venta_asociada.id %}">Venta #{{
+                                            nd.venta_asociada.id }}</a>
+                                        {% else %}
+                                        -
+                                        {% endif %}
+                                    </td>
+                                    <td>${{ nd.total }}</td>
+                                    <td>{{ nd.estado }}</td>
+                                    <td>
+                                        <button class="btn btn-info btn-sm" title="Ver Detalle"><i
+                                                class="fas fa-eye"></i></button>
+                                        <button class="btn btn-secondary btn-sm" title="Imprimir"><i
+                                                class="fas fa-print"></i></button>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center">No hay Notas de Débito registradas.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

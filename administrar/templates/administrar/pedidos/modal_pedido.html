@@ -1,0 +1,103 @@
+<!-- Modal para Crear/Editar Pedido -->
+<div class="modal fade" id="modalPedido" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="modalPedidoTitle">
+                    <i class="bi bi-clipboard-plus"></i> Nuevo Pedido
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formPedido">
+                    <input type="hidden" id="pedido_id">
+
+                    <!-- Cliente y Observaciones -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Cliente *</label>
+                            <select id="pedido_cliente" class="form-select" required>
+                                <option value="">Seleccione un cliente...</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Observaciones</label>
+                            <textarea id="pedido_observaciones" class="form-control" rows="2"
+                                placeholder="Notas adicionales del pedido..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Tabla de Detalles -->
+                    <div class="card border-0 shadow-sm mb-3">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0"><i class="bi bi-list-ul"></i> Productos del Pedido</h6>
+                        </div>
+                        <div class="card-body p-0">
+                            <!-- Input para agregar productos -->
+                            <div class="p-3 bg-light border-bottom">
+                                <div class="row g-2">
+                                    <div class="col-md-6 position-relative">
+                                        <label class="form-label small mb-1">Buscar producto (código o nombre)</label>
+                                        <input type="text" id="input_producto_codigo" class="form-control"
+                                            autocomplete="off" placeholder="Escanear código de barras o escribir...">
+                                        <!-- Lista de sugerencias -->
+                                        <div id="lista_productos_sugerencias" class="list-group position-absolute w-100"
+                                            style="z-index: 1000; display:none; max-height: 220px; overflow-y: auto;">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label small mb-1">Cantidad</label>
+                                        <input type="number" id="input_producto_cantidad" class="form-control"
+                                            min="0.01" step="0.01" value="1">
+                                    </div>
+                                    <div class="col-md-3 d-flex align-items-end">
+                                        <button type="button" class="btn btn-success w-100"
+                                            id="btnAgregarProductoDetalle">
+                                            <i class="bi bi-plus-circle"></i> Agregar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover mb-0" id="tablaDetalles">
+                                    <thead class="bg-light">
+                                        <tr>
+                                            <th width="45%">Producto</th>
+                                            <th width="15%">Cantidad</th>
+                                            <th width="18%">Precio Unit.</th>
+                                            <th width="18%">Subtotal</th>
+                                            <th width="4%"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbodyDetalles">
+                                        <!-- Se llena dinámicamente -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-light">
+                            <div class="row">
+                                <div class="col-md-8 text-end">
+                                    <h5 class="mb-0">Total:</h5>
+                                </div>
+                                <div class="col-md-4">
+                                    <h5 class="mb-0 text-primary" id="pedidoTotal">$0.00</h5>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> Cancelar
+                </button>
+                <button type="button" class="btn btn-primary" id="btnGuardarPedido">
+                    <i class="bi bi-save"></i> Guardar Pedido
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

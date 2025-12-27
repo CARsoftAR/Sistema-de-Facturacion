@@ -1,0 +1,38 @@
+<!-- Modal para Cambiar Estado del Pedido -->
+<div class="modal fade" id="modalEstado" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-arrow-repeat"></i> Cambiar Estado del Pedido
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="estado_pedido_id">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Pedido #<span id="estado_pedido_numero"></span></label>
+                    <p class="text-muted small mb-3">Cliente: <span id="estado_pedido_cliente"></span></p>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Nuevo Estado *</label>
+                    <select id="estado_pedido_select" class="form-select">
+                        <option value="PENDIENTE">Pendiente</option>
+                        <option value="PREPARACION">En preparación</option>
+                        <option value="LISTO">Listo para entregar</option>
+                        <option value="FACTURADO">Facturado</option>
+                        <option value="ANULADO">Anulado</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> Cancelar
+                </button>
+                <button type="button" class="btn btn-info" id="btnGuardarEstado">
+                    <i class="bi bi-check-circle"></i> Actualizar Estado
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

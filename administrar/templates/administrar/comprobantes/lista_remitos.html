@@ -1,0 +1,70 @@
+{% extends 'administrar/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1 class="h3 mb-4 text-gray-800">Remitos</h1>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Listado de Remitos</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Número</th>
+                            <th>Fecha</th>
+                            <th>Cliente</th>
+                            <th>Dirección Entrega</th>
+                            <th>Venta Asociada</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for remito in remitos %}
+                        <tr>
+                            <td>{{ remito.numero_formateado }}</td>
+                            <td>{{ remito.fecha|date:"d/m/Y H:i" }}</td>
+                            <td>{{ remito.cliente.nombre }}</td>
+                            <td>{{ remito.direccion_entrega }}</td>
+                            <td>
+                                {% if remito.venta_asociada %}
+                                <a href="{% url 'detalle_venta' remito.venta_asociada.id %}">
+                                    Venta #{{ remito.venta_asociada.id }}
+                                </a>
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span
+                                    class="badge bg-{% if remito.estado == 'ENTREGADO' %}success{% elif remito.estado == 'ANULADO' %}danger{% else %}warning{% endif %}">
+                                    {{ remito.estado }}
+                                </span>
+                            </td>
+                            <td>
+                                <a href="{% url 'detalle_remito' remito.id %}" class="btn btn-outline-info btn-sm"
+                                    title="Ver Detalle">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{% url 'imprimir_remito' remito.id %}" class="btn btn-outline-secondary btn-sm"
+                                    title="Imprimir" target="_blank">
+                                    <i class="bi bi-printer"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center">No hay Remitos registrados.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

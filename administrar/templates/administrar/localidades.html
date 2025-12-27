@@ -1,0 +1,89 @@
+{% extends "administrar/base.html" %}
+{% load static %}
+
+{% block content %}
+
+<div class="container-fluid px-4 mt-4">
+
+    <!-- HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="text-primary fw-bold mb-0">
+                <i class="bi bi-geo-alt"></i> Gestión de Localidades
+            </h2>
+            <p class="text-muted mb-0">Administra las localidades para tus clientes y proveedores.</p>
+        </div>
+        <button class="btn btn-primary btn-lg shadow-sm" id="btnNuevaLocalidad">
+            <i class="bi bi-plus-circle-fill"></i> Nueva Localidad
+        </button>
+    </div>
+
+    <!-- FILTROS -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body bg-light rounded">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
+                        <input type="text" id="filtroBusqueda" class="form-control border-start-0"
+                            placeholder="Buscar por nombre o código postal...">
+                    </div>
+                </div>
+                <div class="col-md-4"></div>
+                <div class="col-md-2">
+                    <button class="btn btn-outline-secondary w-100" id="btnLimpiarFiltros">
+                        Limpiar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TABLA -->
+    <div class="card border-0 shadow mb-5">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="tablaLocalidades">
+                    <thead class="bg-light text-secondary">
+                        <tr>
+                            <th class="ps-4 py-3">Nombre</th>
+                            <th>Código Postal</th>
+                            <th class="text-end pe-4">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbodyLocalidades">
+                        <!-- Se llena vía JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- PAGINACIÓN Y CONTADOR -->
+            <div class="d-flex justify-content-between align-items-center p-3 border-top bg-light">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="text-muted small" id="contadorRegistros">Mostrando 0 localidades</span>
+                    <select id="selectorRegistros" class="form-select form-select-sm border-secondary-subtle"
+                        style="width: 70px;">
+                        <option value="5">5</option>
+                        <option value="10" selected>10</option>
+                        <option value="20">20</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                    <span class="text-muted small">por pág.</span>
+                </div>
+                <div id="paginacionLocalidades"></div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Incluir Modal -->
+{% include "administrar/localidades/modal_localidad.html" %}
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="{% static 'js/administrar/localidades.js' %}?v=1"></script>
+{% endblock %}

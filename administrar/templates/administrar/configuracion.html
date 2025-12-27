@@ -1,0 +1,218 @@
+﻿{% extends "administrar/base.html" %}
+{% load static %}
+
+{% block content %}
+
+<div class="container-fluid px-4 mt-4">
+
+  <!-- HEADER -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="text-primary fw-bold mb-0">
+        <i class="bi bi-gear"></i> Configuración General del Sistema
+      </h2>
+      <p class="text-muted mb-0">Definí los datos fiscales, opciones de facturación, correo y AFIP</p>
+    </div>
+  </div>
+
+  {% if messages %}
+  {% for message in messages %}
+  <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+    {{ message }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+  {% endfor %}
+  {% endif %}
+
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <!-- DATOS DE EMPRESA -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-white py-3">
+        <h5 class="mb-0 text-primary fw-bold"><i class="bi bi-building"></i> Datos de la Empresa</h5>
+      </div>
+      <div class="card-body">
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label class="form-label">Razón Social</label>
+            <input type="text" class="form-control" name="nombre" value="{{ empresa.nombre }}"
+              placeholder="Ej: Distribuidora Argentina S.R.L.">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">CUIT</label>
+            <input type="text" class="form-control" name="cuit" value="{{ empresa.cuit }}"
+              placeholder="Ej: 30-12345678-9">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Condición Fiscal</label>
+            <select class="form-select" name="condicion_fiscal">
+              <option value="RI" {% if empresa.condicion_fiscal == 'RI' %}selected{% endif %}>Responsable Inscripto
+              </option>
+              <option value="MO" {% if empresa.condicion_fiscal == 'MO' %}selected{% endif %}>Monotributista</option>
+              <option value="EX" {% if empresa.condicion_fiscal == 'EX' %}selected{% endif %}>Exento</option>
+              <option value="CF" {% if empresa.condicion_fiscal == 'CF' %}selected{% endif %}>Consumidor Final</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label class="form-label">Domicilio Comercial</label>
+            <input type="text" class="form-control" name="direccion" value="{{ empresa.direccion }}"
+              placeholder="Calle, número, localidad">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Teléfono</label>
+            <input type="text" class="form-control" name="telefono" value="{{ empresa.telefono }}"
+              placeholder="Ej: 381-1234567">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-control" name="email" value="{{ empresa.email }}"
+              placeholder="contacto@empresa.com">
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Logo de la empresa</label>
+          <input type="file" class="form-control" name="logo">
+          {% if empresa.logo %}
+          <div class="mt-2">
+            <small class="text-muted">Logo actual: <a href="{{ empresa.logo.url }}" target="_blank">Ver
+                imagen</a></small>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- FACTURACIÓN -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-white py-3">
+        <h5 class="mb-0 text-primary fw-bold"><i class="bi bi-receipt"></i> Configuración de Facturación</h5>
+      </div>
+      <div class="card-body">
+        <div class="row mb-3">
+          <div class="col-md-4">
+            <label class="form-label">Tipo de Facturación</label>
+            <select class="form-select" name="tipo_facturacion">
+              <option value="AFIP" {% if empresa.tipo_facturacion == 'AFIP' %}selected{% endif %}>AFIP Electrónica
+              </option>
+              <option value="FISCAL" {% if empresa.tipo_facturacion == 'FISCAL' %}selected{% endif %}>Impresora Fiscal
+              </option>
+              <option value="MANUAL" {% if empresa.tipo_facturacion == 'MANUAL' %}selected{% endif %}>Factura Manual
+              </option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Punto de Venta</label>
+            <input type="number" class="form-control" name="punto_venta" value="{{ empresa.punto_venta }}"
+              placeholder="Ej: 0001">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Moneda Predeterminada</label>
+            <select class="form-select" name="moneda_predeterminada">
+              <option value="ARS" {% if empresa.moneda_predeterminada == 'ARS' %}selected{% endif %}>Peso Argentino (ARS)
+              </option>
+              <option value="USD" {% if empresa.moneda_predeterminada == 'USD' %}selected{% endif %}>Dólar (USD)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label class="form-label">Certificado AFIP (.crt)</label>
+            <input type="file" class="form-control" name="certificado_afip">
+            {% if empresa.certificado_afip %}
+            <small class="text-success"><i class="bi bi-check-circle"></i> Certificado cargado</small>
+            {% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Clave Privada AFIP (.key)</label>
+            <input type="file" class="form-control" name="clave_privada_afip">
+            {% if empresa.clave_privada_afip %}
+            <small class="text-success"><i class="bi bi-check-circle"></i> Clave cargada</small>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CORREO ELECTRÓNICO -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-white py-3">
+        <h5 class="mb-0 text-primary fw-bold"><i class="bi bi-envelope"></i> Configuración de Correo Electrónico</h5>
+      </div>
+      <div class="card-body">
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label class="form-label">Servidor SMTP</label>
+            <input type="text" class="form-control" name="smtp_server" value="{{ empresa.smtp_server }}"
+              placeholder="Ej: smtp.gmail.com">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Puerto</label>
+            <input type="number" class="form-control" name="smtp_port" value="{{ empresa.smtp_port }}"
+              placeholder="Ej: 587">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Seguridad</label>
+            <select class="form-select" name="smtp_security">
+              <option value="STARTTLS" {% if empresa.smtp_security == 'STARTTLS' %}selected{% endif %}>STARTTLS</option>
+              <option value="SSL" {% if empresa.smtp_security == 'SSL' %}selected{% endif %}>SSL</option>
+            </select>
+          </div>
+        </div>
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label class="form-label">Correo Remitente (Usuario SMTP)</label>
+            <input type="email" class="form-control" name="smtp_user" value="{{ empresa.smtp_user }}"
+              placeholder="Ej: sistema@empresa.com">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Contraseña</label>
+            <input type="password" class="form-control" name="smtp_password"
+              placeholder="Dejar en blanco para no cambiar">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- IMPRESIÓN -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-white py-3">
+        <h5 class="mb-0 text-primary fw-bold"><i class="bi bi-printer"></i> Configuración de Impresión</h5>
+      </div>
+      <div class="card-body">
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label class="form-label">Tamaño del Papel</label>
+            <select class="form-select" name="papel_impresion">
+              <option value="A4" {% if empresa.papel_impresion == 'A4' %}selected{% endif %}>A4</option>
+              <option value="T80" {% if empresa.papel_impresion == 'T80' %}selected{% endif %}>Ticket (80mm)</option>
+              <option value="T58" {% if empresa.papel_impresion == 'T58' %}selected{% endif %}>Ticket (58mm)</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Pie de Factura (texto opcional)</label>
+            <input type="text" class="form-control" name="pie_factura" value="{{ empresa.pie_factura }}"
+              placeholder="Ej: Gracias por su compra.">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="text-end mb-5">
+      <button type="submit" class="btn btn-primary btn-lg"><i class="bi bi-save"></i> Guardar Configuración</button>
+    </div>
+
+  </form>
+
+  <footer class="text-center p-4 text-muted mt-4 border-top">
+    <small>© {% now "Y" %} Sistema Comercial Argentina | Módulo de Configuración</small>
+  </footer>
+
+</div>
+
+{% endblock %}
