@@ -1933,7 +1933,26 @@ def api_orden_compra_recibir(request, id):
                 )
 
                 prod = det.producto
-                prod.stock += det.cantidad
+                
+                # Calcular costo promedio ponderado ANTES de actualizar stock
+                stock_anterior = prod.stock
+                costo_anterior = prod.costo
+                cantidad_nueva = det.cantidad
+                precio_nuevo = det.precio
+                
+                # Actualizar stock
+                prod.stock += cantidad_nueva
+                
+                # Calcular nuevo costo con promedio ponderado
+                # Fórmula: ((Stock_Anterior * Costo_Anterior) + (Cantidad_Nueva * Precio_Nuevo)) / Stock_Total
+                if prod.stock > 0:
+                    valor_stock_anterior = stock_anterior * costo_anterior
+                    valor_compra_nueva = cantidad_nueva * precio_nuevo
+                    prod.costo = (valor_stock_anterior + valor_compra_nueva) / prod.stock
+                else:
+                    # Si el stock es 0 (no debería pasar), usar el precio de compra
+                    prod.costo = precio_nuevo
+                
                 prod.save()
 
                 MovimientoStock.objects.create(
