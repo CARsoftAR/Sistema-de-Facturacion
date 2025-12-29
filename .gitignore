@@ -21,3 +21,7 @@ env/
 *.zip
 *.docx
 *.pdf
+ 
+node_modules/ 
+npm-debug.log 
+.DS_Store

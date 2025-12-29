@@ -1,4 +1,5 @@
 ﻿from django.urls import path
+from django.views.generic import TemplateView
 # Force reload 2
 from . import views
 from . import views_backup
@@ -22,8 +23,9 @@ urlpatterns = [
     # ==========================
     # MENÚ PRINCIPAL
     # ==========================
-    path("", views.menu, name="menu"),
-    path("menu/", views.menu, name="menu"),
+    path("", TemplateView.as_view(template_name="react_app.html"), name="menu"),
+    path("menu-legacy/", views.menu, name="menu_legacy"),
+    path("menu/", views.menu, name="menu_legacy_alias"),
 
     path("dashboard/", views.dashboard, name="dashboard"),
     path("estado/", views.estado_sistema, name="estado"),
