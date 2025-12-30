@@ -1,4 +1,3 @@
-{% load admin_tags %}
 {% load static %}
 <!DOCTYPE html>
 <html lang="es">
@@ -11,206 +10,114 @@
   <!-- Google Font Material -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-  <!-- Bootstrap -->
+  <!-- Bootstrap (Mantener por compatibilidad de clases viejas en contenido main) -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-
-  <!-- Bootstrap Icons -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
 
   <!-- =========================================================== -->
-  <!--  DATATABLES CSS (Bootstrap 5 + Buttons)                     -->
+  <!--  REACT ASSETS (Generados por Vite)                         -->
   <!-- =========================================================== -->
+  <script type="module" crossorigin src="/static/dist/assets/main-B7N6tceb.js"></script>
+  <link rel="stylesheet" crossorigin href="/static/dist/assets/main-CEVPO8Xe.css">
+
+  <style>
+    /* Ajustes para coexistencia Bootstrap + Tailwind/React sidebar */
+    body {
+      background-color: #f3f4f6;
+      /* Light gray background for main content area */
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+    }
+
+    #app-container {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* El sidebar de React tiene width fijo, reservamos el espacio */
+    #sidebar-root {
+      width: 0;
+      /* Sidebar is fixed, so wrapper should not take space */
+      /* 16rem - debe coincidir con w-64 de tailwind */
+      flex-shrink: 0;
+      background-color: transparent;
+    }
+
+    #main-content {
+      flex-grow: 1;
+      overflow-y: auto;
+      height: 100vh;
+      padding: 1.5rem;
+      /* Balanced spacing */
+      background-color: #f8fafc;
+    }
+
+    /* Ocultar sidebar en móviles inicialmente o manejar con media queries */
+    /* Ocultar sidebar en móviles inicialmente o manejar con media queries */
+    @media (max-width: 991.98px) {
+      #sidebar-root {
+        width: 0;
+      }
+    }
+
+    /* Ajuste de margen para contenido principal en desktop */
+    @media (min-width: 992px) {
+      #main-content {
+        margin-left: 260px;
+        /* Ancho del sidebar */
+        transition: margin-left 0.3s ease-in-out;
+      }
+    }
+  </style>
+
+  <!-- DataTables CSS -->
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
-
   <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.bootstrap5.min.css">
-
-  <!-- CARSOFT CUSTOM STYLES -->
-  <link rel="stylesheet" href="{% static 'css/styles.css' %}">
-
-  {% block head %}{% endblock %}
-
-  <!-- Styles are now in static/css/styles.css -->
 </head>
 
 <body>
 
-  <!-- NAVBAR GLOBAL -->
-  <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
-    <div class="container-fluid">
+  <div id="app-container">
+    <!-- 🟢 REACT SIDEBAR MOUNT POINT -->
+    <div id="sidebar-root"></div>
 
-      <a class="navbar-brand" href="/menu">💼 CARSOFT</a>
+    <!-- 🟠 MAIN DJANGO CONTENT -->
+    <div id="main-content">
 
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menuSuperior">
-        <span class="navbar-toggler-icon"></span>
-      </button>
+      <!-- Topbar simple para usuario (Opcional, ya que el sidebar tiene user info) -->
+      <!-- Mantenemos compatibilidad con bloques viejos -->
 
-      <div class="collapse navbar-collapse" id="menuSuperior">
-
-        <ul class="navbar-nav ms-auto">
-
-          <li class="nav-item">
-            <a class="nav-link" href="/menu"><i class="bi bi-house-door"></i> Menú Principal</a>
-          </li>
-
-          {% if user|has_perm:'reportes' %}
-          <li class="nav-item">
-            <a class="nav-link" href="/dashboard"><i class="bi bi-speedometer2"></i> Dashboard</a>
-          </li>
-          {% endif %}
-
-          {% if user|has_perm:'ventas' %}
-          <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle" href="#" id="ventasDropdown" role="button" data-bs-toggle="dropdown">
-              <i class="bi bi-cart"></i> Ventas
-            </a>
-            <ul class="dropdown-menu" aria-labelledby="ventasDropdown">
-              <li><a class="dropdown-item" href="/ventas/">Listado de Ventas</a></li>
-              <li><a class="dropdown-item" href="{% url 'pedidos' %}">Pedidos</a></li>
-              <li>
-                <hr class="dropdown-divider">
-              </li>
-              <li><a class="dropdown-item" href="{% url 'lista_nc_nd' %}">Notas de Crédito/Débito</a></li>
-              <li><a class="dropdown-item" href="{% url 'lista_remitos' %}">Remitos</a></li>
-            </ul>
-          </li>
-          {% endif %}
-
-          {% if user|has_perm:'productos' %}
-          <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle" href="#" id="productosDropdown" role="button" data-bs-toggle="dropdown">
-              <i class="bi bi-box"></i> Productos
-            </a>
-            <ul class="dropdown-menu" aria-labelledby="productosDropdown">
-              <li><a class="dropdown-item" href="/productos"><i class="bi bi-list-ul"></i> Listado de Productos</a></li>
-              <li>
-                <hr class="dropdown-divider">
-              </li>
-              <li><a class="dropdown-item" href="/actualizar-precios"><i class="bi bi-calculator"></i> Actualizar
-                  Precios</a></li>
-            </ul>
-          </li>
-          {% endif %}
-
-          {% if user|has_perm:'clientes' %}
-          <li class="nav-item">
-            <a class="nav-link" href="/clientes"><i class="bi bi-people"></i> Clientes</a>
-          </li>
-          {% endif %}
-
-          {% if user|has_perm:'caja' %}
-          <li class="nav-item">
-            <a class="nav-link" href="/caja/"><i class="bi bi-cash-coin"></i> Caja</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="/cheques/"><i class="bi bi-wallet2"></i> Cheques</a>
-          </li>
-
-          <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle" href="#" id="ctacteDropdown" role="button" data-bs-toggle="dropdown">
-              <i class="bi bi-journal-text"></i> Ctas. Ctes.
-            </a>
-            <ul class="dropdown-menu" aria-labelledby="ctacteDropdown">
-              <li><a class="dropdown-item" href="{% url 'cc_clientes_lista' %}">Clientes</a></li>
-              <li><a class="dropdown-item" href="{% url 'cc_proveedores_lista' %}">Proveedores</a></li>
-            </ul>
-          </li>
-          {% endif %}
-
-          {% if user|has_perm:'contabilidad' %}
-          <li class="nav-item">
-            <a class="nav-link" href="/contabilidad/"><i class="bi bi-journal-bookmark"></i> Contabilidad</a>
-          </li>
-          {% endif %}
-
-          {% if user|has_perm:'productos' %}
-          <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle" href="#" id="datosDropdown" role="button" data-bs-toggle="dropdown">
-              <i class="bi bi-database"></i> Datos Varios
-            </a>
-            <ul class="dropdown-menu" aria-labelledby="datosDropdown">
-              <li><a class="dropdown-item" href="/localidades/">Localidades</a></li>
-              <li><a class="dropdown-item" href="/marcas/">Marcas</a></li>
-              <li><a class="dropdown-item" href="/rubros/">Rubros</a></li>
-              <li><a class="dropdown-item" href="/unidades/">Unidades</a></li>
-            </ul>
-          </li>
-          {% endif %}
-
-          {% comment %}
-          {% if user|has_perm:'configuracion' %}
-          <li class="nav-item">
-            <a class="nav-link" href="/plantilla-factura/"><i class="bi bi-file-earmark-text"></i> Plantillas</a>
-          </li>
-          {% endif %}
-          {% endcomment %}
-
-          <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" id="userDropdown" role="button"
-              data-bs-toggle="dropdown">
-              {% if user.perfilusuario.imagen %}
-              <img src="{{ user.perfilusuario.imagen.url }}" class="rounded-circle"
-                style="width: 24px; height: 24px; object-fit: cover;">
-              {% else %}
-              <i class="bi bi-person-circle fs-5"></i>
-              {% endif %}
-              <span>{{ user.username }}</span>
-            </a>
-            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-              <li><a class="dropdown-item" href="{% url 'mi_perfil' %}"><i class="bi bi-person-badge"></i> Mi Perfil</a>
-              </li>
-              <li>
-                <hr class="dropdown-divider">
-              </li>
-              {% if user|has_perm:'configuracion' %}
-              <li><a class="dropdown-item" href="/parametros/"><i class="bi bi-gear"></i> Configuración</a></li>
-              {% endif %}
-              {% if user|has_perm:'usuarios' %}
-              <li><a class="dropdown-item" href="/usuarios/"><i class="bi bi-people"></i> Usuarios</a></li>
-              {% endif %}
-              {% if user.is_staff %}
-              <li><a class="dropdown-item" href="/backups/"><i class="bi bi-hdd-network"></i> Backups</a></li>
-              {% endif %}
-              <li>
-                <hr class="dropdown-divider">
-              </li>
-              <li><a class="dropdown-item" href="{% url 'logout' %}"><i class="bi bi-box-arrow-right"></i> Cerrar
-                  Sesión</a></li>
-            </ul>
-          </li>
-
-        </ul>
+      {% if messages %}
+      <div class="container-fluid mb-4">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
       </div>
-    </div>
-  </nav>
+      {% endif %}
 
-  <!-- CONTENIDO -->
-  <main class="container">
-    {% block content %}{% endblock %}
-  </main>
+      {% block content %}{% endblock %}
+
+    </div>
+  </div>
 
   <!-- =========================================================== -->
   <!--                   SCRIPTS GLOBALES                           -->
   <!-- =========================================================== -->
-
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
-  <!-- =========================================================== -->
-  <!--  DATATABLES JS + BUTTONS + EXPORT LIBRARIES                  -->
-  <!-- =========================================================== -->
+  <!-- DataTables & Exports -->
   <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
   <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
-
-  <!-- Buttons -->
   <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
   <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.bootstrap5.min.js"></script>
-
-  <!-- Exportaciones -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
-
   <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
   <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
 

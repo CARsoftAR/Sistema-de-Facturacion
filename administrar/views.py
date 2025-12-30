@@ -2812,6 +2812,7 @@ def api_ventas_listar(request):
 def api_venta_guardar(request):
     """API para guardar una nueva venta"""
     import json
+    from decimal import Decimal
     try:
         data = json.loads(request.body.decode("utf-8"))
     except:
@@ -2825,7 +2826,7 @@ def api_venta_guardar(request):
 
     cliente_id = data.get("cliente_id")
     items = data.get("items", [])
-    total_general = float(data.get("total_general", 0))
+    total_general = Decimal(str(data.get("total_general", 0)))
     medio_pago = data.get("medio_pago", "EFECTIVO")
     
     if not items:
@@ -2854,14 +2855,14 @@ def api_venta_guardar(request):
 
             for item in items:
                 producto = Producto.objects.get(id=item["id"])
-                cantidad = float(item["cantidad"])
+                cantidad = Decimal(str(item["cantidad"]))
                 
                 # VALIDACIÓN DE STOCK
                 if producto.stock < cantidad:
                     raise ValueError(f"Stock insuficiente para {producto.descripcion}. Stock actual: {producto.stock}")
 
-                precio = float(item["precio"])
-                subtotal = float(item["subtotal"])
+                precio = Decimal(str(item["precio"]))
+                subtotal = Decimal(str(item["subtotal"]))
 
                 DetalleVenta.objects.create(
                     venta=venta,
@@ -2875,10 +2876,10 @@ def api_venta_guardar(request):
                 producto.save()
 
             # Registrar movimiento segun medio de pago
+            cheque_creado = None  # Para uso posterior en contabilidad
+            
             if medio_pago == "CTACTE":
-                # Validar que no sea Consumidor Final anonimo si es Cta Cte (opcional, pero recomendable)
-                # Por ahora asumimos que si eligen CTACTE es porque confian en el cliente
-                
+                # Venta a cuenta corriente - No impacta caja, solo registra deuda del cliente
                 nuevo_saldo = cliente.saldo_actual + Decimal(total_general)
                 
                 MovimientoCuentaCorriente.objects.create(
@@ -2887,14 +2888,48 @@ def api_venta_guardar(request):
                     descripcion=f"Venta #{venta.id} (Cta. Cte.)",
                     monto=total_general,
                     saldo=nuevo_saldo,
-                    venta=venta  # ✅ Referencia a la venta para trazabilidad
+                    venta=venta
                 )
                 
                 cliente.saldo_actual = nuevo_saldo
                 cliente.save()
                 
+            elif medio_pago == "CHEQUE":
+                # Venta con cheque - Crear cheque de tercero en cartera
+                # El cheque NO impacta caja hasta que se deposite
+                cheque_data = data.get("cheque", {})
+                
+                from .models import Cheque
+                from datetime import datetime
+                
+                # Parsear fecha de pago si viene como string
+                fecha_pago = cheque_data.get("fecha_pago")
+                if isinstance(fecha_pago, str):
+                    try:
+                        fecha_pago = datetime.strptime(fecha_pago, "%Y-%m-%d").date()
+                    except:
+                        fecha_pago = venta.fecha.date()
+                elif not fecha_pago:
+                    fecha_pago = venta.fecha.date()
+                
+                cheque_creado = Cheque.objects.create(
+                    tipo='TERCERO',
+                    numero=cheque_data.get("numero", f"VTA-{venta.id}"),
+                    banco=cheque_data.get("banco", "Sin especificar"),
+                    firmante=cheque_data.get("firmante", cliente.nombre),
+                    cuit_firmante=cheque_data.get("cuit", cliente.cuit or ""),
+                    monto=Decimal(str(total_general)),
+                    fecha_emision=venta.fecha.date(),
+                    fecha_pago=fecha_pago,
+                    estado='CARTERA',
+                    cliente=cliente,
+                    observaciones=f"Cobro Venta #{venta.id}"
+                )
+                # NO registramos movimiento de caja para cheques (van a cartera)
+                # NO registramos movimiento de caja para cheques (van a cartera)
+                
             else:
-                # Si NO es Cta Cte, impacta en Caja (Efectivo/Tarjeta asumen ingreso inmediato)
+                # EFECTIVO o TARJETA - Impactan en Caja inmediatamente
                 MovimientoCaja.objects.create(
                     tipo="Ingreso",
                     descripcion=f"Venta #{venta.id} - {medio_pago}",
@@ -2918,13 +2953,28 @@ def api_venta_guardar(request):
                         cantidad=det.cantidad
                     )
 
-        # Generar Asiento Contable
+        # Generar Asientos Contables (fuera del transaction para que la venta ya exista)
         try:
             from .services import AccountingService
+            
+            # 1. Asiento de Venta (común a todos los medios de pago)
+            # Debe: Deudores por Ventas | Haber: Ventas + IVA + CMV
             AccountingService.registrar_venta(venta)
 
-            if medio_pago != "CTACTE":
+            # 2. Asiento de Cobro (según medio de pago)
+            if medio_pago == "EFECTIVO":
+                # Debe: Caja | Haber: Deudores por Ventas
                 AccountingService.registrar_cobro_venta_contado(venta)
+                
+            elif medio_pago == "TARJETA":
+                # Debe: Tarjetas a Cobrar + Comisiones | Haber: Deudores por Ventas
+                AccountingService.registrar_cobro_venta_tarjeta(venta)
+                
+            elif medio_pago == "CHEQUE" and cheque_creado:
+                # Debe: Valores a Depositar | Haber: Deudores por Ventas
+                AccountingService.registrar_cobro_venta_cheque(venta, cheque_creado)
+                
+            # CTACTE: No genera asiento de cobro inmediato (el cliente debe, se cobra después)
                 
         except Exception as e:
             print(f"Error generando asiento de venta {venta.id}: {e}")

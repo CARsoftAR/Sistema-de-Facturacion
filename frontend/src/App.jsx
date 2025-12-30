@@ -1,48 +1,75 @@
 import { useState } from 'react'
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import Sidebar from './components/Sidebar'
+import NuevaVenta from './pages/NuevaVenta'
+import Clientes from './pages/Clientes'
+import Productos from './pages/Productos'
+
+// Componente Dashboard temporal con estilos Bootstrap
+const Dashboard = () => (
+  <div className="container-fluid p-4">
+    <header className="mb-4 d-flex align-items-center justify-content-between">
+      <div>
+        <h1 className="h3 fw-bold text-dark tracking-tight">Bienvenido a CARSOFT</h1>
+        <p className="text-secondary mt-1">Sistema Integral de Gestión</p>
+      </div>
+      <div className="d-none d-md-flex align-items-center gap-3">
+        <div className="px-3 py-2 bg-white rounded border shadow-sm text-secondary small">
+          Usuario: <span className="text-primary fw-medium">Admin</span>
+        </div>
+      </div>
+    </header>
+
+    <div className="row g-4 mb-4">
+      {[
+        { label: 'Ventas del Día', value: '$ 154,200', color: 'text-success', border: 'border-success' },
+        { label: 'Pedidos Pendientes', value: '12', color: 'text-primary', border: 'border-primary' },
+        { label: 'Stock Bajo', value: '5 Prod.', color: 'text-danger', border: 'border-danger' },
+        { label: 'Caja Actual', value: '$ 45,500', color: 'text-warning', border: 'border-warning' },
+      ].map((stat, i) => (
+        <div key={i} className="col-12 col-md-6 col-lg-3">
+          <div className="card h-100 border-0 shadow-sm">
+            <div className={`card-body border-start border-4 ${stat.border}`}>
+              <h6 className="card-subtitle mb-2 text-muted small text-uppercase">{stat.label}</h6>
+              <h2 className={`card-title mb-0 fw-bold ${stat.color}`}>{stat.value}</h2>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+
+    <div className="card border-0 shadow-sm p-5 text-center text-muted">
+      <p className="mb-0">Selecciona una opción del menú para comenzar.</p>
+    </div>
+  </div>
+);
 
 function App() {
   return (
-    <div className="flex min-h-screen bg-gray-950">
-      <Sidebar />
+    <Router>
+      <div className="d-flex min-vh-100 bg-light">
+        <Sidebar />
 
-      {/* Main Content Area - Offset by sidebar width on desktop */}
-      <main className="flex-1 lg:ml-64 p-8 transition-all duration-300">
-        <div className="max-w-7xl mx-auto">
-          {/* Header */}
-          <header className="mb-8 flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-white tracking-tight">Bienvenido a CARSOFT</h1>
-              <p className="text-gray-400 mt-2">Sistema Integral de Gestión</p>
-            </div>
-            <div className="hidden md:flex items-center gap-4">
-              <div className="px-4 py-2 bg-gray-900 rounded-lg text-sm text-gray-300 border border-gray-800">
-                Usuario: <span className="text-white font-medium">Admin</span>
-              </div>
-            </div>
-          </header>
-
-          {/* Temporary Content Placeholder - This matches the 'Dashboard' feel */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {[
-              { label: 'Ventas del Día', value: '$ 154,200', color: 'text-green-400' },
-              { label: 'Pedidos Pendientes', value: '12', color: 'text-blue-400' },
-              { label: 'Stock Bajo', value: '5 Prod.', color: 'text-red-400' },
-              { label: 'Caja Actual', value: '$ 45,500', color: 'text-yellow-400' },
-            ].map((stat, i) => (
-              <div key={i} className="bg-gray-900/50 border border-gray-800 p-6 rounded-xl hover:bg-gray-900 transition-colors">
-                <h3 className="text-gray-500 text-sm font-medium mb-2">{stat.label}</h3>
-                <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
-              </div>
-            ))}
-          </div>
-
-          <div className="bg-gray-900/30 border border-gray-800 rounded-xl p-8 text-center text-gray-500">
-            <p>Selecciona una opción del menú para comenzar.</p>
-          </div>
-        </div>
-      </main>
-    </div>
+        {/* Main Content Area - Offset by sidebar width on desktop */}
+        <main className="flex-grow-1 transition-all" style={{ marginLeft: '0px' }}>
+          <style>
+            {`
+              @media (min-width: 992px) {
+                main { margin-left: 260px !important; }
+              }
+            `}
+          </style>
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/clientes/" element={<Clientes />} />
+            <Route path="/clientes" element={<Clientes />} />
+            <Route path="/productos" element={<Productos />} />
+            <Route path="/ventas/nuevo" element={<NuevaVenta />} />
+          </Routes>
+        </main>
+      </div>
+    </Router>
   )
 }
 

@@ -28,22 +28,16 @@
             <div class="row mb-3">
                 <div class="col-md-8 position-relative">
                     <label class="form-label">Cliente:</label>
-                    <input type="text"
-                           id="buscar_cliente"
-                           class="form-control"
-                           autocomplete="off"
-                           placeholder="Buscar cliente por nombre o CUIT…">
+                    <input type="text" id="buscar_cliente" class="form-control" autocomplete="off"
+                        placeholder="Buscar cliente por nombre o CUIT…">
 
                     <!-- Sugerencias de clientes -->
-                    <div id="lista_clientes"
-                         class="list-group position-absolute w-100"
-                         style="z-index: 1000; display:none;"></div>
+                    <div id="lista_clientes" class="list-group position-absolute w-100"
+                        style="z-index: 1000; display:none;"></div>
                 </div>
 
                 <div class="col-md-4 d-flex align-items-end">
-                    <button class="btn btn-success w-100"
-                            data-bs-toggle="modal"
-                            data-bs-target="#modalNuevoCliente">
+                    <button class="btn btn-success w-100" data-bs-toggle="modal" data-bs-target="#modalNuevoCliente">
                         + Nuevo Cliente
                     </button>
                 </div>
@@ -82,16 +76,12 @@
                 <!-- Buscador con AUTOCOMPLETE -->
                 <div class="col-md-8 position-relative">
                     <label class="form-label">Buscar producto:</label>
-                    <input type="text"
-                           id="buscar_producto"
-                           class="form-control"
-                           autocomplete="off"
-                           placeholder="Código, nombre, marca o rubro…">
+                    <input type="text" id="buscar_producto" class="form-control" autocomplete="off"
+                        placeholder="Código, nombre, marca o rubro…">
 
                     <!-- Lista de sugerencias -->
-                    <div id="lista_sugerencias"
-                         class="list-group position-absolute w-100"
-                         style="z-index: 1000; display:none;"></div>
+                    <div id="lista_sugerencias" class="list-group position-absolute w-100"
+                        style="z-index: 1000; display:none;"></div>
                 </div>
 
                 <div class="col-md-2">
@@ -186,6 +176,34 @@
                 </div>
             </div>
 
+            <!-- DATOS CHEQUE (Oculto por defecto) -->
+            <div id="datos_cheque" class="row g-3 mt-2"
+                style="display:none; border-top: 1px dashed #ccc; padding-top: 10px;">
+                <div class="col-12">
+                    <h6 class="text-muted">Datos del Cheque</h6>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Banco:</label>
+                    <input id="cheque_banco" class="form-control" placeholder="Ej: Galicia">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Número:</label>
+                    <input id="cheque_numero" class="form-control" placeholder="Nro Cheque">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Fecha Pago:</label>
+                    <input type="date" id="cheque_fecha_pago" class="form-control">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Firmante:</label>
+                    <input id="cheque_firmante" class="form-control" placeholder="Nombre titular">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">CUIT Firmante:</label>
+                    <input id="cheque_cuit" class="form-control" placeholder="CUIT">
+                </div>
+            </div>
+
         </div>
     </div>
 
@@ -270,10 +288,10 @@
         max-height: 220px;
         overflow-y: auto;
         border-radius: 6px;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
     }
 </style>
 
 
 {% endblock %}
-    <script src="{% static 'administrar/js/ventas.js' %}"></script>
+<script src="{% static 'administrar/js/ventas.js' %}"></script>

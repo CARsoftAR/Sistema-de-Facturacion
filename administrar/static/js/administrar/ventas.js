@@ -319,7 +319,18 @@ document.addEventListener("DOMContentLoaded", function () {
         inputMontoPago.addEventListener("input", recalcularVuelto);
     }
     if (selectMedioPago) {
-        selectMedioPago.addEventListener("change", recalcularVuelto);
+        selectMedioPago.addEventListener("change", () => {
+            recalcularVuelto();
+
+            const divCheque = document.getElementById("datos_cheque");
+            if (divCheque) {
+                if (selectMedioPago.value === "CHEQUE") {
+                    divCheque.style.display = "flex";
+                } else {
+                    divCheque.style.display = "none";
+                }
+            }
+        });
     }
 
     // ===========================
@@ -353,8 +364,30 @@ document.addEventListener("DOMContentLoaded", function () {
                 medio_pago: medioPago,
                 monto_pago: montoPago,
                 total_general: totalGeneral,
-                items: itemsVenta
+                items: itemsVenta,
+                cheque: {}
             };
+
+            if (medioPago === "CHEQUE") {
+                const banco = document.getElementById("cheque_banco").value;
+                const numero = document.getElementById("cheque_numero").value;
+                const fechaPago = document.getElementById("cheque_fecha_pago").value;
+                const firmante = document.getElementById("cheque_firmante").value;
+                const cuit = document.getElementById("cheque_cuit").value;
+
+                if (!banco || !numero || !fechaPago) {
+                    alert("Complete los datos obligatorios del cheque (Banco, Número, Fecha Pago).");
+                    return;
+                }
+
+                payload.cheque = {
+                    banco: banco,
+                    numero: numero,
+                    fecha_pago: fechaPago,
+                    firmante: firmante,
+                    cuit: cuit
+                };
+            }
 
             fetch("/api/venta/guardar/", {
                 method: "POST",

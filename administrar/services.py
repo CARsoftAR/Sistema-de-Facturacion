@@ -20,9 +20,15 @@ class AccountingService:
     CUENTA_IVA_CREDITO = "1.1.04.001"
     CUENTA_COSTO_MERCADERIAS = "5.1.01"
     
+    # Cuentas para Medios de Pago
+    CUENTA_CAJA = "Caja en Pesos"
+    CUENTA_TARJETAS_A_COBRAR = "Tarjetas a Cobrar"  # Activo - Crédito por cobrar de tarjetas
+    CUENTA_COMISIONES_TARJETA = "Comisiones Tarjeta"  # Gasto - Comisión del procesador
+    
     # Cuentas de Retenciones
     CUENTA_RETENCIONES_A_DEPOSITAR = "Retenciones a Depositar" # Pasivo (Pago a Proveedor)
     CUENTA_RETENCIONES_SUFRIDAS = "Retenciones Sufridas"     # Activo (Cobro a Cliente)
+
 
     @classmethod
     def _obtener_ejercicio_vigente(cls, fecha=None):
@@ -452,6 +458,107 @@ class AccountingService:
             ItemAsiento.objects.create(asiento=asiento, cuenta=cuenta_deudores, debe=0, haber=venta.total)
 
             print(f"DEBUG: Asiento Cobro {nuevo_numero} creado para Venta {venta.id}")
+
+    @classmethod
+    def registrar_cobro_venta_tarjeta(cls, venta, comision_porcentaje=Decimal("0.03")):
+        """
+        Genera asiento de cobro con tarjeta.
+        La tarjeta genera un crédito a cobrar de la procesadora, menos comisión.
+        
+        Contablemente:
+        - Debe: Tarjetas a Cobrar (monto neto que recibiremos)
+        - Debe: Comisiones Tarjeta (gasto por la comisión, si aplica)
+        - Haber: Deudores por Ventas (cancelamos la deuda del cliente)
+        
+        NOTA: Si no existe cuenta de comisiones, se registra el total sin desglose.
+        """
+        ejercicio = cls._obtener_ejercicio_vigente(venta.fecha.date())
+        if not ejercicio: return
+
+        cuenta_tarjetas = cls._obtener_cuenta(cls.CUENTA_TARJETAS_A_COBRAR)
+        cuenta_deudores = cls._obtener_cuenta(cls.CUENTA_DEUDORES_POR_VENTAS)
+        cuenta_comisiones = cls._obtener_cuenta(cls.CUENTA_COMISIONES_TARJETA)
+
+        # Si no existe cuenta Tarjetas, usamos Caja como fallback
+        if not cuenta_tarjetas:
+            cuenta_tarjetas = cls._obtener_cuenta(cls.CUENTA_CAJA)
+            
+        if not cuenta_tarjetas or not cuenta_deudores:
+            print("Faltan cuentas para cobro tarjeta (Tarjetas/Caja o Deudores)")
+            return
+
+        # Calcular montos
+        total = venta.total
+        comision = total * comision_porcentaje if cuenta_comisiones else Decimal("0")
+        neto_tarjeta = total - comision
+
+        with transaction.atomic():
+            ultimo_numero = Asiento.objects.filter(ejercicio=ejercicio).order_by('-numero').first()
+            nuevo_numero = (ultimo_numero.numero + 1) if ultimo_numero else 1
+
+            asiento = Asiento.objects.create(
+                numero=nuevo_numero,
+                fecha=venta.fecha,
+                descripcion=f"Cobro Tarjeta Venta #{venta.id} - {venta.cliente.nombre}",
+                ejercicio=ejercicio,
+                origen='COBROS',
+                usuario='Sistema'
+            )
+
+            # Debe Tarjetas a Cobrar (neto)
+            ItemAsiento.objects.create(asiento=asiento, cuenta=cuenta_tarjetas, debe=neto_tarjeta, haber=0)
+            
+            # Debe Comisiones (si existe la cuenta y hay comisión)
+            if cuenta_comisiones and comision > 0:
+                ItemAsiento.objects.create(asiento=asiento, cuenta=cuenta_comisiones, debe=comision, haber=0)
+            
+            # Haber Deudores (total)
+            ItemAsiento.objects.create(asiento=asiento, cuenta=cuenta_deudores, debe=0, haber=total)
+
+            print(f"DEBUG: Asiento Cobro Tarjeta {nuevo_numero} creado para Venta {venta.id} (Neto: {neto_tarjeta}, Comisión: {comision})")
+
+    @classmethod
+    def registrar_cobro_venta_cheque(cls, venta, cheque):
+        """
+        Genera asiento de cobro con cheque de tercero.
+        Cuando un cliente paga con cheque, el cheque entra a cartera.
+        
+        Contablemente:
+        - Debe: Valores a Depositar (cheque en cartera)
+        - Haber: Deudores por Ventas (cancelamos la deuda del cliente)
+        
+        NOTA: El cheque debe ser creado previamente como objeto Cheque.
+        """
+        ejercicio = cls._obtener_ejercicio_vigente(venta.fecha.date())
+        if not ejercicio: return
+
+        cuenta_valores = cls._obtener_cuenta(cls.CUENTA_VALORES_A_DEPOSITAR)
+        cuenta_deudores = cls._obtener_cuenta(cls.CUENTA_DEUDORES_POR_VENTAS)
+
+        if not cuenta_valores or not cuenta_deudores:
+            print("Faltan cuentas para cobro cheque (Valores o Deudores)")
+            return
+
+        with transaction.atomic():
+            ultimo_numero = Asiento.objects.filter(ejercicio=ejercicio).order_by('-numero').first()
+            nuevo_numero = (ultimo_numero.numero + 1) if ultimo_numero else 1
+
+            asiento = Asiento.objects.create(
+                numero=nuevo_numero,
+                fecha=venta.fecha,
+                descripcion=f"Cobro Cheque #{cheque.numero} Venta #{venta.id} - {venta.cliente.nombre}",
+                ejercicio=ejercicio,
+                origen='COBROS',
+                usuario='Sistema'
+            )
+
+            # Debe Valores a Depositar
+            ItemAsiento.objects.create(asiento=asiento, cuenta=cuenta_valores, debe=cheque.monto, haber=0)
+            # Haber Deudores
+            ItemAsiento.objects.create(asiento=asiento, cuenta=cuenta_deudores, debe=0, haber=cheque.monto)
+
+            print(f"DEBUG: Asiento Cobro Cheque {nuevo_numero} creado para Venta {venta.id}, Cheque {cheque.numero}")
+
 
     @classmethod
     def registrar_pago_compra_contado(cls, compra):

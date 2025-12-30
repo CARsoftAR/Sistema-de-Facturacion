@@ -4,7 +4,7 @@ let modalEjercicio;
 
 // Configuración de paginación
 let paginaActual = 1;
-let itemsPorPagina = 10;
+let itemsPorPagina = 5;
 
 document.addEventListener('DOMContentLoaded', function () {
     // Inicializar modal
@@ -151,6 +151,9 @@ function renderizarTabla(ejercicios) {
                 <td>${duracion}</td>
                 <td>${estadoBadge}</td>
                 <td class="text-end">
+                    <a href="/contabilidad/asientos/?ejercicio_id=${e.id}" class="btn btn-sm btn-outline-info me-1" title="Ver Asientos">
+                        <i class="bi bi-list-check"></i>
+                    </a>
                     <button class="btn btn-sm btn-outline-primary me-1" onclick="editarEjercicio(${e.id})">
                         <i class="bi bi-pencil"></i>
                     </button>

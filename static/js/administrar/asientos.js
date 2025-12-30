@@ -7,7 +7,7 @@ let movimientos = [];
 
 // Configuración de paginación
 let paginaActual = 1;
-let itemsPorPagina = 20;
+let itemsPorPagina = 5;
 
 document.addEventListener('DOMContentLoaded', function () {
     // Inicializar modal
@@ -58,6 +58,18 @@ function cargarEjercicios() {
             if (data.success) {
                 ejerciciosDisponibles = data.ejercicios;
                 llenarSelectEjercicios();
+
+                // Check for URL param to pre-filter
+                const urlParams = new URLSearchParams(window.location.search);
+                const ejercicioId = urlParams.get('ejercicio_id');
+                if (ejercicioId) {
+                    const select = document.getElementById('filtroEjercicio');
+                    if (select.querySelector(`option[value="${ejercicioId}"]`)) {
+                        select.value = ejercicioId;
+                        console.log("Pre-filtering by ejercicio_id:", ejercicioId);
+                        aplicarFiltros();
+                    }
+                }
             }
         })
         .catch(error => console.error('Error:', error));
@@ -139,7 +151,7 @@ function aplicarFiltros() {
             asiento.descripcion.toLowerCase().includes(textoFiltro);
 
         const coincideEjercicio = !ejercicioFiltro ||
-            asiento.ejercicio_id.toString() === ejercicioFiltro;
+            (asiento.ejercicio_id && asiento.ejercicio_id.toString() === ejercicioFiltro);
 
         const coincideFechaDesde = !fechaDesde || asiento.fecha >= fechaDesde;
         const coincideFechaHasta = !fechaHasta || asiento.fecha <= fechaHasta;
@@ -327,9 +339,19 @@ function abrirModalAsiento() {
     // Habilitar edición
     alternarEdicion(true);
 
-    // Limpiar movimientos
+    // Limpiar movimientos e inicializar con 1 línea
     movimientos = [];
+    agregarMovimiento();
     renderizarMovimientos();
+
+    // Intentar pre-seleccionar ejercicio vigente
+    const hoy = new Date().toISOString().split('T')[0];
+    const ejercicioVigente = ejerciciosDisponibles.find(e =>
+        !e.cerrado && e.fecha_inicio <= hoy && e.fecha_fin >= hoy
+    );
+    if (ejercicioVigente) {
+        document.getElementById('ejercicio_id').value = ejercicioVigente.id;
+    }
 
     modalAsiento.show();
 }
@@ -350,6 +372,10 @@ function agregarMovimiento() {
     renderizarMovimientos();
 }
 
+// ==========================================
+// FILA DE MOVIMIENTO
+// ==========================================
+
 function renderizarMovimientos(soloLectura = false) {
     const tbody = document.getElementById('tablaMovimientos');
 
@@ -359,55 +385,191 @@ function renderizarMovimientos(soloLectura = false) {
         return;
     }
 
-    let html = '';
+    tbody.innerHTML = '';
     movimientos.forEach((mov, index) => {
-        html += `
-            <tr>
-                <td>
-                    <select class="form-select form-select-sm" ${soloLectura ? 'disabled' : ''} onchange="actualizarMovimiento(${index}, 'cuenta_id', this.value)" required>
-                        <option value="">Seleccione una cuenta...</option>
-                        ${cuentasDisponibles.map(c => `
-                            <option value="${c.id}" ${mov.cuenta_id == c.id ? 'selected' : ''}>
-                                ${'&nbsp;'.repeat((c.nivel - 1) * 4)}${c.codigo} - ${c.nombre}
-                            </option>
-                        `).join('')}
-                    </select>
-                </td>
-                <td>
-                    <input type="number" class="form-control form-control-sm text-end" ${soloLectura ? 'disabled' : ''}
-                           value="${mov.debe}" step="0.01" min="0"
-                           onchange="actualizarMovimiento(${index}, 'debe', this.value)">
-                </td>
-                <td>
-                    <input type="number" class="form-control form-control-sm text-end" ${soloLectura ? 'disabled' : ''}
-                           value="${mov.haber}" step="0.01" min="0"
-                           onchange="actualizarMovimiento(${index}, 'haber', this.value)">
-                </td>
-                <td class="text-center">
-                    ${!soloLectura ? `
-                    <button type="button" class="btn btn-sm btn-danger" onclick="eliminarMovimiento(${index})">
-                        <i class="bi bi-trash"></i>
-                    </button>` : ''}
-                </td>
-            </tr>
+        const tr = document.createElement('tr');
+
+        let selectHtml = '';
+        if (soloLectura) {
+            const cuenta = cuentasDisponibles.find(c => c.id == mov.cuenta_id);
+            const nombreCuenta = cuenta ? `${cuenta.codigo} - ${cuenta.nombre}` : 'Cuenta no encontrada';
+            selectHtml = `<input type="text" class="form-control form-control-sm" value="${nombreCuenta}" disabled>`;
+        } else {
+            const cuenta = cuentasDisponibles.find(c => c.id == mov.cuenta_id);
+            const valCuenta = cuenta ? `${cuenta.codigo} - ${cuenta.nombre}` : '';
+
+            // Input búsqueda + Hidden ID + Lista Sugerencias
+            selectHtml = `
+                 <div class="position-relative">
+                    <input type="text" class="form-control form-control-sm busqueda-cuenta" 
+                           placeholder="Buscar cuenta..."
+                           value="${valCuenta}" 
+                           data-index="${index}"
+                           autocomplete="off">
+                    <input type="hidden" value="${mov.cuenta_id || ''}" id="cuenta_id_${index}">
+                    
+                    <div class="list-group position-absolute w-100 shadow-sm sugerencias-cuenta" 
+                         id="sugerencias_${index}" 
+                         style="z-index: 1000; display:none; max-height: 200px; overflow-y: auto;">
+                    </div>
+                 </div>
+             `;
+        }
+
+        tr.innerHTML = `
+            <td>
+                ${selectHtml}
+            </td>
+            <td>
+                <input type="number" class="form-control form-control-sm text-end input-debe" ${soloLectura ? 'disabled' : ''}
+                       id="debe_${index}"
+                       value="${mov.debe}" step="0.01" min="0"
+                       onchange="actualizarMovimiento(${index}, 'debe', this.value)">
+            </td>
+            <td>
+                <input type="number" class="form-control form-control-sm text-end input-haber" ${soloLectura ? 'disabled' : ''}
+                       id="haber_${index}"
+                       value="${mov.haber}" step="0.01" min="0"
+                       onchange="actualizarMovimiento(${index}, 'haber', this.value)">
+            </td>
+            <td class="text-center">
+                ${!soloLectura ? `
+                <button type="button" class="btn btn-sm btn-danger" onclick="eliminarMovimiento(${index})" tabindex="-1">
+                    <i class="bi bi-trash"></i>
+                </button>` : ''}
+            </td>
         `;
+        tbody.appendChild(tr);
+
+        // Agregar listeners para el autocomplete
+        if (!soloLectura) {
+            setupAutocompleteCuenta(index);
+        }
     });
 
-    tbody.innerHTML = html;
     actualizarTotales();
 }
 
-function actualizarMovimiento(index, campo, valor) {
-    movimientos[index][campo] = campo === 'cuenta_id' ? valor : parseFloat(valor) || 0;
+function setupAutocompleteCuenta(index) {
+    const input = document.querySelector(`.busqueda-cuenta[data-index="${index}"]`);
+    const lista = document.getElementById(`sugerencias_${index}`);
+    const hidden = document.getElementById(`cuenta_id_${index}`);
+    let selectedIdx = -1;
 
-    // Si se ingresa en Debe, limpiar Haber y viceversa
-    if (campo === 'debe' && parseFloat(valor) > 0) {
-        movimientos[index].haber = 0;
-    } else if (campo === 'haber' && parseFloat(valor) > 0) {
-        movimientos[index].debe = 0;
+    // Mostrar todos al hacer click si está vacío
+    input.addEventListener('focus', () => {
+        filtrarYMostrar(index, input.value, true);
+    });
+
+    input.addEventListener('input', () => {
+        movimientos[index].cuenta_id = ''; // Reset si escribe
+        hidden.value = '';
+        filtrarYMostrar(index, input.value);
+    });
+
+    input.addEventListener('keydown', (e) => {
+        const items = lista.querySelectorAll('button');
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            selectedIdx = Math.min(selectedIdx + 1, items.length - 1);
+            highlightItem(items, selectedIdx);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            selectedIdx = Math.max(selectedIdx - 1, 0);
+            highlightItem(items, selectedIdx);
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (selectedIdx >= 0 && items[selectedIdx]) {
+                items[selectedIdx].click();
+            } else {
+                // Si no hay selección pero hay un solo item, seleccionar ese
+                if (items.length === 1) items[0].click();
+                // Si no, pasar foco al Debe
+                else document.getElementById(`debe_${index}`).focus();
+            }
+        } else if (e.key === 'Tab') {
+            lista.style.display = 'none';
+        }
+    });
+
+    // Ocultar al clickear fuera
+    document.addEventListener('click', (e) => {
+        if (!input.contains(e.target) && !lista.contains(e.target)) {
+            lista.style.display = 'none';
+        }
+    });
+}
+
+function filtrarYMostrar(index, texto, forceShow = false) {
+    const lista = document.getElementById(`sugerencias_${index}`);
+
+    // Filtrar cuentas (o mostrar primeras 5 si vacío)
+    let resultados = [];
+    if (!texto && forceShow) {
+        resultados = cuentasDisponibles.slice(0, 5);
+    } else {
+        const busqueda = texto.toLowerCase();
+        resultados = cuentasDisponibles.filter(c =>
+            c.codigo.toLowerCase().includes(busqueda) ||
+            c.nombre.toLowerCase().includes(busqueda)
+        ).slice(0, 5); // Limite de 5 resultados
     }
 
-    renderizarMovimientos();
+    lista.innerHTML = '';
+    if (resultados.length > 0) {
+        resultados.forEach((c, idx) => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'list-group-item list-group-item-action py-1';
+            btn.innerHTML = `<small class="fw-bold">${c.codigo}</small> <small>${c.nombre}</small>`;
+            btn.addEventListener('click', () => seleccionarCuenta(index, c));
+            lista.appendChild(btn);
+        });
+        lista.style.display = 'block';
+    } else {
+        lista.style.display = 'none';
+    }
+}
+
+function highlightItem(items, idx) {
+    items.forEach((item, i) => {
+        if (i === idx) item.classList.add('active');
+        else item.classList.remove('active');
+    });
+}
+
+function seleccionarCuenta(index, cuenta) {
+    movimientos[index].cuenta_id = cuenta.id;
+
+    const input = document.querySelector(`.busqueda-cuenta[data-index="${index}"]`);
+    const hidden = document.getElementById(`cuenta_id_${index}`);
+    const lista = document.getElementById(`sugerencias_${index}`);
+
+    input.value = `${cuenta.codigo} - ${cuenta.nombre}`;
+    hidden.value = cuenta.id;
+    lista.style.display = 'none';
+
+    // Pasar foco al Debe
+    document.getElementById(`debe_${index}`).focus();
+}
+
+function actualizarMovimiento(index, campo, valor) {
+    // Si es cuenta_id ya se actualizó en seleccionarCuenta. 
+    // Aquí solo manejamos debe/haber inputs numéricos
+    if (campo !== 'cuenta_id') {
+        movimientos[index][campo] = parseFloat(valor) || 0;
+
+        // Si se ingresa en Debe, limpiar Haber y viceversa
+        if (campo === 'debe' && parseFloat(valor) > 0) {
+            movimientos[index].haber = 0;
+            document.getElementById(`haber_${index}`).value = 0;
+        } else if (campo === 'haber' && parseFloat(valor) > 0) {
+            movimientos[index].debe = 0;
+            document.getElementById(`debe_${index}`).value = 0;
+        }
+
+        actualizarTotales();
+    }
 }
 
 function eliminarMovimiento(index) {

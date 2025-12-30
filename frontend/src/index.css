@@ -1,14 +1,16 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Tailwind removed to ensure Bootstrap parity */
 
 :root {
-  color-scheme: dark;
+  /* Default to light scheme for readability in data-heavy apps */
+  color-scheme: light;
 }
 
 body {
   margin: 0;
-  background-color: #020617; /* Slate 950 */
-  color: #f8fafc;
+  /* Light Blue/Gray background for easier reading of tables/forms */
+  background-color: #f1f5f9;
+  /* Slate 100 */
+  color: #334155;
+  /* Slate 700 */
   font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
 }
