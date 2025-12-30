@@ -187,6 +187,22 @@ const NuevaVenta = () => {
         return () => clearTimeout(timer);
     }, [inputProducto]);
 
+    // ==================== BUSCAR BANCO ====================
+    useEffect(() => {
+        const busqueda = datosCheque.banco;
+        if (!busqueda || busqueda.length < 2) {
+            setBancosSugeridos([]);
+            setMostrarSugerenciasBanco(false);
+            return;
+        }
+        const resultados = BANCOS_ARGENTINOS.filter(b =>
+            b.toLowerCase().includes(busqueda.toLowerCase())
+        );
+        setBancosSugeridos(resultados);
+        setMostrarSugerenciasBanco(resultados.length > 0);
+        setSugerenciaBancoActiva(0);
+    }, [datosCheque.banco]);
+
     // ==================== OBTENER INICIALES ====================
     const getInitials = (nombre) => {
         if (!nombre) return '?';
@@ -410,6 +426,44 @@ const NuevaVenta = () => {
         if (e.key === 'Enter') {
             e.preventDefault();
             document.getElementById('input-tarjeta-cuotas')?.focus();
+        }
+    };
+
+    const seleccionarBanco = (banco) => {
+        setDatosCheque({ ...datosCheque, banco: banco });
+        setMostrarSugerenciasBanco(false);
+        // document.getElementById('input-cheque-numero')?.focus(); // Idealmente, pero usaremos ref o ID simple
+        // Pequeño timeout para asegurar que el input exista/esté visible tras render
+        setTimeout(() => {
+            const el = document.querySelector('input[placeholder="Nº Cheque"]');
+            if (el) el.focus();
+        }, 50);
+    };
+
+    const handleBancoKeyDown = (e) => {
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            const newIndex = Math.min(sugerenciaBancoActiva + 1, bancosSugeridos.length - 1);
+            setSugerenciaBancoActiva(newIndex);
+            const item = bancoListRef.current?.children[newIndex];
+            item?.scrollIntoView({ block: 'nearest' });
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            const newIndex = Math.max(sugerenciaBancoActiva - 1, 0);
+            setSugerenciaBancoActiva(newIndex);
+            const item = bancoListRef.current?.children[newIndex];
+            item?.scrollIntoView({ block: 'nearest' });
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (mostrarSugerenciasBanco && bancosSugeridos.length > 0) {
+                seleccionarBanco(bancosSugeridos[sugerenciaBancoActiva]);
+            } else {
+                // Si dio enter sin seleccionar de la lista, pasa al siguiente
+                const el = document.querySelector('input[placeholder="Nº Cheque"]');
+                if (el) el.focus();
+            }
+        } else if (e.key === 'Escape') {
+            setMostrarSugerenciasBanco(false);
         }
     };
 
@@ -900,15 +954,32 @@ const NuevaVenta = () => {
                                 {medioPago === 'CHEQUE' && (
                                     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
                                         <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-4">
-                                            <div>
+                                            <div className="relative">
                                                 <label className="block text-xs font-bold text-slate-500 mb-1">BANCO</label>
-                                                <input
+                                                <AutoFocusInput
+                                                    key="input-banco" // Clave única para re-mount y autofocus
                                                     type="text"
                                                     value={datosCheque.banco}
                                                     onChange={(e) => setDatosCheque({ ...datosCheque, banco: e.target.value })}
+                                                    onKeyDown={handleBancoKeyDown}
+                                                    onBlur={() => setTimeout(() => setMostrarSugerenciasBanco(false), 200)}
                                                     placeholder="Nombre del banco..."
                                                     className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:border-blue-500 outline-none bg-white"
                                                 />
+                                                {/* Dropdown Bancos */}
+                                                {mostrarSugerenciasBanco && bancosSugeridos.length > 0 && (
+                                                    <div ref={bancoListRef} className="absolute left-0 top-full mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-2xl max-h-48 overflow-y-auto z-50">
+                                                        {bancosSugeridos.map((b, idx) => (
+                                                            <div
+                                                                key={idx}
+                                                                onClick={() => seleccionarBanco(b)}
+                                                                className={`px-4 py-3 cursor-pointer border-b border-slate-50 last:border-b-0 ${idx === sugerenciaBancoActiva ? 'bg-blue-50 text-blue-800 font-bold' : 'hover:bg-slate-50 text-slate-700'}`}
+                                                            >
+                                                                {b}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
                                             </div>
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div>
@@ -916,7 +987,18 @@ const NuevaVenta = () => {
                                                     <input
                                                         type="text"
                                                         value={datosCheque.numero}
-                                                        onChange={(e) => setDatosCheque({ ...datosCheque, numero: e.target.value })}
+                                                        onChange={(e) => {
+                                                            const val = e.target.value.replace(/\D/g, ''); // Solo números
+                                                            setDatosCheque({ ...datosCheque, numero: val });
+                                                        }}
+                                                        maxLength={20}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter') {
+                                                                e.preventDefault();
+                                                                document.getElementById('input-cheque-vencimiento')?.focus();
+                                                                document.getElementById('input-cheque-vencimiento')?.showPicker(); // Opcional: abrir calendario
+                                                            }
+                                                        }}
                                                         placeholder="Nº Cheque"
                                                         className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:border-blue-500 outline-none bg-white"
                                                     />
@@ -924,6 +1006,7 @@ const NuevaVenta = () => {
                                                 <div>
                                                     <label className="block text-xs font-bold text-slate-500 mb-1">VENCIMIENTO</label>
                                                     <input
+                                                        id="input-cheque-vencimiento"
                                                         type="date"
                                                         value={datosCheque.fechaVto}
                                                         onChange={(e) => setDatosCheque({ ...datosCheque, fechaVto: e.target.value })}
