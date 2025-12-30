@@ -231,6 +231,15 @@ class Venta(models.Model):
     cae = models.CharField(max_length=20, blank=True, null=True)
     estado = models.CharField(max_length=20, default="Emitida")
     
+    MEDIO_PAGO_CHOICES = [
+        ('EFECTIVO', 'Efectivo'),
+        ('TARJETA', 'Tarjeta'),
+        ('CHEQUE', 'Cheque'),
+        ('CTACTE', 'Cuenta Corriente'),
+        ('OTRO', 'Otro'),
+    ]
+    medio_pago = models.CharField(max_length=10, choices=MEDIO_PAGO_CHOICES, default='EFECTIVO')
+    
     # Referencia al pedido que originó esta venta (si aplica)
     pedido_origen = models.ForeignKey('Pedido', on_delete=models.SET_NULL, null=True, blank=True, related_name='ventas_generadas')
 

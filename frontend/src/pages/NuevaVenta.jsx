@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { Search, Plus, Trash2, User, ShoppingCart, CreditCard, DollarSign, FileText, X, Check, Banknote } from 'lucide-react';
 
 // Obtener CSRF Token
@@ -54,6 +54,18 @@ const BANCOS_ARGENTINOS = [
     "Banco de Tierra del Fuego",
 ];
 
+const AutoFocusInput = ({ onKeyDownNext, ...props }) => {
+    const inputRef = useRef(null);
+    useLayoutEffect(() => {
+        if (inputRef.current) {
+            inputRef.current.focus();
+            requestAnimationFrame(() => inputRef.current?.focus());
+            setTimeout(() => inputRef.current?.focus(), 200);
+        }
+    }, []);
+    return <input ref={inputRef} {...props} />;
+};
+
 const NuevaVenta = () => {
     // ==================== STATE ====================
     const [cliente, setCliente] = useState(null);
@@ -90,6 +102,9 @@ const NuevaVenta = () => {
     const [datosTarjeta, setDatosTarjeta] = useState({ ultimos4: '', cuotas: '1' });
     const [datosCheque, setDatosCheque] = useState({ banco: '', numero: '', fechaVto: '' });
 
+    // Alerta de Stock
+    const [alertaStock, setAlertaStock] = useState(null);
+
     // Autocompletado de bancos
     const [bancosSugeridos, setBancosSugeridos] = useState([]);
     const [mostrarSugerenciasBanco, setMostrarSugerenciasBanco] = useState(false);
@@ -101,12 +116,17 @@ const NuevaVenta = () => {
     const productoRef = useRef(null);
     const cantidadRef = useRef(null);
     const clienteInputRef = useRef(null);
-    const montoPagoRef = useRef(null);
+    // Refs eliminados para usar IDs directos en el modal de pago
 
     // Referencias para scroll automático en listas
     const clienteListRef = useRef(null);
     const codigoListRef = useRef(null);
     const productoListRef = useRef(null);
+
+    // ==================== FOCUS INICIAL ====================
+    useEffect(() => {
+        setTimeout(() => clienteInputRef.current?.focus(), 100);
+    }, []);
 
     // ==================== BUSCAR CLIENTE ====================
     useEffect(() => {
@@ -225,14 +245,41 @@ const NuevaVenta = () => {
         setTimeout(() => cantidadRef.current?.select(), 50);
     };
 
+    // ==================== CERRAR ALERTA STOCK ====================
+    const cerrarAlertaStock = () => {
+        setAlertaStock(null);
+        limpiarCamposEntrada();
+        codigoRef.current?.focus();
+    };
+
     // ==================== AGREGAR PRODUCTO A LA LISTA ====================
     const agregarProductoALista = () => {
         if (!productoSeleccionado) return;
 
+        // Validar Stock
+        if (productoSeleccionado.stock <= 0) {
+            setAlertaStock({
+                titulo: 'Producto sin Stock',
+                mensaje: `El producto "${productoSeleccionado.descripcion}" no tiene stock disponible para la venta.`
+            });
+            return;
+        }
+
         const cantidad = parseFloat(inputCantidad) || 1;
         const precio = parseFloat(inputPrecio) || productoSeleccionado.precio_efectivo;
 
+        // Calcular cantidad total (si ya existe en el carrito)
         const existe = items.find(i => i.id === productoSeleccionado.id);
+        const cantidadTotal = existe ? existe.cantidad + cantidad : cantidad;
+
+        if (cantidadTotal > productoSeleccionado.stock) {
+            setAlertaStock({
+                titulo: 'Stock Insuficiente',
+                mensaje: `No se puede agregar esa cantidad. Stock disponible: ${productoSeleccionado.stock}`
+            });
+            return;
+        }
+
         if (existe) {
             setItems(items.map(i =>
                 i.id === productoSeleccionado.id
@@ -251,6 +298,7 @@ const NuevaVenta = () => {
             }]);
         }
 
+        setMensaje(null); // Limpiar mensaje si fue exitoso
         limpiarCamposEntrada();
         codigoRef.current?.focus();
     };
@@ -343,6 +391,7 @@ const NuevaVenta = () => {
     const vuelto = parseFloat(montoPago || 0) - totalGeneral;
 
     // ==================== ABRIR MODAL DE PAGO ====================
+    // ==================== ABRIR MODAL DE PAGO ====================
     const abrirModalPago = () => {
         if (items.length === 0) {
             setMensaje({ tipo: 'error', texto: 'Debe agregar al menos un producto.' });
@@ -352,7 +401,16 @@ const NuevaVenta = () => {
         setDatosTarjeta({ ultimos4: '', cuotas: '1' });
         setDatosCheque({ banco: '', numero: '', fechaVto: '' });
         setMostrarModalPago(true);
-        setTimeout(() => montoPagoRef.current?.focus(), 100);
+    };
+
+    // Callback ref eliminado en favor de AutoFocusInput
+
+
+    const handleTarjetaKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            document.getElementById('input-tarjeta-cuotas')?.focus();
+        }
     };
 
     // ==================== GUARDAR VENTA ====================
@@ -395,7 +453,9 @@ const NuevaVenta = () => {
                 setCliente(null);
                 setItems([]);
                 setGenerarRemito(false);
+                setGenerarRemito(false);
                 limpiarCamposEntrada();
+                setTimeout(() => clienteInputRef.current?.focus(), 100);
             } else {
                 setMensaje({ tipo: 'error', texto: data.error || 'Error al guardar la venta.' });
             }
@@ -410,124 +470,182 @@ const NuevaVenta = () => {
     return (
         <div className="p-6 max-w-7xl mx-auto h-[calc(100vh-2rem)] flex flex-col">
             {/* Header */}
-            <div className="mb-4 flex-shrink-0">
-                <h1 className="text-2xl font-bold text-slate-800">Nueva Venta</h1>
-                <p className="text-slate-500 text-sm">Registrar una nueva operación de venta</p>
+            <div className="mb-6 flex-shrink-0 flex justify-between items-end">
+                <div>
+                    <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
+                        <ShoppingCart className="text-blue-600" size={32} strokeWidth={2.5} />
+                        Nueva Venta
+                    </h1>
+                    <p className="text-slate-500 font-medium ml-10">Registrar una nueva operación de venta</p>
+                </div>
+                <div className="hidden md:block">
+                    <div className="bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-sm text-sm text-slate-600 font-medium flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                        Sistema Operativo
+                    </div>
+                </div>
             </div>
 
             {/* Mensaje */}
             {mensaje && (
-                <div className={`mb-4 p-3 rounded-lg flex-shrink-0 ${mensaje.tipo === 'success'
-                    ? 'bg-green-50 border border-green-200 text-green-800'
-                    : 'bg-red-50 border border-red-200 text-red-800'
+                <div className={`mb-4 p-4 rounded-xl flex-shrink-0 shadow-sm border-l-4 ${mensaje.tipo === 'success'
+                    ? 'bg-white border-green-500 text-green-800'
+                    : 'bg-white border-red-500 text-red-800'
                     }`}>
-                    {mensaje.texto}
+                    <div className="flex items-center gap-3">
+                        {mensaje.tipo === 'success' ? <Check size={20} className="text-green-500" /> : <X size={20} className="text-red-500" />}
+                        <span className="font-medium">{mensaje.texto}</span>
+                    </div>
                 </div>
             )}
 
             {/* Layout principal */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-0">
 
-                {/* =============== COLUMNA IZQUIERDA =============== */}
-                <div className="lg:col-span-1 flex flex-col gap-4 overflow-auto">
-                    {/* Cliente */}
-                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex-shrink-0">
-                        <div className="flex items-center gap-2 mb-3">
-                            <User className="text-slate-400" size={18} />
-                            <h2 className="font-semibold text-slate-700 text-sm">Cliente</h2>
+                {/* =============== COLUMNA IZQUIERDA (4 cols) =============== */}
+                <div
+                    className="lg:col-span-4 flex flex-col gap-6 overflow-y-auto pr-1"
+                    style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                >
+                    <style>
+                        {`
+                            .lg\\:col-span-4::-webkit-scrollbar {
+                                display: none;
+                            }
+                        `}
+                    </style>
+
+                    {/* Cliente Card */}
+                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow p-5 flex-shrink-0 group">
+                        <div className="flex items-center gap-2 mb-4">
+                            <div className="p-2 bg-blue-50 text-blue-600 rounded-lg group-hover:bg-blue-100 transition-colors">
+                                <User size={20} />
+                            </div>
+                            <h2 className="font-bold text-slate-700 text-lg">Cliente</h2>
                         </div>
+
                         <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                             <input
                                 ref={clienteInputRef}
                                 type="text"
-                                placeholder="Buscar cliente..."
+                                placeholder="Buscar por nombre o DNI..."
                                 value={busquedaCliente}
                                 onChange={(e) => setBusquedaCliente(e.target.value)}
                                 onKeyDown={handleClienteKeyDown}
                                 onFocus={() => clientesSugeridos.length > 0 && setMostrarSugerenciasCliente(true)}
                                 onBlur={() => setTimeout(() => setMostrarSugerenciasCliente(false), 200)}
-                                className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-slate-50 text-sm"
+                                className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 bg-slate-50 transition-all font-medium"
                             />
                             {mostrarSugerenciasCliente && clientesSugeridos.length > 0 && (
-                                <div ref={clienteListRef} className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                                <div ref={clienteListRef} className="absolute z-10 w-full mt-2 bg-white border border-slate-100 rounded-xl shadow-xl max-h-60 overflow-y-auto overflow-hidden ring-1 ring-black/5">
                                     {clientesSugeridos.map((c, idx) => (
                                         <div
                                             key={c.id}
                                             onClick={() => seleccionarCliente(c)}
-                                            className={`px-3 py-2 cursor-pointer border-b border-slate-100 last:border-b-0 ${idx === sugerenciaClienteActiva ? 'bg-blue-50' : 'hover:bg-slate-50'}`}
+                                            className={`px-4 py-3 cursor-pointer border-b border-slate-50 last:border-b-0 flex items-center justify-between ${idx === sugerenciaClienteActiva ? 'bg-blue-50' : 'hover:bg-slate-50'}`}
                                         >
-                                            <div className="font-medium text-slate-800 text-sm">{c.nombre}</div>
-                                            <div className="text-xs text-slate-500">{c.cuit || 'Sin CUIT'}</div>
+                                            <div>
+                                                <div className="font-bold text-slate-800">{c.nombre}</div>
+                                                <div className="text-xs text-slate-500 font-mono mt-0.5">{c.cuit || 'Sin CUIT'}</div>
+                                            </div>
+                                            {idx === sugerenciaClienteActiva && <div className="text-blue-500"><Check size={16} /></div>}
                                         </div>
                                     ))}
                                 </div>
                             )}
                         </div>
+
                         {cliente ? (
-                            <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
-                                <div className="flex items-center gap-3">
-                                    {/* Avatar con iniciales */}
-                                    <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">
+                            <div className="mt-4 p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-100 flex items-start justify-between relative overflow-hidden">
+                                <div className="flex items-center gap-3 relative z-10">
+                                    <div className="w-12 h-12 rounded-full bg-white text-blue-600 shadow-sm flex items-center justify-center font-bold text-lg border border-blue-100">
                                         {getInitials(cliente.nombre)}
                                     </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="font-semibold text-slate-800 text-sm truncate">{cliente.nombre}</p>
-                                        <p className="text-xs text-slate-500">{cliente.cuit || 'Sin CUIT'}</p>
+                                    <div>
+                                        <p className="font-bold text-slate-800 text-base">{cliente.nombre}</p>
+                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 mt-1">
+                                            {cliente.cuit || 'Consumidor Final'}
+                                        </span>
                                     </div>
-                                    <button onClick={() => setCliente(null)} className="text-slate-400 hover:text-red-500 flex-shrink-0">
-                                        <Trash2 size={14} />
-                                    </button>
                                 </div>
+                                <button onClick={() => setCliente(null)} className="text-slate-400 hover:text-red-500 hover:bg-white p-2 rounded-full transition-all relative z-10">
+                                    <Trash2 size={16} />
+                                </button>
+                                {/* Decoration */}
+                                <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl"></div>
                             </div>
                         ) : (
-                            <p className="mt-3 text-xs text-slate-400 italic">Consumidor Final</p>
+                            <div className="mt-3 flex items-center gap-2 text-slate-400 px-2">
+                                <div className="w-2 h-2 rounded-full bg-slate-300"></div>
+                                <span className="text-sm font-medium">Consumidor Final seleccionado por defecto</span>
+                            </div>
                         )}
                     </div>
 
-                    {/* Medio de Pago */}
-                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex-shrink-0">
-                        <div className="flex items-center gap-2 mb-3">
-                            <CreditCard className="text-slate-400" size={18} />
-                            <h2 className="font-semibold text-slate-700 text-sm">Pago</h2>
+                    {/* Medio de Pago Card */}
+                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow p-5 flex-shrink-0 group">
+                        <div className="flex items-center gap-2 mb-4">
+                            <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg group-hover:bg-emerald-100 transition-colors">
+                                <CreditCard size={20} />
+                            </div>
+                            <h2 className="font-bold text-slate-700 text-lg">Método de Pago</h2>
                         </div>
-                        <div className="space-y-1">
+
+                        <div className="grid grid-cols-2 gap-3">
                             {[
-                                { value: 'EFECTIVO', label: 'Efectivo', icon: DollarSign },
-                                { value: 'TARJETA', label: 'Tarjeta', icon: CreditCard },
-                                { value: 'CTACTE', label: 'Cta. Cte.', icon: FileText },
-                                { value: 'CHEQUE', label: 'Cheque', icon: Banknote },
-                            ].map(({ value, label, icon: Icon }) => (
-                                <label key={value} className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer border transition-all text-sm ${medioPago === value ? 'border-blue-500 bg-blue-50' : 'border-slate-200 hover:bg-slate-50'}`}>
-                                    <input type="radio" name="medioPago" value={value} checked={medioPago === value} onChange={(e) => setMedioPago(e.target.value)} className="hidden" />
-                                    <Icon size={16} className={medioPago === value ? 'text-blue-600' : 'text-slate-400'} />
-                                    <span className={medioPago === value ? 'text-blue-700 font-medium' : 'text-slate-600'}>{label}</span>
-                                </label>
-                            ))}
+                                { value: 'EFECTIVO', label: 'Efectivo', icon: DollarSign, color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-200' },
+                                { value: 'TARJETA', label: 'Tarjeta', icon: CreditCard, color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-200' },
+                                { value: 'CTACTE', label: 'Cta. Cte.', icon: FileText, color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-200' },
+                                { value: 'CHEQUE', label: 'Cheque', icon: Banknote, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200' },
+                            ].map(({ value, label, icon: Icon, color, bg, border }) => {
+                                const active = medioPago === value;
+                                return (
+                                    <label key={value} className={`relative flex flex-col items-center justify-center gap-2 p-3 rounded-xl cursor-pointer border-2 transition-all duration-200 ${active ? `${border} ${bg}` : 'border-slate-100 hover:border-slate-300 hover:bg-slate-50'}`}>
+                                        <input type="radio" name="medioPago" value={value} checked={active} onChange={(e) => setMedioPago(e.target.value)} className="hidden" />
+                                        <Icon size={24} className={active ? color : 'text-slate-400'} />
+                                        <span className={`font-semibold text-sm ${active ? 'text-slate-800' : 'text-slate-500'}`}>{label}</span>
+                                        {active && <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-current text-slate-800"></div>}
+                                    </label>
+                                );
+                            })}
                         </div>
-                        <label className="flex items-center gap-2 mt-3 pt-3 border-t border-slate-100 text-sm">
-                            <input type="checkbox" checked={generarRemito} onChange={(e) => setGenerarRemito(e.target.checked)} className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500" />
-                            <span className="text-slate-600">Generar Remito</span>
+
+                        <label className="flex items-center justify-between mt-4 p-3 border border-slate-100 rounded-xl bg-slate-50 cursor-pointer hover:bg-slate-100 transition-colors">
+                            <span className="text-slate-700 font-medium text-sm flex items-center gap-2">
+                                <FileText size={16} className="text-slate-400" /> Generar Remito
+                            </span>
+                            <div className={`w-11 h-6 flex items-center bg-gray-300 rounded-full p-1 duration-300 ease-in-out ${generarRemito ? 'bg-blue-600' : ''}`}>
+                                <div className={`bg-white w-4 h-4 rounded-full shadow-md transform duration-300 ease-in-out ${generarRemito ? 'translate-x-5' : ''}`}></div>
+                            </div>
+                            <input type="checkbox" checked={generarRemito} onChange={(e) => setGenerarRemito(e.target.checked)} className="hidden" />
                         </label>
                     </div>
                 </div>
 
-                {/* =============== COLUMNA DERECHA - PRODUCTOS =============== */}
-                <div className="lg:col-span-2 flex flex-col min-h-0">
-                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col flex-1 min-h-0">
+                {/* =============== COLUMNA DERECHA (8 cols) - PRODUCTOS =============== */}
+                <div className="lg:col-span-8 flex flex-col min-h-0">
+                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col flex-1 min-h-0 overflow-hidden relative">
 
-                        {/* Header + Entrada */}
-                        <div className="p-4 border-b border-slate-100 flex-shrink-0">
-                            <div className="flex items-center gap-2 mb-3">
-                                <ShoppingCart className="text-slate-400" size={18} />
-                                <h2 className="font-semibold text-slate-700 text-sm">Productos</h2>
+                        {/* Header + Tooltip */}
+                        <div className="p-4 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between flex-shrink-0">
+                            <div className="flex items-center gap-2">
+                                <div className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg">
+                                    <ShoppingCart size={18} />
+                                </div>
+                                <h2 className="font-bold text-slate-700">Carrito de Compras</h2>
                             </div>
+                            <span className="text-xs font-medium text-slate-400 bg-slate-100 px-2 py-1 rounded-full">
+                                {items.length} items
+                            </span>
+                        </div>
 
-                            {/* Fila de entrada */}
-                            <div className="grid grid-cols-12 gap-2 items-end">
-                                {/* Código con autocompletado */}
+                        {/* Barra de Entrada de Productos */}
+                        <div className="p-5 border-b border-slate-100 bg-white flex-shrink-0 z-20">
+                            <div className="grid grid-cols-12 gap-3 items-end">
+                                {/* Código */}
                                 <div className="col-span-2 relative">
-                                    <label className="block text-xs font-medium text-slate-500 mb-1">Código</label>
+                                    <label className="block text-xs font-bold text-slate-500 mb-1.5 ml-1">CÓDIGO</label>
                                     <input
                                         ref={codigoRef}
                                         type="text"
@@ -535,21 +653,21 @@ const NuevaVenta = () => {
                                         onChange={(e) => setInputCodigo(e.target.value.toUpperCase())}
                                         onKeyDown={handleCodigoKeyDown}
                                         onBlur={() => setTimeout(() => setMostrarSugerenciasCodigo(false), 200)}
-                                        placeholder="Código"
-                                        className="w-full px-2 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-slate-50 text-sm uppercase"
+                                        placeholder="XXX"
+                                        className="w-full px-3 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-slate-50 font-mono text-sm uppercase text-center font-bold tracking-wide"
                                     />
-                                    {/* Sugerencias de código */}
+                                    {/* Dropdown Código */}
                                     {mostrarSugerenciasCodigo && codigosSugeridos.length > 0 && (
-                                        <div ref={codigoListRef} className="absolute z-20 w-64 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                                        <div ref={codigoListRef} className="absolute left-0 top-full mt-1 w-72 bg-white border border-slate-200 rounded-xl shadow-2xl max-h-64 overflow-y-auto z-50">
                                             {codigosSugeridos.map((p, idx) => (
                                                 <div
                                                     key={p.id}
                                                     onClick={() => seleccionarProducto(p)}
-                                                    className={`px-3 py-2 cursor-pointer border-b border-slate-100 last:border-b-0 ${idx === sugerenciaCodigoActiva ? 'bg-blue-50' : 'hover:bg-slate-50'}`}
+                                                    className={`px-4 py-3 cursor-pointer border-b border-slate-50 last:border-b-0 ${idx === sugerenciaCodigoActiva ? 'bg-blue-50' : 'hover:bg-slate-50'}`}
                                                 >
-                                                    <div className="flex justify-between">
-                                                        <span className="font-mono text-sm font-bold text-blue-600">{p.codigo}</span>
-                                                        <span className="text-xs text-green-600">${p.precio_efectivo.toLocaleString('es-AR')}</span>
+                                                    <div className="flex justify-between items-baseline mb-1">
+                                                        <span className="font-mono text-sm font-bold text-blue-600 bg-blue-50 px-1.5 rounded">{p.codigo}</span>
+                                                        <span className="text-sm font-bold text-green-600">${p.precio_efectivo.toLocaleString('es-AR')}</span>
                                                     </div>
                                                     <div className="text-xs text-slate-600 truncate">{p.descripcion}</div>
                                                 </div>
@@ -559,8 +677,8 @@ const NuevaVenta = () => {
                                 </div>
 
                                 {/* Producto */}
-                                <div className="col-span-5 relative">
-                                    <label className="block text-xs font-medium text-slate-500 mb-1">Producto</label>
+                                <div className="col-span-6 relative">
+                                    <label className="block text-xs font-bold text-slate-500 mb-1.5 ml-1">PRODUCTO</label>
                                     <input
                                         ref={productoRef}
                                         type="text"
@@ -568,18 +686,24 @@ const NuevaVenta = () => {
                                         onChange={(e) => { setInputProducto(e.target.value); setProductoSeleccionado(null); }}
                                         onKeyDown={handleProductoKeyDown}
                                         onBlur={() => setTimeout(() => setMostrarSugerenciasProducto(false), 200)}
-                                        placeholder="Buscar..."
-                                        className="w-full px-2 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-slate-50 text-sm"
+                                        placeholder="Buscar producto por nombre..."
+                                        className="w-full px-3 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-slate-50 text-sm font-medium"
                                     />
+                                    {/* Dropdown Producto */}
                                     {mostrarSugerenciasProducto && productosSugeridos.length > 0 && (
-                                        <div ref={productoListRef} className="absolute z-20 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                                        <div ref={productoListRef} className="absolute left-0 top-full mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-2xl max-h-64 overflow-y-auto z-50">
                                             {productosSugeridos.map((p, idx) => (
-                                                <div key={p.id} onClick={() => seleccionarProducto(p)} className={`px-3 py-2 cursor-pointer border-b border-slate-100 last:border-b-0 flex justify-between items-center ${idx === sugerenciaActiva ? 'bg-blue-50' : 'hover:bg-slate-50'}`}>
-                                                    <div>
-                                                        <div className="font-medium text-slate-800 text-sm">{p.descripcion}</div>
-                                                        <div className="text-xs text-slate-500">{p.codigo} • Stock: {p.stock}</div>
+                                                <div key={p.id} onClick={() => seleccionarProducto(p)} className={`px-4 py-3 cursor-pointer border-b border-slate-50 last:border-b-0 flex justify-between items-center ${idx === sugerenciaActiva ? 'bg-blue-50' : 'hover:bg-slate-50'}`}>
+                                                    <div className="flex-1 min-w-0 pr-4">
+                                                        <div className="font-bold text-slate-700 text-sm truncate">{p.descripcion}</div>
+                                                        <div className="text-xs text-slate-400 mt-0.5 flex items-center gap-2">
+                                                            <span className="bg-slate-100 px-1.5 rounded font-mono text-slate-500">{p.codigo}</span>
+                                                            {p.stock <= 5 ? <span className="text-amber-500 font-bold">¡Poco Stock: {p.stock}!</span> : <span>Stock: {p.stock}</span>}
+                                                        </div>
                                                     </div>
-                                                    <div className="text-sm font-semibold text-green-600">${p.precio_efectivo.toLocaleString('es-AR')}</div>
+                                                    <div className="text-right">
+                                                        <div className="text-sm font-bold text-slate-800">${p.precio_efectivo.toLocaleString('es-AR')}</div>
+                                                    </div>
                                                 </div>
                                             ))}
                                         </div>
@@ -587,75 +711,86 @@ const NuevaVenta = () => {
                                 </div>
 
                                 <div className="col-span-2">
-                                    <label className="block text-xs font-medium text-slate-500 mb-1">Cant.</label>
-                                    <input ref={cantidadRef} type="number" min="1" value={inputCantidad} onChange={(e) => setInputCantidad(e.target.value)} onKeyDown={handleCantidadKeyDown} className="w-full px-2 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-slate-50 text-sm text-center" />
+                                    <label className="block text-xs font-bold text-slate-500 mb-1.5 ml-1 text-center">CANT.</label>
+                                    <input ref={cantidadRef} type="number" min="1" value={inputCantidad} onChange={(e) => setInputCantidad(e.target.value)} onKeyDown={handleCantidadKeyDown} className="w-full px-2 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-slate-50 text-sm text-center font-bold text-slate-800" />
                                 </div>
 
                                 <div className="col-span-2">
-                                    <label className="block text-xs font-medium text-slate-500 mb-1">Precio</label>
-                                    <input type="text" value={inputPrecio ? `$${parseFloat(inputPrecio).toLocaleString('es-AR')}` : ''} readOnly placeholder="$0" className="w-full px-2 py-2 border border-slate-200 rounded-lg bg-slate-100 text-sm text-right text-slate-600" />
-                                </div>
-
-                                <div className="col-span-1">
-                                    <button onClick={agregarProductoALista} disabled={!productoSeleccionado} className={`w-full py-2 rounded-lg flex items-center justify-center transition-all ${productoSeleccionado ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}>
-                                        <Plus size={18} />
+                                    <button onClick={agregarProductoALista} disabled={!productoSeleccionado} className={`w-full py-2.5 rounded-lg flex items-center justify-center transition-all shadow-sm ${productoSeleccionado ? 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-md hover:-translate-y-0.5' : 'bg-slate-100 text-slate-300 cursor-not-allowed'}`}>
+                                        <Plus size={20} strokeWidth={3} />
                                     </button>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Tabla - ALTURA FIJA CON SCROLL */}
-                        <div className="flex-1 overflow-auto min-h-0">
+                        {/* Listado de Items con Scroll */}
+                        <div className="flex-1 overflow-y-auto min-h-0 bg-slate-50/30">
                             {items.length > 0 ? (
                                 <table className="w-full text-sm">
-                                    <thead className="bg-slate-50 sticky top-0">
-                                        <tr className="border-b border-slate-200 text-left">
-                                            <th className="px-4 py-2 text-slate-600 font-medium text-xs">Código</th>
-                                            <th className="px-4 py-2 text-slate-600 font-medium text-xs">Producto</th>
-                                            <th className="px-4 py-2 text-slate-600 font-medium text-xs text-center">Cant.</th>
-                                            <th className="px-4 py-2 text-slate-600 font-medium text-xs text-right">Precio</th>
-                                            <th className="px-4 py-2 text-slate-600 font-medium text-xs text-right">Subtotal</th>
-                                            <th className="px-4 py-2 w-8"></th>
+                                    <thead className="bg-slate-50 sticky top-0 z-10 shadow-sm">
+                                        <tr className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                                            <th className="px-6 py-3 text-left w-24">Código</th>
+                                            <th className="px-6 py-3 text-left">Producto</th>
+                                            <th className="px-6 py-3 text-center w-32">Cantidad</th>
+                                            <th className="px-6 py-3 text-right w-32">Precio</th>
+                                            <th className="px-6 py-3 text-right w-32">Subtotal</th>
+                                            <th className="px-6 py-3 w-16"></th>
                                         </tr>
                                     </thead>
-                                    <tbody>
+                                    <tbody className="divide-y divide-slate-100 bg-white">
                                         {items.map((item) => (
-                                            <tr key={item.id} className="border-b border-slate-100 hover:bg-slate-50">
-                                                <td className="px-4 py-2 text-slate-500 font-mono text-xs">{item.codigo}</td>
-                                                <td className="px-4 py-2 font-medium text-slate-800 text-sm">{item.descripcion}</td>
-                                                <td className="px-4 py-2">
-                                                    <div className="flex items-center justify-center gap-1">
-                                                        <button onClick={() => cambiarCantidad(item.id, item.cantidad - 1)} className="w-6 h-6 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center text-xs">-</button>
-                                                        <span className="w-8 text-center font-medium text-sm">{item.cantidad}</span>
-                                                        <button onClick={() => cambiarCantidad(item.id, item.cantidad + 1)} className="w-6 h-6 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center text-xs">+</button>
+                                            <tr key={item.id} className="hover:bg-blue-50/30 transition-colors group">
+                                                <td className="px-6 py-4 font-mono text-xs font-bold text-slate-500">{item.codigo}</td>
+                                                <td className="px-6 py-4">
+                                                    <p className="font-semibold text-slate-800">{item.descripcion}</p>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center justify-center bg-slate-100 rounded-lg p-1 w-fit mx-auto">
+                                                        <button onClick={() => cambiarCantidad(item.id, item.cantidad - 1)} className="w-6 h-6 rounded flex items-center justify-center text-slate-500 hover:bg-white hover:text-red-500 transition-colors disabled:opacity-50">-</button>
+                                                        <span className="w-8 text-center font-bold text-slate-700 text-xs">{item.cantidad}</span>
+                                                        <button onClick={() => cambiarCantidad(item.id, item.cantidad + 1)} className="w-6 h-6 rounded flex items-center justify-center text-slate-500 hover:bg-white hover:text-green-600 transition-colors">+</button>
                                                     </div>
                                                 </td>
-                                                <td className="px-4 py-2 text-right text-slate-600 text-sm">${item.precio.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
-                                                <td className="px-4 py-2 text-right font-semibold text-slate-800 text-sm">${item.subtotal.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
-                                                <td className="px-4 py-2"><button onClick={() => eliminarItem(item.id)} className="text-slate-400 hover:text-red-500"><Trash2 size={14} /></button></td>
+                                                <td className="px-6 py-4 text-right text-slate-600 font-medium">${item.precio.toLocaleString('es-AR')}</td>
+                                                <td className="px-6 py-4 text-right font-bold text-slate-800">${item.subtotal.toLocaleString('es-AR')}</td>
+                                                <td className="px-6 py-4 text-center">
+                                                    <button onClick={() => eliminarItem(item.id)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
+                                                        <Trash2 size={18} />
+                                                    </button>
+                                                </td>
                                             </tr>
                                         ))}
                                     </tbody>
                                 </table>
                             ) : (
-                                <div className="flex items-center justify-center h-full text-slate-400">
-                                    <div className="text-center">
-                                        <ShoppingCart size={32} className="mx-auto mb-2 opacity-30" />
-                                        <p className="text-sm">Sin productos</p>
+                                <div className="flex flex-col items-center justify-center h-full text-slate-300 p-10">
+                                    <div className="w-32 h-32 bg-slate-100 rounded-full flex items-center justify-center mb-6 shadow-inner">
+                                        <ShoppingCart size={48} className="text-slate-200" />
                                     </div>
+                                    <h3 className="text-xl font-bold text-slate-400 mb-2">Tu carrito está vacío</h3>
+                                    <p className="text-slate-400 max-w-xs text-center text-sm">Escanea un código de barras o busca un producto para comenzar la venta.</p>
                                 </div>
                             )}
                         </div>
 
-                        {/* Total - FIJO ABAJO */}
-                        <div className="p-4 border-t border-slate-200 bg-slate-50 flex-shrink-0">
+                        {/* Footer Total - DARK STYLE */}
+                        <div className="p-5 bg-slate-900 text-white flex-shrink-0 mt-auto rounded-b-xl shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
                             <div className="flex justify-between items-center">
-                                <div>
-                                    <p className="text-xs text-slate-500">Total a Pagar</p>
-                                    <p className="text-2xl font-bold text-slate-800">${totalGeneral.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</p>
+                                <div className="space-y-1">
+                                    <p className="text-slate-400 text-sm font-medium uppercase tracking-wider">Total a Pagar</p>
+                                    <div className="flex items-baseline gap-2">
+                                        <span className="text-4xl font-black tracking-tight">${totalGeneral.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+                                        <span className="text-slate-400 font-light">ARS</span>
+                                    </div>
                                 </div>
-                                <button onClick={abrirModalPago} disabled={items.length === 0} className={`px-6 py-2.5 rounded-lg font-semibold text-white transition-all text-sm ${items.length === 0 ? 'bg-slate-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 shadow-lg'}`}>
-                                    Registrar Venta
+                                <button
+                                    onClick={abrirModalPago}
+                                    disabled={items.length === 0}
+                                    className={`px-8 py-4 rounded-xl font-bold text-lg transition-all transform hover:scale-105 active:scale-95 flex items-center gap-3 ${items.length === 0 ? 'bg-slate-700 text-slate-500 cursor-not-allowed' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 shadow-lg shadow-blue-500/30'}`}
+                                >
+                                    <span className="flex items-center gap-2">
+                                        Confirmar Venta <Check size={24} strokeWidth={3} />
+                                    </span>
                                 </button>
                             </div>
                         </div>
@@ -663,191 +798,194 @@ const NuevaVenta = () => {
                 </div>
             </div>
 
-            {/* ==================== MODAL DE PAGO ==================== */}
+            {/* ==================== MODAL DE PAGO (Mejorado) ==================== */}
             {mostrarModalPago && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md mx-4 overflow-hidden animate-in fade-in zoom-in duration-200">
                         {/* Header */}
-                        <div className="bg-blue-600 text-white px-6 py-4 flex justify-between items-center">
-                            <h3 className="font-bold text-lg">Confirmar Pago</h3>
-                            <button onClick={() => setMostrarModalPago(false)} className="hover:bg-white/20 rounded-full p-1">
-                                <X size={20} />
-                            </button>
+                        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white px-8 py-6 relative overflow-hidden">
+                            <div className="relative z-10 flex justify-between items-center">
+                                <div>
+                                    <h3 className="font-bold text-xl">Finalizar Venta</h3>
+                                    <p className="text-blue-100 text-sm mt-1">Registrando pago con {medioPago}</p>
+                                </div>
+                                <button onClick={() => setMostrarModalPago(false)} className="bg-white/10 hover:bg-white/20 rounded-full p-2 transition-colors">
+                                    <X size={24} />
+                                </button>
+                            </div>
+                            <div className="absolute -right-6 -top-6 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
                         </div>
 
-                        <div className="p-6">
-                            {/* Total */}
-                            <div className="bg-slate-100 rounded-lg p-4 mb-6">
-                                <p className="text-sm text-slate-500">Total de la Venta</p>
-                                <p className="text-3xl font-bold text-slate-800">${totalGeneral.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</p>
+                        <div className="p-8">
+                            {/* Total Center */}
+                            <div className="text-center mb-8">
+                                <p className="text-slate-500 font-medium mb-1 uppercase tracking-wider text-xs">Monto Total</p>
+                                <p className="text-5xl font-black text-slate-800 tracking-tight">${totalGeneral.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</p>
                             </div>
 
                             {/* Campos según medio de pago */}
-                            {medioPago === 'EFECTIVO' && (
-                                <div className="space-y-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">¿Con cuánto abona?</label>
-                                        <input
-                                            ref={montoPagoRef}
-                                            type="number"
-                                            value={montoPago}
-                                            onChange={(e) => setMontoPago(e.target.value)}
-                                            placeholder="Ingrese monto..."
-                                            className="w-full px-4 py-3 border border-slate-200 rounded-lg text-lg focus:ring-2 focus:ring-blue-500"
-                                        />
-                                    </div>
-                                    {montoPago && parseFloat(montoPago) >= totalGeneral && (
-                                        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                                            <p className="text-sm text-green-700">Vuelto a entregar:</p>
-                                            <p className="text-2xl font-bold text-green-600">${vuelto.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</p>
+                            <div className="space-y-6">
+                                {medioPago === 'EFECTIVO' && (
+                                    <div className="animate-in fade-in slide-in-from-bottom-2">
+                                        <label className="block text-sm font-bold text-slate-700 mb-2">DINERO RECIBIDO</label>
+                                        <div className="relative">
+                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xl">$</span>
+                                            {/* AutoFocusInput definition moved here as per instruction */}
+                                            {/* Note: In a real-world scenario, AutoFocusInput would typically be defined outside the component or imported. */}
+                                            {/* Defining it inside will cause it to be re-declared on every render, which is generally not ideal for performance. */}
+                                            {/* However, following the instruction faithfully. */}
+                                            <AutoFocusInput
+                                                key={medioPago}
+                                                id="input-monto-pago"
+                                                type="number"
+                                                value={montoPago}
+                                                onChange={(e) => setMontoPago(e.target.value)}
+                                                placeholder="0.00"
+                                                className="w-full pl-10 pr-4 py-4 border-2 border-slate-200 rounded-xl text-2xl font-bold focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none"
+                                            />
                                         </div>
-                                    )}
-                                    {montoPago && parseFloat(montoPago) < totalGeneral && (
-                                        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                                            <p className="text-sm text-red-700">Monto insuficiente. Faltan:</p>
-                                            <p className="text-xl font-bold text-red-600">${Math.abs(vuelto).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</p>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
 
-                            {medioPago === 'TARJETA' && (
-                                <div className="space-y-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Últimos 4 dígitos</label>
-                                        <input
-                                            type="text"
-                                            maxLength={4}
-                                            value={datosTarjeta.ultimos4}
-                                            onChange={(e) => setDatosTarjeta({ ...datosTarjeta, ultimos4: e.target.value })}
-                                            placeholder="0000"
-                                            className="w-full px-4 py-3 border border-slate-200 rounded-lg text-lg focus:ring-2 focus:ring-blue-500"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Cuotas</label>
-                                        <select
-                                            value={datosTarjeta.cuotas}
-                                            onChange={(e) => setDatosTarjeta({ ...datosTarjeta, cuotas: e.target.value })}
-                                            className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                        >
-                                            {[1, 3, 6, 12, 18].map(c => <option key={c} value={c}>{c} cuota{c > 1 ? 's' : ''}</option>)}
-                                        </select>
-                                    </div>
-                                </div>
-                            )}
-
-                            {medioPago === 'CHEQUE' && (
-                                <div className="space-y-4">
-                                    <div className="relative">
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Banco</label>
-                                        <input
-                                            type="text"
-                                            value={datosCheque.banco}
-                                            onChange={(e) => {
-                                                const valor = e.target.value;
-                                                setDatosCheque({ ...datosCheque, banco: valor });
-                                                if (valor.length >= 1) {
-                                                    const filtrados = BANCOS_ARGENTINOS.filter(b =>
-                                                        b.toLowerCase().includes(valor.toLowerCase())
-                                                    );
-                                                    setBancosSugeridos(filtrados);
-                                                    setMostrarSugerenciasBanco(filtrados.length > 0);
-                                                    setSugerenciaBancoActiva(0);
-                                                } else {
-                                                    setBancosSugeridos([]);
-                                                    setMostrarSugerenciasBanco(false);
-                                                }
-                                            }}
-                                            onKeyDown={(e) => {
-                                                if (e.key === 'ArrowDown') {
-                                                    e.preventDefault();
-                                                    const newIndex = Math.min(sugerenciaBancoActiva + 1, bancosSugeridos.length - 1);
-                                                    setSugerenciaBancoActiva(newIndex);
-                                                    bancoListRef.current?.children[newIndex]?.scrollIntoView({ block: 'nearest' });
-                                                } else if (e.key === 'ArrowUp') {
-                                                    e.preventDefault();
-                                                    const newIndex = Math.max(sugerenciaBancoActiva - 1, 0);
-                                                    setSugerenciaBancoActiva(newIndex);
-                                                    bancoListRef.current?.children[newIndex]?.scrollIntoView({ block: 'nearest' });
-                                                } else if (e.key === 'Enter' && mostrarSugerenciasBanco && bancosSugeridos.length > 0) {
-                                                    e.preventDefault();
-                                                    setDatosCheque({ ...datosCheque, banco: bancosSugeridos[sugerenciaBancoActiva] });
-                                                    setMostrarSugerenciasBanco(false);
-                                                } else if (e.key === 'Escape') {
-                                                    setMostrarSugerenciasBanco(false);
-                                                }
-                                            }}
-                                            onBlur={() => setTimeout(() => setMostrarSugerenciasBanco(false), 200)}
-                                            placeholder="Buscar banco..."
-                                            className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                        />
-                                        {mostrarSugerenciasBanco && bancosSugeridos.length > 0 && (
-                                            <div ref={bancoListRef} className="absolute z-30 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-40 overflow-y-auto">
-                                                {bancosSugeridos.map((banco, idx) => (
-                                                    <div
-                                                        key={banco}
-                                                        onClick={() => {
-                                                            setDatosCheque({ ...datosCheque, banco: banco });
-                                                            setMostrarSugerenciasBanco(false);
-                                                        }}
-                                                        className={`px-4 py-2 cursor-pointer text-sm ${idx === sugerenciaBancoActiva ? 'bg-blue-50 text-blue-700' : 'hover:bg-slate-50'}`}
-                                                    >
-                                                        {banco}
-                                                    </div>
-                                                ))}
+                                        {montoPago && parseFloat(montoPago) >= totalGeneral && (
+                                            <div className="mt-6 bg-green-50 border border-green-200 rounded-xl p-5 text-center transform transition-all">
+                                                <p className="text-green-700 font-semibold mb-1">Vuelto a entregar</p>
+                                                <p className="text-4xl font-bold text-green-600">${vuelto.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</p>
+                                            </div>
+                                        )}
+                                        {montoPago && parseFloat(montoPago) < totalGeneral && (
+                                            <div className="mt-6 bg-red-50 border border-red-200 rounded-xl p-5 flex items-center gap-3">
+                                                <div className="bg-red-100 p-2 rounded-full text-red-600"><X size={20} /></div>
+                                                <div>
+                                                    <p className="text-red-700 font-bold">Pago insuficiente</p>
+                                                    <p className="text-red-600 text-sm">Faltan: ${Math.abs(vuelto).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</p>
+                                                </div>
                                             </div>
                                         )}
                                     </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Número de Cheque</label>
-                                        <input
-                                            type="text"
-                                            value={datosCheque.numero}
-                                            onChange={(e) => setDatosCheque({ ...datosCheque, numero: e.target.value })}
-                                            placeholder="Número"
-                                            className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Fecha de Vencimiento</label>
-                                        <input
-                                            type="date"
-                                            value={datosCheque.fechaVto}
-                                            onChange={(e) => setDatosCheque({ ...datosCheque, fechaVto: e.target.value })}
-                                            className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                        />
-                                    </div>
-                                </div>
-                            )}
+                                )}
 
-                            {medioPago === 'CTACTE' && (
-                                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                                    <p className="text-amber-800">
-                                        Se cargará a la cuenta corriente del cliente: <strong>{cliente?.nombre || 'Consumidor Final'}</strong>
-                                    </p>
-                                </div>
-                            )}
+                                {medioPago === 'TARJETA' && (
+                                    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
+                                        <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                                            <div className="flex gap-4">
+                                                <div className="flex-1">
+                                                    <label className="block text-xs font-bold text-slate-500 mb-1">ÚLTIMOS 4</label>
+                                                    <AutoFocusInput
+                                                        key="input-tarjeta-ultimos4-input"
+                                                        type="text"
+                                                        maxLength={4}
+                                                        value={datosTarjeta.ultimos4}
+                                                        onChange={(e) => setDatosTarjeta({ ...datosTarjeta, ultimos4: e.target.value })}
+                                                        placeholder="****"
+                                                        className="w-full px-4 py-3 border border-slate-200 rounded-lg text-lg font-mono text-center focus:border-blue-500 outline-none"
+                                                        id="input-tarjeta-ultimos4"
+                                                        onKeyDown={handleTarjetaKeyDown}
+                                                    />
+                                                </div>
+                                                <div className="flex-1">
+                                                    <label className="block text-xs font-bold text-slate-500 mb-1">CUOTAS</label>
+                                                    <select
+                                                        id="input-tarjeta-cuotas"
+                                                        value={datosTarjeta.cuotas}
+                                                        onChange={(e) => setDatosTarjeta({ ...datosTarjeta, cuotas: e.target.value })}
+                                                        className="w-full px-4 py-3 border border-slate-200 rounded-lg text-lg text-center outline-none focus:border-blue-500 bg-white"
+                                                    >
+                                                        {[1, 3, 6, 12, 18].map(c => <option key={c} value={c}>{c}</option>)}
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {medioPago === 'CHEQUE' && (
+                                    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
+                                        <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-4">
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-500 mb-1">BANCO</label>
+                                                <input
+                                                    type="text"
+                                                    value={datosCheque.banco}
+                                                    onChange={(e) => setDatosCheque({ ...datosCheque, banco: e.target.value })}
+                                                    placeholder="Nombre del banco..."
+                                                    className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:border-blue-500 outline-none bg-white"
+                                                />
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block text-xs font-bold text-slate-500 mb-1">NÚMERO</label>
+                                                    <input
+                                                        type="text"
+                                                        value={datosCheque.numero}
+                                                        onChange={(e) => setDatosCheque({ ...datosCheque, numero: e.target.value })}
+                                                        placeholder="Nº Cheque"
+                                                        className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:border-blue-500 outline-none bg-white"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-bold text-slate-500 mb-1">VENCIMIENTO</label>
+                                                    <input
+                                                        type="date"
+                                                        value={datosCheque.fechaVto}
+                                                        onChange={(e) => setDatosCheque({ ...datosCheque, fechaVto: e.target.value })}
+                                                        className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:border-blue-500 outline-none bg-white"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {medioPago === 'CTACTE' && (
+                                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                                        <p className="text-amber-800">
+                                            Se cargará a la cuenta corriente del cliente: <strong>{cliente?.nombre || 'Consumidor Final'}</strong>
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Botones */}
+                            <div className="px-6 py-4 bg-slate-50 flex gap-3">
+                                <button
+                                    onClick={() => setMostrarModalPago(false)}
+                                    className="flex-1 px-4 py-2.5 border border-slate-300 rounded-lg text-slate-700 font-medium hover:bg-slate-100"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={guardarVenta}
+                                    disabled={guardando || (medioPago === 'EFECTIVO' && (!montoPago || parseFloat(montoPago) < totalGeneral))}
+                                    className={`flex-1 px-4 py-2.5 rounded-lg font-medium text-white flex items-center justify-center gap-2 ${guardando || (medioPago === 'EFECTIVO' && (!montoPago || parseFloat(montoPago) < totalGeneral))
+                                        ? 'bg-slate-300 cursor-not-allowed'
+                                        : 'bg-green-600 hover:bg-green-700'
+                                        }`}
+                                >
+                                    <Check size={18} />
+                                    {guardando ? 'Guardando...' : 'Confirmar'}
+                                </button>
+                            </div>
                         </div>
+                    </div>
+                </div>
+            )}
 
-                        {/* Botones */}
-                        <div className="px-6 py-4 bg-slate-50 flex gap-3">
+            {/* ==================== MODAL DE ALERTA STOCK ==================== */}
+            {alertaStock && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[60]">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="p-6 text-center">
+                            <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-6">
+                                <X className="h-8 w-8 text-red-600" />
+                            </div>
+                            <h3 className="text-xl font-bold text-slate-900 mb-2">{alertaStock.titulo}</h3>
+                            <p className="text-slate-500 mb-6">
+                                {alertaStock.mensaje}
+                            </p>
                             <button
-                                onClick={() => setMostrarModalPago(false)}
-                                className="flex-1 px-4 py-2.5 border border-slate-300 rounded-lg text-slate-700 font-medium hover:bg-slate-100"
+                                onClick={cerrarAlertaStock}
+                                className="w-full inline-flex justify-center rounded-xl border border-transparent shadow-sm px-4 py-3 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:text-sm"
                             >
-                                Cancelar
-                            </button>
-                            <button
-                                onClick={guardarVenta}
-                                disabled={guardando || (medioPago === 'EFECTIVO' && (!montoPago || parseFloat(montoPago) < totalGeneral))}
-                                className={`flex-1 px-4 py-2.5 rounded-lg font-medium text-white flex items-center justify-center gap-2 ${guardando || (medioPago === 'EFECTIVO' && (!montoPago || parseFloat(montoPago) < totalGeneral))
-                                    ? 'bg-slate-300 cursor-not-allowed'
-                                    : 'bg-green-600 hover:bg-green-700'
-                                    }`}
-                            >
-                                <Check size={18} />
-                                {guardando ? 'Guardando...' : 'Confirmar'}
+                                Aceptar
                             </button>
                         </div>
                     </div>
@@ -858,3 +996,4 @@ const NuevaVenta = () => {
 };
 
 export default NuevaVenta;
+

@@ -2851,6 +2851,7 @@ def api_venta_guardar(request):
                 tipo_comprobante="B",
                 total=total_general,
                 estado="Emitida",
+                medio_pago=medio_pago
             )
 
             for item in items:
