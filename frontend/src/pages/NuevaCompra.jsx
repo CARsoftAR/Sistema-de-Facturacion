@@ -780,12 +780,12 @@ const NuevaCompra = () => {
                             </div>
 
                             {/* Selección Medio de Pago */}
-                            <div className="grid grid-cols-3 gap-2 mb-6 bg-slate-100 p-1.5 rounded-xl">
+                            <div className="grid grid-cols-3 gap-2 mb-6 bg-slate-100 p-1.5 rounded-2xl">
                                 {['EFECTIVO', 'CTACTE', 'CHEQUE'].map(m => (
                                     <button
                                         key={m}
                                         onClick={() => setMedioPago(m)}
-                                        className={`py-2 rounded-lg text-sm font-bold transition-all ${medioPago === m ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                                        className={`py-3 rounded-xl text-sm font-bold transition-all ${medioPago === m ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                                     >
                                         {m === 'CTACTE' ? 'CTA. CTE.' : m}
                                     </button>

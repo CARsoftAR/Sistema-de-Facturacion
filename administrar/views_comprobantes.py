@@ -53,7 +53,6 @@ def crear_nota_credito(request, venta_id):
             # Opcional: preguntar al usuario si devuelve stock. Asumimos que sí por defecto en anulación completa.
             det.producto.stock += int(det.cantidad) # Asumiendo cantidad entera por ahora
             det.producto.save()
-            
             MovimientoStock.objects.create(
                 producto=det.producto,
                 tipo='IN',
@@ -61,6 +60,13 @@ def crear_nota_credito(request, venta_id):
                 referencia=f"NC {nc.id} (Anula Venta {venta.id})",
                 observaciones="Devolución por Nota de Crédito"
             )
+
+        # Generar Asiento Contable
+        try:
+            from .services import AccountingService
+            AccountingService.registrar_nota_credito(nc)
+        except Exception as e:
+            print(f"Error generando asiento de NC {nc.id}: {e}")
 
         messages.success(request, f'Nota de Crédito {nc.numero_formateado()} generada correctamente.')
         return redirect('detalle_venta', venta_id=venta.id)

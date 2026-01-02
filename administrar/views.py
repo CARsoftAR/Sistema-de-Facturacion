@@ -1962,23 +1962,22 @@ def recepcionar_orden_interna(oc, medio_pago, datos_cheque=None):
     oc.save()
     
     # 4. Registrar movimiento financiero
+    proveedor = oc.proveedor
     if medio_pago == 'CTACTE':
             # Compra a credito -> Aumenta Deuda Proveedor (HABER)
-            saldo_actual = oc.proveedor.saldo_actual
+            saldo_actual = proveedor.saldo_actual
             nuevo_saldo = saldo_actual + oc.total_estimado
             
             MovimientoCuentaCorrienteProveedor.objects.create(
-            proveedor=oc.proveedor,
-            tipo='HABER',
-            descripcion=f"Compra (OC #{oc.id}) - Cta. Cte.",
-            monto=oc.total_estimado,
-            saldo=nuevo_saldo
+                proveedor=proveedor,
+                tipo='HABER',
+                descripcion=f"Compra (OC #{oc.id}) - Cta. Cte.",
+                monto=oc.total_estimado,
+                saldo=nuevo_saldo
             )
             
-            oc.proveedor.saldo_actual = nuevo_saldo
-            oc.proveedor.save()
-            
-            oc.proveedor.save()
+            proveedor.saldo_actual = nuevo_saldo
+            proveedor.save()
 
     elif medio_pago == 'CHEQUE':
         # Pago con Cheque Propio
@@ -7056,25 +7055,11 @@ def api_recibo_crear(request):
                 cheque.destinatario = entidad.nombre
                 cheque.save()
 
-                # Generar asiento contable por cambio de estado (ej: Cartera -> Entregado)
-                # O si es nuevo ingreso (que ya deberia tener su asiento de alta, pero por si acaso validamos flujos)
-                try:
-                    AccountingService.registrar_cambio_estado(cheque, estado_anterior)
-                except Exception as e:
-                    print(f"Error generando asiento cheque en recibo: {e}")
-                except Exception as e:
-                    print(f"Error generando asiento cheque en recibo: {e}")
-
             # Si es RETENCION, registrar contablemente
             elif forma_pago == 'RETENCION':
                 item.retencion_numero = item_data.get('retencion_numero', '')
                 item.retencion_tipo = item_data.get('retencion_tipo', '')
                 item.save()
-
-                try:
-                    AccountingService.registrar_retencion(recibo, item)
-                except Exception as e:
-                    print(f"Error generando asiento retencion: {e}")
             
             # Crear movimiento de caja si es efectivo o transferencia
 
@@ -7110,6 +7095,12 @@ def api_recibo_crear(request):
         
         entidad.save()
         
+        # 🔹 GENERAR ASIENTO CONTABLE CONSOLIDADO
+        try:
+            AccountingService.registrar_recibo(recibo)
+        except Exception as e:
+            print(f"Error generando asiento contable consolidado para recibo {recibo.id}: {e}")
+
         return JsonResponse({
             'ok': True,
             'recibo_id': recibo.id,
