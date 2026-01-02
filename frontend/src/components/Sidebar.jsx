@@ -15,7 +15,8 @@ import {
     ChevronRight,
     Menu,
     X,
-    CreditCard
+    CreditCard,
+    ClipboardList
 } from 'lucide-react';
 
 // Rutas que son manejadas por React (SPA)
@@ -158,13 +159,14 @@ const Sidebar = ({ standalone = false }) => {
                     />
 
                     <SidebarItem
-                        icon={ShoppingCart}
-                        label="Ventas"
-                        isOpen={openSection === 'ventas'}
-                        onToggle={() => toggleSection('ventas')}
+                        icon={ClipboardList}
+                        label="Operaciones"
+                        isOpen={openSection === 'operaciones'}
+                        onToggle={() => toggleSection('operaciones')}
                         standalone={standalone}
                         subItems={[
-                            { label: 'Listado de Ventas', href: '/ventas' },
+                            { label: 'Ventas', href: '/ventas' },
+                            { label: 'Compras', href: '/compras' },
                             { label: 'Pedidos', href: '/pedidos' },
                             { label: 'Remitos', href: '/remitos' },
                             { label: 'Notas de Crédito', href: '/notas-credito' },

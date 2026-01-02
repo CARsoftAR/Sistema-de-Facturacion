@@ -260,27 +260,37 @@ const Productos = () => {
                             </div>
 
                             <nav>
-                                <ul className="pagination pagination-sm mb-0">
+                                <ul className="pagination mb-0 align-items-center gap-2">
                                     <li className={`page-item ${page === 1 ? 'disabled' : ''}`}>
-                                        <button className="page-link" onClick={() => setPage(page - 1)}>
-                                            <span aria-hidden="true">&laquo;</span>
+                                        <button
+                                            className="page-link border-0 text-secondary bg-transparent p-0"
+                                            onClick={() => setPage(page - 1)}
+                                            style={{ width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                        >
+                                            <i className="bi bi-chevron-left"></i>
                                         </button>
                                     </li>
                                     {[...Array(totalPages)].map((_, i) => {
-                                        // Simple pagination logic to avoid too many buttons
                                         if (totalPages > 10 && Math.abs(page - (i + 1)) > 2 && i !== 0 && i !== totalPages - 1) return null;
-                                        // Add ellipsis logic if needed, but keeping simple for now
                                         return (
-                                            <li key={i} className={`page-item ${page === i + 1 ? 'active' : ''}`}>
-                                                <button className="page-link" onClick={() => setPage(i + 1)}>
+                                            <li key={i} className="page-item">
+                                                <button
+                                                    className={`page-link border-0 rounded-circle fw-bold ${page === i + 1 ? 'bg-primary text-white shadow-sm' : 'bg-transparent text-secondary'}`}
+                                                    onClick={() => setPage(i + 1)}
+                                                    style={{ width: '35px', height: '35px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                                >
                                                     {i + 1}
                                                 </button>
                                             </li>
                                         );
                                     })}
                                     <li className={`page-item ${page === totalPages ? 'disabled' : ''}`}>
-                                        <button className="page-link" onClick={() => setPage(page + 1)}>
-                                            <span aria-hidden="true">&raquo;</span>
+                                        <button
+                                            className="page-link border-0 text-secondary bg-transparent p-0"
+                                            onClick={() => setPage(page + 1)}
+                                            style={{ width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                        >
+                                            <i className="bi bi-chevron-right"></i>
                                         </button>
                                     </li>
                                 </ul>

@@ -1577,6 +1577,10 @@ def api_proveedores_editar(request, id):
         prov.provincia_id = data.get("provincia") or None
         prov.localidad_id = data.get("localidad") or None
 
+        prov.condicion_fiscal = data.get("condicion_fiscal", prov.condicion_fiscal)
+        prov.cbu = data.get("cbu", prov.cbu)
+        prov.alias = data.get("alias", prov.alias)
+
         prov.notas = data.get("notas", prov.notas)
 
         prov.save()
@@ -1670,6 +1674,9 @@ def api_proveedores_detalle(request, id):
         "direccion": p.direccion,
         "provincia": p.provincia_id,
         "localidad": p.localidad_id,
+        "condicion_fiscal": p.condicion_fiscal,
+        "cbu": p.cbu,
+        "alias": p.alias,
         "notas": p.notas,
     })
 
@@ -1690,6 +1697,9 @@ def api_proveedores_nuevo(request):
             direccion=data.get("direccion", ""),
             provincia_id=data.get("provincia") or None,
             localidad_id=data.get("localidad") or None,
+            condicion_fiscal=data.get("condicion_fiscal", "CF"),
+            cbu=data.get("cbu", ""),
+            alias=data.get("alias", ""),
             notas=data.get("notas", ""),
         )
 
@@ -1839,7 +1849,9 @@ def api_orden_compra_detalle(request, id):
 @require_POST
 @csrf_protect
 def api_orden_compra_guardar(request):
-    """API para guardar una nueva orden de compra"""
+    """API para guardar una nueva orden de compra.
+       Si recibe 'recepcionar': true, la procesa inmediatamente (impacto Stock/Contabilidad).
+    """
     import json
     
     try:
@@ -1850,6 +1862,9 @@ def api_orden_compra_guardar(request):
     proveedor_id = data.get("proveedor")
     observaciones = data.get("observaciones", "").strip()
     items = data.get("items", [])
+    recepcionar = data.get("recepcionar", False)
+    medio_pago = data.get("medio_pago", "CONTADO")
+    datos_cheque = data.get("datos_cheque", None)
 
     if not proveedor_id:
         return JsonResponse({"ok": False, "error": "Debe seleccionar un proveedor"}, status=400)
@@ -1882,7 +1897,7 @@ def api_orden_compra_guardar(request):
                 try:
                     producto = Producto.objects.get(id=producto_id)
                 except Producto.DoesNotExist:
-                    return JsonResponse({"ok": False, "error": f"Producto {producto_id} no encontrado"}, status=404)
+                     raise Exception(f"Producto {producto_id} no encontrado")
 
                 subtotal = cantidad * precio
                 total += subtotal
@@ -1899,10 +1914,123 @@ def api_orden_compra_guardar(request):
             orden.total_estimado = total
             orden.save()
 
+            # Si se solicita la recepción inmediata
+            if recepcionar:
+                recepcionar_orden_interna(orden, medio_pago, datos_cheque)
+
             return JsonResponse({"ok": True, "orden_id": orden.id})
 
     except Exception as e:
         return JsonResponse({"ok": False, "error": str(e)}, status=500)
+
+
+def recepcionar_orden_interna(oc, medio_pago, datos_cheque=None):
+    """Lógica interna para recepcionar una OC (Stock, Asientos, Pagos)"""
+    # 1. Crear Compra
+    compra = Compra.objects.create(
+        proveedor=oc.proveedor,
+        orden_compra=oc,
+        total=oc.total_estimado,
+        estado="REGISTRADA",
+        observaciones=f"Recepción automática de OC {oc.id}",
+    )
+
+    # 2. Detalles y Stock
+    for det in oc.detalles.all():
+        DetalleCompra.objects.create(
+            compra=compra,
+            producto=det.producto,
+            cantidad=det.cantidad,
+            precio=det.precio,
+            subtotal=det.subtotal,
+        )
+
+        prod = det.producto
+        prod.stock += det.cantidad
+        prod.save()
+
+        MovimientoStock.objects.create(
+            producto=prod,
+            tipo="IN",
+            cantidad=det.cantidad,
+            referencia=f"Compra {compra.id}",
+            observaciones=f"Recepción OC {oc.id}",
+        )
+
+    # 3. Actualizar estado OC
+    oc.estado = "RECIBIDA"
+    oc.save()
+    
+    # 4. Registrar movimiento financiero
+    if medio_pago == 'CTACTE':
+            # Compra a credito -> Aumenta Deuda Proveedor (HABER)
+            saldo_actual = oc.proveedor.saldo_actual
+            nuevo_saldo = saldo_actual + oc.total_estimado
+            
+            MovimientoCuentaCorrienteProveedor.objects.create(
+            proveedor=oc.proveedor,
+            tipo='HABER',
+            descripcion=f"Compra (OC #{oc.id}) - Cta. Cte.",
+            monto=oc.total_estimado,
+            saldo=nuevo_saldo
+            )
+            
+            oc.proveedor.saldo_actual = nuevo_saldo
+            oc.proveedor.save()
+            
+            oc.proveedor.save()
+
+    elif medio_pago == 'CHEQUE':
+        # Pago con Cheque Propio
+        from datetime import date
+        from .models import Cheque
+        # Si vienen datos del cheque, creamos el Cheque Propio
+        cheque = None
+        if datos_cheque:
+            try:
+                # datos_cheque = { banco: '...', numero: '...', fechaVto: 'YYYY-MM-DD' }
+                cheque = Cheque.objects.create(
+                    tipo='PROPIO',
+                    estado='CARTERA', # O 'ENTREGADO'? Generalmente nace y se entrega.
+                    banco=datos_cheque.get('banco', 'Banco'),
+                    numero=datos_cheque.get('numero', ''),
+                    fecha_emision=date.today(),
+                    fecha_pago=datos_cheque.get('fechaVto') or date.today(),
+                    monto=oc.total_estimado,
+                    destinatario=oc.proveedor.nombre, # A quien se lo damos
+                    observaciones=f"Pago Compra #{compra.id}"
+                )
+                # Actualizamos estado a ENTREGADO porque ya se lo dimos al proveedor
+                cheque.estado = 'ENTREGADO' 
+                cheque.save()
+            except Exception as e:
+                print(f"Error creando cheque propio: {e}")
+
+    else:
+        # Contado -> Egresa dinero de Caja
+        MovimientoCaja.objects.create(
+            tipo="Egreso",
+            descripcion=f"Compra #{compra.id} - {oc.proveedor.nombre}",
+            monto=oc.total_estimado,
+        )
+
+    # 5. Generar Asiento Contable
+    try:
+        from .services import AccountingService
+        AccountingService.registrar_compra(compra)
+        
+        if medio_pago == 'CTACTE':
+            pass # Ya se registró la deuda en Cta Cte, y el asiento de compra genera Proveedores (H). 
+                 # No hace falta asiento de pago.
+        elif medio_pago == 'CHEQUE':
+            if 'cheque' in locals() and cheque:
+                AccountingService.registrar_pago_compra_cheque_propio(compra, cheque)
+        else:
+             # Contado Efectivo
+             AccountingService.registrar_pago_compra_contado(compra)
+
+    except Exception as e:
+        print(f"Error generando asiento de compra {compra.id}: {e}")
 
 
 @require_POST
@@ -1914,79 +2042,15 @@ def api_orden_compra_recibir(request, id):
         return JsonResponse({"error": "La orden no está en estado pendiente o aprobada"}, status=400)
 
     try:
-        with transaction.atomic():
-            compra = Compra.objects.create(
-                proveedor=oc.proveedor,
-                orden_compra=oc,
-                total=oc.total_estimado,
-                estado="REGISTRADA",
-                observaciones=f"Recepción automática de OC {oc.id}",
-            )
-
-            for det in oc.detalles.all():
-                DetalleCompra.objects.create(
-                    compra=compra,
-                    producto=det.producto,
-                    cantidad=det.cantidad,
-                    precio=det.precio,
-                    subtotal=det.subtotal,
-                )
-
-                prod = det.producto
-                prod.stock += det.cantidad
-                prod.save()
-
-                MovimientoStock.objects.create(
-                    producto=prod,
-                    tipo="IN",
-                    cantidad=det.cantidad,
-                    referencia=f"Compra {compra.id}",
-                    observaciones=f"Recepción OC {oc.id}",
-                )
-
-            oc.estado = "RECIBIDA"
-            oc.save()
-            
-            # Registrar movimiento segun medio de pago
-            import json
-            try:
-                data = json.loads(request.body.decode('utf-8'))
-                medio_pago = data.get('medio_pago', 'CONTADO')
-            except:
-                medio_pago = 'CONTADO' # Default backend fallback
-
-            if medio_pago == 'CTACTE':
-                 # Compra a credito -> Aumenta Deuda Proveedor (HABER)
-                 saldo_actual = oc.proveedor.saldo_actual
-                 nuevo_saldo = saldo_actual + oc.total_estimado
-                 
-                 MovimientoCuentaCorrienteProveedor.objects.create(
-                    proveedor=oc.proveedor,
-                    tipo='HABER',
-                    descripcion=f"Compra (OC #{oc.id}) - Cta. Cte.",
-                    monto=oc.total_estimado,
-                    saldo=nuevo_saldo
-                 )
-                 
-                 oc.proveedor.saldo_actual = nuevo_saldo
-                 oc.proveedor.save()
-                 
-            else:
-                # Contado -> Egresa dinero de Caja
-                MovimientoCaja.objects.create(
-                    tipo="Egreso",
-                    descripcion=f"Compra #{compra.id} - {oc.proveedor.nombre}",
-                    monto=oc.total_estimado,
-                )
-
-        # Generar Asiento Contable
+        import json
         try:
-            from .services import AccountingService
-            AccountingService.registrar_compra(compra)
-            # Automaticamente registramos el pago contado (caja)
-            AccountingService.registrar_pago_compra_contado(compra)
-        except Exception as e:
-            print(f"Error generando asiento de compra {compra.id}: {e}")
+            data = json.loads(request.body.decode('utf-8'))
+            medio_pago = data.get('medio_pago', 'CONTADO')
+        except:
+            medio_pago = 'CONTADO'
+
+        with transaction.atomic():
+            recepcionar_orden_interna(oc, medio_pago, None) # TODO: Soportar cheque en recepción manual diferida? Por ahora no.
 
         return JsonResponse({"ok": True})
 

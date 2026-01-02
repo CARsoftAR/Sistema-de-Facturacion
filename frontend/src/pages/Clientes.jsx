@@ -236,12 +236,12 @@ const Clientes = () => {
                             </div>
 
                             <nav>
-                                <ul className="pagination mb-0 gap-1">
+                                <ul className="pagination mb-0 align-items-center gap-2">
                                     <li className={`page-item ${page === 1 ? 'disabled' : ''}`}>
                                         <button
-                                            className="page-link border-0 rounded shadow-sm text-secondary fw-bold"
+                                            className="page-link border-0 text-secondary bg-transparent p-0"
                                             onClick={() => setPage(page - 1)}
-                                            style={{ minWidth: '32px', textAlign: 'center' }}
+                                            style={{ width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                         >
                                             <i className="bi bi-chevron-left"></i>
                                         </button>
@@ -251,9 +251,9 @@ const Clientes = () => {
                                         return (
                                             <li key={i} className="page-item">
                                                 <button
-                                                    className={`page-link border-0 rounded shadow-sm fw-bold ${page === i + 1 ? 'bg-primary text-white' : 'text-secondary'}`}
+                                                    className={`page-link border-0 rounded-circle fw-bold ${page === i + 1 ? 'bg-primary text-white shadow-sm' : 'bg-transparent text-secondary'}`}
                                                     onClick={() => setPage(i + 1)}
-                                                    style={{ minWidth: '32px', textAlign: 'center' }}
+                                                    style={{ width: '35px', height: '35px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                                 >
                                                     {i + 1}
                                                 </button>
@@ -262,9 +262,9 @@ const Clientes = () => {
                                     })}
                                     <li className={`page-item ${page === totalPages ? 'disabled' : ''}`}>
                                         <button
-                                            className="page-link border-0 rounded shadow-sm text-secondary fw-bold"
+                                            className="page-link border-0 text-secondary bg-transparent p-0"
                                             onClick={() => setPage(page + 1)}
-                                            style={{ minWidth: '32px', textAlign: 'center' }}
+                                            style={{ width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                         >
                                             <i className="bi bi-chevron-right"></i>
                                         </button>

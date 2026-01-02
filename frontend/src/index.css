@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* Tailwind removed to ensure Bootstrap parity */
 
 :root {

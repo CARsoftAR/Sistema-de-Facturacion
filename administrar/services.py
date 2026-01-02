@@ -605,6 +605,58 @@ class AccountingService:
             print(f"DEBUG: Asiento Pago {nuevo_numero} creado para Compra {compra.id}")
 
     @classmethod
+    def registrar_pago_compra_cheque_propio(cls, compra, cheque):
+        """
+        Genera asiento de pago con cheque propio.
+        Debe: Proveedores
+        Haber: Banco (si al dia) o Cheques Diferidos a Pagar
+        """
+        fecha = getattr(compra, 'fecha', date.today())
+        if hasattr(fecha, 'date'): fecha = fecha.date()
+
+        ejercicio = cls._obtener_ejercicio_vigente(fecha)
+        if not ejercicio: return
+
+        cuenta_proveedores = cls._obtener_cuenta(cls.CUENTA_PROVEEDORES)
+        
+        # Determinar cuenta haber
+        if cheque.fecha_pago > cheque.fecha_emision:
+            # Diferido
+            cuenta_haber = cls._obtener_cuenta("Cheques Diferidos a Pagar")
+            if not cuenta_haber: cuenta_haber = cls._obtener_cuenta("Documentos a Pagar")
+        else:
+            # Al día -> Banco
+            # Intentar buscar cuenta banco especifica si el cheque tiene banco
+            cuenta_haber = cls._obtener_cuenta(cheque.banco)
+            if not cuenta_haber: cuenta_haber = cls._obtener_cuenta(cls.CUENTA_BANCO)
+
+        if not cuenta_proveedores or not cuenta_haber:
+            print("Faltan cuentas para pago cheque (Proveedores o Banco/ChequesDif)")
+            return
+
+        with transaction.atomic():
+            ultimo_numero = Asiento.objects.filter(ejercicio=ejercicio).order_by('-numero').first()
+            nuevo_numero = (ultimo_numero.numero + 1) if ultimo_numero else 1
+            
+            prov_nombre = compra.proveedor.nombre if compra.proveedor else "Proveedor"
+
+            asiento = Asiento.objects.create(
+                numero=nuevo_numero,
+                fecha=fecha,
+                descripcion=f"Pago Compra #{compra.id} con Cheque #{cheque.numero} - {prov_nombre}",
+                ejercicio=ejercicio,
+                origen='PAGOS',
+                usuario='Sistema'
+            )
+
+            # Debe Proveedores
+            ItemAsiento.objects.create(asiento=asiento, cuenta=cuenta_proveedores, debe=compra.total, haber=0)
+            # Haber Cheque/Banco
+            ItemAsiento.objects.create(asiento=asiento, cuenta=cuenta_haber, debe=0, haber=compra.total)
+
+            print(f"DEBUG: Asiento Pago Cheque {nuevo_numero} creado para Compra {compra.id}")
+
+    @classmethod
     def registrar_retencion(cls, recibo, item_retencion):
         """
         Genera asiento para retención impositiva.

@@ -1,9 +1,15 @@
 import { useState } from 'react'
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import Sidebar from './components/Sidebar'
+import Ventas from './pages/Ventas'
+import Proveedores from './pages/Proveedores'
 import NuevaVenta from './pages/NuevaVenta'
 import Clientes from './pages/Clientes'
 import Productos from './pages/Productos'
+import Pedidos from './pages/Pedidos'
+import NuevoPedido from './pages/NuevoPedido'
+import Compras from './pages/Compras'
+import NuevaCompra from './pages/NuevaCompra'
 
 // Componente Dashboard temporal con estilos Bootstrap
 const Dashboard = () => (
@@ -65,7 +71,14 @@ function App() {
             <Route path="/clientes/" element={<Clientes />} />
             <Route path="/clientes" element={<Clientes />} />
             <Route path="/productos" element={<Productos />} />
+            <Route path="/productos/nuevo" element={<Navigate to="/productos" replace />} />
+            <Route path="/ventas" element={<Ventas />} />
             <Route path="/ventas/nuevo" element={<NuevaVenta />} />
+            <Route path="/pedidos" element={<Pedidos />} />
+            <Route path="/pedidos/nuevo" element={<NuevoPedido />} />
+            <Route path="/compras" element={<Compras />} />
+            <Route path="/compras/nueva" element={<NuevaCompra />} />
+            <Route path="/proveedores" element={<Proveedores />} />
           </Routes>
         </main>
       </div>

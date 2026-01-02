@@ -173,6 +173,10 @@ class Proveedor(models.Model):
     provincia = models.ForeignKey(Provincia, on_delete=models.SET_NULL, null=True, blank=True)
     localidad = models.ForeignKey(Localidad, on_delete=models.SET_NULL, null=True, blank=True)
 
+    condicion_fiscal = models.CharField(max_length=2, choices=CONDICION_FISCAL, default='CF')
+    cbu = models.CharField(max_length=22, blank=True, verbose_name="CBU")
+    alias = models.CharField(max_length=100, blank=True, verbose_name="Alias CBU")
+
     saldo_actual = models.DecimalField(max_digits=12, decimal_places=2, default=0)
 
     notas = models.TextField(blank=True)

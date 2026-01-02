@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { X, Save, AlertCircle, Package, DollarSign, Tag, Layers, Truck } from 'lucide-react';
+import SearchableSelect from '../common/SearchableSelect';
 
 const ProductoForm = ({ producto, onClose, onSave }) => {
-    const { register, handleSubmit, reset, watch, formState: { errors, isSubmitting } } = useForm();
+    const { register, handleSubmit, control, reset, watch, formState: { errors, isSubmitting } } = useForm();
     const [marcas, setMarcas] = useState([]);
     const [rubros, setRubros] = useState([]);
     const [proveedores, setProveedores] = useState([]);
@@ -107,239 +108,241 @@ const ProductoForm = ({ producto, onClose, onSave }) => {
         }
     };
 
+    // Custom handler to move focus on Enter instead of submitting
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            // Allow default behavior for buttons (submission) or textareas (new line)
+            if (e.target.tagName === 'BUTTON' || e.target.tagName === 'TEXTAREA') return;
+
+            e.preventDefault();
+            const form = e.target.form;
+            if (!form) return;
+
+            const elements = Array.from(form.elements).filter(el =>
+                !el.disabled &&
+                !el.hidden &&
+                el.offsetParent !== null && // Visible check
+                el.tabIndex !== -1 &&
+                (el.tagName === 'INPUT' || el.tagName === 'SELECT')
+            );
+
+            const index = elements.indexOf(e.target);
+            if (index > -1 && index < elements.length - 1) {
+                elements[index + 1].focus();
+            }
+        }
+    };
+
     return (
         <>
             <div className="modal-backdrop fade show" style={{ zIndex: 1050 }}></div>
             <div className="modal fade show d-block" tabIndex="-1" role="dialog" style={{ zIndex: 1055 }}>
-                <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+                <div className="modal-dialog modal-dialog-centered" style={{ maxWidth: '950px' }}>
                     <div className="modal-content border-0 shadow-lg">
 
-                        {/* Header Moderno */}
-                        <div className="modal-header bg-primary text-white px-4 py-3">
-                            <div className="d-flex align-items-center gap-3">
-                                <div className="p-2 bg-white bg-opacity-25 rounded-circle">
-                                    <Package size={24} className="text-white" />
-                                </div>
-                                <div>
-                                    <h5 className="modal-title fw-bold mb-0">
-                                        {producto ? 'Editar Producto' : 'Nuevo Producto'}
-                                    </h5>
-                                    <p className="mb-0 small text-white text-opacity-75">
-                                        {producto ? `Editando: ${producto.descripcion}` : 'Complete los datos para dar de alta un item'}
-                                    </p>
-                                </div>
+                        {/* Header Compacto */}
+                        <div className="modal-header bg-primary text-white py-2 px-3">
+                            <div className="d-flex align-items-center gap-2">
+                                <Package size={20} className="text-white opacity-75" />
+                                <h5 className="modal-title fs-6 fw-bold mb-0">
+                                    {producto ? 'Editar Producto' : 'Nuevo Producto'}
+                                </h5>
+                                <span className="vr mx-2 bg-white opacity-25"></span>
+                                <span className="small opacity-75">
+                                    {producto ? producto.descripcion : 'Alta de artículo'}
+                                </span>
                             </div>
-                            <button type="button" className="btn-close btn-close-white" onClick={onClose}></button>
+                            <button type="button" className="btn-close btn-close-white small" onClick={onClose}></button>
                         </div>
 
-                        <div className="modal-body p-4 bg-light">
+                        <div className="modal-body p-3 bg-light">
                             {serverError && (
-                                <div className="alert alert-danger d-flex align-items-center mb-4 shadow-sm border-0 border-start border-4 border-danger">
-                                    <AlertCircle size={20} className="me-3" />
+                                <div className="alert alert-danger py-2 mb-3 small d-flex align-items-center">
+                                    <AlertCircle size={16} className="me-2" />
                                     <div>{serverError}</div>
                                 </div>
                             )}
 
-                            <form id="producto-form" onSubmit={handleSubmit(onSubmit)} className="row g-4">
+                            <form id="producto-form" onSubmit={handleSubmit(onSubmit)} onKeyDown={handleKeyDown}>
 
-                                {/* 1. Información Básica */}
-                                <div className="col-12">
-                                    <div className="card border-0 shadow-sm">
-                                        <div className="card-header bg-white border-bottom-0 pt-4 px-4 pb-0">
-                                            <div className="d-flex align-items-center gap-2 mb-2">
-                                                <Tag size={18} className="text-primary" />
-                                                <h6 className="fw-bold text-uppercase text-secondary mb-0" style={{ letterSpacing: '0.05em' }}>Información Básica</h6>
-                                            </div>
+                                {/* SECCIÓN 1: DATOS PRINCIPALES */}
+                                <div className="bg-white p-3 rounded shadow-sm mb-3">
+                                    <h6 className="text-secondary fw-bold small text-uppercase border-bottom pb-1 mb-2">Información Básica</h6>
+                                    <div className="row g-2">
+                                        <div className="col-md-2">
+                                            <label className="form-label small text-muted mb-0">Código *</label>
+                                            <input type="text" className={`form-control form-control-sm ${errors.codigo ? 'is-invalid' : ''}`} placeholder="Ej: A-001" {...register('codigo', { required: 'Requerido' })} />
                                         </div>
-                                        <div className="card-body p-4 pt-2">
-                                            <div className="row g-3">
-                                                <div className="col-md-3">
-                                                    <label className="form-label small fw-medium text-muted">Código *</label>
-                                                    <input
-                                                        type="text"
-                                                        className={`form-control ${errors.codigo ? 'is-invalid' : ''}`}
-                                                        placeholder="Ej: A-001"
-                                                        {...register('codigo', { required: 'Requerido' })}
-                                                    />
-                                                    {errors.codigo && <div className="invalid-feedback">{errors.codigo.message}</div>}
-                                                </div>
-                                                <div className="col-md-9">
-                                                    <label className="form-label small fw-medium text-muted">Descripción *</label>
-                                                    <input
-                                                        type="text"
-                                                        className={`form-control ${errors.descripcion ? 'is-invalid' : ''}`}
-                                                        placeholder="Nombre del producto..."
-                                                        {...register('descripcion', { required: 'Requerido' })}
-                                                    />
-                                                </div>
+                                        <div className="col-md-5">
+                                            <label className="form-label small text-muted mb-0">Descripción *</label>
+                                            <input type="text" className={`form-control form-control-sm ${errors.descripcion ? 'is-invalid' : ''}`} placeholder="Nombre..." {...register('descripcion', { required: 'Requerido' })} />
+                                        </div>
 
-                                                <div className="col-md-4">
-                                                    <label className="form-label small fw-medium text-muted">Marca</label>
-                                                    <select className="form-select" {...register('marca')}>
-                                                        <option value="">-- Seleccionar --</option>
-                                                        {marcas.map(m => <option key={m.id} value={m.id}>{m.nombre}</option>)}
-                                                    </select>
-                                                </div>
-                                                <div className="col-md-4">
-                                                    <label className="form-label small fw-medium text-muted">Rubro</label>
-                                                    <select className="form-select" {...register('rubro')}>
-                                                        <option value="">-- Seleccionar --</option>
-                                                        {rubros.map(r => <option key={r.id} value={r.id}>{r.nombre}</option>)}
-                                                    </select>
-                                                </div>
-                                                <div className="col-md-4">
-                                                    <label className="form-label small fw-medium text-muted">Unidad</label>
-                                                    <select className="form-select" {...register('tipo_bulto')}>
-                                                        <option value="UN">Unidad (UN)</option>
-                                                        <option value="KG">Kilogramos (KG)</option>
-                                                        <option value="MT">Metros (MT)</option>
-                                                        <option value="LT">Litros (LT)</option>
-                                                    </select>
-                                                </div>
+                                        <div className="col-md-3">
+                                            <label className="form-label small text-muted mb-0">Marca</label>
+                                            <Controller
+                                                name="marca"
+                                                control={control}
+                                                render={({ field }) => (
+                                                    <SearchableSelect
+                                                        options={marcas}
+                                                        value={field.value}
+                                                        onChange={field.onChange}
+                                                        placeholder="- Marca -"
+                                                        name="marca"
+                                                    />
+                                                )}
+                                            />
+                                        </div>
+                                        <div className="col-md-2">
+                                            <label className="form-label small text-muted mb-0">Unidad</label>
+                                            <Controller
+                                                name="tipo_bulto"
+                                                control={control}
+                                                render={({ field }) => (
+                                                    <SearchableSelect
+                                                        options={[
+                                                            { id: 'UN', nombre: 'Unidad' },
+                                                            { id: 'KG', nombre: 'Kilos' },
+                                                            { id: 'MT', nombre: 'Metros' },
+                                                            { id: 'LT', nombre: 'Litros' }
+                                                        ]}
+                                                        value={field.value}
+                                                        onChange={field.onChange}
+                                                        placeholder="Unidad"
+                                                        name="tipo_bulto"
+                                                    />
+                                                )}
+                                            />
+                                        </div>
 
-                                                <div className="col-12">
-                                                    <label className="form-label small fw-medium text-muted">Descripción Detallada</label>
-                                                    <textarea
-                                                        className="form-control"
-                                                        rows="2"
-                                                        placeholder="Información adicional para presupuestos o web..."
-                                                        {...register('descripcion_larga')}
-                                                    ></textarea>
-                                                </div>
-                                            </div>
+                                        <div className="col-md-3">
+                                            <label className="form-label small text-muted mb-0">Rubro</label>
+                                            <Controller
+                                                name="rubro"
+                                                control={control}
+                                                render={({ field }) => (
+                                                    <SearchableSelect
+                                                        options={rubros}
+                                                        value={field.value}
+                                                        onChange={field.onChange}
+                                                        placeholder="- Rubro -"
+                                                        name="rubro"
+                                                    />
+                                                )}
+                                            />
+                                        </div>
+                                        <div className="col-md-3">
+                                            <label className="form-label small text-muted mb-0">Proveedor</label>
+                                            <Controller
+                                                name="proveedor"
+                                                control={control}
+                                                render={({ field }) => (
+                                                    <SearchableSelect
+                                                        options={proveedores}
+                                                        value={field.value}
+                                                        onChange={field.onChange}
+                                                        placeholder="- Proveedor -"
+                                                        name="proveedor"
+                                                    />
+                                                )}
+                                            />
+                                        </div>
+                                        <div className="col-md-6">
+                                            <label className="form-label small text-muted mb-0">Notas</label>
+                                            <input type="text" className="form-control form-control-sm" placeholder="Detalles adicionales..." {...register('descripcion_larga')} />
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* 2. Control de Stock */}
-                                <div className="col-12">
-                                    <div className="card border-0 shadow-sm">
-                                        <div className="card-header bg-white border-bottom-0 pt-4 px-4 pb-0">
-                                            <div className="d-flex align-items-center gap-2 mb-2">
-                                                <Layers size={18} className="text-warning" />
-                                                <h6 className="fw-bold text-uppercase text-secondary mb-0" style={{ letterSpacing: '0.05em' }}>Control de Inventario</h6>
+                                {/* SECCIÓN 2: INVENTARIO Y PRECIOS (2 COLUMNAS) */}
+                                <div className="row g-3">
+
+                                    {/* COLUMNA IZQUIERDA: INVENTARIO */}
+                                    <div className="col-md-5">
+                                        <div className="bg-white p-3 rounded shadow-sm h-100">
+                                            <div className="d-flex align-items-center mb-2">
+                                                <Layers size={16} className="text-warning me-2" />
+                                                <h6 className="text-secondary fw-bold small text-uppercase mb-0">Inventario</h6>
                                             </div>
-                                        </div>
-                                        <div className="card-body p-4 pt-2">
-                                            <div className="row g-3">
-                                                <div className="col-md-4">
-                                                    <div className="p-3 bg-light rounded text-center border border-dashed">
-                                                        <label className="form-label d-block small fw-bold text-dark mb-1">STOCK ACTUAL</label>
-                                                        <input
-                                                            type="number"
-                                                            className="form-control form-control-lg text-center fw-bold border-0 bg-transparent"
-                                                            {...register('stock')}
-                                                        />
-                                                    </div>
+
+                                            <div className="row g-2 align-items-end">
+                                                <div className="col-5">
+                                                    <label className="form-label small text-dark fw-bold mb-1 d-block text-center bg-light rounded py-1">STOCK REAL</label>
+                                                    <input type="number" className="form-control form-control-lg text-center fw-bold border-warning" {...register('stock')} />
                                                 </div>
-                                                <div className="col-md-8">
-                                                    <div className="row g-3">
-                                                        <div className="col-md-4">
-                                                            <label className="form-label small fw-medium text-muted">Stock Inicial</label>
-                                                            <input type="number" className="form-control" {...register('stock_inicial')} />
+                                                <div className="col-7">
+                                                    <div className="row g-2">
+                                                        <div className="col-6">
+                                                            <label className="form-label small text-muted mb-0" style={{ fontSize: '0.75rem' }}>Mínimo</label>
+                                                            <input type="number" className="form-control form-control-sm" {...register('stock_minimo')} />
                                                         </div>
-                                                        <div className="col-md-4">
-                                                            <label className="form-label small fw-medium text-muted">Mínimo</label>
-                                                            <input type="number" className="form-control" {...register('stock_minimo')} />
-                                                        </div>
-                                                        <div className="col-md-4">
-                                                            <label className="form-label small fw-medium text-muted">Máximo</label>
-                                                            <input type="number" className="form-control" {...register('stock_maximo')} />
+                                                        <div className="col-6">
+                                                            <label className="form-label small text-muted mb-0" style={{ fontSize: '0.75rem' }}>Máximo</label>
+                                                            <input type="number" className="form-control form-control-sm" {...register('stock_maximo')} />
                                                         </div>
                                                         <div className="col-12">
-                                                            <div className="d-flex align-items-center gap-2 mt-2">
-                                                                <Truck size={16} className="text-muted" />
-                                                                <select className="form-select form-select-sm border-0 bg-light" {...register('proveedor')}>
-                                                                    <option value="">Seleccionar Proveedor Principal...</option>
-                                                                    {proveedores.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
-                                                                </select>
-                                                            </div>
+                                                            <label className="form-label small text-muted mb-0" style={{ fontSize: '0.75rem' }}>Inicial (Ajuste)</label>
+                                                            <input type="number" className="form-control form-control-sm" {...register('stock_inicial')} />
                                                         </div>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
 
-                                {/* 3. Precios y Costos */}
-                                <div className="col-12">
-                                    <div className="card border-0 shadow-sm border-start border-3 border-success">
-                                        <div className="card-header bg-white border-bottom-0 pt-4 px-4 pb-0">
-                                            <div className="d-flex align-items-center gap-2 mb-2">
-                                                <DollarSign size={18} className="text-success" />
-                                                <h6 className="fw-bold text-uppercase text-secondary mb-0" style={{ letterSpacing: '0.05em' }}>Precios y Costos</h6>
+                                    {/* COLUMNA DERECHA: PRECIOS */}
+                                    <div className="col-md-7">
+                                        <div className="bg-white p-3 rounded shadow-sm h-100 border-start border-4 border-success">
+                                            <div className="d-flex align-items-center mb-2">
+                                                <DollarSign size={16} className="text-success me-2" />
+                                                <h6 className="text-secondary fw-bold small text-uppercase mb-0">Costos y Precios</h6>
                                             </div>
-                                        </div>
-                                        <div className="card-body p-4 pt-2">
-                                            <div className="row g-4 align-items-end">
-                                                {/* Costo */}
-                                                <div className="col-md-4">
-                                                    <label className="form-label small fw-bold text-muted">Costo Neto</label>
-                                                    <div className="input-group">
-                                                        <span className="input-group-text bg-light border-end-0 text-muted">$</span>
-                                                        <input
-                                                            type="number" step="0.01"
-                                                            className="form-control border-start-0"
-                                                            {...register('costo')}
-                                                        />
-                                                    </div>
-                                                    <div className="form-text small">Precio de compra sin IVA</div>
-                                                </div>
 
-                                                {/* Precio Venta Principal */}
-                                                <div className="col-md-4">
-                                                    <label className="form-label small fw-bold text-success">Precio Venta (Efectivo)</label>
-                                                    <div className="input-group input-group-lg">
+                                            <div className="row g-2">
+                                                <div className="col-4">
+                                                    <label className="form-label small text-muted mb-0">Costo Neto</label>
+                                                    <div className="input-group input-group-sm">
+                                                        <span className="input-group-text text-muted">$</span>
+                                                        <input type="number" step="0.01" className="form-control" {...register('costo')} />
+                                                    </div>
+                                                </div>
+                                                <div className="col-4">
+                                                    <label className="form-label small text-success fw-bold mb-0">Precio Venta</label>
+                                                    <div className="input-group input-group-sm">
                                                         <span className="input-group-text bg-success text-white border-success">$</span>
-                                                        <input
-                                                            type="number" step="0.01"
-                                                            className="form-control fw-bold border-success text-success"
-                                                            {...register('precio_efectivo')}
-                                                        />
+                                                        <input type="number" step="0.01" className="form-control border-success fw-bold text-success" {...register('precio_efectivo')} />
                                                     </div>
                                                 </div>
-
-                                                {/* Calculadora margen simple (Visual) */}
-                                                <div className="col-md-4">
+                                                <div className="col-4 d-flex align-items-end">
                                                     {watch('costo') > 0 && watch('precio_efectivo') > 0 && (
-                                                        <div className="p-2 rounded bg-success bg-opacity-10 border border-success border-opacity-25">
-                                                            <div className="d-flex justify-content-between text-success smaill fw-medium">
-                                                                <span>Margen:</span>
-                                                                <span>
-                                                                    {(((watch('precio_efectivo') - watch('costo')) / watch('costo')) * 100).toFixed(1)}%
-                                                                </span>
-                                                            </div>
-                                                            <div className="d-flex justify-content-between text-success small fw-medium">
-                                                                <span>Ganancia:</span>
-                                                                <span>$ {(watch('precio_efectivo') - watch('costo')).toFixed(2)}</span>
-                                                            </div>
+                                                        <div className="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 w-100 py-2">
+                                                            MG: {(((watch('precio_efectivo') - watch('costo')) / watch('costo')) * 100).toFixed(0)}%
                                                         </div>
                                                     )}
                                                 </div>
 
-                                                <div className="col-12"><hr className="text-muted opacity-25 my-0" /></div>
+                                                <div className="col-12"><hr className="my-1 text-muted opacity-25" /></div>
 
-                                                {/* Precios Secundarios */}
-                                                <div className="col-md-4">
-                                                    <label className="form-label small fw-medium text-muted">Precio Lista/Tarjeta</label>
+                                                <div className="col-4">
+                                                    <label className="form-label small text-muted mb-0" style={{ fontSize: '0.75rem' }}>Tarjeta</label>
                                                     <div className="input-group input-group-sm">
-                                                        <span className="input-group-text bg-light border-end-0 text-muted">$</span>
-                                                        <input type="number" step="0.01" className="form-control border-start-0" {...register('precio_tarjeta')} />
+                                                        <span className="input-group-text text-muted px-1">$</span>
+                                                        <input type="number" step="0.01" className="form-control px-1" {...register('precio_tarjeta')} />
                                                     </div>
                                                 </div>
-                                                <div className="col-md-4">
-                                                    <label className="form-label small fw-medium text-muted">Precio Cta. Cte.</label>
+                                                <div className="col-4">
+                                                    <label className="form-label small text-muted mb-0" style={{ fontSize: '0.75rem' }}>Cta. Cte.</label>
                                                     <div className="input-group input-group-sm">
-                                                        <span className="input-group-text bg-light border-end-0 text-muted">$</span>
-                                                        <input type="number" step="0.01" className="form-control border-start-0" {...register('precio_ctacte')} />
+                                                        <span className="input-group-text text-muted px-1">$</span>
+                                                        <input type="number" step="0.01" className="form-control px-1" {...register('precio_ctacte')} />
                                                     </div>
                                                 </div>
-                                                <div className="col-md-4">
-                                                    <label className="form-label small fw-medium text-muted">Precio Mayorista</label>
+                                                <div className="col-4">
+                                                    <label className="form-label small text-muted mb-0" style={{ fontSize: '0.75rem' }}>Mayorista</label>
                                                     <div className="input-group input-group-sm">
-                                                        <span className="input-group-text bg-light border-end-0 text-muted">$</span>
-                                                        <input type="number" step="0.01" className="form-control border-start-0" {...register('precio_lista4')} />
+                                                        <span className="input-group-text text-muted px-1">$</span>
+                                                        <input type="number" step="0.01" className="form-control px-1" {...register('precio_lista4')} />
                                                     </div>
                                                 </div>
                                             </div>
@@ -350,16 +353,16 @@ const ProductoForm = ({ producto, onClose, onSave }) => {
                             </form>
                         </div>
 
-                        {/* Footer */}
-                        <div className="modal-footer border-top bg-white py-3">
-                            <button type="button" className="btn btn-light px-4" onClick={onClose}>Cancelar</button>
+                        {/* Footer Compacto */}
+                        <div className="modal-footer py-2 px-3 bg-light border-top-0">
+                            <button type="button" className="btn btn-sm btn-outline-secondary" onClick={onClose}>Cancelar</button>
                             <button
                                 type="submit"
                                 form="producto-form"
-                                className="btn btn-primary px-4 d-flex align-items-center gap-2 shadow-sm"
+                                className="btn btn-sm btn-primary px-4 d-flex align-items-center gap-2 shadow-sm"
                                 disabled={isSubmitting}
                             >
-                                <Save size={18} />
+                                <Save size={16} />
                                 {isSubmitting ? 'Guardando...' : 'Guardar Producto'}
                             </button>
                         </div>

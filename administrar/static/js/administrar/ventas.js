@@ -416,29 +416,75 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // ===========================
-    // LISTADO DE VENTAS
+    // LISTADO DE VENTAS CON PAGINACIÓN
     // ===========================
     const tbodyVentas = document.getElementById("tbodyVentas");
+    const paginacionContainer = document.getElementById("paginacionVentas");
+    const contadorRegistros = document.getElementById("contadorRegistros");
+    const selectorRegistros = document.getElementById("selectorRegistros");
+
+    let itemsVentas = [];
+    let currentPage = 1;
+    let itemsPerPage = 5; // Default matches HTML
+
     if (tbodyVentas) {
+        if (selectorRegistros) {
+            selectorRegistros.addEventListener("change", (e) => {
+                itemsPerPage = parseInt(e.target.value);
+                currentPage = 1;
+                renderTablaVentas();
+            });
+        }
         cargarVentas();
     }
 
     function cargarVentas() {
+        if (!tbodyVentas) return;
+
+        tbodyVentas.innerHTML = '<tr><td colspan="7" class="text-center py-4"><div class="spinner-border text-primary" role="status"></div></td></tr>';
+
         fetch("/api/ventas/listar/")
             .then(res => res.json())
             .then(data => {
                 if (!data.ok) {
                     console.error("Error cargando ventas:", data.error);
+                    tbodyVentas.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-danger">Error al cargar datos</td></tr>';
                     return;
                 }
-                renderTablaVentas(data.data);
+                itemsVentas = data.data; // Store all items
+                currentPage = 1;
+                renderTablaVentas();
             })
-            .catch(err => console.error("Error fetch ventas:", err));
+            .catch(err => {
+                console.error("Error fetch ventas:", err);
+                tbodyVentas.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-danger">Error de conexión</td></tr>';
+            });
     }
 
-    function renderTablaVentas(ventas) {
+    function renderTablaVentas() {
+        if (!tbodyVentas) return;
         tbodyVentas.innerHTML = "";
-        ventas.forEach(v => {
+
+        const totalItems = itemsVentas.length;
+        const totalPages = Math.ceil(totalItems / itemsPerPage);
+
+        // Validate page
+        if (currentPage < 1) currentPage = 1;
+        if (currentPage > totalPages && totalPages > 0) currentPage = totalPages;
+
+        // Slice data
+        const start = (currentPage - 1) * itemsPerPage;
+        const end = start + itemsPerPage;
+        const ventasPagina = itemsVentas.slice(start, end);
+
+        if (ventasPagina.length === 0) {
+            tbodyVentas.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">No hay ventas registradas.</td></tr>';
+            if (contadorRegistros) contadorRegistros.textContent = "0 registros";
+            if (paginacionContainer) paginacionContainer.innerHTML = "";
+            return;
+        }
+
+        ventasPagina.forEach(v => {
             const tr = document.createElement("tr");
             tr.innerHTML = `
                 <td class="ps-4 fw-bold">#${v.id}</td>
@@ -457,6 +503,80 @@ document.addEventListener("DOMContentLoaded", function () {
                 </td>
             `;
             tbodyVentas.appendChild(tr);
+        });
+
+        if (contadorRegistros) {
+            contadorRegistros.textContent = `Mostrando ${ventasPagina.length} de ${totalItems} registros`;
+        }
+
+        renderPaginacion(totalPages);
+    }
+
+    function renderPaginacion(totalPages) {
+        if (!paginacionContainer || totalPages <= 1) {
+            if (paginacionContainer) paginacionContainer.innerHTML = "";
+            return;
+        }
+
+        let html = '<ul class="pagination mb-0 align-items-center gap-2">';
+
+        // Previous
+        html += `
+            <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                <button class="page-link border-0 text-secondary bg-transparent p-0 btn-prev" 
+                    style="width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">
+                    <i class="bi bi-chevron-left"></i>
+                </button>
+            </li>
+        `;
+
+        // Pages
+        for (let i = 1; i <= totalPages; i++) {
+            // Simple ellipses logic
+            if (totalPages > 10 && Math.abs(currentPage - i) > 2 && i !== 1 && i !== totalPages) continue;
+
+            const isActive = i === currentPage;
+            const classes = isActive
+                ? "bg-primary text-white shadow-sm"
+                : "bg-transparent text-secondary";
+
+            html += `
+                <li class="page-item">
+                    <button class="page-link border-0 rounded-circle fw-bold ${classes} btn-page" data-page="${i}"
+                        style="width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;">
+                        ${i}
+                    </button>
+                </li>
+             `;
+        }
+
+        // Next
+        html += `
+            <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                <button class="page-link border-0 text-secondary bg-transparent p-0 btn-next"
+                    style="width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">
+                    <i class="bi bi-chevron-right"></i>
+                </button>
+            </li>
+        `;
+        html += '</ul>';
+
+        paginacionContainer.innerHTML = html;
+
+        // Add events
+        paginacionContainer.querySelectorAll(".btn-page").forEach(btn => {
+            btn.addEventListener("click", () => {
+                currentPage = parseInt(btn.getAttribute("data-page"));
+                renderTablaVentas();
+            });
+        });
+        const prev = paginacionContainer.querySelector(".btn-prev");
+        if (prev) prev.addEventListener("click", () => {
+            if (currentPage > 1) { currentPage--; renderTablaVentas(); }
+        });
+        const next = paginacionContainer.querySelector(".btn-next");
+        if (next) next.addEventListener("click", () => {
+            if (currentPage < totalPages) { currentPage++; renderTablaVentas(); }
         });
     }
 

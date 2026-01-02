@@ -34,14 +34,15 @@ urlpatterns = [
     # ==========================
     # MÓDULOS COMERCIALES
     # ==========================
-    path("ventas/", views.ventas_lista, name="ventas"),
+    path("ventas/", TemplateView.as_view(template_name="react_app.html"), name="ventas"),
     path("ventas/nuevo/", TemplateView.as_view(template_name="react_app.html"), name="venta_nueva"),
     path("ventas/<int:venta_id>/", views.detalle_venta, name="detalle_venta"),
     path("api/ventas/listar/", views.api_ventas_listar, name="api_ventas_listar"),
     path("api/ventas/guardar/", views.api_venta_guardar, name="api_venta_guardar"),
     path("api/productos/buscar/", views.api_productos_buscar, name="api_productos_buscar"),
 
-    path("compras/", views.compras_lista, name="compras"),
+    path("compras/", TemplateView.as_view(template_name="react_app.html"), name="compras"),
+    path("compras/nueva/", TemplateView.as_view(template_name="react_app.html"), name="compras_nueva"),
     path("api/compras/listar/", views.api_compras_listar, name="api_compras_listar"),
     path("api/compras/orden/guardar/", views.api_orden_compra_guardar, name="api_orden_compra_guardar"),
     path("api/compras/orden/<int:id>/recibir/", views.api_orden_compra_recibir, name="api_orden_compra_recibir"),
@@ -49,7 +50,7 @@ urlpatterns = [
     path("api/compras/orden/<int:id>/detalle/", views.api_orden_compra_detalle, name="api_orden_compra_detalle"),
 
     path("clientes/", TemplateView.as_view(template_name="react_app.html"), name="clientes"),
-    path("proveedores/", views.proveedores_lista, name="proveedores"),
+    path("proveedores/", TemplateView.as_view(template_name="react_app.html"), name="proveedores"),
     path("caja/", views.caja, name="caja"),
     
     # API Caja
@@ -149,7 +150,7 @@ urlpatterns = [
     # CRUD PRODUCTOS (REACT)
     # ==========================
     path("productos/", TemplateView.as_view(template_name="react_app.html"), name="productos"),
-    path("productos/nuevo/", views.producto_nuevo, name="producto_nuevo"),
+    path("productos/nuevo/", TemplateView.as_view(template_name="react_app.html"), name="producto_nuevo"),
 
     # ==========================
     # CRUD PROVEEDORES (HTML)
@@ -220,14 +221,7 @@ urlpatterns = [
     path("api/buscar_productos/", api_buscar_productos, name="api_buscar_productos"),
     path("api/producto_info/<int:id>/<str:lista>/", api_producto_info, name="api_producto_info"),
 
-    # ==========================
-    # PEDIDOS (ANTIGUO - mantener para compatibilidad)
-    # ==========================
-    path("pedidos/listado/", views.pedidos_listado, name="pedidos_listado"),
-    path("pedidos/nuevo/", views.pedido_nuevo, name="pedido_nuevo"),
-    path("api/pedidos/nuevo/", views.api_pedido_nuevo, name="api_pedido_nuevo"),
-    path("api/pedidos/<int:pedido_id>/cambiar_estado/", views.api_pedido_cambiar_estado, name="api_pedido_cambiar_estado_old"),
-    path("api/pedidos/<int:pedido_id>/facturar/", views.api_pedido_facturar, name="api_pedido_facturar"),
+
 
     # ==========================
     # PRESUPUESTOS (COTIZACIONES)
@@ -278,7 +272,8 @@ urlpatterns = [
     # ==========================
     # PEDIDOS - MODERNA
     # ==========================
-    path('pedidos/', views.pedidos, name='pedidos'),
+    path('pedidos/', TemplateView.as_view(template_name="react_app.html"), name='pedidos'),
+    path('pedidos/nuevo/', TemplateView.as_view(template_name="react_app.html"), name='pedido_nuevo'),
     path('api/pedidos/lista/', views.api_pedidos_lista, name='api_pedidos_lista'),
     path('api/pedidos/<int:id>/', views.api_pedido_detalle, name='api_pedido_detalle'),
     path('api/pedidos/crear/', views.api_pedido_crear, name='api_pedido_crear'),
