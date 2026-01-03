@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import ProductoForm from '../components/productos/ProductoForm';
 
 const Productos = () => {
+    const [searchParams] = useSearchParams();
     const [productos, setProductos] = useState([]);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
@@ -9,17 +11,28 @@ const Productos = () => {
     const [totalItems, setTotalItems] = useState(0);
     const [itemsPerPage, setItemsPerPage] = useState(10); // Default per page
 
-    // Filtros
+    // Filtros - Inicializar con valores de la URL si existen
     const [filters, setFilters] = useState({
-        busqueda: '',
-        marca: '',
-        rubro: '',
-        stock: 'todos'
+        busqueda: searchParams.get('busqueda') || '',
+        marca: searchParams.get('marca') || '',
+        rubro: searchParams.get('rubro') || '',
+        stock: searchParams.get('stock') || 'todos'
     });
 
     // Auxiliares para filtros
     const [marcas, setMarcas] = useState([]);
     const [rubros, setRubros] = useState([]);
+
+    // Sincronizar filtros con la URL cuando cambien los parámetros
+    useEffect(() => {
+        setFilters({
+            busqueda: searchParams.get('busqueda') || '',
+            marca: searchParams.get('marca') || '',
+            rubro: searchParams.get('rubro') || '',
+            stock: searchParams.get('stock') || 'todos'
+        });
+        setPage(1);
+    }, [searchParams]);
 
     // Modal Form
     const [showForm, setShowForm] = useState(false);

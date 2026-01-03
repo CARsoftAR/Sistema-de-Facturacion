@@ -16,7 +16,8 @@ import {
     Menu,
     X,
     CreditCard,
-    ClipboardList
+    ClipboardList,
+    LogOut
 } from 'lucide-react';
 
 // Rutas que son manejadas por React (SPA)
@@ -276,6 +277,15 @@ const Sidebar = ({ standalone = false }) => {
                             { label: 'Permisos', href: '/permisos' },
                             { label: 'Respaldos', href: '/backups' },
                         ]}
+                    />
+
+                    <div className="my-3 border-top border-light border-opacity-10"></div>
+
+                    <SidebarItem
+                        icon={LogOut}
+                        label="Cerrar Sesión"
+                        href="/logout/"
+                        standalone={true}
                     />
 
                 </div>

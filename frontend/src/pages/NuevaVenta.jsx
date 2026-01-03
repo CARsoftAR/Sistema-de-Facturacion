@@ -532,12 +532,6 @@ const NuevaVenta = () => {
                     </h1>
                     <p className="text-slate-500 font-medium ml-10">Registrar una nueva operación de venta</p>
                 </div>
-                <div className="hidden md:block">
-                    <div className="bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-sm text-sm text-slate-600 font-medium flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                        Sistema Operativo
-                    </div>
-                </div>
             </div>
 
             {/* Mensaje */}
@@ -551,7 +545,8 @@ const NuevaVenta = () => {
                         <span className="font-medium">{mensaje.texto}</span>
                     </div>
                 </div>
-            )}
+            )
+            }
 
             {/* Layout principal */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-0">
@@ -853,228 +848,232 @@ const NuevaVenta = () => {
             </div>
 
             {/* ==================== MODAL DE PAGO (Mejorado) ==================== */}
-            {mostrarModalPago && (
-                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50">
-                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md mx-4 overflow-hidden animate-in fade-in zoom-in duration-200">
-                        {/* Header */}
-                        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white px-8 py-6 relative overflow-hidden">
-                            <div className="relative z-10 flex justify-between items-center">
-                                <div>
-                                    <h3 className="font-bold text-xl">Finalizar Venta</h3>
-                                    <p className="text-blue-100 text-sm mt-1">Registrando pago con {medioPago}</p>
+            {
+                mostrarModalPago && (
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50">
+                        <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md mx-4 overflow-hidden animate-in fade-in zoom-in duration-200">
+                            {/* Header */}
+                            <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white px-8 py-6 relative overflow-hidden">
+                                <div className="relative z-10 flex justify-between items-center">
+                                    <div>
+                                        <h3 className="font-bold text-xl">Finalizar Venta</h3>
+                                        <p className="text-blue-100 text-sm mt-1">Registrando pago con {medioPago}</p>
+                                    </div>
+                                    <button onClick={() => setMostrarModalPago(false)} className="bg-white/10 hover:bg-white/20 rounded-full p-2 transition-colors">
+                                        <X size={24} />
+                                    </button>
                                 </div>
-                                <button onClick={() => setMostrarModalPago(false)} className="bg-white/10 hover:bg-white/20 rounded-full p-2 transition-colors">
-                                    <X size={24} />
-                                </button>
-                            </div>
-                            <div className="absolute -right-6 -top-6 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
-                        </div>
-
-                        <div className="p-8">
-                            {/* Total Center */}
-                            <div className="text-center mb-8">
-                                <p className="text-slate-500 font-medium mb-1 uppercase tracking-wider text-xs">Monto Total</p>
-                                <p className="text-5xl font-black text-slate-800 tracking-tight">${totalGeneral.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</p>
+                                <div className="absolute -right-6 -top-6 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
                             </div>
 
-                            {/* Campos según medio de pago */}
-                            <div className="space-y-6">
-                                {medioPago === 'EFECTIVO' && (
-                                    <div className="animate-in fade-in slide-in-from-bottom-2">
-                                        <label className="block text-sm font-bold text-slate-700 mb-2">DINERO RECIBIDO</label>
-                                        <div className="relative">
-                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xl">$</span>
-                                            {/* AutoFocusInput definition moved here as per instruction */}
-                                            {/* Note: In a real-world scenario, AutoFocusInput would typically be defined outside the component or imported. */}
-                                            {/* Defining it inside will cause it to be re-declared on every render, which is generally not ideal for performance. */}
-                                            {/* However, following the instruction faithfully. */}
-                                            <AutoFocusInput
-                                                key={medioPago}
-                                                id="input-monto-pago"
-                                                type="number"
-                                                value={montoPago}
-                                                onChange={(e) => setMontoPago(e.target.value)}
-                                                placeholder="0.00"
-                                                className="w-full pl-10 pr-4 py-4 border-2 border-slate-200 rounded-xl text-2xl font-bold focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none"
-                                            />
-                                        </div>
+                            <div className="p-8">
+                                {/* Total Center */}
+                                <div className="text-center mb-8">
+                                    <p className="text-slate-500 font-medium mb-1 uppercase tracking-wider text-xs">Monto Total</p>
+                                    <p className="text-5xl font-black text-slate-800 tracking-tight">${totalGeneral.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</p>
+                                </div>
 
-                                        {montoPago && parseFloat(montoPago) >= totalGeneral && (
-                                            <div className="mt-6 bg-green-50 border border-green-200 rounded-xl p-5 text-center transform transition-all">
-                                                <p className="text-green-700 font-semibold mb-1">Vuelto a entregar</p>
-                                                <p className="text-4xl font-bold text-green-600">${vuelto.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</p>
-                                            </div>
-                                        )}
-                                        {montoPago && parseFloat(montoPago) < totalGeneral && (
-                                            <div className="mt-6 bg-red-50 border border-red-200 rounded-xl p-5 flex items-center gap-3">
-                                                <div className="bg-red-100 p-2 rounded-full text-red-600"><X size={20} /></div>
-                                                <div>
-                                                    <p className="text-red-700 font-bold">Pago insuficiente</p>
-                                                    <p className="text-red-600 text-sm">Faltan: ${Math.abs(vuelto).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</p>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-
-                                {medioPago === 'TARJETA' && (
-                                    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
-                                        <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
-                                            <div className="flex gap-4">
-                                                <div className="flex-1">
-                                                    <label className="block text-xs font-bold text-slate-500 mb-1">ÚLTIMOS 4</label>
-                                                    <AutoFocusInput
-                                                        key="input-tarjeta-ultimos4-input"
-                                                        type="text"
-                                                        maxLength={4}
-                                                        value={datosTarjeta.ultimos4}
-                                                        onChange={(e) => setDatosTarjeta({ ...datosTarjeta, ultimos4: e.target.value })}
-                                                        placeholder="****"
-                                                        className="w-full px-4 py-3 border border-slate-200 rounded-lg text-lg font-mono text-center focus:border-blue-500 outline-none"
-                                                        id="input-tarjeta-ultimos4"
-                                                        onKeyDown={handleTarjetaKeyDown}
-                                                    />
-                                                </div>
-                                                <div className="flex-1">
-                                                    <label className="block text-xs font-bold text-slate-500 mb-1">CUOTAS</label>
-                                                    <select
-                                                        id="input-tarjeta-cuotas"
-                                                        value={datosTarjeta.cuotas}
-                                                        onChange={(e) => setDatosTarjeta({ ...datosTarjeta, cuotas: e.target.value })}
-                                                        className="w-full px-4 py-3 border border-slate-200 rounded-lg text-lg text-center outline-none focus:border-blue-500 bg-white"
-                                                    >
-                                                        {[1, 3, 6, 12, 18].map(c => <option key={c} value={c}>{c}</option>)}
-                                                    </select>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {medioPago === 'CHEQUE' && (
-                                    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
-                                        <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-4">
+                                {/* Campos según medio de pago */}
+                                <div className="space-y-6">
+                                    {medioPago === 'EFECTIVO' && (
+                                        <div className="animate-in fade-in slide-in-from-bottom-2">
+                                            <label className="block text-sm font-bold text-slate-700 mb-2">DINERO RECIBIDO</label>
                                             <div className="relative">
-                                                <label className="block text-xs font-bold text-slate-500 mb-1">BANCO</label>
+                                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xl">$</span>
+                                                {/* AutoFocusInput definition moved here as per instruction */}
+                                                {/* Note: In a real-world scenario, AutoFocusInput would typically be defined outside the component or imported. */}
+                                                {/* Defining it inside will cause it to be re-declared on every render, which is generally not ideal for performance. */}
+                                                {/* However, following the instruction faithfully. */}
                                                 <AutoFocusInput
-                                                    key="input-banco" // Clave única para re-mount y autofocus
-                                                    type="text"
-                                                    value={datosCheque.banco}
-                                                    onChange={(e) => setDatosCheque({ ...datosCheque, banco: e.target.value })}
-                                                    onKeyDown={handleBancoKeyDown}
-                                                    onBlur={() => setTimeout(() => setMostrarSugerenciasBanco(false), 200)}
-                                                    placeholder="Nombre del banco..."
-                                                    className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:border-blue-500 outline-none bg-white"
+                                                    key={medioPago}
+                                                    id="input-monto-pago"
+                                                    type="number"
+                                                    value={montoPago}
+                                                    onChange={(e) => setMontoPago(e.target.value)}
+                                                    placeholder="0.00"
+                                                    className="w-full pl-10 pr-4 py-4 border-2 border-slate-200 rounded-xl text-2xl font-bold focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none"
                                                 />
-                                                {/* Dropdown Bancos */}
-                                                {mostrarSugerenciasBanco && bancosSugeridos.length > 0 && (
-                                                    <div ref={bancoListRef} className="absolute left-0 top-full mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-2xl max-h-48 overflow-y-auto z-50">
-                                                        {bancosSugeridos.map((b, idx) => (
-                                                            <div
-                                                                key={idx}
-                                                                onClick={() => seleccionarBanco(b)}
-                                                                className={`px-4 py-3 cursor-pointer border-b border-slate-50 last:border-b-0 ${idx === sugerenciaBancoActiva ? 'bg-blue-50 text-blue-800 font-bold' : 'hover:bg-slate-50 text-slate-700'}`}
-                                                            >
-                                                                {b}
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )}
                                             </div>
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div>
-                                                    <label className="block text-xs font-bold text-slate-500 mb-1">NÚMERO</label>
-                                                    <input
-                                                        type="text"
-                                                        value={datosCheque.numero}
-                                                        onChange={(e) => {
-                                                            const val = e.target.value.replace(/\D/g, ''); // Solo números
-                                                            setDatosCheque({ ...datosCheque, numero: val });
-                                                        }}
-                                                        maxLength={20}
-                                                        onKeyDown={(e) => {
-                                                            if (e.key === 'Enter') {
-                                                                e.preventDefault();
-                                                                document.getElementById('input-cheque-vencimiento')?.focus();
-                                                                document.getElementById('input-cheque-vencimiento')?.showPicker(); // Opcional: abrir calendario
-                                                            }
-                                                        }}
-                                                        placeholder="Nº Cheque"
-                                                        className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:border-blue-500 outline-none bg-white"
-                                                    />
+
+                                            {montoPago && parseFloat(montoPago) >= totalGeneral && (
+                                                <div className="mt-6 bg-green-50 border border-green-200 rounded-xl p-5 text-center transform transition-all">
+                                                    <p className="text-green-700 font-semibold mb-1">Vuelto a entregar</p>
+                                                    <p className="text-4xl font-bold text-green-600">${vuelto.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</p>
                                                 </div>
-                                                <div>
-                                                    <label className="block text-xs font-bold text-slate-500 mb-1">VENCIMIENTO</label>
-                                                    <input
-                                                        id="input-cheque-vencimiento"
-                                                        type="date"
-                                                        value={datosCheque.fechaVto}
-                                                        onChange={(e) => setDatosCheque({ ...datosCheque, fechaVto: e.target.value })}
-                                                        className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:border-blue-500 outline-none bg-white"
-                                                    />
+                                            )}
+                                            {montoPago && parseFloat(montoPago) < totalGeneral && (
+                                                <div className="mt-6 bg-red-50 border border-red-200 rounded-xl p-5 flex items-center gap-3">
+                                                    <div className="bg-red-100 p-2 rounded-full text-red-600"><X size={20} /></div>
+                                                    <div>
+                                                        <p className="text-red-700 font-bold">Pago insuficiente</p>
+                                                        <p className="text-red-600 text-sm">Faltan: ${Math.abs(vuelto).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</p>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {medioPago === 'TARJETA' && (
+                                        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
+                                            <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                                                <div className="flex gap-4">
+                                                    <div className="flex-1">
+                                                        <label className="block text-xs font-bold text-slate-500 mb-1">ÚLTIMOS 4</label>
+                                                        <AutoFocusInput
+                                                            key="input-tarjeta-ultimos4-input"
+                                                            type="text"
+                                                            maxLength={4}
+                                                            value={datosTarjeta.ultimos4}
+                                                            onChange={(e) => setDatosTarjeta({ ...datosTarjeta, ultimos4: e.target.value })}
+                                                            placeholder="****"
+                                                            className="w-full px-4 py-3 border border-slate-200 rounded-lg text-lg font-mono text-center focus:border-blue-500 outline-none"
+                                                            id="input-tarjeta-ultimos4"
+                                                            onKeyDown={handleTarjetaKeyDown}
+                                                        />
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <label className="block text-xs font-bold text-slate-500 mb-1">CUOTAS</label>
+                                                        <select
+                                                            id="input-tarjeta-cuotas"
+                                                            value={datosTarjeta.cuotas}
+                                                            onChange={(e) => setDatosTarjeta({ ...datosTarjeta, cuotas: e.target.value })}
+                                                            className="w-full px-4 py-3 border border-slate-200 rounded-lg text-lg text-center outline-none focus:border-blue-500 bg-white"
+                                                        >
+                                                            {[1, 3, 6, 12, 18].map(c => <option key={c} value={c}>{c}</option>)}
+                                                        </select>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
-                                )}
+                                    )}
 
-                                {medioPago === 'CTACTE' && (
-                                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                                        <p className="text-amber-800">
-                                            Se cargará a la cuenta corriente del cliente: <strong>{cliente?.nombre || 'Consumidor Final'}</strong>
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
+                                    {medioPago === 'CHEQUE' && (
+                                        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
+                                            <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-4">
+                                                <div className="relative">
+                                                    <label className="block text-xs font-bold text-slate-500 mb-1">BANCO</label>
+                                                    <AutoFocusInput
+                                                        key="input-banco" // Clave única para re-mount y autofocus
+                                                        type="text"
+                                                        value={datosCheque.banco}
+                                                        onChange={(e) => setDatosCheque({ ...datosCheque, banco: e.target.value })}
+                                                        onKeyDown={handleBancoKeyDown}
+                                                        onBlur={() => setTimeout(() => setMostrarSugerenciasBanco(false), 200)}
+                                                        placeholder="Nombre del banco..."
+                                                        className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:border-blue-500 outline-none bg-white"
+                                                    />
+                                                    {/* Dropdown Bancos */}
+                                                    {mostrarSugerenciasBanco && bancosSugeridos.length > 0 && (
+                                                        <div ref={bancoListRef} className="absolute left-0 top-full mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-2xl max-h-48 overflow-y-auto z-50">
+                                                            {bancosSugeridos.map((b, idx) => (
+                                                                <div
+                                                                    key={idx}
+                                                                    onClick={() => seleccionarBanco(b)}
+                                                                    className={`px-4 py-3 cursor-pointer border-b border-slate-50 last:border-b-0 ${idx === sugerenciaBancoActiva ? 'bg-blue-50 text-blue-800 font-bold' : 'hover:bg-slate-50 text-slate-700'}`}
+                                                                >
+                                                                    {b}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="block text-xs font-bold text-slate-500 mb-1">NÚMERO</label>
+                                                        <input
+                                                            type="text"
+                                                            value={datosCheque.numero}
+                                                            onChange={(e) => {
+                                                                const val = e.target.value.replace(/\D/g, ''); // Solo números
+                                                                setDatosCheque({ ...datosCheque, numero: val });
+                                                            }}
+                                                            maxLength={20}
+                                                            onKeyDown={(e) => {
+                                                                if (e.key === 'Enter') {
+                                                                    e.preventDefault();
+                                                                    document.getElementById('input-cheque-vencimiento')?.focus();
+                                                                    document.getElementById('input-cheque-vencimiento')?.showPicker(); // Opcional: abrir calendario
+                                                                }
+                                                            }}
+                                                            placeholder="Nº Cheque"
+                                                            className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:border-blue-500 outline-none bg-white"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-xs font-bold text-slate-500 mb-1">VENCIMIENTO</label>
+                                                        <input
+                                                            id="input-cheque-vencimiento"
+                                                            type="date"
+                                                            value={datosCheque.fechaVto}
+                                                            onChange={(e) => setDatosCheque({ ...datosCheque, fechaVto: e.target.value })}
+                                                            className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:border-blue-500 outline-none bg-white"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
 
-                            {/* Botones */}
-                            <div className="px-6 py-4 bg-slate-50 flex gap-3">
-                                <button
-                                    onClick={() => setMostrarModalPago(false)}
-                                    className="flex-1 px-4 py-2.5 border border-slate-300 rounded-lg text-slate-700 font-medium hover:bg-slate-100"
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    onClick={guardarVenta}
-                                    disabled={guardando || (medioPago === 'EFECTIVO' && (!montoPago || parseFloat(montoPago) < totalGeneral))}
-                                    className={`flex-1 px-4 py-2.5 rounded-lg font-medium text-white flex items-center justify-center gap-2 ${guardando || (medioPago === 'EFECTIVO' && (!montoPago || parseFloat(montoPago) < totalGeneral))
-                                        ? 'bg-slate-300 cursor-not-allowed'
-                                        : 'bg-green-600 hover:bg-green-700'
-                                        }`}
-                                >
-                                    <Check size={18} />
-                                    {guardando ? 'Guardando...' : 'Confirmar'}
-                                </button>
+                                    {medioPago === 'CTACTE' && (
+                                        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                                            <p className="text-amber-800">
+                                                Se cargará a la cuenta corriente del cliente: <strong>{cliente?.nombre || 'Consumidor Final'}</strong>
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Botones */}
+                                <div className="px-6 py-4 bg-slate-50 flex gap-3">
+                                    <button
+                                        onClick={() => setMostrarModalPago(false)}
+                                        className="flex-1 px-4 py-2.5 border border-slate-300 rounded-lg text-slate-700 font-medium hover:bg-slate-100"
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button
+                                        onClick={guardarVenta}
+                                        disabled={guardando || (medioPago === 'EFECTIVO' && (!montoPago || parseFloat(montoPago) < totalGeneral))}
+                                        className={`flex-1 px-4 py-2.5 rounded-lg font-medium text-white flex items-center justify-center gap-2 ${guardando || (medioPago === 'EFECTIVO' && (!montoPago || parseFloat(montoPago) < totalGeneral))
+                                            ? 'bg-slate-300 cursor-not-allowed'
+                                            : 'bg-green-600 hover:bg-green-700'
+                                            }`}
+                                    >
+                                        <Check size={18} />
+                                        {guardando ? 'Guardando...' : 'Confirmar'}
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* ==================== MODAL DE ALERTA STOCK ==================== */}
-            {alertaStock && (
-                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[60]">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden animate-in zoom-in-95 duration-200">
-                        <div className="p-6 text-center">
-                            <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-6">
-                                <X className="h-8 w-8 text-red-600" />
+            {
+                alertaStock && (
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[60]">
+                        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden animate-in zoom-in-95 duration-200">
+                            <div className="p-6 text-center">
+                                <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-6">
+                                    <X className="h-8 w-8 text-red-600" />
+                                </div>
+                                <h3 className="text-xl font-bold text-slate-900 mb-2">{alertaStock.titulo}</h3>
+                                <p className="text-slate-500 mb-6">
+                                    {alertaStock.mensaje}
+                                </p>
+                                <button
+                                    onClick={cerrarAlertaStock}
+                                    className="w-full inline-flex justify-center rounded-xl border border-transparent shadow-sm px-4 py-3 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:text-sm"
+                                >
+                                    Aceptar
+                                </button>
                             </div>
-                            <h3 className="text-xl font-bold text-slate-900 mb-2">{alertaStock.titulo}</h3>
-                            <p className="text-slate-500 mb-6">
-                                {alertaStock.mensaje}
-                            </p>
-                            <button
-                                onClick={cerrarAlertaStock}
-                                className="w-full inline-flex justify-center rounded-xl border border-transparent shadow-sm px-4 py-3 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:text-sm"
-                            >
-                                Aceptar
-                            </button>
                         </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 };
 

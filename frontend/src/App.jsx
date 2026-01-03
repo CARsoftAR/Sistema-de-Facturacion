@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import Sidebar from './components/Sidebar'
+import TopNavbar from './components/TopNavbar'
 import Ventas from './pages/Ventas'
 import Proveedores from './pages/Proveedores'
 import NuevaVenta from './pages/NuevaVenta'
@@ -18,11 +19,6 @@ const Dashboard = () => (
       <div>
         <h1 className="h3 fw-bold text-dark tracking-tight">Bienvenido a CARSOFT</h1>
         <p className="text-secondary mt-1">Sistema Integral de Gestión</p>
-      </div>
-      <div className="d-none d-md-flex align-items-center gap-3">
-        <div className="px-3 py-2 bg-white rounded border shadow-sm text-secondary small">
-          Usuario: <span className="text-primary fw-medium">Admin</span>
-        </div>
       </div>
     </header>
 
@@ -57,7 +53,8 @@ function App() {
         <Sidebar />
 
         {/* Main Content Area - Offset by sidebar width on desktop */}
-        <main className="flex-grow-1 transition-all" style={{ marginLeft: '0px' }}>
+        <main className="flex-grow-1 transition-all d-flex flex-column" style={{ marginLeft: '0px' }}>
+          <TopNavbar />
           <style>
             {`
               @media (min-width: 992px) {

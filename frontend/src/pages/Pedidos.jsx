@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 const Pedidos = () => {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const [pedidos, setPedidos] = useState([]);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
@@ -10,13 +11,24 @@ const Pedidos = () => {
     const [totalItems, setTotalItems] = useState(0);
     const [itemsPerPage, setItemsPerPage] = useState(10);
 
-    // Filtros
+    // Filtros - Inicializar con valores de la URL si existen
     const [filters, setFilters] = useState({
-        busqueda: '',
-        estado: '',
-        fecha_desde: '',
-        fecha_hasta: ''
+        busqueda: searchParams.get('busqueda') || '',
+        estado: searchParams.get('estado') || '',
+        fecha_desde: searchParams.get('fecha_desde') || '',
+        fecha_hasta: searchParams.get('fecha_hasta') || ''
     });
+
+    // Sincronizar filtros con la URL
+    useEffect(() => {
+        setFilters({
+            busqueda: searchParams.get('busqueda') || '',
+            estado: searchParams.get('estado') || '',
+            fecha_desde: searchParams.get('fecha_desde') || '',
+            fecha_hasta: searchParams.get('fecha_hasta') || ''
+        });
+        setPage(1);
+    }, [searchParams]);
 
     const fetchPedidos = useCallback(async () => {
         setLoading(true);
@@ -113,8 +125,8 @@ const Pedidos = () => {
     const formatCurrency = (val) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(val);
 
     return (
-        <div style={{ padding: '1.5rem' }}>
-            <div className="container-fluid px-4 mt-4">
+        <div className="flex-grow-1 overflow-auto bg-light">
+            <div className="container-fluid px-4 pt-4">
                 {/* HEADER */}
                 <div className="d-flex justify-content-between align-items-center mb-4">
                     <div>
