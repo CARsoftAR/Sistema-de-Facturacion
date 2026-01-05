@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import User
 
 
 # ð¹ Condiciones fiscales posibles
@@ -269,8 +270,24 @@ class DetalleVenta(models.Model):
         return f"{self.producto.descripcion} x {self.cantidad}"
 
 
-# ð¹ Caja / Movimiento
+# 🔹 Caja / Movimiento
+class CajaDiaria(models.Model):
+    usuario = models.ForeignKey(User, on_delete=models.PROTECT)
+    fecha_apertura = models.DateTimeField(auto_now_add=True)
+    fecha_cierre = models.DateTimeField(null=True, blank=True)
+    monto_apertura = models.DecimalField(max_digits=12, decimal_places=2)
+    monto_cierre_sistema = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    monto_cierre_real = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    estado = models.CharField(max_length=10, choices=[('ABIERTA', 'Abierta'), ('CERRADA', 'Cerrada')], default='ABIERTA')
+    observaciones = models.TextField(blank=True)
+
+    def __str__(self):
+        return f"Caja {self.id} - {self.fecha_apertura.date()} ({self.estado})"
+
+
 class MovimientoCaja(models.Model):
+    caja_diaria = models.ForeignKey(CajaDiaria, on_delete=models.CASCADE, related_name='movimientos', null=True)
+    usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     fecha = models.DateTimeField(auto_now_add=True)
     tipo = models.CharField(max_length=10, choices=[('Ingreso','Ingreso'),('Egreso','Egreso')])
     descripcion = models.CharField(max_length=150)
@@ -586,8 +603,7 @@ class ItemAsiento(models.Model):
     def __str__(self):
         return f"{self.cuenta.nombre} | D: {self.debe} | H: {self.haber}"
 
-# ð¹ Perfil de Usuario para Permisos
-from django.contrib.auth.models import User
+# 🔹 Perfil de Usuario para Permisos
 
 class PerfilUsuario(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)

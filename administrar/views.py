@@ -22,9 +22,9 @@ from .models import (
     Provincia, Localidad, Cliente,
     OrdenCompra, DetalleOrdenCompra,
     Compra, DetalleCompra, MovimientoStock,
-    MovimientoCaja, Venta, DetalleVenta, Unidad,
-    MovimientoCuentaCorriente, Pedido, DetallePedido,
-    Localidad, InvoiceTemplate, Empresa, PerfilUsuario,
+    MovimientoCaja, CajaDiaria, Venta, DetalleVenta, Unidad,
+    MovimientoCuentaCorriente, MovimientoCuentaCorrienteProveedor, Pedido, DetallePedido,
+    InvoiceTemplate, Empresa, PerfilUsuario,
     Remito, DetalleRemito, NotaCredito, DetalleNotaCredito, NotaDebito, DetalleNotaDebito,
     Presupuesto, DetallePresupuesto, ActiveSession
 )
@@ -408,10 +408,6 @@ def proveedores_lista(request):
     })
 
 
-@login_required
-@verificar_permiso('caja')
-def caja(request):
-    return render(request, "administrar/caja.html")
 
 @login_required
 @verificar_permiso('contabilidad')
@@ -428,10 +424,10 @@ def contabilidad(request):
 def api_caja_movimientos_lista(request):
     """API para listar movimientos de caja con paginación y filtros"""
     from django.db.models import Sum, Q
-    from datetime import datetime, timedelta
+    from datetime import datetime
     
     try:
-        # Parámetros de paginación
+        # Paginación
         page = int(request.GET.get('page', 1))
         per_page = int(request.GET.get('per_page', 10))
         
@@ -442,24 +438,17 @@ def api_caja_movimientos_lista(request):
         busqueda = request.GET.get('busqueda', '').strip()
         
         # Query base
-        movimientos = MovimientoCaja.objects.all()
+        movimientos = MovimientoCaja.objects.select_related('usuario').all()
         
-        # Aplicar filtros
+        # Filtros de fecha
         if fecha_desde:
             try:
-                # Intentar formato YYYY-MM-DD
-                fecha_desde_dt = datetime.strptime(fecha_desde, '%Y-%m-%d')
-                movimientos = movimientos.filter(fecha__date__gte=fecha_desde_dt.date())
-            except ValueError:
-                pass
-        
+                movimientos = movimientos.filter(fecha__date__gte=datetime.strptime(fecha_desde, '%Y-%m-%d').date())
+            except ValueError: pass
         if fecha_hasta:
             try:
-                # Intentar formato YYYY-MM-DD
-                fecha_hasta_dt = datetime.strptime(fecha_hasta, '%Y-%m-%d')
-                movimientos = movimientos.filter(fecha__date__lte=fecha_hasta_dt.date())
-            except ValueError:
-                pass
+                movimientos = movimientos.filter(fecha__date__lte=datetime.strptime(fecha_hasta, '%Y-%m-%d').date())
+            except ValueError: pass
         
         if tipo:
             movimientos = movimientos.filter(tipo=tipo)
@@ -467,21 +456,12 @@ def api_caja_movimientos_lista(request):
         if busqueda:
             movimientos = movimientos.filter(
                 Q(descripcion__icontains=busqueda) |
-                Q(monto__icontains=busqueda)
+                Q(usuario__username__icontains=busqueda)
             )
         
-        # Ordenar por fecha descendente
-        movimientos = movimientos.order_by('-fecha')
-        
-        # Contar total
         total = movimientos.count()
+        movimientos_page = movimientos.order_by('-fecha')[(page - 1) * per_page : page * per_page]
         
-        # Paginación
-        start = (page - 1) * per_page
-        end = start + per_page
-        movimientos_page = movimientos[start:end]
-        
-        # Serializar
         data = []
         for m in movimientos_page:
             data.append({
@@ -490,10 +470,10 @@ def api_caja_movimientos_lista(request):
                 'tipo': m.tipo,
                 'descripcion': m.descripcion,
                 'monto': float(m.monto),
-                'usuario': 'Admin',  # Por ahora hardcodeado
+                'usuario': m.usuario.username if m.usuario else 'Sistema',
             })
         
-        # Calcular saldo actual
+        # Saldo actual histórico (mejorable para optimizar)
         ingresos = MovimientoCaja.objects.filter(tipo='Ingreso').aggregate(total=Sum('monto'))['total'] or 0
         egresos = MovimientoCaja.objects.filter(tipo='Egreso').aggregate(total=Sum('monto'))['total'] or 0
         saldo_actual = float(ingresos) - float(egresos)
@@ -506,22 +486,21 @@ def api_caja_movimientos_lista(request):
             'total_pages': (total + per_page - 1) // per_page,
             'saldo_actual': saldo_actual,
         })
-        
     except Exception as e:
-        import traceback
-        print(f"Error en api_caja_movimientos_lista: {str(e)}")
-        traceback.print_exc()
         return JsonResponse({'error': str(e)}, status=500)
 
 
-@csrf_exempt
-@require_POST
 @csrf_exempt
 @require_POST
 @login_required
 @verificar_permiso('caja')
 def api_caja_movimiento_crear(request):
     """API para crear un nuevo movimiento de caja"""
+    # Verificar si hay una caja abierta
+    caja = CajaDiaria.objects.filter(estado='ABIERTA').first()
+    if not caja:
+        return JsonResponse({'error': 'Debe abrir la caja antes de registrar movimientos'}, status=400)
+
     try:
         data = json.loads(request.body.decode('utf-8'))
     except Exception:
@@ -547,6 +526,8 @@ def api_caja_movimiento_crear(request):
     
     try:
         movimiento = MovimientoCaja.objects.create(
+            caja_diaria=caja,
+            usuario=request.user,
             tipo=tipo,
             descripcion=descripcion,
             monto=monto,
@@ -680,89 +661,120 @@ def api_caja_saldo_actual(request):
 
 @csrf_exempt
 @require_POST
-@csrf_exempt
-@require_POST
 @login_required
 @verificar_permiso('caja')
 def api_caja_cierre(request):
     """API para realizar cierre de caja"""
     from django.db.models import Sum
-    from datetime import date, datetime
+    from django.utils import timezone
+    from decimal import Decimal
+    from django.db import transaction
+    
+    caja = CajaDiaria.objects.filter(estado='ABIERTA').first()
+    if not caja:
+        return JsonResponse({'error': 'No hay ninguna caja abierta para cerrar'}, status=400)
     
     try:
-        try:
-            data = json.loads(request.body.decode('utf-8'))
-        except Exception:
-            data = {}
+        data = json.loads(request.body.decode('utf-8'))
+        monto_real = Decimal(str(data.get('monto_real', 0)))
         
-        fecha_cierre = data.get('fecha', date.today().strftime('%Y-%m-%d'))
+        # Calcular el saldo de SISTEMA desde que se abrió la caja
+        ingresos = MovimientoCaja.objects.filter(caja_diaria=caja, tipo='Ingreso').aggregate(total=Sum('monto'))['total'] or 0
+        egresos = MovimientoCaja.objects.filter(caja_diaria=caja, tipo='Egreso').aggregate(total=Sum('monto'))['total'] or 0
+        saldo_sistema = Decimal(str(ingresos)) - Decimal(str(egresos))
         
-        try:
-            fecha_dt = datetime.strptime(fecha_cierre, '%Y-%m-%d').date()
-        except ValueError:
-            return JsonResponse({'error': 'Fecha inválida'}, status=400)
+        diferencia = monto_real - saldo_sistema
         
-        # Obtener movimientos del día
-        movimientos_dia = MovimientoCaja.objects.filter(fecha__date=fecha_dt)
-        
-        ingresos = movimientos_dia.filter(tipo='Ingreso').aggregate(total=Sum('monto'))['total'] or 0
-        egresos = movimientos_dia.filter(tipo='Egreso').aggregate(total=Sum('monto'))['total'] or 0
-        saldo_dia = float(ingresos) - float(egresos)
-        
-        
-        # Saldo sistema
-        ingresos_total = MovimientoCaja.objects.filter(tipo='Ingreso').aggregate(total=Sum('monto'))['total'] or 0
-        egresos_total = MovimientoCaja.objects.filter(tipo='Egreso').aggregate(total=Sum('monto'))['total'] or 0
-        saldo_sistema = float(ingresos_total) - float(egresos_total)
-
-        monto_real = data.get('monto_real') # Lo que el usuario contó
-        diferencia = 0
-        
-        if monto_real is not None:
-            try:
-                monto_real = float(monto_real)
-                diferencia = monto_real - saldo_sistema
+        with transaction.atomic():
+            caja.fecha_cierre = timezone.now()
+            caja.monto_cierre_sistema = saldo_sistema
+            caja.monto_cierre_real = monto_real
+            caja.estado = 'CERRADA'
+            caja.observaciones = data.get('observaciones', '')
+            caja.save()
+            
+            # Registrar movimiento de ajuste si hay diferencia (Sobrante/Faltante)
+            if abs(diferencia) > 0.01:
+                tipo_ajuste = 'Ingreso' if diferencia > 0 else 'Egreso'
+                desc_ajuste = f"Ajuste Arqueo Caja #{caja.id} ({'Sobrante' if diferencia > 0 else 'Faltante'})"
                 
-                # Si hay diferencia, creamos movimiento de ajuste
-                if abs(diferencia) > 0.01:
-                    tipo_ajuste = 'Ingreso' if diferencia > 0 else 'Egreso'
-                    desc_ajuste = f"Ajuste por Arqueo (Sistema: {saldo_sistema}, Real: {monto_real})"
-                    
-                    movimiento = MovimientoCaja.objects.create(
-                        tipo=tipo_ajuste,
-                        descripcion=desc_ajuste,
-                        monto=abs(diferencia)
-                    )
+                MovimientoCaja.objects.create(
+                    caja_diaria=caja,
+                    usuario=request.user,
+                    tipo=tipo_ajuste,
+                    descripcion=desc_ajuste,
+                    monto=abs(diferencia)
+                )
 
-                    # Contabilidad
-                    try:
-                        from .services import AccountingService
-                        AccountingService.registrar_arqueo_caja(movimiento, diferencia)
-                    except Exception as e:
-                        print(f"Error asiento arqueo: {e}")
-                    
-                    # Recalcular saldos para el reporte final
-                    ingresos_total = MovimientoCaja.objects.filter(tipo='Ingreso').aggregate(total=Sum('monto'))['total'] or 0
-                    egresos_total = MovimientoCaja.objects.filter(tipo='Egreso').aggregate(total=Sum('monto'))['total'] or 0
-                    saldo_sistema = float(ingresos_total) - float(egresos_total)
-
-            except ValueError:
-                pass # Si monto_real no es numero válido, ignoramos arqueo
-        
         return JsonResponse({
             'ok': True,
-            'fecha': fecha_dt.strftime('%d/%m/%Y'),
+            'id': caja.id,
+            'saldo_sistema': float(saldo_sistema),
+            'monto_real': float(monto_real),
+            'diferencia': float(diferencia),
             'ingresos_dia': float(ingresos),
             'egresos_dia': float(egresos),
-            'saldo_dia': saldo_dia,
-            'saldo_total': saldo_sistema, # Ahora coincide con el real
-            'diferencia': diferencia,
-            'cantidad_movimientos': movimientos_dia.count()
+            'saldo_total': float(monto_real)
         })
     except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return JsonResponse({'ok': False, 'error': f"Error Interno: {str(e)}"})
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+@verificar_permiso('caja')
+def api_caja_estado(request):
+    """API para verificar el estado de la caja actual (si hay una abierta)"""
+    caja_abierta = CajaDiaria.objects.filter(estado='ABIERTA').first()
+    if caja_abierta:
+        return JsonResponse({
+            'abierta': True,
+            'id': caja_abierta.id,
+            'fecha_apertura': caja_abierta.fecha_apertura.strftime('%d/%m/%Y %H:%M'),
+            'monto_apertura': float(caja_abierta.monto_apertura),
+            'usuario': caja_abierta.usuario.username
+        })
+    return JsonResponse({'abierta': False})
+
+
+@csrf_exempt
+@require_POST
+@login_required
+@verificar_permiso('caja')
+def api_caja_apertura(request):
+    """API para abrir una nueva sesión de caja"""
+    if CajaDiaria.objects.filter(estado='ABIERTA').exists():
+        return JsonResponse({'error': 'Ya existe una caja abierta'}, status=400)
+    
+    try:
+        data = json.loads(request.body.decode('utf-8'))
+        # Fix: Handle None explicitly if forwarded as null from frontend
+        val_monto = data.get('monto')
+        if val_monto is None:
+            val_monto = 0
+            
+        monto = Decimal(str(val_monto))
+        
+        if monto < 0:
+            return JsonResponse({'error': 'El monto no puede ser negativo'}, status=400)
+            
+        with transaction.atomic():
+            caja = CajaDiaria.objects.create(
+                usuario=request.user,
+                monto_apertura=monto,
+                estado='ABIERTA'
+            )
+            # También creamos un movimiento de apertura
+            MovimientoCaja.objects.create(
+                caja_diaria=caja,
+                usuario=request.user,
+                tipo='Ingreso',
+                descripcion=f'Apertura de Caja #{caja.id}',
+                monto=monto
+            )
+        
+        return JsonResponse({'ok': True, 'id': caja.id})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 
 # =======================================
@@ -2007,7 +2019,9 @@ def recepcionar_orden_interna(oc, medio_pago, datos_cheque=None):
 
     else:
         # Contado -> Egresa dinero de Caja
+        caja = CajaDiaria.objects.filter(estado='ABIERTA').first()
         MovimientoCaja.objects.create(
+            caja_diaria=caja,
             tipo="Egreso",
             descripcion=f"Compra #{compra.id} - {oc.proveedor.nombre}",
             monto=oc.total_estimado,
@@ -2994,7 +3008,10 @@ def api_venta_guardar(request):
                 
             else:
                 # EFECTIVO o TARJETA - Impactan en Caja inmediatamente
+                caja = CajaDiaria.objects.filter(estado='ABIERTA').first()
                 MovimientoCaja.objects.create(
+                    caja_diaria=caja,
+                    usuario=request.user if request.user.is_authenticated else None,
                     tipo="Ingreso",
                     descripcion=f"Venta #{venta.id} - {medio_pago}",
                     monto=total_general,
@@ -3521,6 +3538,7 @@ def api_localidades_eliminar(request, id):
 # ==========================================
 # RUBROS
 # ==========================================
+
 
 @login_required
 def rubros_lista(request):
@@ -6785,7 +6803,10 @@ def api_cc_cliente_nuevo_movimiento(request):
             nuevo_saldo += monto
             # Si impacta caja siendo DEBE, asumimos que es una "Salida" de dinero (ej. devolucion de saldo a favor)
             if impactar_caja:
+                 caja = CajaDiaria.objects.filter(estado='ABIERTA').first()
                  MovimientoCaja.objects.create(
+                    caja_diaria=caja,
+                    usuario=request.user,
                     tipo="Egreso",
                     descripcion=f"Devolución/Ajuste - Cliente {cliente.nombre}: {descripcion}",
                     monto=monto
@@ -6794,7 +6815,10 @@ def api_cc_cliente_nuevo_movimiento(request):
             nuevo_saldo -= monto
             # Si impacta caja siendo HABER, es un COBRO (Entrada de dinero)
             if impactar_caja:
+                caja = CajaDiaria.objects.filter(estado='ABIERTA').first()
                 MovimientoCaja.objects.create(
+                    caja_diaria=caja,
+                    usuario=request.user,
                     tipo="Ingreso",
                     descripcion=f"Cobro - Cliente {cliente.nombre}: {descripcion}",
                     monto=monto
@@ -6923,7 +6947,10 @@ def api_cc_proveedor_nuevo_movimiento(request):
             nuevo_saldo += monto
             # Si impacta caja siendo HABER, asumimos Ingreso de dinero (ej. proveedor nos devuelve plata)
             if impactar_caja:
+                 caja = CajaDiaria.objects.filter(estado='ABIERTA').first()
                  MovimientoCaja.objects.create(
+                    caja_diaria=caja,
+                    usuario=request.user,
                     tipo="Ingreso",
                     descripcion=f"Ajuste/Devolución - Proveedor {proveedor.nombre}: {descripcion}",
                     monto=monto
@@ -6932,7 +6959,10 @@ def api_cc_proveedor_nuevo_movimiento(request):
             nuevo_saldo -= monto
             # Si impacta caja siendo DEBE, es un PAGO (Salida de dinero)
             if impactar_caja:
+                 caja = CajaDiaria.objects.filter(estado='ABIERTA').first()
                  MovimientoCaja.objects.create(
+                    caja_diaria=caja,
+                    usuario=request.user,
                     tipo="Egreso",
                     descripcion=f"Pago a Proveedor {proveedor.nombre}: {descripcion}",
                     monto=monto
@@ -7064,7 +7094,10 @@ def api_recibo_crear(request):
             # Crear movimiento de caja si es efectivo o transferencia
 
             if forma_pago in ['EFECTIVO', 'TRANSFERENCIA', 'DEBITO', 'CREDITO']:
+                caja_activa = CajaDiaria.objects.filter(estado='ABIERTA').first()
                 MovimientoCaja.objects.create(
+                    caja_diaria=caja_activa,
+                    usuario=request.user,
                     tipo='Ingreso' if tipo == 'CLIENTE' else 'Egreso',
                     descripcion=f"{forma_pago} - Recibo #{recibo.numero_formateado()} - {entidad.nombre}",
                     monto=monto
@@ -8014,42 +8047,7 @@ def api_bancos_conciliar(request):
 
 
 @csrf_exempt
-@require_POST
-@login_required
-def api_caja_apertura(request):
-    """API para realizar apertura de caja"""
-    import json
-    from .models import MovimientoCaja
-    try:
-        data = json.loads(request.body.decode('utf-8'))
-        monto = float(data.get('monto', 0))
-        
-        # Validación: Solo una apertura por día
-        from datetime import date
-        hoy = date.today()
-        existe = MovimientoCaja.objects.filter(
-            descripcion='Apertura de Caja',
-            fecha__date=hoy
-        ).exists()
-        
-        if existe:
-             return JsonResponse({'ok': False, 'error': 'Ya se realizó la apertura de caja el día de hoy.'})
 
-        movimiento = MovimientoCaja.objects.create(
-            tipo='Ingreso',
-            descripcion='Apertura de Caja',
-            monto=monto
-        )
-
-        try:
-            from .services import AccountingService
-            AccountingService.registrar_movimiento_caja(movimiento)
-        except Exception as e:
-            print(f"Error generando asiento apertura caja: {e}")
-        
-        return JsonResponse({'ok': True})
-    except Exception as e:
-        return JsonResponse({'ok': False, 'error': str(e)})
 
 # =======================================
 # 📋 PRESUPUESTOS (COTIZACIONES)

@@ -21,7 +21,20 @@ import {
 } from 'lucide-react';
 
 // Rutas que son manejadas por React (SPA)
-const REACT_ROUTES = ['/', '/dashboard', '/ventas/nuevo', '/clientes', '/productos'];
+const REACT_ROUTES = [
+    '/',
+    '/dashboard',
+    '/ventas',
+    '/ventas/nuevo',
+    '/compras',
+    '/compras/nueva',
+    '/pedidos',
+    '/pedidos/nuevo',
+    '/clientes',
+    '/productos',
+    '/proveedores',
+    '/caja'
+];
 
 const SidebarItem = ({ icon: Icon, label, href, subItems, isOpen, activeSubItem, onToggle, standalone }) => {
     const navigate = useNavigate();

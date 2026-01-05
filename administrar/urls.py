@@ -51,7 +51,7 @@ urlpatterns = [
 
     path("clientes/", TemplateView.as_view(template_name="react_app.html"), name="clientes"),
     path("proveedores/", TemplateView.as_view(template_name="react_app.html"), name="proveedores"),
-    path("caja/", views.caja, name="caja"),
+    path("caja/", TemplateView.as_view(template_name="react_app.html"), name="caja"),
     
     # API Caja
     path("api/caja/movimientos/", views.api_caja_movimientos_lista, name="api_caja_movimientos_lista"),
@@ -61,6 +61,8 @@ urlpatterns = [
     path("api/caja/movimiento/<int:id>/eliminar/", views.api_caja_movimiento_eliminar, name="api_caja_movimiento_eliminar"),
     path("api/caja/saldo/", views.api_caja_saldo_actual, name="api_caja_saldo_actual"),
     path("api/caja/cierre/", views.api_caja_cierre, name="api_caja_cierre"),
+    path("api/caja/apertura/", views.api_caja_apertura, name="api_caja_apertura"),
+    path("api/caja/estado/", views.api_caja_estado, name="api_caja_estado"),
     
     # API Plan de Cuentas
     path("api/contabilidad/plan-cuentas/", views.api_plan_cuentas_lista, name="api_plan_cuentas_lista"),

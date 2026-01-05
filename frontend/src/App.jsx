@@ -11,6 +11,7 @@ import Pedidos from './pages/Pedidos'
 import NuevoPedido from './pages/NuevoPedido'
 import Compras from './pages/Compras'
 import NuevaCompra from './pages/NuevaCompra'
+import Caja from './pages/Caja'
 
 // Componente Dashboard temporal con estilos Bootstrap
 const Dashboard = () => (
@@ -76,6 +77,8 @@ function App() {
             <Route path="/compras" element={<Compras />} />
             <Route path="/compras/nueva" element={<NuevaCompra />} />
             <Route path="/proveedores" element={<Proveedores />} />
+            <Route path="/caja" element={<Caja />} />
+            <Route path="/caja/" element={<Caja />} />
           </Routes>
         </main>
       </div>

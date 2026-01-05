@@ -1,0 +1,679 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+    Wallet,
+    PlusCircle,
+    ArrowUpCircle,
+    ArrowDownCircle,
+    Search,
+    Filter,
+    RotateCcw,
+    Pencil,
+    Trash2,
+    CheckCircle2,
+    AlertCircle,
+    X,
+    TrendingUp,
+    TrendingDown,
+    Calendar,
+    LogIn,
+    LogOut
+} from 'lucide-react';
+import Swal from 'sweetalert2';
+
+const Caja = () => {
+    const [movimientos, setMovimientos] = useState([]);
+    const [saldoActual, setSaldoActual] = useState(0);
+    const [loading, setLoading] = useState(true);
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalItems, setTotalItems] = useState(0);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
+
+    // Filtros
+    const [filters, setFilters] = useState({
+        fecha_desde: '',
+        fecha_hasta: '',
+        tipo: '',
+        busqueda: ''
+    });
+
+    // Modales
+    const [showMovimientoModal, setShowMovimientoModal] = useState(false);
+    const [showAperturaModal, setShowAperturaModal] = useState(false);
+    const [showCierreModal, setShowCierreModal] = useState(false);
+    const [editingMovimiento, setEditingMovimiento] = useState(null);
+    const [cajaAbierta, setCajaAbierta] = useState(false);
+    const [cajaData, setCajaData] = useState(null);
+
+    // Formulario Movimiento
+    const [movimientoForm, setMovimientoForm] = useState({
+        tipo: 'Ingreso',
+        descripcion: '',
+        monto: ''
+    });
+
+    const [montoApertura, setMontoApertura] = useState('');
+    const [montoCierreReal, setMontoCierreReal] = useState('');
+
+    const fetchCajaData = useCallback(async () => {
+        setLoading(true);
+        try {
+            // Verificamos estado de caja
+            const resEstado = await fetch('/api/caja/estado/');
+            const dataEstado = await resEstado.json();
+            setCajaAbierta(dataEstado.abierta);
+            setCajaData(dataEstado);
+
+            const params = new URLSearchParams({
+                page,
+                per_page: itemsPerPage,
+                ...filters
+            });
+            const response = await fetch(`/api/caja/movimientos/?${params}`);
+            const data = await response.json();
+
+            if (data.error) throw new Error(data.error);
+
+            setMovimientos(data.movimientos || []);
+            setTotalPages(data.total_pages || 1);
+            setTotalItems(data.total || 0);
+            setSaldoActual(data.saldo_actual || 0);
+        } catch (error) {
+            console.error("Error cargando caja:", error);
+            Swal.fire('Error', 'No se pudieron cargar los movimientos', 'error');
+        } finally {
+            setLoading(false);
+        }
+    }, [page, itemsPerPage, filters]);
+
+    useEffect(() => {
+        fetchCajaData();
+    }, [fetchCajaData]);
+
+    const handleFilterChange = (e) => {
+        const { name, value } = e.target;
+        setFilters(prev => ({ ...prev, [name]: value }));
+        setPage(1);
+    };
+
+    const resetFilters = () => {
+        setFilters({ fecha_desde: '', fecha_hasta: '', tipo: '', busqueda: '' });
+        setPage(1);
+    };
+
+    const handleSaveMovimiento = async (e) => {
+        e.preventDefault();
+        const id = editingMovimiento?.id;
+        const url = id ? `/api/caja/movimiento/${id}/editar/` : '/api/caja/movimiento/crear/';
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(movimientoForm)
+            });
+            const data = await response.json();
+
+            if (data.ok || !data.error) {
+                Swal.fire('Éxito', id ? 'Movimiento actualizado' : 'Movimiento creado', 'success');
+                setShowMovimientoModal(false);
+                setEditingMovimiento(null);
+                setMovimientoForm({ tipo: 'Ingreso', descripcion: '', monto: '' });
+                fetchCajaData();
+            } else {
+                Swal.fire('Error', data.error, 'error');
+            }
+        } catch (error) {
+            Swal.fire('Error', 'No se pudo guardar el movimiento', 'error');
+        }
+    };
+
+    const handleDeleteMovimiento = async (id) => {
+        const result = await Swal.fire({
+            title: '¿Estás seguro?',
+            text: "Esta acción no se puede deshacer",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar'
+        });
+
+        if (result.isConfirmed) {
+            try {
+                const response = await fetch(`/api/caja/movimiento/${id}/eliminar/`, { method: 'POST' });
+                const data = await response.json();
+                if (data.ok || !data.error) {
+                    Swal.fire('Eliminado', 'El movimiento ha sido eliminado', 'success');
+                    fetchCajaData();
+                } else {
+                    Swal.fire('Error', data.error, 'error');
+                }
+            } catch (error) {
+                Swal.fire('Error', 'Ocurrió un error al eliminar', 'error');
+            }
+        }
+    };
+
+    const handleApertura = async (e) => {
+        e.preventDefault();
+        try {
+            const response = await fetch('/api/caja/apertura/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ monto: parseFloat(montoApertura) })
+            });
+            const data = await response.json();
+            if (data.ok) {
+                Swal.fire('Caja Abierta', 'Se inició la jornada correctamente', 'success');
+                setShowAperturaModal(false);
+                setMontoApertura('');
+                fetchCajaData();
+            } else {
+                Swal.fire('Error', data.error, 'error');
+            }
+        } catch (error) {
+            Swal.fire('Error', 'Error de conexión', 'error');
+        }
+    };
+
+    const handleCierre = () => {
+        setMontoCierreReal('');
+        setShowCierreModal(true);
+    };
+
+    const submitCierre = async (e) => {
+        e.preventDefault();
+        if (!montoCierreReal) {
+            Swal.fire('Error', 'Debes ingresar un monto', 'warning');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/caja/cierre/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ monto_real: montoCierreReal })
+            });
+            const data = await response.json();
+
+            if (data.ok) {
+                setShowCierreModal(false);
+                let diffHtml = '';
+                if (data.diferencia !== 0) {
+                    const isSobrante = data.diferencia > 0;
+                    diffHtml = `
+                        <div class="mt-2 p-2 rounded ${isSobrante ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'} fw-bold border">
+                            ${isSobrante ? 'Sobrante' : 'Faltante'}: $${Math.abs(data.diferencia).toLocaleString('es-AR')}
+                        </div>
+                    `;
+                }
+                Swal.fire({
+                    title: 'Cierre Exitoso',
+                    html: `
+                        <div class="text-start p-2">
+                            <p className="mb-2"><strong>Saldo Final:</strong> $${data.saldo_total.toLocaleString('es-AR')}</p>
+                            <p className="mb-2"><strong>Ingresos:</strong> $${data.ingresos_dia.toLocaleString('es-AR')}</p>
+                            <p className="mb-2 text-danger"><strong>Egresos:</strong> $${data.egresos_dia.toLocaleString('es-AR')}</p>
+                            ${diffHtml}
+                        </div>
+                    `,
+                    icon: 'success',
+                    confirmButtonText: 'Entendido',
+                    confirmButtonColor: '#0d6efd',
+                    customClass: {
+                        popup: 'rounded-4 border-0 shadow'
+                    }
+                });
+                fetchCajaData();
+            } else {
+                Swal.fire('Error', data.error, 'error');
+            }
+        } catch (error) {
+            Swal.fire('Error', 'Error de conexión', 'error');
+        }
+    };
+
+    const openEditModal = (mov) => {
+        setEditingMovimiento(mov);
+        setMovimientoForm({
+            tipo: mov.tipo,
+            descripcion: mov.descripcion,
+            monto: mov.monto
+        });
+        setShowMovimientoModal(true);
+    };
+
+    const formatCurrency = (val) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(val);
+
+    return (
+        <div className="container-fluid px-4 py-4 min-vh-100 bg-light">
+            {/* Compact Header with Integrated Balance */}
+            <div className="d-flex flex-column flex-xl-row justify-content-between align-items-xl-center mb-4 gap-3">
+                {/* Title Section */}
+                <div>
+                    <h2 className="text-primary fw-bold mb-0" style={{ fontSize: '2rem' }}>
+                        <Wallet className="me-2 inline-block" size={32} />
+                        Caja y Movimientos
+                    </h2>
+                    <div className="d-flex align-items-center gap-2 mt-1">
+                        <span className={`badge rounded-pill ${cajaAbierta ? 'bg-success' : 'bg-danger'} px-3 py-1`}>
+                            {cajaAbierta ? 'SESIÓN ABIERTA' : 'CAJA CERRADA'}
+                        </span>
+                        {cajaAbierta && cajaData && (
+                            <span className="text-muted small">
+                                Apertura: {cajaData.fecha_apertura} por {cajaData.usuario}
+                            </span>
+                        )}
+                    </div>
+                </div>
+
+                {/* Right Side: Balance + Actions */}
+                <div className="d-flex flex-column flex-md-row align-items-md-center gap-3">
+                    {/* Compact Balance Display */}
+                    <div className="px-4 py-2 rounded-4 shadow-sm border-0 d-flex align-items-center gap-3"
+                        style={{
+                            background: saldoActual >= 0
+                                ? 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)'
+                                : 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%)',
+                            minWidth: '220px'
+                        }}>
+                        <div className="bg-white bg-opacity-25 p-2 rounded-circle">
+                            <Wallet size={24} className="text-dark" />
+                        </div>
+                        <div>
+                            <div className="small text-dark text-opacity-75 fw-bold text-uppercase" style={{ fontSize: '0.7rem', letterSpacing: '1px' }}>Saldo en Caja</div>
+                            <div className="h3 mb-0 fw-bold text-dark">{formatCurrency(saldoActual)}</div>
+                        </div>
+                    </div>
+
+                    {/* Buttons */}
+                    <div className="d-flex gap-2">
+                        {!cajaAbierta ? (
+                            <button onClick={() => setShowAperturaModal(true)} className="btn btn-warning shadow-sm d-flex align-items-center gap-2 fw-bold px-3 py-2">
+                                <TrendingUp size={18} /> Abrir
+                            </button>
+                        ) : (
+                            <button onClick={handleCierre} className="btn btn-dark shadow-sm d-flex align-items-center gap-2 fw-bold px-3 py-2">
+                                <TrendingDown size={18} /> Cerrar
+                            </button>
+                        )}
+                        <button
+                            onClick={() => {
+                                if (!cajaAbierta) return Swal.fire('Caja Cerrada', 'Debes abrir la caja antes de registrar movimientos', 'warning');
+                                setEditingMovimiento(null);
+                                setMovimientoForm({ tipo: 'Ingreso', descripcion: '', monto: '' });
+                                setShowMovimientoModal(true);
+                            }}
+                            className={`btn shadow-sm d-flex align-items-center gap-2 fw-bold px-3 py-2 ${cajaAbierta ? 'btn-primary' : 'btn-secondary opacity-50'}`}
+                        >
+                            <PlusCircle size={18} /> Nuevo
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+
+
+            {/* Filtros */}
+            <div className="card border-0 shadow-sm mb-4">
+                <div className="card-body bg-light rounded">
+                    <div className="row g-3">
+                        <div className="col-md-4">
+                            <div className="input-group">
+                                <span className="input-group-text bg-white border-end-0"><Search size={18} className="text-muted" /></span>
+                                <input
+                                    type="text"
+                                    name="busqueda"
+                                    className="form-control border-start-0"
+                                    placeholder="Buscar por descripción, usuario..."
+                                    value={filters.busqueda}
+                                    onChange={handleFilterChange}
+                                />
+                            </div>
+                        </div>
+                        <div className="col-md-2">
+                            <input
+                                type="date"
+                                name="fecha_desde"
+                                className="form-control"
+                                value={filters.fecha_desde}
+                                onChange={handleFilterChange}
+                                title="Fecha Desde"
+                            />
+                        </div>
+                        <div className="col-md-2">
+                            <input
+                                type="date"
+                                name="fecha_hasta"
+                                className="form-control"
+                                value={filters.fecha_hasta}
+                                onChange={handleFilterChange}
+                                title="Fecha Hasta"
+                            />
+                        </div>
+                        <div className="col-md-2">
+                            <select
+                                name="tipo"
+                                className="form-select"
+                                value={filters.tipo}
+                                onChange={handleFilterChange}
+                            >
+                                <option value="">Todos los Tipos</option>
+                                <option value="Ingreso">Ingresos</option>
+                                <option value="Egreso">Egresos</option>
+                            </select>
+                        </div>
+                        <div className="col-md-2">
+                            <div className="d-flex gap-1">
+                                <button onClick={fetchCajaData} className="btn btn-outline-primary flex-grow-1" title="Actualizar">
+                                    <Filter size={18} className="me-1 inline-block" /> Filtrar
+                                </button>
+                                <button onClick={resetFilters} className="btn btn-outline-secondary" title="Limpiar Filtros">
+                                    <RotateCcw size={18} />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Tabla */}
+            <div className="card border-0 shadow mb-5">
+                <div className="card-body p-0">
+                    <div className="table-responsive">
+                        <table className="table table-hover align-middle mb-0">
+                            <thead className="bg-light text-secondary">
+                                <tr>
+                                    <th className="ps-4 py-3">Fecha / Hora</th>
+                                    <th>Descripción</th>
+                                    <th className="text-center">Tipo</th>
+                                    <th className="text-end">Monto</th>
+                                    <th>Usuario</th>
+                                    <th className="text-end pe-4">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {loading && movimientos.length === 0 ? (
+                                    <tr>
+                                        <td colSpan="6" className="text-center py-5">
+                                            <div className="spinner-border text-primary" role="status"></div>
+                                        </td>
+                                    </tr>
+                                ) : movimientos.length === 0 ? (
+                                    <tr>
+                                        <td colSpan="6" className="text-center py-5">
+                                            <div className="text-muted opacity-50 mb-3"><Wallet size={48} className="mx-auto" /></div>
+                                            <p className="text-muted mb-0">No se encontraron movimientos disponibles.</p>
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    movimientos.map(mov => (
+                                        <tr key={mov.id}>
+                                            <td className="ps-4">
+                                                <div className="d-flex align-items-center gap-2">
+                                                    <Calendar size={14} className="text-muted" />
+                                                    <span className="text-dark fw-medium small">{mov.fecha}</span>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span className="text-dark fw-medium">{mov.descripcion}</span>
+                                            </td>
+                                            <td className="text-center">
+                                                <span className={`badge rounded-pill px-3 ${mov.tipo === 'Ingreso' ? 'bg-success-subtle text-success border border-success' : 'bg-danger-subtle text-danger border border-danger'}`}>
+                                                    {mov.tipo === 'Ingreso' ? <ArrowUpCircle size={10} className="me-1" /> : <ArrowDownCircle size={10} className="me-1" />}
+                                                    {mov.tipo}
+                                                </span>
+                                            </td>
+                                            <td className="text-end">
+                                                <span className={`fw-bold ${mov.tipo === 'Ingreso' ? 'text-success' : 'text-danger'}`}>
+                                                    {mov.tipo === 'Egreso' ? '-' : '+'} {formatCurrency(mov.monto)}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <div className="d-flex align-items-center gap-2">
+                                                    <div className="bg-primary bg-opacity-10 text-primary rounded-circle small d-flex align-items-center justify-content-center" style={{ width: '24px', height: '24px', fontSize: '10px' }}>
+                                                        {mov.usuario?.charAt(0).toUpperCase()}
+                                                    </div>
+                                                    <span className="small text-muted">{mov.usuario}</span>
+                                                </div>
+                                            </td>
+                                            <td className="pe-4 text-end">
+                                                <div className="d-flex justify-content-end gap-1">
+                                                    <button onClick={() => openEditModal(mov)} className="btn btn-sm btn-outline-primary border-0 rounded-circle p-2 hover-bg-primary" title="Editar">
+                                                        <Pencil size={16} />
+                                                    </button>
+                                                    <button onClick={() => handleDeleteMovimiento(mov.id)} className="btn btn-sm btn-outline-danger border-0 rounded-circle p-2 hover-bg-danger" title="Eliminar">
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* Paginación */}
+                    {!loading && (
+                        <div className="d-flex justify-content-between align-items-center p-3 border-top bg-light">
+                            <div className="d-flex align-items-center gap-2">
+                                <span className="text-muted small">Mostrando {movimientos.length} de {totalItems} registros</span>
+                                <select
+                                    className="form-select form-select-sm border-secondary-subtle"
+                                    style={{ width: '70px' }}
+                                    value={itemsPerPage}
+                                    onChange={(e) => { setItemsPerPage(Number(e.target.value)); setPage(1); }}
+                                >
+                                    <option value="5">5</option>
+                                    <option value="10">10</option>
+                                    <option value="25">25</option>
+                                    <option value="50">50</option>
+                                </select>
+                                <span className="text-muted small">por pág.</span>
+                            </div>
+
+                            <nav>
+                                <ul className="pagination mb-0 align-items-center gap-2">
+                                    <li className={`page-item ${page === 1 ? 'disabled' : ''}`}>
+                                        <button
+                                            className="page-link border-0 text-secondary bg-transparent p-0"
+                                            onClick={() => setPage(page - 1)}
+                                            style={{ width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                        >
+                                            &lt;
+                                        </button>
+                                    </li>
+                                    {[...Array(totalPages)].map((_, i) => {
+                                        if (totalPages > 10 && Math.abs(page - (i + 1)) > 2 && i !== 0 && i !== totalPages - 1) return null;
+                                        return (
+                                            <li key={i} className="page-item">
+                                                <button
+                                                    className={`page-link border-0 rounded-circle fw-bold ${page === i + 1 ? 'bg-primary text-white shadow-sm' : 'bg-transparent text-secondary'}`}
+                                                    onClick={() => setPage(i + 1)}
+                                                    style={{ width: '35px', height: '35px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                                >
+                                                    {i + 1}
+                                                </button>
+                                            </li>
+                                        );
+                                    })}
+                                    <li className={`page-item ${page === totalPages ? 'disabled' : ''}`}>
+                                        <button
+                                            className="page-link border-0 text-secondary bg-transparent p-0"
+                                            onClick={() => setPage(page + 1)}
+                                            style={{ width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                        >
+                                            &gt;
+                                        </button>
+                                    </li>
+                                </ul>
+                            </nav>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* MODAL: MOVIMIENTO (Nuevo/Editar) */}
+            {showMovimientoModal && (
+                <div className="d-flex align-items-center justify-content-center" style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', zIndex: 1100 }}>
+                    <div className="bg-white rounded shadow-2xl scale-in" style={{ width: '450px', borderRadius: '1.25rem' }}>
+                        <div className="px-4 py-3 border-bottom d-flex justify-content-between align-items-center bg-light" style={{ borderRadius: '1.25rem 1.25rem 0 0' }}>
+                            <h5 className="mb-0 fw-bold text-dark d-flex align-items-center gap-2">
+                                <PlusCircle className="text-primary" size={20} />
+                                {editingMovimiento ? 'Editar Movimiento' : 'Nuevo Movimiento'}
+                            </h5>
+                            <button onClick={() => setShowMovimientoModal(false)} className="btn btn-sm btn-light border-0 rounded-circle p-1"><X size={20} /></button>
+                        </div>
+                        <form onSubmit={handleSaveMovimiento} className="p-4">
+                            <div className="mb-4">
+                                <label className="form-label small fw-bold text-muted text-uppercase tracking-wider">Tipo de Operación</label>
+                                <div className="d-flex gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setMovimientoForm({ ...movimientoForm, tipo: 'Ingreso' })}
+                                        className={`btn flex-grow-1 border-2 d-flex align-items-center justify-content-center gap-2 py-2 ${movimientoForm.tipo === 'Ingreso' ? 'btn-success border-success fw-bold' : 'btn-outline-secondary border-secondary-subtle opacity-75'}`}
+                                    >
+                                        <ArrowUpCircle size={18} /> Ingreso
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setMovimientoForm({ ...movimientoForm, tipo: 'Egreso' })}
+                                        className={`btn flex-grow-1 border-2 d-flex align-items-center justify-content-center gap-2 py-2 ${movimientoForm.tipo === 'Egreso' ? 'btn-danger border-danger fw-bold' : 'btn-outline-secondary border-secondary-subtle opacity-75'}`}
+                                    >
+                                        <ArrowDownCircle size={18} /> Egreso
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="mb-3">
+                                <label className="form-label small fw-bold text-muted text-uppercase tracking-wider">Descripción</label>
+                                <input
+                                    type="text"
+                                    className="form-control form-control-lg border-2 shadow-none"
+                                    placeholder="Ej: Cobro a cliente, Pago servicio..."
+                                    required
+                                    value={movimientoForm.descripcion}
+                                    onChange={(e) => setMovimientoForm({ ...movimientoForm, descripcion: e.target.value })}
+                                />
+                            </div>
+                            <div className="mb-4">
+                                <label className="form-label small fw-bold text-muted text-uppercase tracking-wider">Monto</label>
+                                <div className="input-group input-group-lg border-2 rounded">
+                                    <span className="input-group-text bg-light border-end-0">$</span>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        className="form-control border-start-0 shadow-none fw-bold"
+                                        placeholder="0.00"
+                                        required
+                                        value={movimientoForm.monto}
+                                        onChange={(e) => setMovimientoForm({ ...movimientoForm, monto: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+                            <button type="submit" className="btn btn-primary btn-lg w-100 fw-bold py-2 shadow-sm d-flex align-items-center justify-content-center gap-2">
+                                <CheckCircle2 size={20} /> {editingMovimiento ? 'Actualizar' : 'Guardar'} Movimiento
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* MODAL: APERTURA */}
+            {showAperturaModal && (
+                <div className="d-flex align-items-center justify-content-center" style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 1100 }}>
+                    <div className="rounded-4 shadow-lg scale-in" style={{ width: '450px', overflow: 'hidden', backgroundColor: '#ffffff', border: 'none' }}>
+                        <div className="px-4 py-3 d-flex justify-content-between align-items-center" style={{ backgroundColor: '#ffc107' }}>
+                            <h5 className="mb-0 fw-bold text-dark d-flex align-items-center gap-2">
+                                <LogIn size={20} />
+                                Apertura de Caja Diaria
+                            </h5>
+                            <button onClick={() => setShowAperturaModal(false)} className="btn-close shadow-none"></button>
+                        </div>
+                        <form onSubmit={handleApertura}>
+                            <div className="p-4">
+                                <p className="text-secondary mb-3">Ingrese el monto inicial (cambio) con el que inicia el día.</p>
+                                <div className="mb-3">
+                                    <label className="form-label fw-bold text-dark">Monto Inicial <span className="text-danger">*</span></label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        className="form-control form-control-lg border shadow-none"
+                                        placeholder="0.00"
+                                        autoFocus
+                                        required
+                                        value={montoApertura}
+                                        onChange={(e) => setMontoApertura(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+                            <div className="px-4 py-3 bg-light d-flex justify-content-end gap-2 border-top">
+                                <button type="button" onClick={() => setShowAperturaModal(false)} className="btn btn-secondary px-4 fw-medium border-0 shadow-sm" style={{ backgroundColor: '#6c757d' }}>
+                                    Cancelar
+                                </button>
+                                <button type="submit" className="btn btn-warning px-4 fw-bold shadow-sm d-flex align-items-center gap-2">
+                                    <CheckCircle2 size={18} /> Abrir Caja
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* MODAL: CIERRE */}
+            {showCierreModal && (
+                <div className="d-flex align-items-center justify-content-center" style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 1100 }}>
+                    <div className="rounded-4 shadow-lg scale-in" style={{ width: '450px', overflow: 'hidden', backgroundColor: '#ffffff', border: 'none' }}>
+                        <div className="px-4 py-3 d-flex justify-content-between align-items-center" style={{ backgroundColor: '#ffc107' }}>
+                            <h5 className="mb-0 fw-bold text-dark d-flex align-items-center gap-2">
+                                <LogOut size={20} />
+                                Cierre de Caja (Arqueo)
+                            </h5>
+                            <button onClick={() => setShowCierreModal(false)} className="btn-close shadow-none"></button>
+                        </div>
+                        <form onSubmit={submitCierre}>
+                            <div className="p-4">
+                                <p className="text-secondary mb-3">Por favor, ingresá el dinero físico total que hay en caja actualmente para realizar el arqueo.</p>
+                                <div className="mb-3">
+                                    <label className="form-label fw-bold text-dark">Monto Físico en Caja <span className="text-danger">*</span></label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        className="form-control form-control-lg border shadow-none"
+                                        placeholder="0.00"
+                                        autoFocus
+                                        required
+                                        value={montoCierreReal}
+                                        onChange={(e) => setMontoCierreReal(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+                            <div className="px-4 py-3 bg-light d-flex justify-content-end gap-2 border-top">
+                                <button type="button" onClick={() => setShowCierreModal(false)} className="btn btn-secondary px-4 fw-medium border-0 shadow-sm" style={{ backgroundColor: '#6c757d' }}>
+                                    Cancelar
+                                </button>
+                                <button type="submit" className="btn btn-warning px-4 fw-bold shadow-sm d-flex align-items-center gap-2">
+                                    <TrendingDown size={18} /> Cerrar Caja
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            <style>{`
+                .scale-in { animation: scaleIn 0.2s ease-out; }
+                @keyframes scaleIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+                .hover-bg-primary:hover { background-color: #e7f1ff !important; color: #0d6efd !important; }
+                .hover-bg-danger:hover { background-color: #f8d7da !important; color: #dc3545 !important; }
+                .input-group-merge .form-control:focus { border-color: #dee2e6; }
+                .tracking-wider { letter-spacing: 0.1em; }
+                .pagination .page-link:hover { background-color: #f8f9fa; }
+            `}</style>
+        </div>
+    );
+};
+
+export default Caja;
