@@ -27,7 +27,7 @@ const Caja = () => {
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
-    const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [itemsPerPage, setItemsPerPage] = useState(5);
 
     // Filtros
     const [filters, setFilters] = useState({
@@ -306,9 +306,10 @@ const Caja = () => {
                                 setMovimientoForm({ tipo: 'Ingreso', descripcion: '', monto: '' });
                                 setShowMovimientoModal(true);
                             }}
-                            className={`btn shadow-sm d-flex align-items-center gap-2 fw-bold px-3 py-2 ${cajaAbierta ? 'btn-primary' : 'btn-secondary opacity-50'}`}
+                            className={`btn shadow-sm d-flex align-items-center gap-2 fw-bold px-3 py-2 ${cajaAbierta ? 'btn-primary' : 'btn-secondary'}`}
+                            title={!cajaAbierta ? "Debes abrir la caja para registrar movimientos" : "Registrar nuevo movimiento manual"}
                         >
-                            <PlusCircle size={18} /> Nuevo
+                            <PlusCircle size={18} /> Nuevo Movimiento
                         </button>
                     </div>
                 </div>

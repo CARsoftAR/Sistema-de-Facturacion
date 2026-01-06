@@ -698,13 +698,20 @@ def api_caja_cierre(request):
                 tipo_ajuste = 'Ingreso' if diferencia > 0 else 'Egreso'
                 desc_ajuste = f"Ajuste Arqueo Caja #{caja.id} ({'Sobrante' if diferencia > 0 else 'Faltante'})"
                 
-                MovimientoCaja.objects.create(
+                mov_ajuste = MovimientoCaja.objects.create(
                     caja_diaria=caja,
                     usuario=request.user,
                     tipo=tipo_ajuste,
                     descripcion=desc_ajuste,
                     monto=abs(diferencia)
                 )
+
+                # Generar asiento contable de Arqueo
+                try:
+                    from .services import AccountingService
+                    AccountingService.registrar_arqueo_caja(mov_ajuste, diferencia)
+                except Exception as e:
+                    print(f"Error generando asiento arqueo: {e}")
 
         return JsonResponse({
             'ok': True,
