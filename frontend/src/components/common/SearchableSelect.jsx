@@ -92,46 +92,39 @@ const SearchableSelect = ({ options = [], value, onChange, placeholder = "Selecc
     };
 
     return (
-        <div className="position-relative" ref={wrapperRef}>
-            <div className="input-group input-group-sm">
+        <div className="relative" ref={wrapperRef}>
+            <div className="relative">
                 <input
                     ref={inputRef}
                     type="text"
-                    className="form-control form-control-sm"
+                    className="w-full pl-3 pr-10 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white text-slate-700 text-sm transition-all shadow-sm"
                     placeholder={placeholder}
                     value={searchTerm}
                     onChange={handleInputChange}
                     onFocus={() => {
                         setIsOpen(true);
-                        // Select text on focus for easy replacement
                         inputRef.current.select();
                     }}
                     onKeyDown={handleKeyDown}
                     disabled={disabled}
                     autoComplete="off"
-                    name={name} // Important for parent navigation to find it
+                    name={name}
                 />
-                <span className="input-group-text bg-white text-muted">
-                    <ChevronDown size={14} />
-                </span>
+                <div className="absolute right-0 top-0 h-full px-3 flex items-center pointer-events-none text-slate-400">
+                    <ChevronDown size={16} />
+                </div>
             </div>
 
             {isOpen && filteredOptions.length > 0 && (
-                <ul className="list-group position-absolute w-100 shadow-sm overflow-auto"
-                    style={{
-                        zIndex: 1060,
-                        maxHeight: '200px',
-                        top: '100%',
-                        borderRadius: '0 0 0.375rem 0.375rem',
-                        marginTop: '-1px'
-                    }}>
+                <ul className="absolute z-50 w-full mt-1 bg-white border border-slate-100 rounded-xl shadow-xl max-h-60 overflow-y-auto ring-1 ring-black/5 custom-scrollbar"
+                    style={{ top: '100%' }}>
                     {filteredOptions.map((opt, index) => (
                         <li
                             key={opt.id}
-                            className={`list-group-item list-group-item-action small py-2 px-3 ${index === highlightedIndex ? 'active' : ''}`}
+                            className={`px-4 py-2.5 text-sm cursor-pointer border-b border-slate-50 last:border-b-0 transition-colors ${index === highlightedIndex ? 'bg-blue-50 text-blue-700 font-medium' : 'text-slate-700 hover:bg-slate-50'
+                                }`}
                             onClick={() => handleSelect(opt)}
                             onMouseEnter={() => setHighlightedIndex(index)}
-                            style={{ cursor: 'pointer' }}
                         >
                             {opt.nombre || opt.label}
                         </li>
@@ -140,9 +133,9 @@ const SearchableSelect = ({ options = [], value, onChange, placeholder = "Selecc
             )}
 
             {isOpen && filteredOptions.length === 0 && (
-                <ul className="list-group position-absolute w-100 shadow-sm" style={{ zIndex: 1060, top: '100%' }}>
-                    <li className="list-group-item small text-muted fst-italic py-2">No hay resultados</li>
-                </ul>
+                <div className="absolute z-50 w-full mt-1 bg-white border border-slate-100 rounded-xl shadow-xl p-3 text-center" style={{ top: '100%' }}>
+                    <p className="text-sm text-slate-400 italic">No hay resultados</p>
+                </div>
             )}
         </div>
     );

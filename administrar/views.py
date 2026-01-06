@@ -8269,3 +8269,17 @@ def presupuesto_pdf(request, id):
     # Renderizamos mismo template de factura pero con título Presupuesto?
     # Para simplicidad, uso un template stub
     return HttpResponse(f"Generación de PDF para Presupuesto #{p.id} pendiente de implementación visual.", content_type="text/plain")
+
+
+# API - Provincias y Localidades
+@login_required
+def api_provincias_listar(request):
+    provincias = Provincia.objects.all().order_by('nombre')
+    data = [{'id': p.id, 'nombre': p.nombre} for p in provincias]
+    return JsonResponse(data, safe=False)
+
+@login_required
+def api_localidades_listar(request):
+    localidades = Localidad.objects.all().order_by('nombre')
+    data = [{'id': l.id, 'nombre': l.nombre, 'cp': l.codigo_postal} for l in localidades]
+    return JsonResponse(data, safe=False)

@@ -313,16 +313,13 @@ const Productos = () => {
                 </div>
             </div>
 
-            {/* Modal Form Overlay */}
+            {/* Modal Form Overlay - handled by the component itself now */}
             {showForm && (
-                <>
-                    <div className="modal-backdrop fade show" style={{ zIndex: 1045 }} onClick={() => setShowForm(false)}></div>
-                    <ProductoForm
-                        producto={editingProduct}
-                        onClose={() => setShowForm(false)}
-                        onSave={handleSave}
-                    />
-                </>
+                <ProductoForm
+                    producto={editingProduct}
+                    onClose={() => setShowForm(false)}
+                    onSave={handleSave}
+                />
             )}
         </div>
     );

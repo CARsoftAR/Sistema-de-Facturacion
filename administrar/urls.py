@@ -188,6 +188,7 @@ urlpatterns = [
     # LOCALIDADES
     # ==========================
     path("localidades/", views.localidades_lista),
+    path("api/provincias/listar/", views.api_provincias_listar, name="api_provincias_listar"),
     path("api/localidades/listar/", views.api_localidades_listar),
     path("api/localidades/<int:id>/", views.api_localidades_detalle),
     path("api/localidades/guardar/", views.api_localidades_guardar),
