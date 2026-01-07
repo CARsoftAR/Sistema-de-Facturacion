@@ -181,7 +181,7 @@ const Productos = () => {
                                 <option value="todos">Todo el Stock</option>
                                 <option value="con_stock">Con Stock</option>
                                 <option value="sin_stock">Sin Stock</option>
-                                <option value="stock_bajo">Stock Bajo</option>
+                                <option value="bajo">Stock Bajo</option>
                             </select>
                         </div>
                         <div className="col-md-1">

@@ -149,7 +149,7 @@ const Pedidos = () => {
                         <div className="row g-3">
                             <div className="col-md-4">
                                 <div className="input-group">
-                                    <span className="input-group-text bg-white border-end-0"><i className="bi bi-search"></i></span>
+                                    <span className="input-group-text bg-white border-end-0"><i className="bi bi-search text-muted"></i></span>
                                     <input
                                         type="text"
                                         className="form-control border-start-0"
@@ -190,7 +190,7 @@ const Pedidos = () => {
                                 />
                             </div>
                             <div className="col-md-1">
-                                <button className="btn btn-outline-secondary w-100" onClick={fetchPedidos} title="Actualizar">
+                                <button className="btn btn-outline-primary w-100" onClick={fetchPedidos} title="Actualizar Lista">
                                     <i className="bi bi-arrow-clockwise"></i>
                                 </button>
                             </div>
@@ -236,7 +236,7 @@ const Pedidos = () => {
                                                 <td>{p.num_items} items</td>
                                                 <td className="fw-bold font-monospace text-primary">{formatCurrency(p.total)}</td>
                                                 <td className="text-center">
-                                                    <span className={`badge ${p.estado === 'FACTURADO' ? 'bg-success' :
+                                                    <span className={`badge rounded-3 px-3 py-2 fw-bold shadow-sm ${p.estado === 'FACTURADO' ? 'bg-success' :
                                                         p.estado === 'PENDIENTE' ? 'bg-warning text-dark' :
                                                             p.estado === 'CANCELADO' ? 'bg-danger' : 'bg-info'
                                                         }`}>

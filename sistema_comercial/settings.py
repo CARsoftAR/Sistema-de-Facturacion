@@ -34,7 +34,7 @@ if 'RENDER' in os.environ:
 else:
     DEBUG = True
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '*').split(',')
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,192.168.100.58').split(',')
 
 
 # Application definition

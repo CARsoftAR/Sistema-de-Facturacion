@@ -8,7 +8,7 @@ const TopNavbar = () => {
     const [showNotifications, setShowNotifications] = useState(false);
     const [notifications, setNotifications] = useState([
         { id: 1, title: 'Nueva venta registrada', detail: 'Venta #1045 por $12,500', path: '/ventas' },
-        { id: 2, title: 'Stock bajo detectado', detail: 'Aceite Motul 4T queda 1 unidad', path: '/productos?stock=stock_bajo' },
+        { id: 2, title: 'Stock bajo detectado', detail: 'Hay productos con stock bajo mínimo', path: '/productos?stock=bajo' },
         { id: 3, title: 'Pedido recibido', detail: 'Proveedor CARSOFT envió pedido #88', path: '/pedidos?estado=PENDIENTE' }
     ]);
     const dropdownRef = useRef(null);

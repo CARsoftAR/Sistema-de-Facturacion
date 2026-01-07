@@ -2423,7 +2423,7 @@ def api_productos_lista(request):
             productos = productos.filter(stock__gt=0)
         elif stock_filter == 'sin_stock':
             productos = productos.filter(stock__lte=0)
-        elif stock_filter == 'stock_bajo':
+        elif stock_filter in ['stock_bajo', 'bajo']:
             # Consideramos stock bajo <= 10, o <= stock_minimo
             from django.db.models import F
             productos = productos.filter(Q(stock__lte=10) | Q(stock__lte=F('stock_minimo')))

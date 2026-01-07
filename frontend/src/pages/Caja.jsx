@@ -248,7 +248,7 @@ const Caja = () => {
     const formatCurrency = (val) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(val);
 
     return (
-        <div className="container-fluid px-4 py-4 min-vh-100 bg-light">
+        <div className="container-fluid px-4 pt-4 pb-0 h-100 d-flex flex-column bg-light" style={{ maxHeight: '100vh', overflow: 'hidden' }}>
             {/* Compact Header with Integrated Balance */}
             <div className="d-flex flex-column flex-xl-row justify-content-between align-items-xl-center mb-4 gap-3">
                 {/* Title Section */}
@@ -258,7 +258,7 @@ const Caja = () => {
                         Caja y Movimientos
                     </h2>
                     <div className="d-flex align-items-center gap-2 mt-1">
-                        <span className={`badge rounded-pill ${cajaAbierta ? 'bg-success' : 'bg-danger'} px-3 py-1`}>
+                        <span className={`badge rounded-3 ${cajaAbierta ? 'bg-success' : 'bg-danger'} px-4 py-2 fw-bold shadow-sm`}>
                             {cajaAbierta ? 'SESIÓN ABIERTA' : 'CAJA CERRADA'}
                         </span>
                         {cajaAbierta && cajaData && (
@@ -291,7 +291,7 @@ const Caja = () => {
                     {/* Buttons */}
                     <div className="d-flex gap-2">
                         {!cajaAbierta ? (
-                            <button onClick={() => setShowAperturaModal(true)} className="btn btn-warning shadow-sm d-flex align-items-center gap-2 fw-bold px-3 py-2">
+                            <button onClick={() => setShowAperturaModal(true)} className="btn btn-primary shadow-sm d-flex align-items-center gap-2 fw-bold px-3 py-2">
                                 <TrendingUp size={18} /> Abrir
                             </button>
                         ) : (
@@ -381,9 +381,9 @@ const Caja = () => {
             </div>
 
             {/* Tabla */}
-            <div className="card border-0 shadow mb-5">
-                <div className="card-body p-0">
-                    <div className="table-responsive">
+            <div className="card border-0 shadow mb-4 flex-grow-1 overflow-hidden d-flex flex-column">
+                <div className="card-body p-0 d-flex flex-column overflow-hidden">
+                    <div className="table-responsive flex-grow-1 overflow-auto">
                         <table className="table table-hover align-middle mb-0">
                             <thead className="bg-light text-secondary">
                                 <tr>
@@ -423,7 +423,6 @@ const Caja = () => {
                                             </td>
                                             <td className="text-center">
                                                 <span className={`badge rounded-pill px-3 ${mov.tipo === 'Ingreso' ? 'bg-success-subtle text-success border border-success' : 'bg-danger-subtle text-danger border border-danger'}`}>
-                                                    {mov.tipo === 'Ingreso' ? <ArrowUpCircle size={10} className="me-1" /> : <ArrowDownCircle size={10} className="me-1" />}
                                                     {mov.tipo}
                                                 </span>
                                             </td>
@@ -519,54 +518,72 @@ const Caja = () => {
 
             {/* MODAL: MOVIMIENTO (Nuevo/Editar) */}
             {showMovimientoModal && (
-                <div className="d-flex align-items-center justify-content-center" style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', zIndex: 1100 }}>
-                    <div className="bg-white rounded shadow-2xl scale-in" style={{ width: '450px', borderRadius: '1.25rem' }}>
-                        <div className="px-4 py-3 border-bottom d-flex justify-content-between align-items-center bg-light" style={{ borderRadius: '1.25rem 1.25rem 0 0' }}>
-                            <h5 className="mb-0 fw-bold text-dark d-flex align-items-center gap-2">
-                                <PlusCircle className="text-primary" size={20} />
+                <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-200">
+                        {/* Header */}
+                        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white">
+                            <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                                <PlusCircle className="text-blue-600" size={22} strokeWidth={2.5} />
                                 {editingMovimiento ? 'Editar Movimiento' : 'Nuevo Movimiento'}
-                            </h5>
-                            <button onClick={() => setShowMovimientoModal(false)} className="btn btn-sm btn-light border-0 rounded-circle p-1"><X size={20} /></button>
+                            </h2>
+                            <button
+                                onClick={() => setShowMovimientoModal(false)}
+                                className="text-slate-400 hover:text-red-500 hover:bg-slate-50 p-2 rounded-full transition-all"
+                            >
+                                <X size={20} />
+                            </button>
                         </div>
-                        <form onSubmit={handleSaveMovimiento} className="p-4">
-                            <div className="mb-4">
-                                <label className="form-label small fw-bold text-muted text-uppercase tracking-wider">Tipo de Operación</label>
-                                <div className="d-flex gap-2">
+
+                        <form onSubmit={handleSaveMovimiento} className="p-6 space-y-5">
+                            {/* Tipo de Operación */}
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Tipo de Operación</label>
+                                <div className="grid grid-cols-2 gap-3">
                                     <button
                                         type="button"
                                         onClick={() => setMovimientoForm({ ...movimientoForm, tipo: 'Ingreso' })}
-                                        className={`btn flex-grow-1 border-2 d-flex align-items-center justify-content-center gap-2 py-2 ${movimientoForm.tipo === 'Ingreso' ? 'btn-success border-success fw-bold' : 'btn-outline-secondary border-secondary-subtle opacity-75'}`}
+                                        className={`py-3 rounded-xl flex items-center justify-center gap-2 font-bold transition-all ${movimientoForm.tipo === 'Ingreso'
+                                            ? 'bg-green-600 text-white shadow-lg shadow-green-500/30 scale-[1.02]'
+                                            : 'bg-white border text-slate-400 hover:bg-slate-50'
+                                            }`}
                                     >
-                                        <ArrowUpCircle size={18} /> Ingreso
+                                        <ArrowUpCircle size={20} /> Ingreso
                                     </button>
                                     <button
                                         type="button"
                                         onClick={() => setMovimientoForm({ ...movimientoForm, tipo: 'Egreso' })}
-                                        className={`btn flex-grow-1 border-2 d-flex align-items-center justify-content-center gap-2 py-2 ${movimientoForm.tipo === 'Egreso' ? 'btn-danger border-danger fw-bold' : 'btn-outline-secondary border-secondary-subtle opacity-75'}`}
+                                        className={`py-3 rounded-xl flex items-center justify-center gap-2 font-bold transition-all ${movimientoForm.tipo === 'Egreso'
+                                            ? 'bg-red-500 text-white shadow-lg shadow-red-500/30 scale-[1.02]'
+                                            : 'bg-white border text-slate-400 hover:bg-slate-50'
+                                            }`}
                                     >
-                                        <ArrowDownCircle size={18} /> Egreso
+                                        <ArrowDownCircle size={20} /> Egreso
                                     </button>
                                 </div>
                             </div>
-                            <div className="mb-3">
-                                <label className="form-label small fw-bold text-muted text-uppercase tracking-wider">Descripción</label>
+
+                            {/* Descripción */}
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Descripción</label>
                                 <input
                                     type="text"
-                                    className="form-control form-control-lg border-2 shadow-none"
+                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-medium text-slate-700 placeholder:text-slate-300"
                                     placeholder="Ej: Cobro a cliente, Pago servicio..."
                                     required
                                     value={movimientoForm.descripcion}
                                     onChange={(e) => setMovimientoForm({ ...movimientoForm, descripcion: e.target.value })}
                                 />
                             </div>
-                            <div className="mb-4">
-                                <label className="form-label small fw-bold text-muted text-uppercase tracking-wider">Monto</label>
-                                <div className="input-group input-group-lg border-2 rounded">
-                                    <span className="input-group-text bg-light border-end-0">$</span>
+
+                            {/* Monto */}
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Monto</label>
+                                <div className="relative">
+                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
                                     <input
                                         type="number"
                                         step="0.01"
-                                        className="form-control border-start-0 shadow-none fw-bold"
+                                        className="w-full pl-8 pr-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-bold text-xl text-slate-800 placeholder:text-slate-300"
                                         placeholder="0.00"
                                         required
                                         value={movimientoForm.monto}
@@ -574,8 +591,13 @@ const Caja = () => {
                                     />
                                 </div>
                             </div>
-                            <button type="submit" className="btn btn-primary btn-lg w-100 fw-bold py-2 shadow-sm d-flex align-items-center justify-content-center gap-2">
-                                <CheckCircle2 size={20} /> {editingMovimiento ? 'Actualizar' : 'Guardar'} Movimiento
+
+                            <button
+                                type="submit"
+                                className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg shadow-blue-500/30 transition-all transform hover:-translate-y-0.5 active:scale-[0.98] flex items-center justify-center gap-2 mt-2"
+                            >
+                                <CheckCircle2 size={24} strokeWidth={2.5} />
+                                {editingMovimiento ? 'Actualizar Movimiento' : 'Guardar Movimiento'}
                             </button>
                         </form>
                     </div>
@@ -586,12 +608,12 @@ const Caja = () => {
             {showAperturaModal && (
                 <div className="d-flex align-items-center justify-content-center" style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 1100 }}>
                     <div className="rounded-4 shadow-lg scale-in" style={{ width: '450px', overflow: 'hidden', backgroundColor: '#ffffff', border: 'none' }}>
-                        <div className="px-4 py-3 d-flex justify-content-between align-items-center" style={{ backgroundColor: '#ffc107' }}>
-                            <h5 className="mb-0 fw-bold text-dark d-flex align-items-center gap-2">
+                        <div className="px-4 py-3 d-flex justify-content-between align-items-center bg-primary text-white">
+                            <h5 className="mb-0 fw-bold d-flex align-items-center gap-2">
                                 <LogIn size={20} />
                                 Apertura de Caja Diaria
                             </h5>
-                            <button onClick={() => setShowAperturaModal(false)} className="btn-close shadow-none"></button>
+                            <button onClick={() => setShowAperturaModal(false)} className="btn-close btn-close-white shadow-none"></button>
                         </div>
                         <form onSubmit={handleApertura}>
                             <div className="p-4">
@@ -614,7 +636,7 @@ const Caja = () => {
                                 <button type="button" onClick={() => setShowAperturaModal(false)} className="btn btn-secondary px-4 fw-medium border-0 shadow-sm" style={{ backgroundColor: '#6c757d' }}>
                                     Cancelar
                                 </button>
-                                <button type="submit" className="btn btn-warning px-4 fw-bold shadow-sm d-flex align-items-center gap-2">
+                                <button type="submit" className="btn btn-primary px-4 fw-bold shadow-sm d-flex align-items-center gap-2">
                                     <CheckCircle2 size={18} /> Abrir Caja
                                 </button>
                             </div>
@@ -627,12 +649,12 @@ const Caja = () => {
             {showCierreModal && (
                 <div className="d-flex align-items-center justify-content-center" style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 1100 }}>
                     <div className="rounded-4 shadow-lg scale-in" style={{ width: '450px', overflow: 'hidden', backgroundColor: '#ffffff', border: 'none' }}>
-                        <div className="px-4 py-3 d-flex justify-content-between align-items-center" style={{ backgroundColor: '#ffc107' }}>
-                            <h5 className="mb-0 fw-bold text-dark d-flex align-items-center gap-2">
+                        <div className="px-4 py-3 d-flex justify-content-between align-items-center bg-primary text-white">
+                            <h5 className="mb-0 fw-bold d-flex align-items-center gap-2">
                                 <LogOut size={20} />
                                 Cierre de Caja (Arqueo)
                             </h5>
-                            <button onClick={() => setShowCierreModal(false)} className="btn-close shadow-none"></button>
+                            <button onClick={() => setShowCierreModal(false)} className="btn-close btn-close-white shadow-none"></button>
                         </div>
                         <form onSubmit={submitCierre}>
                             <div className="p-4">
@@ -655,7 +677,7 @@ const Caja = () => {
                                 <button type="button" onClick={() => setShowCierreModal(false)} className="btn btn-secondary px-4 fw-medium border-0 shadow-sm" style={{ backgroundColor: '#6c757d' }}>
                                     Cancelar
                                 </button>
-                                <button type="submit" className="btn btn-warning px-4 fw-bold shadow-sm d-flex align-items-center gap-2">
+                                <button type="submit" className="btn btn-primary px-4 fw-bold shadow-sm d-flex align-items-center gap-2">
                                     <TrendingDown size={18} /> Cerrar Caja
                                 </button>
                             </div>
