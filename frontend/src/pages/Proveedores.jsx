@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Truck, Plus, Search, Trash2, Edit, Phone, Mail, MapPin, X, Save } from 'lucide-react';
+import { Truck, Plus, Search, Trash2, Edit, Phone, Mail, MapPin, X, Save, Building2, CreditCard, User } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const Proveedores = () => {
@@ -162,8 +162,7 @@ const Proveedores = () => {
                     </p>
                 </div>
                 <button onClick={() => openModal()} className="btn btn-primary btn-lg shadow-sm">
-                    <Plus className="me-2 inline-block" size={20} />
-                    Nuevo Proveedor
+                    <i className="bi bi-plus-circle-fill me-2"></i> Nuevo Proveedor
                 </button>
             </div>
 
@@ -287,162 +286,201 @@ const Proveedores = () => {
                 </div>
             </div>
 
-            {/* Modal Premium */}
+            {/* Modal Premium (Tailwind) */}
             {showModal && (
-                <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(2px)' }}>
-                    <div className="modal-dialog modal-dialog-centered modal-lg">
-                        <div className="modal-content border-0 shadow-lg" style={{ borderRadius: '1rem', overflow: 'hidden' }}>
-                            <div className="modal-header bg-primary text-white px-4 py-3" style={{ background: 'linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%)' }}>
-                                <div className="d-flex align-items-center gap-2">
-                                    <h5 className="modal-title fw-bold mb-0" style={{ fontSize: '1.25rem' }}>
-                                        {editingProvider ? <Edit className="inline mb-1 me-2" size={24} /> : <Plus className="inline mb-1 me-2" size={24} />}
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6" style={{ fontFamily: 'Inter, sans-serif' }}>
+                    <div
+                        className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
+                        onClick={() => setShowModal(false)}
+                    ></div>
+
+                    <div className="relative w-full max-w-4xl bg-white rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden transform transition-all scale-100 z-10">
+
+                        {/* Header */}
+                        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl">
+                                    <Truck size={24} strokeWidth={2.5} />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-bold text-slate-800 tracking-tight">
                                         {editingProvider ? 'Editar Proveedor' : 'Nuevo Proveedor'}
-                                    </h5>
+                                    </h2>
+                                    <p className="text-sm text-slate-500 font-medium">
+                                        {editingProvider ? 'Modificar datos del proveedor' : 'Dar de alta un nuevo proveedor'}
+                                    </p>
                                 </div>
-                                <button type="button" className="btn-close btn-close-white" onClick={() => setShowModal(false)}></button>
                             </div>
-                            <form onSubmit={handleSubmit}>
-                                <div className="modal-body p-4 bg-light">
-                                    <div className="card border-0 shadow-sm mb-4">
-                                        <div className="card-body p-4">
-                                            <h6 className="text-primary fw-bold mb-3 border-bottom pb-2">Datos Principales</h6>
-                                            <div className="row g-3">
-                                                <div className="col-12">
-                                                    <label className="form-label fw-semibold text-secondary small text-uppercase">Nombre / Razón Social <span className="text-danger">*</span></label>
-                                                    <input
-                                                        type="text"
-                                                        className="form-control form-control-lg border-light-subtle shadow-sm"
-                                                        style={{ fontSize: '1.1rem' }}
-                                                        name="nombre"
-                                                        value={formData.nombre}
-                                                        onChange={handleInputChange}
-                                                        required
-                                                        autoFocus
-                                                        placeholder="Ej: Distribuidora S.A."
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
+                            <button
+                                onClick={() => setShowModal(false)}
+                                className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                            >
+                                <X size={24} />
+                            </button>
+                        </div>
 
-                                    <div className="card border-0 shadow-sm mb-4">
-                                        <div className="card-body p-4">
-                                            <h6 className="text-primary fw-bold mb-3 border-bottom pb-2">Información Fiscal y Bancaria</h6>
-                                            <div className="row g-3">
-                                                <div className="col-md-6">
-                                                    <label className="form-label fw-semibold text-secondary small">Condición Fiscal</label>
-                                                    <select
-                                                        className="form-select border-light-subtle shadow-sm"
-                                                        name="condicion_fiscal"
-                                                        value={formData.condicion_fiscal}
-                                                        onChange={handleInputChange}
-                                                    >
-                                                        <option value="RI">Responsable Inscripto</option>
-                                                        <option value="MO">Monotributista</option>
-                                                        <option value="EX">Exento</option>
-                                                        <option value="CF">Consumidor Final</option>
-                                                    </select>
-                                                </div>
-                                                <div className="col-md-6">
-                                                    <label className="form-label fw-semibold text-secondary small">CUIT</label>
-                                                    <input
-                                                        type="text"
-                                                        className="form-control border-light-subtle shadow-sm"
-                                                        name="cuit"
-                                                        value={formData.cuit}
-                                                        onChange={handleInputChange}
-                                                        placeholder="XX-XXXXXXXX-X"
-                                                    />
-                                                </div>
-                                                <div className="col-md-6">
-                                                    <label className="form-label fw-semibold text-secondary small">CBU / CVU</label>
-                                                    <input
-                                                        type="text"
-                                                        className="form-control border-light-subtle shadow-sm"
-                                                        name="cbu"
-                                                        value={formData.cbu}
-                                                        onChange={handleInputChange}
-                                                        placeholder="22 dígitos"
-                                                        maxLength="22"
-                                                    />
-                                                </div>
-                                                <div className="col-md-6">
-                                                    <label className="form-label fw-semibold text-secondary small">Alias</label>
-                                                    <input
-                                                        type="text"
-                                                        className="form-control border-light-subtle shadow-sm"
-                                                        name="alias"
-                                                        value={formData.alias}
-                                                        onChange={handleInputChange}
-                                                        placeholder="ej: MI.EMPRESA.ALIAS"
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
+                        {/* Body - Scrollable */}
+                        <div className="p-6 overflow-y-auto bg-white flex-1 custom-scrollbar">
+                            <form id="proveedor-form" onSubmit={handleSubmit} className="flex flex-col gap-5">
 
-                                    <div className="card border-0 shadow-sm">
-                                        <div className="card-body p-4">
-                                            <h6 className="text-primary fw-bold mb-3 border-bottom pb-2">Datos de Contacto</h6>
-                                            <div className="row g-3">
-                                                <div className="col-md-6">
-                                                    <label className="form-label fw-semibold text-secondary small">Teléfono</label>
-                                                    <div className="input-group shadow-sm">
-                                                        <span className="input-group-text bg-white border-end-0 border-light-subtle"><Phone size={16} className="text-muted" /></span>
-                                                        <input
-                                                            type="text"
-                                                            className="form-control border-start-0 border-light-subtle"
-                                                            name="telefono"
-                                                            value={formData.telefono}
-                                                            onChange={handleInputChange}
-                                                        />
-                                                    </div>
-                                                </div>
-                                                <div className="col-md-6">
-                                                    <label className="form-label fw-semibold text-secondary small">Email</label>
-                                                    <div className="input-group shadow-sm">
-                                                        <span className="input-group-text bg-white border-end-0 border-light-subtle"><Mail size={16} className="text-muted" /></span>
-                                                        <input
-                                                            type="email"
-                                                            className="form-control border-start-0 border-light-subtle"
-                                                            name="email"
-                                                            value={formData.email}
-                                                            onChange={handleInputChange}
-                                                        />
-                                                    </div>
-                                                </div>
-                                                <div className="col-12">
-                                                    <label className="form-label fw-semibold text-secondary small">Dirección</label>
-                                                    <input
-                                                        type="text"
-                                                        className="form-control border-light-subtle shadow-sm"
-                                                        name="direccion"
-                                                        value={formData.direccion}
-                                                        onChange={handleInputChange}
-                                                    />
-                                                </div>
-                                                <div className="col-12">
-                                                    <label className="form-label fw-semibold text-secondary small">Notas</label>
-                                                    <textarea
-                                                        className="form-control border-light-subtle shadow-sm"
-                                                        name="notas"
-                                                        rows="2"
-                                                        value={formData.notas}
-                                                        onChange={handleInputChange}
-                                                    ></textarea>
-                                                </div>
-                                            </div>
+                                {/* SECCIÓN 1: DATOS PRINCIPALES */}
+                                <div className="bg-slate-50/50 p-5 rounded-2xl border border-slate-100">
+                                    <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                        <Building2 size={16} /> Datos Principales
+                                    </h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="col-span-1 md:col-span-2">
+                                            <label className="block text-xs font-bold text-slate-500 mb-1">RAZÓN SOCIAL / NOMBRE <span className="text-red-500">*</span></label>
+                                            <input
+                                                type="text"
+                                                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white text-slate-800 text-sm font-semibold transition-all placeholder:font-normal"
+                                                placeholder="Ej: Distribuidora S.A."
+                                                name="nombre"
+                                                value={formData.nombre}
+                                                onChange={handleInputChange}
+                                                required
+                                                autoFocus
+                                            />
                                         </div>
                                     </div>
                                 </div>
-                                <div className="modal-footer bg-white border-top-0 py-3 px-4" style={{ borderRadius: '0 0 1rem 1rem' }}>
-                                    <button type="button" className="btn btn-light text-secondary border-0 px-4" onClick={() => setShowModal(false)}>Cancelar</button>
-                                    <button type="submit" className="btn btn-primary px-5 shadow-sm rounded-pill fw-bold" style={{ background: 'linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%)' }}>
-                                        <Save size={18} className="me-2 inline-block mb-1" />
-                                        Guardar
-                                    </button>
+
+                                {/* SECCIÓN 2: INFORMACIÓN FISCAL Y BANCARIA */}
+                                <div className="bg-slate-50/50 p-5 rounded-2xl border border-slate-100">
+                                    <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                        <CreditCard size={16} /> Información Fiscal
+                                    </h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-500 mb-1">CONDICIÓN FISCAL</label>
+                                            <select
+                                                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white text-slate-800 text-sm font-medium transition-all"
+                                                name="condicion_fiscal"
+                                                value={formData.condicion_fiscal}
+                                                onChange={handleInputChange}
+                                            >
+                                                <option value="RI">Responsable Inscripto</option>
+                                                <option value="MO">Monotributista</option>
+                                                <option value="EX">Exento</option>
+                                                <option value="CF">Consumidor Final</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-500 mb-1">CUIT</label>
+                                            <input
+                                                type="text"
+                                                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white text-slate-800 text-sm font-semibold transition-all font-mono"
+                                                name="cuit"
+                                                value={formData.cuit}
+                                                onChange={handleInputChange}
+                                                placeholder="XX-XXXXXXXX-X"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-500 mb-1">CBU / CVU</label>
+                                            <input
+                                                type="text"
+                                                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white text-slate-800 text-sm font-semibold transition-all font-mono"
+                                                name="cbu"
+                                                value={formData.cbu}
+                                                onChange={handleInputChange}
+                                                placeholder="22 dígitos"
+                                                maxLength="22"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-500 mb-1">ALIAS</label>
+                                            <input
+                                                type="text"
+                                                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white text-slate-800 text-sm font-semibold transition-all uppercase"
+                                                name="alias"
+                                                value={formData.alias}
+                                                onChange={handleInputChange}
+                                                placeholder="MI.ALIAS"
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
+
+                                {/* SECCIÓN 3: CONTACTO Y NOTAS */}
+                                <div className="bg-slate-50/50 p-5 rounded-2xl border border-slate-100">
+                                    <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                        <Phone size={16} /> Contacto
+                                    </h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-500 mb-1">TELÉFONO</label>
+                                            <div className="relative">
+                                                <Phone size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                                <input
+                                                    type="text"
+                                                    className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white text-slate-800 text-sm font-semibold transition-all"
+                                                    name="telefono"
+                                                    value={formData.telefono}
+                                                    onChange={handleInputChange}
+                                                />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-500 mb-1">EMAIL</label>
+                                            <div className="relative">
+                                                <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                                <input
+                                                    type="email"
+                                                    className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white text-slate-800 text-sm font-semibold transition-all"
+                                                    name="email"
+                                                    value={formData.email}
+                                                    onChange={handleInputChange}
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="col-span-1 md:col-span-2">
+                                            <label className="block text-xs font-bold text-slate-500 mb-1">DIRECCIÓN</label>
+                                            <div className="relative">
+                                                <MapPin size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                                <input
+                                                    type="text"
+                                                    className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white text-slate-800 text-sm font-semibold transition-all"
+                                                    name="direccion"
+                                                    value={formData.direccion}
+                                                    onChange={handleInputChange}
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="col-span-1 md:col-span-2">
+                                            <label className="block text-xs font-bold text-slate-500 mb-1">NOTAS</label>
+                                            <textarea
+                                                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white text-slate-800 text-sm font-normal transition-all"
+                                                name="notas"
+                                                rows="2"
+                                                value={formData.notas}
+                                                onChange={handleInputChange}
+                                                placeholder="Información adicional..."
+                                            ></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+
                             </form>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3 flex-shrink-0">
+                            <button
+                                type="button"
+                                onClick={() => setShowModal(false)}
+                                className="px-5 py-2.5 text-sm font-bold text-slate-600 hover:text-slate-800 hover:bg-slate-200/50 rounded-xl transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                type="submit"
+                                form="proveedor-form"
+                                className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-blue-500/20 transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2"
+                            >
+                                <Save size={18} strokeWidth={2.5} />
+                                Guardar
+                            </button>
                         </div>
                     </div>
                 </div>

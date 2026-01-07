@@ -8,9 +8,7 @@ import {
     Trash2,
     Eye,
     Truck,
-    CheckCircle,
-    XCircle,
-    AlertCircle
+    XCircle
 } from 'lucide-react';
 import PageHeader from '../components/common/PageHeader';
 import { Link } from 'react-router-dom';
@@ -135,9 +133,9 @@ const Compras = () => {
 
     const getEstadoBadge = (estado) => {
         switch (estado) {
-            case 'PENDIENTE': return <span className="badge rounded-pill bg-warning text-dark"><AlertCircle size={14} className="me-1" /> Pendiente</span>;
-            case 'RECIBIDA': return <span className="badge rounded-pill bg-success"><CheckCircle size={14} className="me-1" /> Recibida</span>;
-            case 'CANCELADA': return <span className="badge rounded-pill bg-danger"><XCircle size={14} className="me-1" /> Cancelada</span>;
+            case 'PENDIENTE': return <span className="badge rounded-pill bg-warning text-dark">Pendiente</span>;
+            case 'RECIBIDA': return <span className="badge rounded-pill bg-success">Recibida</span>;
+            case 'CANCELADA': return <span className="badge rounded-pill bg-danger">Cancelada</span>;
             default: return <span className="badge rounded-pill bg-secondary">{estado}</span>;
         }
     };

@@ -9,7 +9,7 @@ const Productos = () => {
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
-    const [itemsPerPage, setItemsPerPage] = useState(10); // Default per page
+    const [itemsPerPage, setItemsPerPage] = useState(5); // Default per page
 
     // Filtros - Inicializar con valores de la URL si existen
     const [filters, setFilters] = useState({

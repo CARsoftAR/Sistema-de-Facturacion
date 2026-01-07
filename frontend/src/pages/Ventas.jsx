@@ -78,8 +78,7 @@ const Ventas = () => {
                     </p>
                 </div>
                 <Link to="/ventas/nuevo" className="btn btn-primary btn-lg shadow-sm">
-                    <Plus className="me-2 inline-block" size={20} />
-                    Nueva Venta
+                    <i className="bi bi-plus-circle-fill me-2"></i> Nueva Venta
                 </Link>
             </div>
 
