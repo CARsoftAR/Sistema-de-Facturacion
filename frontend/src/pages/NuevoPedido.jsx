@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Plus, Trash2, User, ShoppingCart, FileText, X, Check, ClipboardList, Save, AlertTriangle } from 'lucide-react';
+import { BtnSave, BtnCancel } from '../components/CommonButtons';
 
 // Obtener CSRF Token
 function getCookie(name) {
@@ -709,15 +710,13 @@ const NuevoPedido = () => {
                                         <span className="text-slate-400 font-light">ARS</span>
                                     </div>
                                 </div>
-                                <button
+                                <BtnSave
+                                    label="Guardar Pedido"
                                     onClick={guardarPedido}
+                                    loading={guardando}
                                     disabled={items.length === 0 || guardando}
-                                    className={`px-8 py-4 rounded-xl font-bold text-lg transition-all transform hover:scale-105 active:scale-95 flex items-center gap-3 ${items.length === 0 || guardando ? 'bg-slate-700 text-slate-500 cursor-not-allowed' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 shadow-lg shadow-blue-500/30'}`}
-                                >
-                                    <span className="flex items-center gap-2">
-                                        {guardando ? 'Guardando...' : <>Guardar Pedido <Save size={24} strokeWidth={3} /></>}
-                                    </span>
-                                </button>
+                                    className="px-8 py-4 rounded-xl font-bold text-lg"
+                                />
                             </div>
                         </div>
                     </div>
@@ -741,18 +740,15 @@ const NuevoPedido = () => {
                             </p>
 
                             <div className="flex gap-3 w-full">
-                                <button
+                                <BtnCancel
                                     onClick={cancelarAgregarStock}
-                                    className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold hover:bg-slate-50 transition-colors"
-                                >
-                                    Cancelar
-                                </button>
-                                <button
+                                    className="flex-1"
+                                />
+                                <BtnSave
+                                    label="Agregar Igual"
                                     onClick={confirmarAgregarStock}
-                                    className="flex-1 px-4 py-2.5 rounded-xl bg-amber-500 text-white font-bold hover:bg-amber-600 shadow-lg shadow-amber-500/30 transition-all"
-                                >
-                                    Agregar Igual
-                                </button>
+                                    className="flex-1 justify-center bg-amber-500 hover:bg-amber-600 shadow-amber-500/30"
+                                />
                             </div>
                         </div>
                     </div>

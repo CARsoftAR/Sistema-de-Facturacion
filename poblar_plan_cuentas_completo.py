@@ -1,5 +1,9 @@
 import os
+import sys
 import django
+
+# Agregar root al path
+sys.path.append(os.getcwd())
 
 # Configurar Django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'sistema_comercial.settings')

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, Search, User, Edit, Trash2, ArrowRightLeft, CreditCard } from 'lucide-react';
 import ClienteForm from '../components/clientes/ClienteForm';
+import { BtnAdd, BtnEdit, BtnDelete, BtnAction, BtnIcon } from '../components/CommonButtons';
 
 const Clientes = () => {
     const [clientes, setClientes] = useState([]);
@@ -116,9 +117,7 @@ const Clientes = () => {
                         Administra tu cartera de clientes y cuentas corrientes.
                     </p>
                 </div>
-                <button className="btn btn-primary btn-lg shadow-sm" onClick={handleCreate}>
-                    <i className="bi bi-plus-circle-fill me-2"></i> Nuevo Cliente
-                </button>
+                <BtnAdd label="Nuevo Cliente" onClick={handleCreate} className="btn-lg shadow-sm" />
             </div>
 
             {/* FILTROS */}
@@ -147,9 +146,14 @@ const Clientes = () => {
                             </select>
                         </div>
                         <div className="col-md-1 ms-auto">
-                            <button className="btn btn-outline-secondary w-100" onClick={fetchClientes} title="Actualizar">
-                                <i className="bi bi-arrow-clockwise"></i>
-                            </button>
+                            <BtnAction
+                                icon="bi-arrow-clockwise"
+                                color="light"
+                                className="w-100 border-secondary text-secondary"
+                                onClick={fetchClientes}
+                                title="Actualizar"
+                                label=""
+                            />
                         </div>
                     </div>
                 </div>
@@ -200,13 +204,9 @@ const Clientes = () => {
                                                 </span>
                                             </td>
                                             <td className="text-end pe-4">
-                                                <div className="d-flex justify-content-end gap-1">
-                                                    <button className="btn btn-outline-primary btn-sm" onClick={() => handleEdit(c)} title="Editar">
-                                                        <i className="bi bi-pencil"></i>
-                                                    </button>
-                                                    <button className="btn btn-outline-danger btn-sm" onClick={() => handleDelete(c.id)} title="Eliminar">
-                                                        <i className="bi bi-trash"></i>
-                                                    </button>
+                                                <div className="d-flex justify-content-end gap-2">
+                                                    <BtnEdit onClick={() => handleEdit(c)} />
+                                                    <BtnDelete onClick={() => handleDelete(c.id)} />
                                                 </div>
                                             </td>
                                         </tr>

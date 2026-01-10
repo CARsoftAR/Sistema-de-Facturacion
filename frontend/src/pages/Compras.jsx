@@ -11,9 +11,11 @@ import {
     XCircle
 } from 'lucide-react';
 import PageHeader from '../components/common/PageHeader';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { BtnAdd, BtnEdit, BtnDelete, BtnAction, BtnIcon, BtnView, BtnExport, BtnCancel, BtnSave } from '../components/CommonButtons';
 
 const Compras = () => {
+    const navigate = useNavigate();
     const [ordenes, setOrdenes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -23,6 +25,7 @@ const Compras = () => {
     const [showModalRecibir, setShowModalRecibir] = useState(false);
     const [ordenARecibir, setOrdenARecibir] = useState(null);
     const [medioPago, setMedioPago] = useState('CONTADO');
+    const [datosCheque, setDatosCheque] = useState({ banco: '', numero: '', fechaVto: '' });
 
     // Estado para paginación
     const [page, setPage] = useState(1);
@@ -57,6 +60,7 @@ const Compras = () => {
     const handleRecibir = (orden) => {
         setOrdenARecibir(orden);
         setMedioPago('CONTADO'); // Reset default
+        setDatosCheque({ banco: '', numero: '', fechaVto: '' });
         setShowModalRecibir(true);
     };
 
@@ -68,9 +72,11 @@ const Compras = () => {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    // 'X-CSRFToken': getCookie('csrftoken') // Si fuera necesario, pero parece que las otras views no lo usan explícitamente en el fetch si la cookie viaja
                 },
-                body: JSON.stringify({ medio_pago: medioPago })
+                body: JSON.stringify({
+                    medio_pago: medioPago,
+                    datos_cheque: medioPago === 'CHEQUE' ? datosCheque : null
+                })
             });
             const data = await response.json();
 
@@ -172,9 +178,11 @@ const Compras = () => {
                             Administra órdenes de compra y recepciones de mercadería.
                         </p>
                     </div>
-                    <Link to="/compras/nueva" className="btn btn-primary btn-lg shadow-sm">
-                        <i className="bi bi-plus-circle-fill me-2"></i> Nueva Orden
-                    </Link>
+                    <BtnAdd
+                        label="Nueva Orden"
+                        className="btn-lg shadow-sm"
+                        onClick={() => navigate('/compras/nueva')}
+                    />
                 </div>
 
                 {/* FILTROS */}
@@ -210,10 +218,7 @@ const Compras = () => {
                                     <i className="bi bi-funnel me-2"></i>
                                     Más Filtros
                                 </button> */}
-                                <button className="btn btn-outline-secondary">
-                                    <i className="bi bi-download me-2"></i>
-                                    Exportar
-                                </button>
+                                <BtnExport label="Exportar" onClick={() => { }} />
                             </div>
                         </div>
                     </div>
@@ -248,30 +253,25 @@ const Compras = () => {
                                                 <td className="text-end pe-4">
                                                     <div className="d-flex justify-content-end gap-2">
                                                         {orden.estado === 'PENDIENTE' && (
-                                                            <button
-                                                                className="btn btn-sm btn-outline-success d-flex align-items-center gap-1"
-                                                                title="Recibir Mercadería"
+                                                            <BtnAction
+                                                                icon="bi-truck"
+                                                                label="Recibir"
+                                                                color="success"
                                                                 onClick={() => handleRecibir(orden)}
-                                                            >
-                                                                <Truck size={16} /> <span className="d-none d-md-inline">Recibir</span>
-                                                            </button>
+                                                                title="Recibir Mercadería"
+                                                                className="d-flex align-items-center gap-1"
+                                                            />
                                                         )}
 
-                                                        <button
-                                                            className="btn btn-sm btn-light text-secondary border hover:text-primary hover:bg-blue-50 transition-colors"
-                                                            onClick={() => handleVerDetalle(orden)}
-                                                            title="Ver Detalle"
-                                                        >
-                                                            <Eye size={16} />
-                                                        </button>
+                                                        <BtnView onClick={() => handleVerDetalle(orden)} />
 
                                                         {orden.estado === 'PENDIENTE' && (
-                                                            <button
-                                                                className="btn btn-sm btn-light text-danger border hover:bg-danger hover:text-white transition-colors"
+                                                            <BtnAction
+                                                                icon="bi-x-circle"
+                                                                color="danger"
                                                                 onClick={() => handleEliminar(orden.id)}
-                                                            >
-                                                                <Trash2 size={16} />
-                                                            </button>
+                                                                title="Cancelar Orden"
+                                                            />
                                                         )}
                                                     </div>
                                                 </td>
@@ -363,22 +363,52 @@ const Compras = () => {
                             <div className="mb-4">
                                 <label className="form-label fw-bold small text-uppercase">Forma de Pago / Registro</label>
                                 <select
-                                    className="form-select"
+                                    className="form-select mb-3"
                                     value={medioPago}
                                     onChange={(e) => setMedioPago(e.target.value)}
                                 >
                                     <option value="CONTADO">Contado (Caja)</option>
                                     <option value="CTACTE">Cuenta Corriente (Deuda)</option>
+                                    <option value="CHEQUE">Cheque Propio</option>
                                 </select>
+
+                                {medioPago === 'CHEQUE' && (
+                                    <div className="card p-3 bg-light border-0 animate-in fade-in slide-in-from-top-2">
+                                        <div className="mb-2">
+                                            <input
+                                                type="text"
+                                                className="form-control"
+                                                placeholder="Banco"
+                                                value={datosCheque.banco}
+                                                onChange={(e) => setDatosCheque({ ...datosCheque, banco: e.target.value })}
+                                            />
+                                        </div>
+                                        <div className="row g-2">
+                                            <div className="col-6">
+                                                <input
+                                                    type="text"
+                                                    className="form-control"
+                                                    placeholder="N° Cheque"
+                                                    value={datosCheque.numero}
+                                                    onChange={(e) => setDatosCheque({ ...datosCheque, numero: e.target.value })}
+                                                />
+                                            </div>
+                                            <div className="col-6">
+                                                <input
+                                                    type="date"
+                                                    className="form-control"
+                                                    value={datosCheque.fechaVto}
+                                                    onChange={(e) => setDatosCheque({ ...datosCheque, fechaVto: e.target.value })}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="d-flex gap-2">
-                                <button className="btn btn-light border flex-fill fw-bold" onClick={() => setShowModalRecibir(false)}>
-                                    Cancelar
-                                </button>
-                                <button className="btn btn-success flex-fill fw-bold text-white" onClick={confirmRecibir}>
-                                    Confirmar Recepción
-                                </button>
+                                <BtnCancel label="Cancelar" onClick={() => setShowModalRecibir(false)} className="flex-fill" />
+                                <BtnSave label="Confirmar Recepción" onClick={confirmRecibir} className="flex-fill" />
                             </div>
                         </div>
                     </div>

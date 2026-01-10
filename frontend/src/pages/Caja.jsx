@@ -440,11 +440,11 @@ const Caja = () => {
                                                 </div>
                                             </td>
                                             <td className="pe-4 text-end">
-                                                <div className="d-flex justify-content-end gap-1">
-                                                    <button onClick={() => openEditModal(mov)} className="btn btn-sm btn-outline-primary border-0 rounded-circle p-2 hover-bg-primary" title="Editar">
+                                                <div className="d-flex justify-content-end gap-2">
+                                                    <button onClick={() => openEditModal(mov)} className="btn btn-sm btn-warning text-white rounded-2 shadow-sm px-2" title="Editar">
                                                         <Pencil size={16} />
                                                     </button>
-                                                    <button onClick={() => handleDeleteMovimiento(mov.id)} className="btn btn-sm btn-outline-danger border-0 rounded-circle p-2 hover-bg-danger" title="Eliminar">
+                                                    <button onClick={() => handleDeleteMovimiento(mov.id)} className="btn btn-sm btn-danger rounded-2 shadow-sm px-2" title="Eliminar">
                                                         <Trash2 size={16} />
                                                     </button>
                                                 </div>

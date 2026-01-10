@@ -1,7 +1,9 @@
 
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { Search, Plus, Trash2, User, ShoppingCart, Check, X, ClipboardList, PenTool, FileText } from 'lucide-react';
+
 import { useNavigate } from 'react-router-dom';
+import { BtnSave, BtnCancel } from '../components/CommonButtons';
 
 // Componente helper para inputs con autofocus (mismo que NuevaVenta)
 const AutoFocusInput = ({ onKeyDownNext, ...props }) => {
@@ -739,15 +741,12 @@ const NuevaCompra = () => {
                                         <span className="text-slate-400 font-light">ARS</span>
                                     </div>
                                 </div>
-                                <button
+                                <BtnSave
+                                    label="Finalizar Compra"
                                     onClick={abrirModalPago}
                                     disabled={items.length === 0 || !proveedor}
-                                    className={`px-8 py-4 rounded-xl font-bold text-lg transition-all transform hover:scale-105 active:scale-95 flex items-center gap-3 ${items.length === 0 || !proveedor ? 'bg-slate-700 text-slate-500 cursor-not-allowed' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 shadow-lg shadow-blue-500/30'}`}
-                                >
-                                    <span className="flex items-center gap-2">
-                                        Finalizar Compra <Check size={24} strokeWidth={3} />
-                                    </span>
-                                </button>
+                                    className="px-8 py-4 rounded-xl font-bold text-lg"
+                                />
                             </div>
                         </div>
 
@@ -879,20 +878,17 @@ const NuevaCompra = () => {
 
                             {/* Botones */}
                             <div className="mt-8 flex gap-3">
-                                <button
+                                <BtnCancel
                                     onClick={() => setMostrarModalPago(false)}
-                                    className="flex-1 px-4 py-3 border border-slate-300 rounded-xl text-slate-700 font-bold hover:bg-slate-50 transition-colors"
-                                >
-                                    Cancelar
-                                </button>
-                                <button
+                                    className="flex-1"
+                                />
+                                <BtnSave
+                                    label={guardando ? 'Procesando...' : 'Confirmar'}
                                     onClick={guardarCompra}
                                     disabled={guardando}
-                                    className="flex-1 px-4 py-3 rounded-xl font-bold text-white bg-green-600 hover:bg-green-700 shadow-lg shadow-green-500/30 flex items-center justify-center gap-2 transition-all"
-                                >
-                                    {guardando ? 'Procesando...' : 'Confirmar'}
-                                    <Check size={20} strokeWidth={3} />
-                                </button>
+                                    loading={guardando}
+                                    className="flex-1 justify-center"
+                                />
                             </div>
                         </div>
                     </div>

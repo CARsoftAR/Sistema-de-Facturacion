@@ -4501,11 +4501,17 @@ def api_pedido_facturar(request, id):
 # =======================================
 
 def api_ejercicios_listar(request):
-    """API para listar ejercicios contables"""
-    from administrar.models import EjercicioContable
-    
+    """API para listar ejercicios contables con estadísticas"""
+    from administrar.models import EjercicioContable, Asiento
+    from django.db.models import Count, Max
+
     try:
-        ejercicios = EjercicioContable.objects.all().order_by('-fecha_inicio')
+        # Annotate with stats
+        ejercicios = EjercicioContable.objects.annotate(
+            cantidad_asientos=Count('asiento'),
+            ultimo_movimiento=Max('asiento__fecha')
+        ).order_by('-fecha_inicio')
+
         data = []
         for e in ejercicios:
             data.append({
@@ -4513,7 +4519,9 @@ def api_ejercicios_listar(request):
                 'descripcion': e.descripcion,
                 'fecha_inicio': str(e.fecha_inicio) if e.fecha_inicio else None,
                 'fecha_fin': str(e.fecha_fin) if e.fecha_fin else None,
-                'cerrado': e.cerrado
+                'cerrado': e.cerrado,
+                'cantidad_asientos': e.cantidad_asientos,
+                'ultimo_movimiento': e.ultimo_movimiento.strftime('%d/%m/%Y') if e.ultimo_movimiento else 'Sin movimientos'
             })
             
         return JsonResponse({

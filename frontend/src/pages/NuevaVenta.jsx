@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { Search, Plus, Trash2, User, ShoppingCart, CreditCard, DollarSign, FileText, X, Check, Banknote } from 'lucide-react';
+import { BtnSave, BtnCancel } from '../components/CommonButtons';
 
 // Obtener CSRF Token
 function getCookie(name) {
@@ -832,15 +833,12 @@ const NuevaVenta = () => {
                                         <span className="text-slate-400 font-light">ARS</span>
                                     </div>
                                 </div>
-                                <button
+                                <BtnSave
+                                    label="Confirmar Venta"
                                     onClick={abrirModalPago}
                                     disabled={items.length === 0}
-                                    className={`px-8 py-4 rounded-xl font-bold text-lg transition-all transform hover:scale-105 active:scale-95 flex items-center gap-3 ${items.length === 0 ? 'bg-slate-700 text-slate-500 cursor-not-allowed' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 shadow-lg shadow-blue-500/30'}`}
-                                >
-                                    <span className="flex items-center gap-2">
-                                        Confirmar Venta <Check size={24} strokeWidth={3} />
-                                    </span>
-                                </button>
+                                    className="px-8 py-4 rounded-xl font-bold text-lg"
+                                />
                             </div>
                         </div>
                     </div>
@@ -1025,23 +1023,17 @@ const NuevaVenta = () => {
 
                                 {/* Botones */}
                                 <div className="px-6 py-4 bg-slate-50 flex gap-3">
-                                    <button
+                                    <BtnCancel
                                         onClick={() => setMostrarModalPago(false)}
-                                        className="flex-1 px-4 py-2.5 border border-slate-300 rounded-lg text-slate-700 font-medium hover:bg-slate-100"
-                                    >
-                                        Cancelar
-                                    </button>
-                                    <button
+                                        className="flex-1"
+                                    />
+                                    <BtnSave
+                                        label={guardando ? 'Guardando...' : 'Confirmar'}
                                         onClick={guardarVenta}
                                         disabled={guardando || (medioPago === 'EFECTIVO' && (!montoPago || parseFloat(montoPago) < totalGeneral))}
-                                        className={`flex-1 px-4 py-2.5 rounded-lg font-medium text-white flex items-center justify-center gap-2 ${guardando || (medioPago === 'EFECTIVO' && (!montoPago || parseFloat(montoPago) < totalGeneral))
-                                            ? 'bg-slate-300 cursor-not-allowed'
-                                            : 'bg-green-600 hover:bg-green-700'
-                                            }`}
-                                    >
-                                        <Check size={18} />
-                                        {guardando ? 'Guardando...' : 'Confirmar'}
-                                    </button>
+                                        loading={guardando}
+                                        className="flex-1 justify-center"
+                                    />
                                 </div>
                             </div>
                         </div>

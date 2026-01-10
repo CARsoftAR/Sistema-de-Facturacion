@@ -128,7 +128,7 @@ const Pedidos = () => {
         <div className="flex-grow-1 overflow-auto bg-light">
             <div className="container-fluid px-4 pt-4">
                 {/* HEADER */}
-                <div className="d-flex justify-content-between align-items-center mb-4">
+                <div className="d-flex justify-content-between align-items-center mb-4 pb-2">
                     <div>
                         <h2 className="text-primary fw-bold mb-0" style={{ fontSize: '2.2rem' }}>
                             <i className="bi bi-cart-check-fill me-2" style={{ fontSize: '0.8em' }}></i>
@@ -244,10 +244,10 @@ const Pedidos = () => {
                                                     </span>
                                                 </td>
                                                 <td className="text-end pe-4">
-                                                    <div className="d-flex justify-content-end gap-1">
+                                                    <div className="d-flex justify-content-end gap-2">
                                                         {p.estado !== 'FACTURADO' && (
                                                             <button
-                                                                className="btn btn-outline-success btn-sm"
+                                                                className="btn btn-sm btn-success text-white rounded-2 shadow-sm px-2"
                                                                 onClick={() => handleFacturar(p.id)}
                                                                 title="Facturar (Convertir a Venta)"
                                                             >
@@ -256,7 +256,7 @@ const Pedidos = () => {
                                                         )}
                                                         {/* Editar podria ir aqui */}
                                                         {p.estado !== 'FACTURADO' && (
-                                                            <button className="btn btn-outline-danger btn-sm" onClick={() => handleDelete(p.id)}>
+                                                            <button className="btn btn-sm btn-danger rounded-2 shadow-sm px-2" onClick={() => handleDelete(p.id)}>
                                                                 <i className="bi bi-trash"></i>
                                                             </button>
                                                         )}

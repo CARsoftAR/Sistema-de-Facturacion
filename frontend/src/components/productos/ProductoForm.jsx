@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { X, Save, AlertCircle, Package, DollarSign, Tag, Layers, Truck } from 'lucide-react';
 import SearchableSelect from '../common/SearchableSelect';
+import { BtnSave, BtnCancel } from '../CommonButtons';
 
 const ProductoForm = ({ producto, onClose, onSave }) => {
     const { register, handleSubmit, control, reset, watch, formState: { errors, isSubmitting } } = useForm();
@@ -410,22 +411,12 @@ const ProductoForm = ({ producto, onClose, onSave }) => {
                 </div>
 
                 <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3 flex-shrink-0">
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="px-5 py-2.5 text-sm font-bold text-slate-600 hover:text-slate-800 hover:bg-slate-200/50 rounded-xl transition-colors"
-                    >
-                        Cancelar
-                    </button>
-                    <button
-                        type="submit"
+                    <BtnCancel onClick={onClose} />
+                    <BtnSave
                         form="producto-form"
-                        disabled={isSubmitting}
-                        className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-blue-500/20 transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
-                    >
-                        <Save size={18} strokeWidth={2.5} />
-                        {isSubmitting ? 'Guardando...' : 'Guardar Producto'}
-                    </button>
+                        label={isSubmitting ? 'Guardando...' : 'Guardar Producto'}
+                        loading={isSubmitting}
+                    />
                 </div>
             </div>
         </div>

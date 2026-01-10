@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Truck, Plus, Search, Trash2, Edit, Phone, Mail, MapPin, X, Save, Building2, CreditCard, User } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { BtnAdd, BtnEdit, BtnDelete, BtnCancel, BtnSave } from '../components/CommonButtons';
 
 const Proveedores = () => {
     const [proveedores, setProveedores] = useState([]);
@@ -161,9 +162,7 @@ const Proveedores = () => {
                         Administra tus proveedores y contactos.
                     </p>
                 </div>
-                <button onClick={() => openModal()} className="btn btn-primary btn-lg shadow-sm">
-                    <i className="bi bi-plus-circle-fill me-2"></i> Nuevo Proveedor
-                </button>
+                <BtnAdd label="Nuevo Proveedor" onClick={() => openModal()} className="btn-lg shadow-sm" />
             </div>
 
             <div className="card border-0 shadow-sm mb-4">
@@ -230,13 +229,9 @@ const Proveedores = () => {
                                                 ) : '-'}
                                             </td>
                                             <td className="text-end pe-4">
-                                                <div className="d-flex justify-content-end gap-1">
-                                                    <button onClick={() => openModal(p)} className="btn btn-outline-primary btn-sm" title="Editar">
-                                                        <Edit size={16} />
-                                                    </button>
-                                                    <button className="btn btn-outline-danger btn-sm" onClick={() => handleEliminar(p.id)} title="Eliminar">
-                                                        <Trash2 size={16} />
-                                                    </button>
+                                                <div className="d-flex justify-content-end gap-2">
+                                                    <BtnEdit onClick={() => openModal(p)} />
+                                                    <BtnDelete onClick={() => handleEliminar(p.id)} />
                                                 </div>
                                             </td>
                                         </tr>
@@ -466,21 +461,8 @@ const Proveedores = () => {
 
                         {/* Footer */}
                         <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3 flex-shrink-0">
-                            <button
-                                type="button"
-                                onClick={() => setShowModal(false)}
-                                className="px-5 py-2.5 text-sm font-bold text-slate-600 hover:text-slate-800 hover:bg-slate-200/50 rounded-xl transition-colors"
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                type="submit"
-                                form="proveedor-form"
-                                className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-blue-500/20 transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2"
-                            >
-                                <Save size={18} strokeWidth={2.5} />
-                                Guardar
-                            </button>
+                            <BtnCancel onClick={() => setShowModal(false)} />
+                            <BtnSave label="Guardar" onClick={() => { }} form="proveedor-form" />
                         </div>
                     </div>
                 </div>

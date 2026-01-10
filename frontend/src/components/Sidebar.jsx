@@ -182,8 +182,8 @@ const Sidebar = ({ standalone = false }) => {
                             { label: 'Ventas', href: '/ventas' },
                             { label: 'Compras', href: '/compras' },
                             { label: 'Pedidos', href: '/pedidos' },
-                            { label: 'Remitos', href: '/remitos' },
-                            { label: 'Notas de Crédito', href: '/notas-credito' },
+                            { label: 'Remitos', href: '/comprobantes/remitos/' },
+                            { label: 'Notas de Crédito', href: '/comprobantes/nc-nd/' },
                         ]}
                     />
 
@@ -195,7 +195,6 @@ const Sidebar = ({ standalone = false }) => {
                         standalone={standalone}
                         subItems={[
                             { label: 'Gestión de Productos', href: '/productos' },
-                            { label: 'Catálogo', href: '/catalogo' },
                             { label: 'Actualizar Precios', href: '/precios/actualizar' },
                         ]}
                     />
@@ -271,8 +270,12 @@ const Sidebar = ({ standalone = false }) => {
                         onToggle={() => toggleSection('contabilidad')}
                         standalone={standalone}
                         subItems={[
-                            { label: 'Libro Diario', href: '/contabilidad/diario' },
-                            { label: 'Balance', href: '/contabilidad/balance' },
+                            { label: 'Plan de Cuentas', href: '/contabilidad/plan-cuentas/' },
+                            { label: 'Ejercicios Contables', href: '/contabilidad/ejercicios/' },
+                            { label: 'Asientos Manuales', href: '/contabilidad/asientos/' },
+                            { label: 'Libro Mayor', href: '/contabilidad/mayor/' },
+                            { label: 'Balance', href: '/contabilidad/balance/' },
+                            { label: 'Reportes', href: '/contabilidad/reportes/' },
                         ]}
                     />
 

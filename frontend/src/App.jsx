@@ -12,6 +12,12 @@ import NuevoPedido from './pages/NuevoPedido'
 import Compras from './pages/Compras'
 import NuevaCompra from './pages/NuevaCompra'
 import Caja from './pages/Caja'
+import ActualizarPrecios from './pages/ActualizarPrecios'
+import PlanCuentas from './pages/PlanCuentas'
+import Ejercicios from './pages/Ejercicios'
+import Asientos from './pages/Asientos'
+import LibroMayor from './pages/LibroMayor'
+import Balance from './pages/Balance'
 
 // Componente Dashboard temporal con estilos Bootstrap
 const Dashboard = () => (
@@ -70,6 +76,12 @@ function App() {
             <Route path="/clientes" element={<Clientes />} />
             <Route path="/productos" element={<Productos />} />
             <Route path="/productos/nuevo" element={<Navigate to="/productos" replace />} />
+            <Route path="/precios/actualizar" element={<ActualizarPrecios />} />
+            <Route path="/contabilidad/plan-cuentas" element={<PlanCuentas />} />
+            <Route path="/contabilidad/ejercicios" element={<Ejercicios />} />
+            <Route path="/contabilidad/asientos" element={<Asientos />} />
+            <Route path="/contabilidad/mayor" element={<LibroMayor />} />
+            <Route path="/contabilidad/balance" element={<Balance />} />
             <Route path="/ventas" element={<Ventas />} />
             <Route path="/ventas/nuevo" element={<NuevaVenta />} />
             <Route path="/pedidos" element={<Pedidos />} />

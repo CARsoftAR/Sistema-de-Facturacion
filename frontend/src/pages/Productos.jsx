@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import ProductoForm from '../components/productos/ProductoForm';
+import { BtnAdd, BtnEdit, BtnDelete, BtnAction, BtnIcon } from '../components/CommonButtons';
 
 const Productos = () => {
     const [searchParams] = useSearchParams();
@@ -142,9 +143,7 @@ const Productos = () => {
                         Gestiona el catálogo completo de productos y servicios.
                     </p>
                 </div>
-                <button className="btn btn-primary btn-lg shadow-sm" onClick={handleCreate}>
-                    <i className="bi bi-plus-circle-fill me-2"></i> Nuevo Producto
-                </button>
+                <BtnAdd label="Nuevo Producto" onClick={handleCreate} className="btn-lg shadow-sm" />
             </div>
 
             {/* FILTROS (Idéntico a ventas.html) */}
@@ -185,9 +184,14 @@ const Productos = () => {
                             </select>
                         </div>
                         <div className="col-md-1">
-                            <button className="btn btn-outline-secondary w-100" onClick={fetchProductos} title="Actualizar">
-                                <i className="bi bi-arrow-clockwise"></i>
-                            </button>
+                            <BtnAction
+                                icon="bi-arrow-clockwise"
+                                color="light"
+                                className="w-100 border-secondary text-secondary"
+                                onClick={fetchProductos}
+                                title="Actualizar"
+                                label=""
+                            />
                         </div>
                     </div>
                 </div>
@@ -237,13 +241,9 @@ const Productos = () => {
                                                 </span>
                                             </td>
                                             <td className="text-end pe-4">
-                                                <div className="d-flex justify-content-end gap-1">
-                                                    <button className="btn btn-outline-primary btn-sm" onClick={() => handleEdit(p)}>
-                                                        <i className="bi bi-pencil"></i>
-                                                    </button>
-                                                    <button className="btn btn-outline-danger btn-sm" onClick={() => handleDelete(p.id)}>
-                                                        <i className="bi bi-trash"></i>
-                                                    </button>
+                                                <div className="d-flex justify-content-end gap-2">
+                                                    <BtnEdit onClick={() => handleEdit(p)} />
+                                                    <BtnDelete onClick={() => handleDelete(p.id)} />
                                                 </div>
                                             </td>
                                         </tr>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { ShoppingCart, Plus, Search, Printer, XCircle, AlertCircle, CheckCircle } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { ShoppingCart, Plus, Search, Printer, XCircle, AlertCircle, CheckCircle, Trash2 } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom'; // Added useNavigate if needed for consistency, though Link is used for New Sale
+import { BtnAdd, BtnDelete, BtnPrint, BtnAction } from '../components/CommonButtons';
 
 const Ventas = () => {
     const [ventas, setVentas] = useState([]);
@@ -77,9 +78,11 @@ const Ventas = () => {
                         Gestiona el histórico de transacciones.
                     </p>
                 </div>
-                <Link to="/ventas/nuevo" className="btn btn-primary btn-lg shadow-sm">
-                    <i className="bi bi-plus-circle-fill me-2"></i> Nueva Venta
-                </Link>
+                <BtnAdd
+                    label="Nueva Venta"
+                    className="btn-lg shadow-sm"
+                    onClick={() => navigate('/ventas/nuevo')}
+                />
             </div>
 
             {/* Filtros */}
@@ -158,13 +161,11 @@ const Ventas = () => {
                                                 )}
                                             </td>
                                             <td className="text-end pe-4">
-                                                <div className="d-flex justify-content-end gap-1">
-                                                    <a href={`/invoice/print/${v.id}/`} target="_blank" rel="noreferrer" className="btn btn-outline-primary btn-sm" title="Imprimir">
-                                                        <Printer size={16} />
-                                                    </a>
-                                                    <button className="btn btn-outline-danger btn-sm" onClick={() => handleAnular(v.id)} title="Anular">
-                                                        <XCircle size={16} />
-                                                    </button>
+                                                <div className="d-flex justify-content-end gap-2">
+                                                    <div className="d-flex justify-content-end gap-2">
+                                                        <BtnPrint onClick={() => window.open(`/invoice/print/${v.id}/`, '_blank')} />
+                                                        <BtnDelete onClick={() => handleAnular(v.id)} title="Anular" />
+                                                    </div>
                                                 </div>
                                             </td>
                                         </tr>

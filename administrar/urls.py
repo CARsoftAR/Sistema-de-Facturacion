@@ -94,7 +94,7 @@ urlpatterns = [
     path("api/contabilidad/asientos/<int:id>/eliminar/", views.api_asientos_eliminar, name="api_asientos_eliminar"),
 
     # API Balance
-    path("api/contabilidad/balance/", views.api_balance_generar, name="api_balance_generar"),
+    path("api/contabilidad/balance/generar/", views.api_balance_generar, name="api_balance_generar"),
     path("api/contabilidad/balance/exportar/", views.api_balance_exportar, name="api_balance_exportar"),
 
     # API Plan de Cuentas
@@ -102,7 +102,7 @@ urlpatterns = [
     path("api/contabilidad/ejercicios/", views.api_ejercicios_listar, name="api_ejercicios_listar"),
 
     # API Libro Mayor
-    path("api/contabilidad/mayor/", views.api_mayor_consultar, name="api_mayor_consultar"),
+    path("api/contabilidad/mayor/consultar/", views.api_mayor_consultar, name="api_mayor_consultar"),
     path("api/contabilidad/mayor/exportar/", views.api_mayor_exportar, name="api_mayor_exportar"),
 
     # API Reportes
@@ -111,12 +111,12 @@ urlpatterns = [
     path("api/contabilidad/reportes/balance-general/", views.api_reporte_balance_general, name="api_reporte_balance_general"),
     path("api/contabilidad/reportes/resumen-ejercicio/", views.api_reporte_resumen_ejercicio, name="api_reporte_resumen_ejercicio"),
 
-    # Vistas Contabilidad
-    path("contabilidad/plan-cuentas/", lambda request: render(request, "administrar/contabilidad/plancuentas.html"), name="plancuentas"),
-    path("contabilidad/ejercicios/", lambda request: render(request, "administrar/contabilidad/ejercicios.html"), name="ejercicios"),
-    path("contabilidad/asientos/", lambda request: render(request, "administrar/contabilidad/asientos.html"), name="asientos"),
-    path("contabilidad/balance/", lambda request: render(request, "administrar/contabilidad/balance.html"), name="balance"),
-    path("contabilidad/mayor/", lambda request: render(request, "administrar/contabilidad/mayor.html"), name="mayor"),
+    # Vistas Contabilidad (Migración a React)
+    path("contabilidad/plan-cuentas/", TemplateView.as_view(template_name="react_app.html"), name="plancuentas"),
+    path("contabilidad/ejercicios/", TemplateView.as_view(template_name="react_app.html"), name="ejercicios"),
+    path("contabilidad/asientos/", TemplateView.as_view(template_name="react_app.html"), name="asientos"),
+    path("contabilidad/balance/", TemplateView.as_view(template_name="react_app.html"), name="balance"),
+    path("contabilidad/mayor/", TemplateView.as_view(template_name="react_app.html"), name="mayor"),
     path("contabilidad/reportes/", lambda request: render(request, "administrar/contabilidad/reportes.html"), name="reportes_contables"),
     
     # ==========================
@@ -216,6 +216,7 @@ urlpatterns = [
 
     # Actualización masiva de precios
     path("actualizar-precios/", views.actualizar_precios, name="actualizar_precios"),
+    path("precios/actualizar/", TemplateView.as_view(template_name="react_app.html"), name="precios_actualizar_react"),
     path("api/precios/actualizar-masivo/", views.api_actualizar_precios_masivo, name="api_actualizar_precios_masivo"),
 
     # ==========================
