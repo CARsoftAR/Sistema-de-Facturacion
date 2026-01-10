@@ -158,9 +158,9 @@ const Ejercicios = () => {
                 </div>
             </div>
 
-            {/* CONTENIDO PRINCIPAL */}
-            <div className="card border-0 shadow-sm rounded-4 overflow-hidden">
-                <div className="card-body p-0">
+            {/* CONTENIDO PRINCIPAL - ESTÁNDAR */}
+            <div className="card border-0 shadow mb-4 flex-grow-1 overflow-hidden d-flex flex-column">
+                <div className="card-body p-0 d-flex flex-column overflow-hidden">
                     {loading ? (
                         <div className="text-center py-5">
                             <div className="spinner-border text-primary text-opacity-75" role="status" style={{ width: '3rem', height: '3rem' }}></div>
@@ -175,71 +175,67 @@ const Ejercicios = () => {
                             <p className="text-muted small">Crea un nuevo ejercicio para comenzar.</p>
                         </div>
                     ) : (
-                        <div className="table-responsive">
-                            <table className="table table-hover align-middle mb-0">
-                                <thead className="bg-light border-bottom">
+                        <div className="table-responsive flex-grow-1 overflow-auto">
+                            <table className="table align-middle mb-0">
+                                <thead className="bg-white border-bottom">
                                     <tr>
-                                        <th className="py-3 px-4 text-secondary text-uppercase small fw-bold" style={{ letterSpacing: '0.5px' }}>Descripción</th>
-                                        <th className="py-3 px-4 text-secondary text-uppercase small fw-bold" style={{ letterSpacing: '0.5px', width: '150px' }}>Período</th>
-                                        <th className="py-3 px-4 text-secondary text-uppercase small fw-bold text-center" style={{ letterSpacing: '0.5px' }}>Asientos</th>
-                                        <th className="py-3 px-4 text-secondary text-uppercase small fw-bold text-center" style={{ letterSpacing: '0.5px' }}>Estado</th>
-                                        <th className="py-3 px-4 text-secondary text-uppercase small fw-bold text-end" style={{ letterSpacing: '0.5px' }}>Acciones</th>
+                                        <th className="ps-4 py-3 text-dark fw-bold">Descripción</th>
+                                        <th className="py-3 text-dark fw-bold">Período</th>
+                                        <th className="text-center py-3 text-dark fw-bold">Asientos</th>
+                                        <th className="text-center py-3 text-dark fw-bold">Estado</th>
+                                        <th className="text-end pe-4 py-3 text-dark fw-bold">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {ejercicios.map(ej => (
-                                        <tr key={ej.id} className="transition-all">
-                                            <td className="px-4 py-3">
-                                                <div className="fw-bold text-dark fs-6">{ej.descripcion}</div>
-                                                <div className="small text-muted">
-                                                    Último mov: <span className="fw-semibold">{ej.ultimo_movimiento || '-'}</span>
-                                                </div>
+                                        <tr key={ej.id} className="border-bottom-0">
+                                            <td className="ps-4 fw-bold text-dark py-3">{ej.descripcion}</td>
+                                            <td className="small text-muted py-3">
+                                                <div>{ej.fecha_inicio} al {ej.fecha_fin}</div>
                                             </td>
-                                            <td className="px-4 py-3 font-monospace text-secondary small">
-                                                <div>{ej.fecha_inicio}</div>
-                                                <div>{ej.fecha_fin}</div>
-                                            </td>
-                                            <td className="px-4 py-3 text-center">
-                                                <div className="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-2 fw-normal">
-                                                    <i className="bi bi-list-columns-reverse me-1"></i>
+                                            <td className="text-center py-3">
+                                                <span className="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3">
                                                     {ej.cantidad_asientos || 0}
-                                                </div>
+                                                </span>
                                             </td>
-                                            <td className="px-4 py-3 text-center">
-                                                <span className={`badge rounded-pill fw-normal px-3 py-2 ${ej.cerrado ? 'bg-danger bg-opacity-10 text-danger' : 'bg-success bg-opacity-10 text-success'}`}>
-                                                    <i className={`bi bi-${ej.cerrado ? 'lock-fill' : 'unlock-fill'} me-1`}></i>
+                                            <td className="text-center py-3">
+                                                <span className={`badge rounded-pill px-3 ${ej.cerrado ? 'bg-danger bg-opacity-10 text-danger' : 'bg-success bg-opacity-10 text-success'}`}>
                                                     {ej.cerrado ? 'Cerrado' : 'Abierto'}
                                                 </span>
                                             </td>
-                                            <td className="px-4 py-3 text-end">
+                                            <td className="text-end pe-4 py-3">
                                                 <div className="d-flex justify-content-end gap-2">
                                                     <button
                                                         onClick={() => navigate(`/contabilidad/asientos/?ejercicio=${ej.id}`)}
-                                                        className="btn btn-sm btn-primary px-3 rounded-2 shadow-sm"
+                                                        className="btn btn-secondary btn-sm d-flex align-items-center justify-content-center px-2 shadow-sm"
                                                         title="Ver Asientos"
+                                                        style={{ width: '34px' }}
                                                     >
-                                                        <i className="bi bi-journal-text me-1"></i> Asientos
+                                                        <i className="bi bi-journal-text fs-6"></i>
                                                     </button>
                                                     <button
                                                         onClick={() => navigate(`/contabilidad/balance/?ejercicio=${ej.id}`)}
-                                                        className="btn btn-sm btn-info text-white px-3 rounded-2 shadow-sm"
+                                                        className="btn btn-info btn-sm d-flex align-items-center justify-content-center px-2 shadow-sm text-white"
                                                         title="Ver Balance"
+                                                        style={{ width: '34px' }}
                                                     >
-                                                        <i className="bi bi-graph-up me-1"></i> Balance
+                                                        <i className="bi bi-graph-up fs-6"></i>
                                                     </button>
                                                     <button
-                                                        className="btn btn-sm btn-warning text-white px-2 rounded-2 shadow-sm"
                                                         onClick={() => openEdit(ej)}
+                                                        className="btn btn-primary btn-sm d-flex align-items-center justify-content-center px-2 shadow-sm"
                                                         title="Editar"
+                                                        style={{ width: '34px' }}
                                                     >
-                                                        <i className="bi bi-pencil"></i>
+                                                        <i className="bi bi-pencil fs-6"></i>
                                                     </button>
                                                     <button
-                                                        className="btn btn-sm btn-danger px-2 rounded-2 shadow-sm"
                                                         onClick={() => handleDelete(ej)}
+                                                        className="btn btn-danger btn-sm d-flex align-items-center justify-content-center px-2 shadow-sm"
                                                         title="Eliminar"
+                                                        style={{ width: '34px' }}
                                                     >
-                                                        <i className="bi bi-trash"></i>
+                                                        <i className="bi bi-trash fs-6"></i>
                                                     </button>
                                                 </div>
                                             </td>

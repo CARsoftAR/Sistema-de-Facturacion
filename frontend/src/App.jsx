@@ -18,6 +18,12 @@ import Ejercicios from './pages/Ejercicios'
 import Asientos from './pages/Asientos'
 import LibroMayor from './pages/LibroMayor'
 import Balance from './pages/Balance'
+import Remitos from './pages/Remitos'
+import NotasCredito from './pages/NotasCredito'
+import DetalleRemito from './pages/DetalleRemito'
+
+import Parametros from './pages/Parametros'
+import ConfiguracionEmpresa from './pages/ConfiguracionEmpresa'
 
 // Componente Dashboard temporal con estilos Bootstrap
 const Dashboard = () => (
@@ -77,6 +83,9 @@ function App() {
             <Route path="/productos" element={<Productos />} />
             <Route path="/productos/nuevo" element={<Navigate to="/productos" replace />} />
             <Route path="/precios/actualizar" element={<ActualizarPrecios />} />
+            <Route path="/precios/actualizar" element={<ActualizarPrecios />} />
+            <Route path="/parametros" element={<Parametros />} />
+            <Route path="/configuracion/empresa" element={<ConfiguracionEmpresa />} />
             <Route path="/contabilidad/plan-cuentas" element={<PlanCuentas />} />
             <Route path="/contabilidad/ejercicios" element={<Ejercicios />} />
             <Route path="/contabilidad/asientos" element={<Asientos />} />
@@ -88,6 +97,11 @@ function App() {
             <Route path="/pedidos/nuevo" element={<NuevoPedido />} />
             <Route path="/compras" element={<Compras />} />
             <Route path="/compras/nueva" element={<NuevaCompra />} />
+
+
+            <Route path="/remitos" element={<Remitos />} />
+            <Route path="/comprobantes/remito/:id" element={<DetalleRemito />} />
+            <Route path="/notas-credito" element={<NotasCredito />} />
             <Route path="/proveedores" element={<Proveedores />} />
             <Route path="/caja" element={<Caja />} />
             <Route path="/caja/" element={<Caja />} />

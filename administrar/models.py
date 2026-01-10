@@ -155,9 +155,12 @@ class Empresa(models.Model):
     smtp_user = models.CharField(max_length=100, blank=True)
     smtp_password = models.CharField(max_length=100, blank=True)
 
-    # ConfiguraciÃ³n de ImpresiÃ³n
+    # Configuracion de Impresion
     papel_impresion = models.CharField(max_length=20, choices=[('A4', 'A4'), ('T80', 'Ticket 80mm'), ('T58', 'Ticket 58mm')], default='A4')
     pie_factura = models.CharField(max_length=200, blank=True)
+    
+    # Configuracion UI
+    items_por_pagina = models.IntegerField(default=10, verbose_name="Items por Página")
 
     def __str__(self):
         return self.nombre

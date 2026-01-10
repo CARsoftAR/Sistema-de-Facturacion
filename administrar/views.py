@@ -3024,14 +3024,18 @@ def api_venta_guardar(request):
                     monto=total_general,
                 )
 
-            # Generar Remito Automático
-            if data.get("generar_remito", False):
+            # Generar Remito Automático (Si la empresa lo tiene habilitado)
+            # Ignoramos lo que venga del frontend, mandamos la configuración de la empresa
+            empresa_config = Empresa.objects.first()
+            if empresa_config and empresa_config.habilita_remitos:
+                # Buscar último número de remito para mantener correlatividad (opcional, o dejar que id lo maneje)
                 remito = Remito.objects.create(
                     cliente=cliente,
                     venta_asociada=venta,
                     fecha=venta.fecha,
                     direccion_entrega=cliente.domicilio or "Retiro en Local",
-                    estado='ENTREGADO'
+                    estado='ENTREGADO',
+                    punto_venta=empresa_config.punto_venta
                 )
                 
                 for det in venta.detalles.all():
@@ -8291,3 +8295,249 @@ def api_localidades_listar(request):
     localidades = Localidad.objects.all().order_by('nombre')
     data = [{'id': l.id, 'nombre': l.nombre, 'cp': l.codigo_postal} for l in localidades]
     return JsonResponse(data, safe=False)
+
+
+# =========================================
+# API REMITOS (Nuevo)
+# =========================================
+@login_required
+def api_remitos_listar(request):
+    """API para listar remitos"""
+    try:
+        remitos = Remito.objects.select_related('cliente', 'venta_asociada').all().order_by('-fecha')
+        
+        data = []
+        for r in remitos:
+            data.append({
+                'id': r.id,
+                'numero': r.numero_formateado(),
+                'fecha': r.fecha.strftime('%d/%m/%Y %H:%M'),
+                'cliente': r.cliente.nombre,
+                'venta_id': r.venta_asociada.id if r.venta_asociada else None,
+                'venta_str': r.venta_asociada.numero_factura_formateado() if r.venta_asociada else '-',
+                'estado': r.estado,
+                'direccion': r.direccion_entrega,
+                'item_count': r.detalles.count()
+            })
+            
+        return JsonResponse({'remitos': data})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+# =========================================
+# API NOTAS DE CRÉDITO
+# =========================================
+@login_required
+def api_notas_credito_listar(request):
+    """API para listar notas de crédito"""
+    try:
+        ncs = NotaCredito.objects.select_related('cliente', 'venta_asociada').all().order_by('-fecha')
+        
+        data = []
+        for nc in ncs:
+            data.append({
+                'id': nc.id,
+                'numero': nc.numero_formateado(),
+                'fecha': nc.fecha.strftime('%d/%m/%Y %H:%M'),
+                'cliente': nc.cliente.nombre,
+                'venta_id': nc.venta_asociada.id if nc.venta_asociada else None,
+                'venta_str': nc.venta_asociada.numero_factura_formateado() if nc.venta_asociada else '-',
+                'total': float(nc.total),
+                'estado': nc.estado,
+                'tipo': nc.tipo_comprobante
+            })
+            
+        return JsonResponse({'notas_credito': data})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+# =========================================
+# API CONFIGURACIÓN EMPRESA
+# =========================================
+@login_required
+def api_empresa_config(request):
+    """Obtiene configuración pública de la empresa"""
+    try:
+        empresa = Empresa.objects.first()
+        if not empresa:
+            return JsonResponse({'error': 'Empresa no configurada'}, status=404)
+        
+        return JsonResponse({
+            'nombre': empresa.nombre,
+            'cuit': empresa.cuit,
+            'direccion': empresa.direccion,
+            'localidad': empresa.localidad,
+            'provincia': empresa.provincia,
+            'condicion_fiscal': empresa.condicion_fiscal,
+            'iibb': empresa.iibb,
+            'inicio_actividades': empresa.inicio_actividades.strftime('%Y-%m-%d') if empresa.inicio_actividades else '',
+            'moneda_predeterminada': empresa.moneda_predeterminada,
+            'items_por_pagina': empresa.items_por_pagina,
+            'habilita_remitos': empresa.habilita_remitos,
+        })
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@login_required
+@csrf_exempt
+@require_POST
+def api_empresa_config_guardar(request):
+    """Guarda configuración global"""
+    try:
+        data = json.loads(request.body)
+        empresa = Empresa.objects.first()
+        if not empresa:
+            empresa = Empresa.objects.create(nombre="Mi Empresa") # Fallback
+            
+        # UI & Sistema
+        if 'items_por_pagina' in data:
+            empresa.items_por_pagina = int(data['items_por_pagina'])
+        if 'habilita_remitos' in data:
+            empresa.habilita_remitos = bool(data['habilita_remitos'])
+
+        # Datos Empresa
+        empresa.nombre = data.get('nombre', empresa.nombre)
+        empresa.cuit = data.get('cuit', empresa.cuit)
+        empresa.direccion = data.get('direccion', empresa.direccion)
+        empresa.localidad = data.get('localidad', empresa.localidad)
+        empresa.provincia = data.get('provincia', empresa.provincia)
+        empresa.condicion_fiscal = data.get('condicion_fiscal', empresa.condicion_fiscal)
+        empresa.iibb = data.get('iibb', empresa.iibb)
+        empresa.moneda_predeterminada = data.get('moneda_predeterminada', empresa.moneda_predeterminada)
+        
+        if 'inicio_actividades' in data and data['inicio_actividades']:
+            empresa.inicio_actividades = data['inicio_actividades']
+
+        empresa.save()
+        return JsonResponse({'ok': True})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+# ==========================================
+# API REMITOS Y NOTAS DE CRÉDITO (PAGINADOS)
+# ==========================================
+
+@login_required
+def api_remitos_listar(request):
+    try:
+        from django.core.paginator import Paginator
+        
+        page_number = request.GET.get('page', 1)
+        per_page = request.GET.get('per_page', 10)
+        q = request.GET.get('q', '')
+        fecha = request.GET.get('fecha', '')
+
+        remitos = Remito.objects.all().order_by('-fecha', '-id')
+
+        if q:
+            remitos = remitos.filter(
+                Q(cliente__nombre__icontains=q) | 
+                Q(numero__icontains=q)
+            )
+
+        if fecha:
+            remitos = remitos.filter(fecha=fecha)
+
+        paginator = Paginator(remitos, per_page)
+        page_obj = paginator.get_page(page_number)
+
+        data = []
+        for r in page_obj:
+            data.append({
+                'id': r.id,
+                'fecha': r.fecha.strftime('%d/%m/%Y'),
+                'numero': r.numero_formateado(),
+                'cliente': r.cliente.nombre,
+                'venta_id': r.venta_asociada.id if r.venta_asociada else None,
+                'venta_str': r.venta_asociada.numero_factura_formateado() if r.venta_asociada else '-',
+                'estado': r.estado
+            })
+
+        return JsonResponse({
+            'remitos': data,
+            'total': paginator.count,
+            'total_pages': paginator.num_pages,
+            'current_page': page_obj.number
+        })
+
+    except Exception as e:
+        print(f"Error api_remitos_listar: {e}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+def api_notas_credito_listar(request):
+    try:
+        from django.core.paginator import Paginator
+        
+        page_number = request.GET.get('page', 1)
+        per_page = request.GET.get('per_page', 10)
+        q = request.GET.get('q', '')
+        fecha = request.GET.get('fecha', '')
+
+        notas = NotaCredito.objects.all().order_by('-fecha', '-id')
+
+        if q:
+            notas = notas.filter(
+                Q(cliente__nombre__icontains=q) | 
+                Q(numero__icontains=q)
+            )
+            
+        if fecha:
+            notas = notas.filter(fecha=fecha)
+
+        paginator = Paginator(notas, per_page)
+        page_obj = paginator.get_page(page_number)
+
+        data = []
+        for n in page_obj:
+            data.append({
+                'id': n.id,
+                'fecha': n.fecha.strftime('%d/%m/%Y'),
+                'numero': n.numero_formateado(),
+                'cliente': n.cliente.nombre,
+                'venta_id': n.venta_asociada.id if n.venta_asociada else None,
+                'venta_str': n.venta_asociada.numero_factura_formateado() if n.venta_asociada else '-',
+                'total': float(n.total),
+                'estado': n.estado
+            })
+
+        return JsonResponse({
+            'notas_credito': data,
+            'total': paginator.count,
+            'total_pages': paginator.num_pages,
+            'current_page': page_obj.number
+        })
+
+    except Exception as e:
+        print(f"Error api_notas_credito_listar: {e}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+@login_required
+def api_remito_detalle(request, id):
+    try:
+        r = get_object_or_404(Remito, pk=id)
+        
+        items = []
+        for item in r.detalles.all():
+            items.append({
+                'id': item.id,
+                'producto': item.producto.descripcion,
+                'cantidad': float(item.cantidad),
+            })
+
+        data = {
+            'id': r.id,
+            'numero': r.numero_formateado(),
+            'fecha': r.fecha.strftime('%d/%m/%Y %H:%M'),
+            'cliente': r.cliente.nombre,
+            'direccion': r.cliente.domicilio, # O la dirección de entrega específica si existiera en el modelo
+            'venta_asociada': r.venta_asociada.numero_factura_formateado() if r.venta_asociada else '-',
+            'estado': r.estado,
+            'items': items
+        }
+        return JsonResponse(data)
+    except Exception as e:
+        print(f"Error api_remito_detalle: {e}")
+        return JsonResponse({'error': str(e)}, status=500)

@@ -8,11 +8,15 @@ import {
     Trash2,
     Eye,
     Truck,
-    XCircle
+    XCircle,
+    ShoppingBag,
+    RotateCcw,
+    CheckCircle2,
+    Clock,
+    X
 } from 'lucide-react';
-import PageHeader from '../components/common/PageHeader';
-import { Link, useNavigate } from 'react-router-dom';
-import { BtnAdd, BtnEdit, BtnDelete, BtnAction, BtnIcon, BtnView, BtnExport, BtnCancel, BtnSave } from '../components/CommonButtons';
+import { useNavigate } from 'react-router-dom';
+import { BtnAdd, BtnEdit, BtnDelete, BtnAction, BtnIcon, BtnView, BtnCancel, BtnSave, BtnClear } from '../components/CommonButtons';
 
 const Compras = () => {
     const navigate = useNavigate();
@@ -28,13 +32,21 @@ const Compras = () => {
     const [datosCheque, setDatosCheque] = useState({ banco: '', numero: '', fechaVto: '' });
 
     // Estado para paginación
-    const [page, setPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [page, setPage] = useState(1);
+
+    useEffect(() => {
+        fetch('/api/config/obtener/')
+            .then(res => res.json())
+            .then(data => {
+                if (data.items_por_pagina) setItemsPerPage(data.items_por_pagina);
+            })
+            .catch(console.error);
+    }, []);
 
     // Estado para modal de Detalle
     const [showModalDetalle, setShowModalDetalle] = useState(false);
     const [ordenDetalle, setOrdenDetalle] = useState(null);
-
 
     useEffect(() => {
         fetchCompras();
@@ -45,8 +57,6 @@ const Compras = () => {
             setLoading(true);
             const response = await fetch('/api/compras/listar/');
             const data = await response.json();
-            // La API devuelve { ordenes: [...], compras: [...] }
-            // Por ahora mostramos las Órdenes de Compra
             if (data.ordenes) {
                 setOrdenes(data.ordenes);
             }
@@ -66,20 +76,16 @@ const Compras = () => {
 
     const confirmRecibir = async () => {
         if (!ordenARecibir) return;
-
         try {
             const response = await fetch(`/api/compras/orden/${ordenARecibir.id}/recibir/`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     medio_pago: medioPago,
                     datos_cheque: medioPago === 'CHEQUE' ? datosCheque : null
                 })
             });
             const data = await response.json();
-
             if (data.ok) {
                 alert('Orden recibida y procesada contablemente.');
                 setShowModalRecibir(false);
@@ -96,7 +102,6 @@ const Compras = () => {
 
     const handleEliminar = async (id) => {
         if (!window.confirm('¿Estás seguro de cancelar esta orden?')) return;
-
         try {
             const response = await fetch(`/api/compras/orden/${id}/cancelar/`, { method: 'POST' });
             const data = await response.json();
@@ -131,26 +136,22 @@ const Compras = () => {
         const matchesSearch =
             orden.proveedor.toLowerCase().includes(searchTerm.toLowerCase()) ||
             orden.id.toString().includes(searchTerm);
-
         const matchesEstado = filterEstado === 'TODOS' || orden.estado === filterEstado;
-
         return matchesSearch && matchesEstado;
     });
 
     const getEstadoBadge = (estado) => {
         switch (estado) {
-            case 'PENDIENTE': return <span className="badge rounded-pill bg-warning text-dark">Pendiente</span>;
-            case 'RECIBIDA': return <span className="badge rounded-pill bg-success">Recibida</span>;
-            case 'CANCELADA': return <span className="badge rounded-pill bg-danger">Cancelada</span>;
+            case 'PENDIENTE': return <span className="badge rounded-pill bg-warning-subtle text-warning-emphasis border border-warning-subtle"><Clock size={12} className="me-1 inline-block" /> Pendiente</span>;
+            case 'RECIBIDA': return <span className="badge rounded-pill bg-success-subtle text-success border border-success-subtle"><CheckCircle2 size={12} className="me-1 inline-block" /> Recibida</span>;
+            case 'CANCELADA': return <span className="badge rounded-pill bg-danger-subtle text-danger border border-danger"><XCircle size={12} className="me-1 inline-block" /> Cancelada</span>;
             default: return <span className="badge rounded-pill bg-secondary">{estado}</span>;
         }
     };
 
-    // Paginación lógica
+    // Paginación
     const totalItems = ordenesFiltradas.length;
     const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
-
-    // Aseguramos que la página actual no exceda el total de páginas (ej: al filtrar)
     useEffect(() => {
         if (page > totalPages) setPage(1);
     }, [ordenesFiltradas, totalPages, page]);
@@ -160,327 +161,242 @@ const Compras = () => {
         page * itemsPerPage
     );
 
-    if (loading) {
-        return <div className="p-5 text-center"><div className="spinner-border text-primary" role="status"></div></div>;
-    }
-
     return (
-        <div style={{ padding: '1.5rem' }}>
-            <div className="container-fluid px-4 mt-4">
-                {/* HEADER */}
-                <div className="d-flex justify-content-between align-items-center mb-4">
-                    <div>
-                        <h2 className="text-primary fw-bold mb-0" style={{ fontSize: '2.2rem' }}>
-                            <i className="bi bi-bag-check-fill me-2" style={{ fontSize: '0.8em' }}></i>
-                            Compras
-                        </h2>
-                        <p className="text-muted mb-0" style={{ fontSize: '1.1rem' }}>
-                            Administra órdenes de compra y recepciones de mercadería.
-                        </p>
-                    </div>
-                    <BtnAdd
-                        label="Nueva Orden"
-                        className="btn-lg shadow-sm"
-                        onClick={() => navigate('/compras/nueva')}
-                    />
+        <div className="container-fluid px-4 pt-4 pb-0 h-100 d-flex flex-column bg-light" style={{ maxHeight: '100vh', overflow: 'hidden' }}>
+            {/* Header */}
+            <div className="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 className="text-primary fw-bold mb-0" style={{ fontSize: '2rem' }}>
+                        <ShoppingBag className="me-2 inline-block" size={32} />
+                        Compras y Proveedores
+                    </h2>
+                    <p className="text-muted mb-0 ps-1" style={{ fontSize: '1rem' }}>
+                        Gestiona y consulta tus órdenes de compra.
+                    </p>
                 </div>
+                <BtnAdd
+                    label="Nueva Orden"
+                    className="btn-lg shadow-sm"
+                    onClick={() => navigate('/compras/nueva')}
+                />
+            </div>
 
-                {/* FILTROS */}
-                <div className="card border-0 shadow-sm mb-4">
-                    <div className="card-body bg-light rounded">
-                        <div className="row g-3">
-                            <div className="col-md-4">
-                                <div className="input-group">
-                                    <span className="input-group-text bg-white border-end-0"><i className="bi bi-search"></i></span>
-                                    <input
-                                        type="text"
-                                        className="form-control border-start-0"
-                                        placeholder="Buscar por proveedor o N° Orden..."
-                                        value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
-                                    />
-                                </div>
+            {/* Filtros */}
+            <div className="card border-0 shadow-sm mb-4">
+                <div className="card-body bg-light rounded">
+                    <div className="row g-3 align-items-center">
+                        <div className="col-md-5">
+                            <div className="input-group">
+                                <span className="input-group-text bg-white border-end-0"><Search size={18} className="text-muted" /></span>
+                                <input
+                                    type="text"
+                                    className="form-control border-start-0"
+                                    placeholder="Buscar por proveedor o N° Orden..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
                             </div>
-                            <div className="col-md-3">
-                                <select
-                                    className="form-select"
-                                    value={filterEstado}
-                                    onChange={(e) => setFilterEstado(e.target.value)}
-                                >
-                                    <option value="TODOS">Todos los Estados</option>
-                                    <option value="PENDIENTE">Pendientes</option>
-                                    <option value="RECIBIDA">Recibidas</option>
-                                    <option value="CANCELADA">Canceladas</option>
-                                </select>
-                            </div>
-                            <div className="col-md-5 text-end">
-                                {/* <button className="btn btn-outline-secondary me-2">
-                                    <i className="bi bi-funnel me-2"></i>
-                                    Más Filtros
-                                </button> */}
-                                <BtnExport label="Exportar" onClick={() => { }} />
+                        </div>
+                        <div className="col-md-3">
+                            <select
+                                className="form-select"
+                                value={filterEstado}
+                                onChange={(e) => setFilterEstado(e.target.value)}
+                            >
+                                <option value="TODOS">Todos los Estados</option>
+                                <option value="PENDIENTE">Pendientes</option>
+                                <option value="RECIBIDA">Recibidas</option>
+                                <option value="CANCELADA">Canceladas</option>
+                            </select>
+                        </div>
+                        <div className="col-md-2 ms-auto">
+                            <div className="d-flex gap-2">
+                                <BtnClear label="Limpiar" onClick={() => { setSearchTerm(''); setFilterEstado('TODOS'); }} className="flex-grow-1" />
                             </div>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                {/* Tabla */}
-                <div className="card border-0 shadow-sm">
-                    <div className="card-body p-0">
-                        <div className="table-responsive">
-                            <table className="table table-hover align-middle mb-0">
-                                <thead className="bg-light">
+            {/* Tabla */}
+            <div className="card border-0 shadow mb-4 flex-grow-1 overflow-hidden d-flex flex-column">
+                <div className="card-body p-0 d-flex flex-column overflow-hidden">
+                    <div className="table-responsive flex-grow-1 overflow-auto">
+                        <table className="table align-middle mb-0">
+                            <thead className="bg-white border-bottom">
+                                <tr>
+                                    <th className="ps-4 py-3 text-dark fw-bold" style={{ width: '100px' }}>N° Orden</th>
+                                    <th className="py-3 text-dark fw-bold">Proveedor</th>
+                                    <th className="py-3 text-dark fw-bold">Fecha</th>
+                                    <th className="py-3 text-dark fw-bold text-center">Estado</th>
+                                    <th className="py-3 text-dark fw-bold text-end pe-4">Total Est.</th>
+                                    <th className="py-3 text-dark fw-bold text-end pe-4">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {loading && ordenes.length === 0 ? (
+                                    <tr><td colSpan="6" className="text-center py-5"><div className="spinner-border text-primary" role="status"></div></td></tr>
+                                ) : itemsToShow.length === 0 ? (
                                     <tr>
-                                        <th className="ps-4 py-3 text-secondary fw-bold" style={{ width: '100px' }}>N° Orden</th>
-                                        <th className="py-3 text-secondary fw-bold">Proveedor</th>
-                                        <th className="py-3 text-secondary fw-bold">Fecha</th>
-                                        <th className="py-3 text-secondary fw-bold text-center">Estado</th>
-                                        <th className="py-3 text-secondary fw-bold text-end pe-4">Total Est.</th>
-                                        <th className="py-3 text-secondary fw-bold text-end pe-4">Acciones</th>
+                                        <td colSpan="6" className="text-center py-5 text-muted">
+                                            <div className="mb-3 opacity-50"><ShoppingBag size={40} /></div>
+                                            No se encontraron órdenes de compra.
+                                        </td>
                                     </tr>
-                                </thead>
-                                <tbody>
-                                    {itemsToShow.length > 0 ? (
-                                        itemsToShow.map((orden) => (
-                                            <tr key={orden.id}>
-                                                <td className="ps-4 fw-bold text-primary">#{orden.id}</td>
-                                                <td className="fw-medium">{orden.proveedor}</td>
-                                                <td className="">{orden.fecha}</td>
-                                                <td className="text-center">{getEstadoBadge(orden.estado)}</td>
-                                                <td className="text-end pe-4 fw-bold text-success">
-                                                    $ {parseFloat(orden.total_estimado).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
-                                                </td>
-                                                <td className="text-end pe-4">
-                                                    <div className="d-flex justify-content-end gap-2">
-                                                        {orden.estado === 'PENDIENTE' && (
-                                                            <BtnAction
-                                                                icon="bi-truck"
-                                                                label="Recibir"
-                                                                color="success"
-                                                                onClick={() => handleRecibir(orden)}
-                                                                title="Recibir Mercadería"
-                                                                className="d-flex align-items-center gap-1"
-                                                            />
-                                                        )}
-
-                                                        <BtnView onClick={() => handleVerDetalle(orden)} />
-
-                                                        {orden.estado === 'PENDIENTE' && (
-                                                            <BtnAction
-                                                                icon="bi-x-circle"
-                                                                color="danger"
-                                                                onClick={() => handleEliminar(orden.id)}
-                                                                title="Cancelar Orden"
-                                                            />
-                                                        )}
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))
-                                    ) : (
-                                        <tr>
-                                            <td colSpan="6" className="text-center py-5 text-muted">
-                                                No se encontraron órdenes de compra.
+                                ) : (
+                                    itemsToShow.map((orden) => (
+                                        <tr key={orden.id} className="border-bottom-0">
+                                            <td className="ps-4 fw-bold text-primary py-3">#{orden.id}</td>
+                                            <td className="fw-medium py-3">{orden.proveedor}</td>
+                                            <td className="py-3">{orden.fecha}</td>
+                                            <td className="text-center py-3">{getEstadoBadge(orden.estado)}</td>
+                                            <td className="text-end pe-4 fw-bold text-success py-3">
+                                                $ {parseFloat(orden.total_estimado).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                                            </td>
+                                            <td className="text-end pe-4 py-3">
+                                                <div className="d-flex justify-content-end gap-2">
+                                                    {orden.estado === 'PENDIENTE' && (
+                                                        <button
+                                                            onClick={() => handleRecibir(orden)}
+                                                            className="btn btn-success btn-sm d-flex align-items-center gap-2 px-3 fw-bold shadow-sm"
+                                                            title="Recibir Mercadería"
+                                                        >
+                                                            <Truck size={16} /> Recibir
+                                                        </button>
+                                                    )}
+                                                    <button
+                                                        onClick={() => handleVerDetalle(orden)}
+                                                        className="btn btn-info text-white btn-sm d-flex align-items-center gap-2 px-3 fw-bold"
+                                                        title="Ver Detalle"
+                                                    >
+                                                        <Eye size={16} /> Ver
+                                                    </button>
+                                                    {orden.estado === 'PENDIENTE' && (
+                                                        <button
+                                                            onClick={() => handleEliminar(orden.id)}
+                                                            className="btn btn-danger btn-sm d-flex align-items-center justify-content-center px-2"
+                                                            title="Cancelar Orden"
+                                                            style={{ width: '34px' }}
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </td>
                                         </tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
 
-                        {/* PAGINACIÓN */}
+                    {/* Paginación */}
+                    {!loading && (
                         <div className="d-flex justify-content-between align-items-center p-3 border-top bg-light">
                             <div className="d-flex align-items-center gap-2">
                                 <span className="text-muted small">Mostrando {itemsToShow.length} de {totalItems} registros</span>
-                                <select
-                                    className="form-select form-select-sm border-secondary-subtle"
-                                    style={{ width: '70px' }}
-                                    value={itemsPerPage}
-                                    onChange={(e) => { setItemsPerPage(Number(e.target.value)); setPage(1); }}
-                                >
-                                    <option value="5">5</option>
-                                    <option value="10">10</option>
-                                    <option value="20">20</option>
-                                    <option value="50">50</option>
-                                </select>
-                                <span className="text-muted small">por pág.</span>
                             </div>
-
                             <nav>
                                 <ul className="pagination mb-0 align-items-center gap-2">
                                     <li className={`page-item ${page === 1 ? 'disabled' : ''}`}>
-                                        <button
-                                            className="page-link border-0 text-secondary bg-transparent p-0"
-                                            onClick={() => setPage(page - 1)}
-                                            style={{ width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                        >
-                                            <i className="bi bi-chevron-left"></i>
-                                        </button>
+                                        <button className="page-link border-0 text-secondary bg-transparent p-0" onClick={() => setPage(page - 1)}>&lt;</button>
                                     </li>
-                                    {[...Array(totalPages)].map((_, i) => {
-                                        if (totalPages > 10 && Math.abs(page - (i + 1)) > 2 && i !== 0 && i !== totalPages - 1) return null;
-                                        return (
-                                            <li key={i} className="page-item">
-                                                <button
-                                                    className={`page-link border-0 rounded-circle fw-bold ${page === i + 1 ? 'bg-primary text-white shadow-sm' : 'bg-transparent text-secondary'}`}
-                                                    onClick={() => setPage(i + 1)}
-                                                    style={{ width: '35px', height: '35px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                                >
-                                                    {i + 1}
-                                                </button>
-                                            </li>
-                                        );
-                                    })}
+                                    {[...Array(totalPages)].map((_, i) => (
+                                        <li key={i} className="page-item">
+                                            <button
+                                                className={`page-link border-0 rounded-circle fw-bold ${page === i + 1 ? 'bg-primary text-white shadow-sm' : 'bg-transparent text-secondary'}`}
+                                                onClick={() => setPage(i + 1)}
+                                                style={{ width: '35px', height: '35px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                            >{i + 1}</button>
+                                        </li>
+                                    ))}
                                     <li className={`page-item ${page === totalPages ? 'disabled' : ''}`}>
-                                        <button
-                                            className="page-link border-0 text-secondary bg-transparent p-0"
-                                            onClick={() => setPage(page + 1)}
-                                            style={{ width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                        >
-                                            <i className="bi bi-chevron-right"></i>
-                                        </button>
+                                        <button className="page-link border-0 text-secondary bg-transparent p-0" onClick={() => setPage(page + 1)}>&gt;</button>
                                     </li>
                                 </ul>
                             </nav>
                         </div>
-                    </div>
+                    )}
                 </div>
+            </div>
 
-                {/* Modal de Recepción */}
-                {showModalRecibir && ordenARecibir && (
-                    <div style={{
-                        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                        backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1050,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        backdropFilter: 'blur(4px)'
-                    }}>
-                        <div className="bg-white rounded p-4 shadow-lg" style={{ width: '400px', borderRadius: '1rem' }}>
-                            <h4 className="fw-bold mb-3">Recibir Orden #{ordenARecibir.id}</h4>
-                            <p className="text-muted small mb-4">
-                                Se actualizará el stock y se registrará la deuda/pago.
-                            </p>
-
-                            <div className="mb-4">
-                                <label className="form-label fw-bold small text-uppercase">Forma de Pago / Registro</label>
-                                <select
-                                    className="form-select mb-3"
-                                    value={medioPago}
-                                    onChange={(e) => setMedioPago(e.target.value)}
-                                >
+            {/* Modal Recibir */}
+            {showModalRecibir && ordenARecibir && (
+                <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200">
+                        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white">
+                            <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                                <Truck className="text-blue-600" size={22} /> Recibir Orden #{ordenARecibir.id}
+                            </h2>
+                            <button onClick={() => setShowModalRecibir(false)} className="text-slate-400 hover:text-red-500 hover:bg-slate-50 p-2 rounded-full transition-all">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="p-6 space-y-5">
+                            <p className="text-muted small">Se actualizará el stock y se registrará la deuda/pago.</p>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 mb-2 uppercase">Medio de Pago</label>
+                                <select className="form-select" value={medioPago} onChange={(e) => setMedioPago(e.target.value)}>
                                     <option value="CONTADO">Contado (Caja)</option>
                                     <option value="CTACTE">Cuenta Corriente (Deuda)</option>
                                     <option value="CHEQUE">Cheque Propio</option>
                                 </select>
-
-                                {medioPago === 'CHEQUE' && (
-                                    <div className="card p-3 bg-light border-0 animate-in fade-in slide-in-from-top-2">
-                                        <div className="mb-2">
-                                            <input
-                                                type="text"
-                                                className="form-control"
-                                                placeholder="Banco"
-                                                value={datosCheque.banco}
-                                                onChange={(e) => setDatosCheque({ ...datosCheque, banco: e.target.value })}
-                                            />
-                                        </div>
-                                        <div className="row g-2">
-                                            <div className="col-6">
-                                                <input
-                                                    type="text"
-                                                    className="form-control"
-                                                    placeholder="N° Cheque"
-                                                    value={datosCheque.numero}
-                                                    onChange={(e) => setDatosCheque({ ...datosCheque, numero: e.target.value })}
-                                                />
-                                            </div>
-                                            <div className="col-6">
-                                                <input
-                                                    type="date"
-                                                    className="form-control"
-                                                    value={datosCheque.fechaVto}
-                                                    onChange={(e) => setDatosCheque({ ...datosCheque, fechaVto: e.target.value })}
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
                             </div>
-
-                            <div className="d-flex gap-2">
-                                <BtnCancel label="Cancelar" onClick={() => setShowModalRecibir(false)} className="flex-fill" />
-                                <BtnSave label="Confirmar Recepción" onClick={confirmRecibir} className="flex-fill" />
+                            {medioPago === 'CHEQUE' && (
+                                <div className="p-3 bg-slate-50 rounded-xl space-y-3 border">
+                                    <input type="text" className="form-control" placeholder="Banco" value={datosCheque.banco} onChange={(e) => setDatosCheque({ ...datosCheque, banco: e.target.value })} />
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <input type="text" className="form-control" placeholder="N° Cheque" value={datosCheque.numero} onChange={(e) => setDatosCheque({ ...datosCheque, numero: e.target.value })} />
+                                        <input type="date" className="form-control" value={datosCheque.fechaVto} onChange={(e) => setDatosCheque({ ...datosCheque, fechaVto: e.target.value })} />
+                                    </div>
+                                </div>
+                            )}
+                            <div className="flex gap-2 pt-2">
+                                <button onClick={() => setShowModalRecibir(false)} className="flex-1 py-3 text-slate-600 font-bold hover:bg-slate-100 rounded-xl transition-colors">Cancelar</button>
+                                <button onClick={confirmRecibir} className="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl shadow-lg hover:bg-blue-700 transition-colors">Confirmar</button>
                             </div>
                         </div>
                     </div>
-                )}
+                </div>
+            )}
 
-                {/* Modal de Detalle */}
-                {showModalDetalle && ordenDetalle && (
-                    <div style={{
-                        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                        backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1050,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        backdropFilter: 'blur(4px)'
-                    }}>
-                        <div className="bg-white shadow-2xl animate-in fade-in zoom-in duration-200" style={{ width: '600px', borderRadius: '1rem', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
-                            {/* Header */}
-                            <div className="px-6 py-4 border-b flex justify-between items-center bg-gray-50 rounded-t-2xl">
-                                <div>
-                                    <h5 className="font-bold text-lg text-gray-800 m-0">Detalle de Compra #{ordenDetalle.id}</h5>
-                                    <p className="text-sm text-gray-500 m-0">{ordenDetalle.proveedor} - {ordenDetalle.fecha}</p>
-                                </div>
-                                <button onClick={() => setShowModalDetalle(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
-                                    <XCircle size={24} />
-                                </button>
+            {/* Modal Detalle */}
+            {showModalDetalle && ordenDetalle && (
+                <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden border border-slate-200 max-h-[90vh] flex flex-col">
+                        <div className="px-6 py-4 border-b flex justify-between items-center bg-gray-50">
+                            <div>
+                                <h5 className="font-bold text-lg text-gray-800 m-0">Detalle Compra #{ordenDetalle.id}</h5>
+                                <p className="text-sm text-gray-500 m-0">{ordenDetalle.proveedor} - {ordenDetalle.fecha}</p>
                             </div>
-
-                            {/* Body */}
-                            <div className="p-6 overflow-y-auto">
-                                <div className="mb-4">
-                                    <div className="flex justify-between items-center mb-2">
-                                        <span className="text-sm font-bold text-gray-500 uppercase tracking-wider">Estado</span>
-                                        {getEstadoBadge(ordenDetalle.estado)}
-                                    </div>
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-sm font-bold text-gray-500 uppercase tracking-wider">Total</span>
-                                        <span className="text-xl font-bold text-green-600">$ {parseFloat(ordenDetalle.total).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
-                                    </div>
-                                </div>
-
-                                <h6 className="font-bold text-sm text-gray-700 uppercase mb-3 border-b pb-2">Items</h6>
-                                <div className="space-y-3">
-                                    {ordenDetalle.items.map((item, idx) => (
-                                        <div key={idx} className="flex justify-between items-start text-sm">
-                                            <div className="flex-1">
-                                                <p className="font-medium text-gray-800 m-0">{item.producto}</p>
-                                                <p className="text-xs text-gray-500 m-0">Cant: {item.cantidad}</p>
-                                            </div>
-                                            <div className="text-right">
-                                                <p className="font-bold text-gray-700 m-0">$ {parseFloat(item.subtotal).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</p>
-                                                <p className="text-xs text-gray-400 m-0">$ {parseFloat(item.precio).toLocaleString('es-AR', { minimumFractionDigits: 2 })} c/u</p>
-                                            </div>
+                            <button onClick={() => setShowModalDetalle(false)} className="text-gray-400 hover:text-red-500"><XCircle size={24} /></button>
+                        </div>
+                        <div className="p-6 overflow-y-auto">
+                            <div className="flex justify-between items-center mb-4 p-3 bg-slate-50 rounded-xl">
+                                <span className="font-bold text-slate-600 uppercase text-xs">Total</span>
+                                <span className="text-2xl font-bold text-green-600">$ {parseFloat(ordenDetalle.total).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+                            </div>
+                            <div className="space-y-3">
+                                {ordenDetalle.items.map((item, idx) => (
+                                    <div key={idx} className="flex justify-between items-start text-sm border-b border-gray-100 pb-2">
+                                        <div>
+                                            <p className="font-medium text-gray-800">{item.producto}</p>
+                                            <p className="text-xs text-gray-500">Cant: {item.cantidad}</p>
                                         </div>
-                                    ))}
-                                </div>
-
-                                {ordenDetalle.observaciones && (
-                                    <div className="mt-4 pt-4 border-t">
-                                        <p className="text-xs font-bold text-gray-500 uppercase mb-1">Observaciones</p>
-                                        <p className="text-sm text-gray-600 italic">{ordenDetalle.observaciones}</p>
+                                        <div className="text-right">
+                                            <p className="font-bold text-gray-700">$ {parseFloat(item.subtotal).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</p>
+                                            <p className="text-xs text-gray-400">$ {parseFloat(item.precio).toLocaleString('es-AR', { minimumFractionDigits: 2 })} c/u</p>
+                                        </div>
                                     </div>
-                                )}
-                            </div>
-
-                            {/* Footer */}
-                            <div className="px-6 py-4 bg-gray-50 rounded-b-2xl border-t flex justify-end">
-                                <button className="btn btn-secondary text-sm font-medium px-4" onClick={() => setShowModalDetalle(false)}>
-                                    Cerrar
-                                </button>
+                                ))}
                             </div>
                         </div>
+                        <div className="px-6 py-4 bg-gray-50 border-t text-right">
+                            <button className="btn btn-secondary px-6" onClick={() => setShowModalDetalle(false)}>Cerrar</button>
+                        </div>
                     </div>
-                )}
-            </div>
+                </div>
+            )}
         </div>
     );
 };

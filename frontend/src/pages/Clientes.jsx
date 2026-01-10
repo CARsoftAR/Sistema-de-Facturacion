@@ -1,15 +1,25 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Search, User, Edit, Trash2, ArrowRightLeft, CreditCard } from 'lucide-react';
+import { Plus, Search, User, Edit, Trash2, ArrowRightLeft, CreditCard, RotateCcw, Users } from 'lucide-react';
 import ClienteForm from '../components/clientes/ClienteForm';
-import { BtnAdd, BtnEdit, BtnDelete, BtnAction, BtnIcon } from '../components/CommonButtons';
+import { BtnAdd, BtnEdit, BtnDelete, BtnAction, BtnIcon, BtnView } from '../components/CommonButtons';
 
 const Clientes = () => {
     const [clientes, setClientes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(1); // Aunque la API actual no pagina, preparamos la estructura
+    const [totalPages, setTotalPages] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
     const [itemsPerPage, setItemsPerPage] = useState(10);
+
+    useEffect(() => {
+        fetch('/api/config/obtener/')
+            .then(res => res.json())
+            .then(data => {
+                if (data.items_por_pagina) setItemsPerPage(data.items_por_pagina);
+            })
+            .catch(console.error);
+    }, []);
 
     // Filtros
     const [filters, setFilters] = useState({
@@ -24,8 +34,6 @@ const Clientes = () => {
     const fetchClientes = useCallback(async () => {
         setLoading(true);
         try {
-            // Nota: La API /api/clientes/buscar/?q= devuelve una lista plana (sin paginación metadata por ahora en el backend legacy).
-            // Simularemos paginación en frontend si es necesario, o usaremos lo que devuelva.
             const params = new URLSearchParams({
                 q: filters.busqueda
             });
@@ -33,19 +41,16 @@ const Clientes = () => {
             const response = await fetch(`/api/clientes/buscar/?${params}`);
             const data = await response.json();
 
-            // Si la API devuelve array directo
             let allClientes = Array.isArray(data) ? data : (data.results || []);
 
-            // Filtrado adicional en cliente si la API es muy básica
+            // Client-side filtering for fiscal condition if API doesn't support it fully
             if (filters.condicion_fiscal) {
-                // Nota: La API de búsqueda es muy simple, filtramos local por si acaso
-                // Esto es temporal hasta mejorar el backend
+                // Assuming backend might not filter this yet
             }
 
             setTotalItems(allClientes.length);
             setTotalPages(Math.ceil(allClientes.length / itemsPerPage));
 
-            // Paginación "Frontend" por ahora ya que la API no soporta page param
             const start = (page - 1) * itemsPerPage;
             setClientes(allClientes.slice(start, start + itemsPerPage));
 
@@ -104,29 +109,28 @@ const Clientes = () => {
     };
 
     return (
-        <div className="container-fluid px-4 mt-4">
-
-            {/* HEADER: Idéntico estilo a Ventas/Productos */}
+        <div className="container-fluid px-4 pt-4 pb-0 h-100 d-flex flex-column bg-light" style={{ maxHeight: '100vh', overflow: 'hidden' }}>
+            {/* Header */}
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <div>
-                    <h2 className="text-primary fw-bold mb-0" style={{ fontSize: '2.2rem' }}>
-                        <i className="bi bi-people-fill me-2" style={{ fontSize: '0.8em' }}></i>
-                        Clientes
+                    <h2 className="text-primary fw-bold mb-0" style={{ fontSize: '2rem' }}>
+                        <Users className="me-2 inline-block" size={32} />
+                        Cartera de Clientes
                     </h2>
-                    <p className="text-muted mb-0" style={{ fontSize: '1.1rem' }}>
+                    <p className="text-muted mb-0 ps-1" style={{ fontSize: '1rem' }}>
                         Administra tu cartera de clientes y cuentas corrientes.
                     </p>
                 </div>
                 <BtnAdd label="Nuevo Cliente" onClick={handleCreate} className="btn-lg shadow-sm" />
             </div>
 
-            {/* FILTROS */}
+            {/* Filtros */}
             <div className="card border-0 shadow-sm mb-4">
                 <div className="card-body bg-light rounded">
                     <div className="row g-3">
                         <div className="col-md-5">
                             <div className="input-group">
-                                <span className="input-group-text bg-white border-end-0"><i className="bi bi-search"></i></span>
+                                <span className="input-group-text bg-white border-end-0"><Search size={18} className="text-muted" /></span>
                                 <input
                                     type="text"
                                     className="form-control border-start-0"
@@ -146,31 +150,26 @@ const Clientes = () => {
                             </select>
                         </div>
                         <div className="col-md-1 ms-auto">
-                            <BtnAction
-                                icon="bi-arrow-clockwise"
-                                color="light"
-                                className="w-100 border-secondary text-secondary"
-                                onClick={fetchClientes}
-                                title="Actualizar"
-                                label=""
-                            />
+                            <button onClick={fetchClientes} className="btn btn-light w-100 border text-secondary" title="Actualizar Listado">
+                                <RotateCcw size={18} />
+                            </button>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* TABLA */}
-            <div className="card border-0 shadow mb-5">
-                <div className="card-body p-0">
-                    <div className="table-responsive">
-                        <table className="table table-hover align-middle mb-0">
-                            <thead className="bg-light text-secondary">
+            {/* Tabla */}
+            <div className="card border-0 shadow mb-4 flex-grow-1 overflow-hidden d-flex flex-column">
+                <div className="card-body p-0 d-flex flex-column overflow-hidden">
+                    <div className="table-responsive flex-grow-1 overflow-auto">
+                        <table className="table align-middle mb-0">
+                            <thead className="bg-white border-bottom">
                                 <tr>
-                                    <th className="ps-4 py-3">Cliente</th>
-                                    <th>Identificación</th>
-                                    <th>Teléfono / Email</th>
-                                    <th>Cta. Cte.</th>
-                                    <th className="text-end pe-4">Acciones</th>
+                                    <th className="ps-4 py-3 text-dark fw-bold">Cliente</th>
+                                    <th className="py-3 text-dark fw-bold">Identificación</th>
+                                    <th className="py-3 text-dark fw-bold">Teléfono / Email</th>
+                                    <th className="py-3 text-dark fw-bold">Cta. Cte.</th>
+                                    <th className="text-end pe-4 py-3 text-dark fw-bold">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -182,31 +181,47 @@ const Clientes = () => {
                                     </tr>
                                 ) : clientes.length === 0 ? (
                                     <tr>
-                                        <td colSpan="5" className="text-center py-5 text-muted small">
-                                            No se encontraron clientes.
+                                        <td colSpan="5" className="text-center py-5 text-muted">
+                                            <div className="mb-3 opacity-50"><Users size={40} /></div>
+                                            No se encontraron clientes registradas.
                                         </td>
                                     </tr>
                                 ) : (
                                     clientes.map(c => (
-                                        <tr key={c.id}>
-                                            <td className="ps-4 fw-bold text-secondary">{c.nombre}</td>
-                                            <td>
-                                                {c.cuit ? <span className="font-monospace small">{c.cuit}</span> : <span className="text-muted small">-</span>}
+                                        <tr key={c.id} className="border-bottom-0">
+                                            <td className="ps-4 py-3">
+                                                <div className="fw-bold text-dark">{c.nombre}</div>
+                                                <div className="small text-muted">{c.direccion || 'Sin dirección'}</div>
                                             </td>
-                                            <td className="small text-muted">
-                                                {c.telefono && <div><i className="bi bi-telephone me-1"></i>{c.telefono}</div>}
-                                                {c.email && <div><i className="bi bi-envelope me-1"></i>{c.email}</div>}
+                                            <td className="py-3">
+                                                {c.cuit ? <span className="font-monospace small bg-light border px-2 py-1 rounded text-dark">{c.cuit}</span> : <span className="text-muted small">-</span>}
+                                            </td>
+                                            <td className="small text-muted py-3">
+                                                {c.telefono && <div className="d-flex align-items-center gap-1"><span className="opacity-75">Tel:</span> {c.telefono}</div>}
+                                                {c.email && <div className="d-flex align-items-center gap-1"><span className="opacity-75">Mail:</span> {c.email}</div>}
                                                 {!c.telefono && !c.email && '-'}
                                             </td>
-                                            <td>
-                                                <span className="badge bg-light text-dark border">
-                                                    Normal
-                                                </span>
+                                            <td className="py-3">
+                                                <span className="badge bg-light text-dark border">Normal</span>
                                             </td>
-                                            <td className="text-end pe-4">
+                                            <td className="text-end pe-4 py-3">
                                                 <div className="d-flex justify-content-end gap-2">
-                                                    <BtnEdit onClick={() => handleEdit(c)} />
-                                                    <BtnDelete onClick={() => handleDelete(c.id)} />
+                                                    <button
+                                                        onClick={() => handleEdit(c)}
+                                                        className="btn btn-primary btn-sm d-flex align-items-center justify-content-center px-2 shadow-sm"
+                                                        title="Editar Cliente"
+                                                        style={{ width: '34px' }}
+                                                    >
+                                                        <Edit size={16} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDelete(c.id)}
+                                                        className="btn btn-danger btn-sm d-flex align-items-center justify-content-center px-2 shadow-sm"
+                                                        title="Eliminar Cliente"
+                                                        style={{ width: '34px' }}
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -216,58 +231,24 @@ const Clientes = () => {
                         </table>
                     </div>
 
-                    {/* PAGINACIÓN (Estilo Ventas) */}
+                    {/* PAGINACIÓN */}
                     {!loading && (
                         <div className="d-flex justify-content-between align-items-center p-3 border-top bg-light">
                             <div className="d-flex align-items-center gap-2">
                                 <span className="text-muted small">Mostrando {clientes.length} de {totalItems} registros</span>
-                                <select
-                                    className="form-select form-select-sm border-secondary-subtle"
-                                    style={{ width: '70px' }}
-                                    value={itemsPerPage}
-                                    onChange={(e) => { setItemsPerPage(Number(e.target.value)); setPage(1); }}
-                                >
-                                    <option value="5">5</option>
-                                    <option value="10">10</option>
-                                    <option value="20">20</option>
-                                    <option value="50">50</option>
-                                </select>
-                                <span className="text-muted small">por pág.</span>
                             </div>
-
                             <nav>
                                 <ul className="pagination mb-0 align-items-center gap-2">
                                     <li className={`page-item ${page === 1 ? 'disabled' : ''}`}>
-                                        <button
-                                            className="page-link border-0 text-secondary bg-transparent p-0"
-                                            onClick={() => setPage(page - 1)}
-                                            style={{ width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                        >
-                                            <i className="bi bi-chevron-left"></i>
-                                        </button>
+                                        <button className="page-link border-0 text-secondary bg-transparent p-0" onClick={() => setPage(page - 1)}>&lt;</button>
                                     </li>
-                                    {[...Array(totalPages)].map((_, i) => {
-                                        if (totalPages > 10 && Math.abs(page - (i + 1)) > 2 && i !== 0 && i !== totalPages - 1) return null;
-                                        return (
-                                            <li key={i} className="page-item">
-                                                <button
-                                                    className={`page-link border-0 rounded-circle fw-bold ${page === i + 1 ? 'bg-primary text-white shadow-sm' : 'bg-transparent text-secondary'}`}
-                                                    onClick={() => setPage(i + 1)}
-                                                    style={{ width: '35px', height: '35px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                                >
-                                                    {i + 1}
-                                                </button>
-                                            </li>
-                                        );
-                                    })}
+                                    {[...Array(totalPages)].map((_, i) => (
+                                        <li key={i} className="page-item">
+                                            <button className={`page-link border-0 rounded-circle fw-bold ${page === i + 1 ? 'bg-primary text-white shadow-sm' : 'bg-transparent text-secondary'}`} onClick={() => setPage(i + 1)} style={{ width: '35px', height: '35px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{i + 1}</button>
+                                        </li>
+                                    ))}
                                     <li className={`page-item ${page === totalPages ? 'disabled' : ''}`}>
-                                        <button
-                                            className="page-link border-0 text-secondary bg-transparent p-0"
-                                            onClick={() => setPage(page + 1)}
-                                            style={{ width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                        >
-                                            <i className="bi bi-chevron-right"></i>
-                                        </button>
+                                        <button className="page-link border-0 text-secondary bg-transparent p-0" onClick={() => setPage(page + 1)}>&gt;</button>
                                     </li>
                                 </ul>
                             </nav>

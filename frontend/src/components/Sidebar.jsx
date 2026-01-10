@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
     LayoutDashboard,
     ShoppingCart,
@@ -20,99 +20,89 @@ import {
     LogOut
 } from 'lucide-react';
 
-// Rutas que son manejadas por React (SPA)
-const REACT_ROUTES = [
-    '/',
-    '/dashboard',
-    '/ventas',
-    '/ventas/nuevo',
-    '/compras',
-    '/compras/nueva',
-    '/pedidos',
-    '/pedidos/nuevo',
-    '/clientes',
-    '/productos',
-    '/proveedores',
-    '/caja'
-];
-
 const SidebarItem = ({ icon: Icon, label, href, subItems, isOpen, activeSubItem, onToggle, standalone }) => {
-    const navigate = useNavigate();
     const isExpanded = isOpen;
     const hasSubItems = subItems && subItems.length > 0;
+    const location = useLocation();
 
-    const handleClick = () => {
+    const handleClick = (e) => {
         if (hasSubItems) {
+            e.preventDefault();
             onToggle();
         } else {
             if (standalone) {
-                window.location.href = href;
+                // Dejar que el <a> funcione normalmente o usar window.location
                 return;
             }
-            if (REACT_ROUTES.includes(href)) {
-                navigate(href);
-            } else {
-                window.location.href = href;
-            }
+            // For internal links without subitems, NavLink handles it.
+            // If we had an onClick to close mobile menu, we'd add it here.
         }
     };
 
-    const handleSubItemClick = (e, itemHref) => {
-        e.preventDefault();
-        if (REACT_ROUTES.includes(itemHref)) {
-            navigate(itemHref);
-        } else {
-            window.location.href = itemHref;
-        }
-    };
+    // Check if this item is active (including subitems)
+    const isActive = location.pathname === href || (subItems && subItems.some(item => location.pathname === item.href));
 
     return (
         <div className="mb-1">
-            <div
-                className={`d-flex align-items-center justify-content-between px-3 py-2 rounded pointer user-select-none transition-all ${isExpanded ? 'bg-primary text-white shadow-sm' : 'text-white hover-bg-dark-subtle'}`}
-                style={{ cursor: 'pointer', transition: 'all 0.2s ease' }}
-                onClick={handleClick}
-                onMouseEnter={(e) => {
-                    if (!isExpanded) {
-                        e.currentTarget.classList.add('bg-secondary', 'bg-opacity-25');
-                    }
-                }}
-                onMouseLeave={(e) => {
-                    if (!isExpanded) {
-                        e.currentTarget.classList.remove('bg-secondary', 'bg-opacity-25');
-                    }
-                }}
-            >
-                <div className="d-flex align-items-center gap-3">
-                    <Icon size={20} />
-                    <span className="fw-medium small">{label}</span>
+            {/* Main Item */}
+            {hasSubItems ? (
+                <div
+                    className={`d-flex align-items-center justify-content-between px-3 py-2 rounded pointer user-select-none transition-all ${isExpanded || isActive ? 'bg-primary text-white shadow-sm' : 'text-white hover-bg-dark-subtle'}`}
+                    style={{ cursor: 'pointer', transition: 'all 0.2s ease' }}
+                    onClick={handleClick}
+                >
+                    <div className="d-flex align-items-center gap-3">
+                        <Icon size={20} />
+                        <span className="fw-medium small">{label}</span>
+                    </div>
+                    {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                 </div>
-                {hasSubItems && (
-                    isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />
-                )}
-            </div>
+            ) : standalone ? (
+                <a
+                    href={href}
+                    className={`d-flex align-items-center justify-content-between px-3 py-2 rounded pointer user-select-none transition-all text-white hover-bg-dark-subtle text-decoration-none`}
+                    style={{ transition: 'all 0.2s ease' }}
+                >
+                    <div className="d-flex align-items-center gap-3">
+                        <Icon size={20} />
+                        <span className="fw-medium small">{label}</span>
+                    </div>
+                </a>
+            ) : (
+                <NavLink
+                    to={href}
+                    className={({ isActive }) => `d-flex align-items-center justify-content-between px-3 py-2 rounded pointer user-select-none transition-all text-decoration-none ${isActive ? 'bg-primary text-white shadow-sm' : 'text-white hover-bg-dark-subtle'}`}
+                    style={{ transition: 'all 0.2s ease' }}
+                >
+                    <div className="d-flex align-items-center gap-3">
+                        <Icon size={20} />
+                        <span className="fw-medium small">{label}</span>
+                    </div>
+                </NavLink>
+            )}
 
+            {/* Sub Items */}
             {hasSubItems && isExpanded && (
                 <div className="ms-4 mt-1 border-start border-light border-opacity-25 ps-3">
                     <div className="d-flex flex-column gap-1">
                         {subItems.map((item, index) => (
-                            <a
-                                key={index}
-                                href={item.href}
-                                onClick={(e) => handleSubItemClick(e, item.href)}
-                                className="d-block px-2 py-1 small text-decoration-none rounded transition-all text-white text-opacity-75"
-                                style={{ transition: 'all 0.2s ease' }}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.classList.remove('text-opacity-75');
-                                    e.currentTarget.classList.add('bg-secondary', 'bg-opacity-10');
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.classList.add('text-opacity-75');
-                                    e.currentTarget.classList.remove('bg-secondary', 'bg-opacity-10');
-                                }}
-                            >
-                                {item.label}
-                            </a>
+                            standalone ? (
+                                <a
+                                    key={index}
+                                    href={item.href}
+                                    className={`d-block px-2 py-1 small text-decoration-none rounded transition-all text-white text-opacity-75 hover:bg-white hover:bg-opacity-10`}
+                                >
+                                    {item.label}
+                                </a>
+                            ) : (
+                                <NavLink
+                                    key={index}
+                                    to={item.href}
+                                    className={({ isActive }) => `d-block px-2 py-1 small text-decoration-none rounded transition-all ${isActive ? 'text-white fw-bold bg-white bg-opacity-10' : 'text-white text-opacity-75 hover:bg-white hover:bg-opacity-10'}`}
+                                >
+                                    {item.label}
+                                </NavLink>
+                            )
                         ))}
                     </div>
                 </div>
@@ -182,8 +172,8 @@ const Sidebar = ({ standalone = false }) => {
                             { label: 'Ventas', href: '/ventas' },
                             { label: 'Compras', href: '/compras' },
                             { label: 'Pedidos', href: '/pedidos' },
-                            { label: 'Remitos', href: '/comprobantes/remitos/' },
-                            { label: 'Notas de Crédito', href: '/comprobantes/nc-nd/' },
+                            { label: 'Remitos', href: '/remitos' },
+                            { label: 'Notas de Crédito', href: '/notas-credito' },
                         ]}
                     />
 
@@ -289,6 +279,8 @@ const Sidebar = ({ standalone = false }) => {
                         onToggle={() => toggleSection('configuracion')}
                         standalone={standalone}
                         subItems={[
+                            { label: 'Datos de Empresa', href: '/configuracion/empresa' },
+                            { label: 'Parámetros', href: '/parametros' },
                             { label: 'Usuarios', href: '/usuarios' },
                             { label: 'Permisos', href: '/permisos' },
                             { label: 'Respaldos', href: '/backups' },

@@ -19,6 +19,7 @@ import {
     LogOut
 } from 'lucide-react';
 import Swal from 'sweetalert2';
+import { BtnClear } from '../components/CommonButtons';
 
 const Caja = () => {
     const [movimientos, setMovimientos] = useState([]);
@@ -27,7 +28,16 @@ const Caja = () => {
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
-    const [itemsPerPage, setItemsPerPage] = useState(5);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
+
+    useEffect(() => {
+        fetch('/api/config/obtener/')
+            .then(res => res.json())
+            .then(data => {
+                if (data.items_por_pagina) setItemsPerPage(data.items_por_pagina);
+            })
+            .catch(console.error);
+    }, []);
 
     // Filtros
     const [filters, setFilters] = useState({
@@ -371,9 +381,7 @@ const Caja = () => {
                                 <button onClick={fetchCajaData} className="btn btn-outline-primary flex-grow-1" title="Actualizar">
                                     <Filter size={18} className="me-1 inline-block" /> Filtrar
                                 </button>
-                                <button onClick={resetFilters} className="btn btn-outline-secondary" title="Limpiar Filtros">
-                                    <RotateCcw size={18} />
-                                </button>
+                                <BtnClear onClick={resetFilters} label="" />
                             </div>
                         </div>
                     </div>
@@ -384,15 +392,15 @@ const Caja = () => {
             <div className="card border-0 shadow mb-4 flex-grow-1 overflow-hidden d-flex flex-column">
                 <div className="card-body p-0 d-flex flex-column overflow-hidden">
                     <div className="table-responsive flex-grow-1 overflow-auto">
-                        <table className="table table-hover align-middle mb-0">
-                            <thead className="bg-light text-secondary">
+                        <table className="table align-middle mb-0">
+                            <thead className="bg-white border-bottom">
                                 <tr>
-                                    <th className="ps-4 py-3">Fecha / Hora</th>
-                                    <th>Descripción</th>
-                                    <th className="text-center">Tipo</th>
-                                    <th className="text-end">Monto</th>
-                                    <th>Usuario</th>
-                                    <th className="text-end pe-4">Acciones</th>
+                                    <th className="ps-4 py-3 text-dark fw-bold">Fecha / Hora</th>
+                                    <th className="py-3 text-dark fw-bold">Descripción</th>
+                                    <th className="text-center py-3 text-dark fw-bold">Tipo</th>
+                                    <th className="text-end py-3 text-dark fw-bold">Monto</th>
+                                    <th className="py-3 text-dark fw-bold">Usuario</th>
+                                    <th className="text-end pe-4 py-3 text-dark fw-bold">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -411,27 +419,27 @@ const Caja = () => {
                                     </tr>
                                 ) : (
                                     movimientos.map(mov => (
-                                        <tr key={mov.id}>
-                                            <td className="ps-4">
+                                        <tr key={mov.id} className="border-bottom-0">
+                                            <td className="ps-4 py-3">
                                                 <div className="d-flex align-items-center gap-2">
                                                     <Calendar size={14} className="text-muted" />
                                                     <span className="text-dark fw-medium small">{mov.fecha}</span>
                                                 </div>
                                             </td>
-                                            <td>
+                                            <td className="py-3">
                                                 <span className="text-dark fw-medium">{mov.descripcion}</span>
                                             </td>
-                                            <td className="text-center">
-                                                <span className={`badge rounded-pill px-3 ${mov.tipo === 'Ingreso' ? 'bg-success-subtle text-success border border-success' : 'bg-danger-subtle text-danger border border-danger'}`}>
+                                            <td className="text-center py-3">
+                                                <span className={`badge rounded-pill px-3 py-2 ${mov.tipo === 'Ingreso' ? 'bg-success-subtle text-success border border-success' : 'bg-danger-subtle text-danger border border-danger'}`}>
                                                     {mov.tipo}
                                                 </span>
                                             </td>
-                                            <td className="text-end">
+                                            <td className="text-end py-3">
                                                 <span className={`fw-bold ${mov.tipo === 'Ingreso' ? 'text-success' : 'text-danger'}`}>
                                                     {mov.tipo === 'Egreso' ? '-' : '+'} {formatCurrency(mov.monto)}
                                                 </span>
                                             </td>
-                                            <td>
+                                            <td className="py-3">
                                                 <div className="d-flex align-items-center gap-2">
                                                     <div className="bg-primary bg-opacity-10 text-primary rounded-circle small d-flex align-items-center justify-content-center" style={{ width: '24px', height: '24px', fontSize: '10px' }}>
                                                         {mov.usuario?.charAt(0).toUpperCase()}
@@ -439,12 +447,22 @@ const Caja = () => {
                                                     <span className="small text-muted">{mov.usuario}</span>
                                                 </div>
                                             </td>
-                                            <td className="pe-4 text-end">
+                                            <td className="pe-4 text-end py-3">
                                                 <div className="d-flex justify-content-end gap-2">
-                                                    <button onClick={() => openEditModal(mov)} className="btn btn-sm btn-warning text-white rounded-2 shadow-sm px-2" title="Editar">
+                                                    <button
+                                                        onClick={() => openEditModal(mov)}
+                                                        className="btn btn-primary btn-sm d-flex align-items-center justify-content-center px-2 shadow-sm"
+                                                        title="Editar"
+                                                        style={{ width: '34px' }}
+                                                    >
                                                         <Pencil size={16} />
                                                     </button>
-                                                    <button onClick={() => handleDeleteMovimiento(mov.id)} className="btn btn-sm btn-danger rounded-2 shadow-sm px-2" title="Eliminar">
+                                                    <button
+                                                        onClick={() => handleDeleteMovimiento(mov.id)}
+                                                        className="btn btn-danger btn-sm d-flex align-items-center justify-content-center px-2 shadow-sm"
+                                                        title="Eliminar"
+                                                        style={{ width: '34px' }}
+                                                    >
                                                         <Trash2 size={16} />
                                                     </button>
                                                 </div>
@@ -461,18 +479,6 @@ const Caja = () => {
                         <div className="d-flex justify-content-between align-items-center p-3 border-top bg-light">
                             <div className="d-flex align-items-center gap-2">
                                 <span className="text-muted small">Mostrando {movimientos.length} de {totalItems} registros</span>
-                                <select
-                                    className="form-select form-select-sm border-secondary-subtle"
-                                    style={{ width: '70px' }}
-                                    value={itemsPerPage}
-                                    onChange={(e) => { setItemsPerPage(Number(e.target.value)); setPage(1); }}
-                                >
-                                    <option value="5">5</option>
-                                    <option value="10">10</option>
-                                    <option value="25">25</option>
-                                    <option value="50">50</option>
-                                </select>
-                                <span className="text-muted small">por pág.</span>
                             </div>
 
                             <nav>

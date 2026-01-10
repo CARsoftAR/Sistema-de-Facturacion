@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { ShoppingCart, Plus, Search, Printer, XCircle, AlertCircle, CheckCircle, Trash2 } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom'; // Added useNavigate if needed for consistency, though Link is used for New Sale
-import { BtnAdd, BtnDelete, BtnPrint, BtnAction } from '../components/CommonButtons';
+import { ShoppingCart, Plus, Search, Printer, XCircle, AlertCircle, CheckCircle, Trash2, Filter, RotateCcw } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { BtnAdd, BtnDelete, BtnPrint, BtnAction, BtnClear } from '../components/CommonButtons';
 
 const Ventas = () => {
+    const navigate = useNavigate();
     const [ventas, setVentas] = useState([]);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
@@ -12,22 +13,27 @@ const Ventas = () => {
     const [itemsPerPage, setItemsPerPage] = useState(10);
     const [busqueda, setBusqueda] = useState('');
 
+    useEffect(() => {
+        // Cargar configuración global de paginación
+        fetch('/api/config/obtener/')
+            .then(res => res.json())
+            .then(data => {
+                if (data.items_por_pagina) {
+                    setItemsPerPage(data.items_por_pagina);
+                }
+            })
+            .catch(err => console.error("Error loading config:", err));
+    }, []);
+
     const fetchVentas = useCallback(async () => {
         setLoading(true);
         try {
-            // Nota: El endpoint original no parece soportar paginación server-side basada en query params de la misma forma que Productos
-            // pero vamos a intentar usar la misma lógica o filtrar en cliente si es necesario.
-            // Según ventas.js legacy, llama a /api/ventas/listar/ y devuelve data.data con TODAS las ventas.
-            // Haremos lo mismo y paginaremos en cliente por ahora para mantener compatibilidad, 
-            // o idealmente actualizaremos el backend después si es muy lento.
-
             const response = await fetch('/api/ventas/listar/');
             const data = await response.json();
 
             if (data.ok) {
                 let allVentas = data.data || [];
 
-                // Filtrado en cliente (ya que el endpoint parece traer todo)
                 if (busqueda) {
                     const q = busqueda.toLowerCase();
                     allVentas = allVentas.filter(v =>
@@ -40,7 +46,6 @@ const Ventas = () => {
                 setTotalItems(allVentas.length);
                 setTotalPages(Math.ceil(allVentas.length / itemsPerPage));
 
-                // Slice para paginación actual
                 const start = (page - 1) * itemsPerPage;
                 const end = start + itemsPerPage;
                 setVentas(allVentas.slice(start, end));
@@ -57,8 +62,10 @@ const Ventas = () => {
     }, [page, itemsPerPage, busqueda]);
 
     useEffect(() => {
-        fetchVentas();
-    }, [fetchVentas]);
+        if (itemsPerPage) {
+            fetchVentas();
+        }
+    }, [fetchVentas, itemsPerPage]);
 
     const handleAnular = async (id) => {
         if (!window.confirm("¿Estás seguro de anular esta venta?")) return;
@@ -66,16 +73,16 @@ const Ventas = () => {
     };
 
     return (
-        <div className="container-fluid px-4 mt-4">
+        <div className="container-fluid px-4 pt-4 pb-0 h-100 d-flex flex-column bg-light" style={{ maxHeight: '100vh', overflow: 'hidden' }}>
             {/* Header */}
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <div>
-                    <h2 className="text-primary fw-bold mb-0" style={{ fontSize: '2.2rem' }}>
+                    <h2 className="text-primary fw-bold mb-0" style={{ fontSize: '2rem' }}>
                         <ShoppingCart className="me-2 inline-block" size={32} />
-                        Ventas
+                        Historial de Ventas
                     </h2>
-                    <p className="text-muted mb-0" style={{ fontSize: '1.1rem' }}>
-                        Gestiona el histórico de transacciones.
+                    <p className="text-muted mb-0 ps-1" style={{ fontSize: '1rem' }}>
+                        Gestiona y consulta todas las operaciones comerciales.
                     </p>
                 </div>
                 <BtnAdd
@@ -88,10 +95,10 @@ const Ventas = () => {
             {/* Filtros */}
             <div className="card border-0 shadow-sm mb-4">
                 <div className="card-body bg-light rounded">
-                    <div className="row g-3">
-                        <div className="col-md-6">
+                    <div className="row g-3 align-items-center">
+                        <div className="col-md-5">
                             <div className="input-group">
-                                <span className="input-group-text bg-white border-end-0"><Search size={18} /></span>
+                                <span className="input-group-text bg-white border-end-0"><Search size={18} className="text-muted" /></span>
                                 <input
                                     type="text"
                                     className="form-control border-start-0"
@@ -101,29 +108,27 @@ const Ventas = () => {
                                 />
                             </div>
                         </div>
-                        {/* 
-                        <div className="col-md-3">
-                             Placeholder para filtro de estado o fecha si se requiere a futuro
-                        </div> 
-                        */}
+                        <div className="col-md-2 ms-auto">
+                            <BtnClear onClick={() => { setBusqueda(''); setPage(1); }} className="w-100" />
+                        </div>
                     </div>
                 </div>
             </div>
 
             {/* Tabla */}
-            <div className="card border-0 shadow mb-5">
-                <div className="card-body p-0">
-                    <div className="table-responsive">
-                        <table className="table table-hover align-middle mb-0">
-                            <thead className="bg-light text-secondary">
+            <div className="card border-0 shadow mb-4 flex-grow-1 overflow-hidden d-flex flex-column">
+                <div className="card-body p-0 d-flex flex-column overflow-hidden">
+                    <div className="table-responsive flex-grow-1 overflow-auto">
+                        <table className="table align-middle mb-0">
+                            <thead className="bg-white border-bottom">
                                 <tr>
-                                    <th className="ps-4 py-3"># Venta</th>
-                                    <th>Fecha</th>
-                                    <th>Cliente</th>
-                                    <th>Comprobante</th>
-                                    <th>Total</th>
-                                    <th>Estado</th>
-                                    <th className="text-end pe-4">Acciones</th>
+                                    <th className="ps-4 py-3 text-dark fw-bold"># Venta</th>
+                                    <th className="py-3 text-dark fw-bold">Fecha</th>
+                                    <th className="py-3 text-dark fw-bold">Cliente</th>
+                                    <th className="py-3 text-dark fw-bold">Comprobante</th>
+                                    <th className="py-3 text-dark fw-bold">Total</th>
+                                    <th className="py-3 text-dark fw-bold">Estado</th>
+                                    <th className="text-end pe-4 py-3 text-dark fw-bold">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -135,37 +140,51 @@ const Ventas = () => {
                                     </tr>
                                 ) : ventas.length === 0 ? (
                                     <tr>
-                                        <td colSpan="7" className="text-center py-5 text-muted small">
+                                        <td colSpan="7" className="text-center py-5 text-muted">
+                                            <div className="mb-3 opacity-50"><ShoppingCart size={40} /></div>
                                             No se encontraron ventas registradas.
                                         </td>
                                     </tr>
                                 ) : (
                                     ventas.map(v => (
-                                        <tr key={v.id}>
-                                            <td className="ps-4 fw-bold text-primary">#{v.id}</td>
-                                            <td>{v.fecha}</td>
-                                            <td className="fw-medium">{v.cliente}</td>
-                                            <td>
-                                                <span className="badge bg-light text-dark border">
+                                        <tr key={v.id} className="border-bottom-0">
+                                            <td className="ps-4 fw-bold text-primary py-3">#{v.id}</td>
+                                            <td className="py-3">
+                                                <span className="text-dark fw-medium">{v.fecha}</span>
+                                            </td>
+                                            <td className="fw-medium py-3">{v.cliente}</td>
+                                            <td className="py-3">
+                                                <span className="badge bg-white text-dark border shadow-sm">
                                                     {v.tipo_comprobante || '-'}
                                                 </span>
                                             </td>
-                                            <td className="fw-bold text-success">
+                                            <td className="fw-bold text-success py-3">
                                                 $ {parseFloat(v.total).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
                                             </td>
-                                            <td>
+                                            <td className="py-3">
                                                 {v.estado === 'Emitida' ? (
-                                                    <span className="badge rounded-pill bg-success"><CheckCircle size={14} className="me-1 inline-block" /> Emitida</span>
+                                                    <span className="badge rounded-pill bg-success-subtle text-success border border-success px-3 py-2"><CheckCircle size={14} className="me-1 inline-block" /> Emitida</span>
                                                 ) : (
-                                                    <span className="badge rounded-pill bg-secondary">{v.estado}</span>
+                                                    <span className="badge rounded-pill bg-secondary px-3 py-2">{v.estado}</span>
                                                 )}
                                             </td>
-                                            <td className="text-end pe-4">
+                                            <td className="text-end pe-4 py-3">
                                                 <div className="d-flex justify-content-end gap-2">
-                                                    <div className="d-flex justify-content-end gap-2">
-                                                        <BtnPrint onClick={() => window.open(`/invoice/print/${v.id}/`, '_blank')} />
-                                                        <BtnDelete onClick={() => handleAnular(v.id)} title="Anular" />
-                                                    </div>
+                                                    <button
+                                                        onClick={() => window.open(`/invoice/print/${v.id}/`, '_blank')}
+                                                        className="btn btn-info text-white btn-sm d-flex align-items-center gap-2 px-3 fw-bold shadow-sm"
+                                                        title="Imprimir Comprobante"
+                                                    >
+                                                        <Printer size={16} /> Imprimir
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleAnular(v.id)}
+                                                        className="btn btn-danger btn-sm d-flex align-items-center justify-content-center px-2"
+                                                        title="Anular Venta"
+                                                        style={{ width: '34px' }}
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -180,18 +199,7 @@ const Ventas = () => {
                         <div className="d-flex justify-content-between align-items-center p-3 border-top bg-light">
                             <div className="d-flex align-items-center gap-2">
                                 <span className="text-muted small">Mostrando {ventas.length} de {totalItems} registros</span>
-                                <select
-                                    className="form-select form-select-sm border-secondary-subtle"
-                                    style={{ width: '70px' }}
-                                    value={itemsPerPage}
-                                    onChange={(e) => { setItemsPerPage(Number(e.target.value)); setPage(1); }}
-                                >
-                                    <option value="5">5</option>
-                                    <option value="10">10</option>
-                                    <option value="20">20</option>
-                                    <option value="50">50</option>
-                                </select>
-                                <span className="text-muted small">por pág.</span>
+                                <span className="text-muted small">Mostrando {ventas.length} de {totalItems} registros</span>
                             </div>
 
                             <nav>

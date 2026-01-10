@@ -279,41 +279,44 @@ const LibroMayor = () => {
                         </div>
                     </div>
 
-                    {/* TABLA (Estilo Productos.jsx) */}
-                    <div className="card border-0 shadow mb-5">
-                        <div className="card-body p-0">
-                            <div className="table-responsive">
-                                <table className="table table-hover align-middle mb-0">
-                                    <thead className="bg-light text-secondary">
+                    {/* TABLA (Estilo Productos.jsx) - ESTÁNDAR */}
+                    <div className="card border-0 shadow mb-4 flex-grow-1 overflow-hidden d-flex flex-column" style={{ minHeight: '400px' }}>
+                        <div className="card-body p-0 d-flex flex-column overflow-hidden">
+                            <div className="table-responsive flex-grow-1 overflow-auto">
+                                <table className="table align-middle mb-0">
+                                    <thead className="bg-white border-bottom">
                                         <tr>
-                                            <th className="ps-4 py-3">Fecha</th>
-                                            <th>Asiento</th>
-                                            <th>Descripción</th>
-                                            <th className="text-end">Debe</th>
-                                            <th className="text-end">Haber</th>
-                                            <th className="text-end pe-4">Saldo</th>
+                                            <th className="ps-4 py-3 text-dark fw-bold">Fecha</th>
+                                            <th className="py-3 text-dark fw-bold">Asiento</th>
+                                            <th className="py-3 text-dark fw-bold">Descripción</th>
+                                            <th className="text-end py-3 text-dark fw-bold">Debe</th>
+                                            <th className="text-end py-3 text-dark fw-bold">Haber</th>
+                                            <th className="text-end pe-4 py-3 text-dark fw-bold">Saldo</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {movimientos.length === 0 ? (
                                             <tr>
-                                                <td colSpan="6" className="text-center py-5 text-muted small">
-                                                    No hay movimientos en el período seleccionado.
+                                                <td colSpan="6" className="text-center py-5">
+                                                    <div className="text-muted opacity-50 mb-3">
+                                                        <i className="bi bi-journal-x fs-1"></i>
+                                                    </div>
+                                                    <p className="text-muted mb-0">No hay movimientos en el período seleccionado.</p>
                                                 </td>
                                             </tr>
                                         ) : (
                                             currentItems.map((mov) => (
-                                                <tr key={mov.id}>
-                                                    <td className="ps-4 fw-bold text-secondary">{formatDate(mov.fecha)}</td>
-                                                    <td className="fw-bold text-primary">#{mov.asiento_numero}</td>
-                                                    <td>{mov.descripcion}</td>
-                                                    <td className="text-end text-success fw-bold">
+                                                <tr key={mov.id} className="border-bottom-0">
+                                                    <td className="ps-4 text-dark fw-medium py-3">{formatDate(mov.fecha)}</td>
+                                                    <td className="fw-bold text-primary py-3">#{mov.asiento_numero}</td>
+                                                    <td className="text-secondary py-3">{mov.descripcion}</td>
+                                                    <td className="text-end text-success fw-bold py-3">
                                                         {mov.debe > 0 ? `$ ${mov.debe.toLocaleString()}` : '-'}
                                                     </td>
-                                                    <td className="text-end text-danger fw-bold">
+                                                    <td className="text-end text-danger fw-bold py-3">
                                                         {mov.haber > 0 ? `$ ${mov.haber.toLocaleString()}` : '-'}
                                                     </td>
-                                                    <td className="text-end pe-4 fw-bold bg-light text-dark">
+                                                    <td className="text-end pe-4 fw-bold text-dark py-3">
                                                         $ {mov.saldo.toLocaleString()}
                                                     </td>
                                                 </tr>

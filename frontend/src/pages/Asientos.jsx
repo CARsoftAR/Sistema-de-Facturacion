@@ -251,49 +251,52 @@ const Asientos = () => {
                 </button>
             </div>
 
-            {/* List */}
-            <div className="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
-                {loading ? (
-                    <div className="p-12 text-center text-slate-400">
-                        <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-                        Cargando asientos...
-                    </div>
-                ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr className="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 font-bold tracking-wider">
-                                    <th className="p-4">Número</th>
-                                    <th className="p-4">Fecha</th>
-                                    <th className="p-4">Descripción</th>
-                                    <th className="p-4">Total Debe</th>
-                                    <th className="p-4">Total Haber</th>
-                                    <th className="p-4 text-right">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                                {asientos.map(as => (
-                                    <tr key={as.id} className="hover:bg-slate-50 transition-colors cursor-pointer" onClick={() => loadDetalle(as.id)}>
-                                        <td className="p-4 font-mono font-bold text-slate-700">#{as.numero}</td>
-                                        <td className="p-4 text-slate-600">{as.fecha}</td>
-                                        <td className="p-4 font-medium text-slate-800">{as.descripcion}</td>
-                                        <td className="p-4 font-mono text-green-600 font-bold">$ {as.total_debe.toLocaleString()}</td>
-                                        <td className="p-4 font-mono text-indigo-600 font-bold">$ {as.total_haber.toLocaleString()}</td>
-                                        <td className="p-4 text-right">
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); handleDelete(as.id) }}
-                                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                                title="Eliminar"
-                                            >
-                                                <Trash2 size={18} />
-                                            </button>
-                                        </td>
+            {/* List - ESTÁNDAR */}
+            <div className="card border-0 shadow mb-4 flex-grow-1 overflow-hidden d-flex flex-column">
+                <div className="card-body p-0 d-flex flex-column overflow-hidden">
+                    {loading ? (
+                        <div className="p-12 text-center text-slate-400">
+                            <div className="spinner-border text-primary" role="status"></div>
+                            <p className="mt-2">Cargando asientos...</p>
+                        </div>
+                    ) : (
+                        <div className="table-responsive flex-grow-1 overflow-auto">
+                            <table className="table align-middle mb-0">
+                                <thead className="bg-white border-bottom">
+                                    <tr>
+                                        <th className="ps-4 py-3 text-dark fw-bold">Número</th>
+                                        <th className="py-3 text-dark fw-bold">Fecha</th>
+                                        <th className="py-3 text-dark fw-bold">Descripción</th>
+                                        <th className="py-3 text-dark fw-bold">Total Debe</th>
+                                        <th className="py-3 text-dark fw-bold">Total Haber</th>
+                                        <th className="text-end pe-4 py-3 text-dark fw-bold">Acciones</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
+                                </thead>
+                                <tbody>
+                                    {asientos.map(as => (
+                                        <tr key={as.id} className="cursor-pointer border-bottom-0" onClick={() => loadDetalle(as.id)}>
+                                            <td className="ps-4 fw-bold text-primary py-3">#{as.numero}</td>
+                                            <td className="text-dark py-3">{as.fecha}</td>
+                                            <td className="font-medium text-secondary py-3">{as.descripcion}</td>
+                                            <td className="text-success fw-bold py-3">$ {as.total_debe.toLocaleString()}</td>
+                                            <td className="text-primary fw-bold py-3">$ {as.total_haber.toLocaleString()}</td>
+                                            <td className="text-end pe-4 py-3">
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleDelete(as.id) }}
+                                                    className="btn btn-danger btn-sm d-inline-flex align-items-center justify-content-center px-2 shadow-sm"
+                                                    title="Eliminar"
+                                                    style={{ width: '34px' }}
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Modal */}

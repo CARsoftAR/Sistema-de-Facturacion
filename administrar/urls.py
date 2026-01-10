@@ -30,6 +30,9 @@ urlpatterns = [
     path("dashboard/", views.dashboard, name="dashboard"),
     path("estado/", views.estado_sistema, name="estado"),
     path("parametros/", views.parametros, name="parametros"),
+    path("api/config/obtener/", views.api_empresa_config, name="api_empresa_config"),
+    path("api/config/guardar/", views.api_empresa_config_guardar, name="api_empresa_config_guardar"),
+    path("configuracion/empresa/", TemplateView.as_view(template_name="react_app.html"), name="configuracion_empresa_react"),
 
     # ==========================
     # MÓDULOS COMERCIALES
@@ -306,11 +309,21 @@ urlpatterns = [
     # ==========================
     # COMPROBANTES (NC, ND, REMITOS)
     # ==========================
+    path('remitos/', TemplateView.as_view(template_name="react_app.html"), name='remitos_react'),
+    path('notas-credito/', TemplateView.as_view(template_name="react_app.html"), name='notas_credito_react'),
+
     path("comprobantes/nc-nd/", views_comprobantes.lista_nc_nd, name="lista_nc_nd"),
+    path("api/notas-credito/listar/", views.api_notas_credito_listar, name="api_notas_credito_listar"),
     path("comprobantes/remitos/", views_comprobantes.lista_remitos, name="lista_remitos"),
+    path("api/remitos/listar/", views.api_remitos_listar, name="api_remitos_listar"),
     path("comprobantes/nc/crear/<int:venta_id>/", views_comprobantes.crear_nota_credito, name="crear_nota_credito"),
     path("comprobantes/remito/crear/<int:venta_id>/", views_comprobantes.crear_remito, name="crear_remito"),
-    path("comprobantes/remito/<int:id>/", views_comprobantes.detalle_remito, name="detalle_remito"),
+    # React Route for Detail
+    path("comprobantes/remito/<int:id>/", TemplateView.as_view(template_name="react_app.html"), name="detalle_remito_react"),
+    # API for Detail
+    path("api/remitos/<int:id>/", views.api_remito_detalle, name="api_remito_detalle"),
+    
+    # Legacy Print (Keep existing)
     path("comprobantes/remito/<int:id>/imprimir/", views_comprobantes.imprimir_remito, name="imprimir_remito"),
 
     # ==========================

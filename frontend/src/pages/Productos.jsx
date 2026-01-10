@@ -1,7 +1,9 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { Box, Search, Plus, RotateCcw, Package, AlertTriangle, CheckCircle } from 'lucide-react';
 import ProductoForm from '../components/productos/ProductoForm';
-import { BtnAdd, BtnEdit, BtnDelete, BtnAction, BtnIcon } from '../components/CommonButtons';
+import { BtnAdd, BtnEdit, BtnDelete, BtnAction, BtnClear } from '../components/CommonButtons';
 
 const Productos = () => {
     const [searchParams] = useSearchParams();
@@ -10,7 +12,16 @@ const Productos = () => {
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
-    const [itemsPerPage, setItemsPerPage] = useState(5); // Default per page
+    const [itemsPerPage, setItemsPerPage] = useState(10); // Default per page
+
+    useEffect(() => {
+        fetch('/api/config/obtener/')
+            .then(res => res.json())
+            .then(data => {
+                if (data.items_por_pagina) setItemsPerPage(data.items_por_pagina);
+            })
+            .catch(console.error);
+    }, []);
 
     // Filtros - Inicializar con valores de la URL si existen
     const [filters, setFilters] = useState({
@@ -126,33 +137,32 @@ const Productos = () => {
         fetchProductos();
     };
 
-    // Helper para formato de moneda (aunque Ventas.html no lo muestra en el snippet, usamos el estándar)
     const formatCurrency = (val) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(val);
 
     return (
-        <div className="container-fluid px-4 mt-4">
+        <div className="container-fluid px-4 pt-4 pb-0 h-100 d-flex flex-column bg-light" style={{ maxHeight: '100vh', overflow: 'hidden' }}>
 
-            {/* HEADER: Título y Botón Principal (Idéntico a ventas.html) */}
+            {/* HEADER */}
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <div>
-                    <h2 className="text-primary fw-bold mb-0" style={{ fontSize: '2.2rem' }}>
-                        <i className="bi bi-box-seam-fill me-2" style={{ fontSize: '0.8em' }}></i>
+                    <h2 className="text-primary fw-bold mb-0" style={{ fontSize: '2rem' }}>
+                        <Package className="me-2 inline-block" size={32} />
                         Productos
                     </h2>
-                    <p className="text-muted mb-0" style={{ fontSize: '1.1rem' }}>
+                    <p className="text-muted mb-0 ps-1" style={{ fontSize: '1rem' }}>
                         Gestiona el catálogo completo de productos y servicios.
                     </p>
                 </div>
                 <BtnAdd label="Nuevo Producto" onClick={handleCreate} className="btn-lg shadow-sm" />
             </div>
 
-            {/* FILTROS (Idéntico a ventas.html) */}
+            {/* FILTROS */}
             <div className="card border-0 shadow-sm mb-4">
                 <div className="card-body bg-light rounded">
                     <div className="row g-3">
                         <div className="col-md-4">
                             <div className="input-group">
-                                <span className="input-group-text bg-white border-end-0"><i className="bi bi-search"></i></span>
+                                <span className="input-group-text bg-white border-end-0"><Search size={18} className="text-muted" /></span>
                                 <input
                                     type="text"
                                     className="form-control border-start-0"
@@ -183,33 +193,26 @@ const Productos = () => {
                                 <option value="bajo">Stock Bajo</option>
                             </select>
                         </div>
-                        <div className="col-md-1">
-                            <BtnAction
-                                icon="bi-arrow-clockwise"
-                                color="light"
-                                className="w-100 border-secondary text-secondary"
-                                onClick={fetchProductos}
-                                title="Actualizar"
-                                label=""
-                            />
+                        <div className="col-md-2">
+                            <BtnClear onClick={() => { setFilters({ busqueda: '', marca: '', rubro: '', stock: 'todos' }); setPage(1); }} className="w-100" />
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* TABLA (Idéntico a ventas.html) */}
-            <div className="card border-0 shadow mb-5">
-                <div className="card-body p-0">
-                    <div className="table-responsive">
-                        <table className="table table-hover align-middle mb-0">
-                            <thead className="bg-light text-secondary">
+            {/* TABLA */}
+            <div className="card border-0 shadow mb-4 flex-grow-1 overflow-hidden d-flex flex-column">
+                <div className="card-body p-0 d-flex flex-column overflow-hidden">
+                    <div className="table-responsive flex-grow-1 overflow-auto">
+                        <table className="table align-middle mb-0">
+                            <thead className="bg-white border-bottom">
                                 <tr>
-                                    <th className="ps-4 py-3">Código</th>
-                                    <th>Descripción</th>
-                                    <th>Marca / Rubro</th>
-                                    <th>Precio</th>
-                                    <th className="text-center">Stock</th>
-                                    <th className="text-end pe-4">Acciones</th>
+                                    <th className="ps-4 py-3 text-dark fw-bold">Código</th>
+                                    <th className="py-3 text-dark fw-bold">Descripción</th>
+                                    <th className="py-3 text-dark fw-bold">Marca / Rubro</th>
+                                    <th className="py-3 text-dark fw-bold">Precio</th>
+                                    <th className="text-center py-3 text-dark fw-bold">Stock</th>
+                                    <th className="text-end pe-4 py-3 text-dark fw-bold">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -227,23 +230,39 @@ const Productos = () => {
                                     </tr>
                                 ) : (
                                     productos.map(p => (
-                                        <tr key={p.id}>
-                                            <td className="ps-4 fw-bold text-secondary">{p.codigo}</td>
-                                            <td>{p.descripcion}</td>
-                                            <td className="text-muted small">
-                                                {p.marca || '-'}<br />
-                                                <span className="text-opacity-50">{p.rubro}</span>
+                                        <tr key={p.id} className="border-bottom-0">
+                                            <td className="ps-4 fw-bold text-secondary font-monospace py-3">{p.codigo}</td>
+                                            <td className="fw-medium text-dark py-3">{p.descripcion}</td>
+                                            <td className="text-muted small py-3">
+                                                <div className="fw-bold text-secondary">{p.marca || '-'}</div>
+                                                <span className="text-opacity-75">{p.rubro}</span>
                                             </td>
-                                            <td className="fw-bold">{formatCurrency(p.precio_efectivo)}</td>
-                                            <td className="text-center">
-                                                <span className={`badge ${p.stock <= 0 ? 'bg-danger' : p.stock < 10 ? 'bg-warning text-dark' : 'bg-success'} rounded-pill`}>
-                                                    {p.stock}
+                                            <td className="fw-bold text-success py-3">{formatCurrency(p.precio_efectivo)}</td>
+                                            <td className="text-center py-3">
+                                                <span className={`badge rounded-pill border py-2 px-3 ${p.stock <= 0 ? 'bg-danger-subtle text-danger border-danger' : p.stock < 10 ? 'bg-warning-subtle text-warning-emphasis border-warning' : 'bg-success-subtle text-success border-success'}`}>
+                                                    {p.stock <= 0 && <AlertTriangle size={12} className="me-1 inline" />}
+                                                    {p.stock > 10 && <CheckCircle size={12} className="me-1 inline" />}
+                                                    {p.stock} u.
                                                 </span>
                                             </td>
-                                            <td className="text-end pe-4">
+                                            <td className="text-end pe-4 py-3">
                                                 <div className="d-flex justify-content-end gap-2">
-                                                    <BtnEdit onClick={() => handleEdit(p)} />
-                                                    <BtnDelete onClick={() => handleDelete(p.id)} />
+                                                    <button
+                                                        onClick={() => handleEdit(p)}
+                                                        className="btn btn-primary btn-sm d-flex align-items-center justify-content-center px-2 shadow-sm"
+                                                        title="Editar Producto"
+                                                        style={{ width: '34px' }}
+                                                    >
+                                                        <Box size={16} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDelete(p.id)}
+                                                        className="btn btn-danger btn-sm d-flex align-items-center justify-content-center px-2 shadow-sm"
+                                                        title="Eliminar Producto"
+                                                        style={{ width: '34px' }}
+                                                    >
+                                                        <Plus size={16} className="rotate-45" />
+                                                    </button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -253,23 +272,11 @@ const Productos = () => {
                         </table>
                     </div>
 
-                    {/* PAGINACIÓN Y CONTADOR (Idéntico a ventas.html) */}
+                    {/* PAGINACIÓN */}
                     {!loading && (
                         <div className="d-flex justify-content-between align-items-center p-3 border-top bg-light">
                             <div className="d-flex align-items-center gap-2">
                                 <span className="text-muted small">Mostrando {productos.length} de {totalItems} registros</span>
-                                <select
-                                    className="form-select form-select-sm border-secondary-subtle"
-                                    style={{ width: '70px' }}
-                                    value={itemsPerPage}
-                                    onChange={(e) => { setItemsPerPage(Number(e.target.value)); setPage(1); }}
-                                >
-                                    <option value="5">5</option>
-                                    <option value="10">10</option>
-                                    <option value="20">20</option>
-                                    <option value="50">50</option>
-                                </select>
-                                <span className="text-muted small">por pág.</span>
                             </div>
 
                             <nav>
@@ -280,7 +287,7 @@ const Productos = () => {
                                             onClick={() => setPage(page - 1)}
                                             style={{ width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                         >
-                                            <i className="bi bi-chevron-left"></i>
+                                            &lt;
                                         </button>
                                     </li>
                                     {[...Array(totalPages)].map((_, i) => {
@@ -303,7 +310,7 @@ const Productos = () => {
                                             onClick={() => setPage(page + 1)}
                                             style={{ width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                         >
-                                            <i className="bi bi-chevron-right"></i>
+                                            &gt;
                                         </button>
                                     </li>
                                 </ul>
@@ -313,7 +320,7 @@ const Productos = () => {
                 </div>
             </div>
 
-            {/* Modal Form Overlay - handled by the component itself now */}
+            {/* Modal Form Overlay */}
             {showForm && (
                 <ProductoForm
                     producto={editingProduct}

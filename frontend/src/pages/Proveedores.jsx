@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
-import { Truck, Plus, Search, Trash2, Edit, Phone, Mail, MapPin, X, Save, Building2, CreditCard, User } from 'lucide-react';
+import { Truck, Plus, Search, Trash2, Edit, Phone, Mail, MapPin, X, Save, Building2, CreditCard, RotateCcw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { BtnAdd, BtnEdit, BtnDelete, BtnCancel, BtnSave } from '../components/CommonButtons';
 
@@ -10,6 +11,15 @@ const Proveedores = () => {
     const [totalPages, setTotalPages] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
     const [itemsPerPage, setItemsPerPage] = useState(10);
+
+    useEffect(() => {
+        fetch('/api/config/obtener/')
+            .then(res => res.json())
+            .then(data => {
+                if (data.items_por_pagina) setItemsPerPage(data.items_por_pagina);
+            })
+            .catch(console.error);
+    }, []);
     const [busqueda, setBusqueda] = useState('');
 
     // Modal State
@@ -151,26 +161,28 @@ const Proveedores = () => {
     };
 
     return (
-        <div className="container-fluid px-4 mt-4">
+        <div className="container-fluid px-4 pt-4 pb-0 h-100 d-flex flex-column bg-light" style={{ maxHeight: '100vh', overflow: 'hidden' }}>
+            {/* Header */}
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <div>
-                    <h2 className="text-primary fw-bold mb-0" style={{ fontSize: '2.2rem' }}>
+                    <h2 className="text-primary fw-bold mb-0" style={{ fontSize: '2rem' }}>
                         <Truck className="me-2 inline-block" size={32} />
                         Proveedores
                     </h2>
-                    <p className="text-muted mb-0" style={{ fontSize: '1.1rem' }}>
+                    <p className="text-muted mb-0 ps-1" style={{ fontSize: '1rem' }}>
                         Administra tus proveedores y contactos.
                     </p>
                 </div>
                 <BtnAdd label="Nuevo Proveedor" onClick={() => openModal()} className="btn-lg shadow-sm" />
             </div>
 
+            {/* Filtros */}
             <div className="card border-0 shadow-sm mb-4">
                 <div className="card-body bg-light rounded">
                     <div className="row g-3">
                         <div className="col-md-6">
                             <div className="input-group">
-                                <span className="input-group-text bg-white border-end-0"><Search size={18} /></span>
+                                <span className="input-group-text bg-white border-end-0"><Search size={18} className="text-muted" /></span>
                                 <input
                                     type="text"
                                     className="form-control border-start-0"
@@ -180,21 +192,27 @@ const Proveedores = () => {
                                 />
                             </div>
                         </div>
+                        <div className="col-md-1 ms-auto">
+                            <button onClick={fetchProveedores} className="btn btn-light w-100 border text-secondary" title="Actualizar Listado">
+                                <RotateCcw size={18} />
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div className="card border-0 shadow mb-5">
-                <div className="card-body p-0">
-                    <div className="table-responsive">
-                        <table className="table table-hover align-middle mb-0">
-                            <thead className="bg-light text-secondary">
+            {/* Tabla */}
+            <div className="card border-0 shadow mb-4 flex-grow-1 overflow-hidden d-flex flex-column">
+                <div className="card-body p-0 d-flex flex-column overflow-hidden">
+                    <div className="table-responsive flex-grow-1 overflow-auto">
+                        <table className="table align-middle mb-0">
+                            <thead className="bg-white border-bottom">
                                 <tr>
-                                    <th className="ps-4 py-3">Proveedor</th>
-                                    <th>CUIT</th>
-                                    <th>Contacto</th>
-                                    <th>Email</th>
-                                    <th className="text-end pe-4">Acciones</th>
+                                    <th className="ps-4 py-3 text-dark fw-bold">Proveedor</th>
+                                    <th className="py-3 text-dark fw-bold">CUIT</th>
+                                    <th className="py-3 text-dark fw-bold">Contacto</th>
+                                    <th className="py-3 text-dark fw-bold">Email</th>
+                                    <th className="text-end pe-4 py-3 text-dark fw-bold">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -207,31 +225,46 @@ const Proveedores = () => {
                                 ) : proveedores.length === 0 ? (
                                     <tr>
                                         <td colSpan="5" className="text-center py-5 text-muted small">
+                                            <div className="mb-3 opacity-50"><Truck size={40} /></div>
                                             No se encontraron proveedores.
                                         </td>
                                     </tr>
                                 ) : (
                                     proveedores.map(p => (
-                                        <tr key={p.id}>
-                                            <td className="ps-4">
+                                        <tr key={p.id} className="border-bottom-0">
+                                            <td className="ps-4 py-3">
                                                 <div className="fw-bold text-dark">{p.nombre}</div>
                                                 {p.direccion && <div className="text-muted small"><MapPin size={12} className="inline me-1" />{p.direccion}</div>}
                                             </td>
-                                            <td className="font-monospace">{p.cuit || '-'}</td>
-                                            <td>
+                                            <td className="font-monospace py-3">{p.cuit || '-'}</td>
+                                            <td className="py-3">
                                                 {p.telefono ? (
                                                     <div className="text-muted"><Phone size={14} className="inline me-1" />{p.telefono}</div>
                                                 ) : '-'}
                                             </td>
-                                            <td>
+                                            <td className="py-3">
                                                 {p.email ? (
                                                     <div className="text-muted"><Mail size={14} className="inline me-1" />{p.email}</div>
                                                 ) : '-'}
                                             </td>
-                                            <td className="text-end pe-4">
+                                            <td className="text-end pe-4 py-3">
                                                 <div className="d-flex justify-content-end gap-2">
-                                                    <BtnEdit onClick={() => openModal(p)} />
-                                                    <BtnDelete onClick={() => handleEliminar(p.id)} />
+                                                    <button
+                                                        onClick={() => openModal(p)}
+                                                        className="btn btn-primary btn-sm d-flex align-items-center justify-content-center px-2 shadow-sm"
+                                                        title="Editar Proveedor"
+                                                        style={{ width: '34px' }}
+                                                    >
+                                                        <Edit size={16} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleEliminar(p.id)}
+                                                        className="btn btn-danger btn-sm d-flex align-items-center justify-content-center px-2 shadow-sm"
+                                                        title="Eliminar Proveedor"
+                                                        style={{ width: '34px' }}
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -241,22 +274,11 @@ const Proveedores = () => {
                         </table>
                     </div>
 
+                    {/* Paginación */}
                     {!loading && (
                         <div className="d-flex justify-content-between align-items-center p-3 border-top bg-light">
                             <div className="d-flex align-items-center gap-2">
                                 <span className="text-muted small">Mostrando {proveedores.length} de {totalItems} registros</span>
-                                <select
-                                    className="form-select form-select-sm border-secondary-subtle"
-                                    style={{ width: '70px' }}
-                                    value={itemsPerPage}
-                                    onChange={(e) => { setItemsPerPage(Number(e.target.value)); setPage(1); }}
-                                >
-                                    <option value="5">5</option>
-                                    <option value="10">10</option>
-                                    <option value="20">20</option>
-                                    <option value="50">50</option>
-                                </select>
-                                <span className="text-muted small">por pág.</span>
                             </div>
                             <nav>
                                 <ul className="pagination mb-0 align-items-center gap-2">
@@ -283,13 +305,8 @@ const Proveedores = () => {
 
             {/* Modal Premium (Tailwind) */}
             {showModal && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6" style={{ fontFamily: 'Inter, sans-serif' }}>
-                    <div
-                        className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
-                        onClick={() => setShowModal(false)}
-                    ></div>
-
-                    <div className="relative w-full max-w-4xl bg-white rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden transform transition-all scale-100 z-10">
+                <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="relative w-full max-w-4xl bg-white rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden transform transition-all scale-100 z-10 border border-slate-200">
 
                         {/* Header */}
                         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">

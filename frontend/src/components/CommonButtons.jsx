@@ -1,17 +1,17 @@
 import React from 'react';
-
+import { Pencil, Trash2, Plus, Search, Filter, Download, Printer, FileText, Check, X, ArrowLeft, ArrowUpRight, RotateCcw, Eraser } from 'lucide-react';
 
 // Base styles for consistency
 const BASE_BTN_CLASS = "btn shadow-sm rounded-2 d-inline-flex align-items-center justify-content-center gap-2 transition-all fw-bold";
-const ICON_ONLY_CLASS = "p-0"; // For fixed size generic containers usually handled by style props or sizing classes
 
 /**
  * Generic Icon Button Wrapper
  * Can be used when a specific semantic button doesn't exist.
  */
-export const BtnIcon = ({ icon, onClick, color = "primary", className = "", title = "", size = "sm", style = {}, ...rest }) => {
+export const BtnIcon = ({ icon: Icon, onClick, color = "primary", className = "", title = "", size = "sm", style = {}, ...rest }) => {
     // Size mapping for fixed square buttons
     const sizeStyle = size === 'sm' ? { width: '32px', height: '32px' } : { width: '38px', height: '38px' };
+    const iconSize = size === 'sm' ? 16 : 18;
 
     return (
         <button
@@ -22,7 +22,7 @@ export const BtnIcon = ({ icon, onClick, color = "primary", className = "", titl
             style={{ ...sizeStyle, ...style }}
             {...rest}
         >
-            <i className={`bi ${icon}`}></i>
+            {Icon && <Icon size={iconSize} />}
         </button>
     );
 };
@@ -32,18 +32,18 @@ export const BtnIcon = ({ icon, onClick, color = "primary", className = "", titl
 // ============================================================================
 
 export const BtnAdd = ({ label = "Agregar", onClick, className = "", ...rest }) => (
-    <button type="button" className={`${BASE_BTN_CLASS} btn-success text-white ${className}`} onClick={onClick} {...rest}>
-        <i className="bi bi-plus-lg"></i>
+    <button type="button" className={`${BASE_BTN_CLASS} btn-primary text-white ${className}`} onClick={onClick} {...rest}>
+        <Plus size={18} />
         {label}
     </button>
 );
 
 export const BtnEdit = ({ onClick, title = "Editar", size = "sm" }) => (
-    <BtnIcon icon="bi-pencil" color="warning" onClick={onClick} title={title} size={size} />
+    <BtnIcon icon={Pencil} color="warning" onClick={onClick} title={title} size={size} />
 );
 
 export const BtnDelete = ({ onClick, title = "Eliminar", size = "sm" }) => (
-    <BtnIcon icon="bi-trash" color="danger" onClick={onClick} title={title} size={size} />
+    <BtnIcon icon={Trash2} color="danger" onClick={onClick} title={title} size={size} />
 );
 
 export const BtnSave = ({ label = "Guardar", onClick, loading = false, className = "", ...rest }) => (
@@ -54,7 +54,7 @@ export const BtnSave = ({ label = "Guardar", onClick, loading = false, className
         disabled={loading}
         {...rest}
     >
-        {loading ? <span className="spinner-border spinner-border-sm me-2"></span> : <i className="bi bi-check-lg"></i>}
+        {loading ? <span className="spinner-border spinner-border-sm me-2"></span> : <Check size={18} />}
         {label}
     </button>
 );
@@ -66,7 +66,7 @@ export const BtnCancel = ({ label = "Cancelar", onClick, className = "", ...rest
         onClick={onClick}
         {...rest}
     >
-        <i className="bi bi-x-lg me-1"></i>
+        <X size={18} className="me-1" />
         {label}
     </button>
 );
@@ -78,7 +78,7 @@ export const BtnCancel = ({ label = "Cancelar", onClick, className = "", ...rest
 export const BtnView = ({ onClick, title = "Ver Detalle", size = "sm" }) => {
     // Determine size
     const btnSize = size === 'sm' ? '35px' : '42px';
-    const iconSize = size === 'sm' ? '1.4rem' : '1.6rem';
+    const iconSize = size === 'sm' ? 18 : 20;
 
     return (
         <button
@@ -88,38 +88,38 @@ export const BtnView = ({ onClick, title = "Ver Detalle", size = "sm" }) => {
             title={title}
             style={{ width: btnSize, height: btnSize, color: 'white' }}
         >
-            <i className="bi bi-file-earmark-text-fill" style={{ fontSize: iconSize }}></i>
+            <FileText size={iconSize} />
         </button>
     );
 };
 
 export const BtnSearch = ({ onClick, className = "" }) => (
     <button type="button" className={`${BASE_BTN_CLASS} btn-primary ${className}`} onClick={onClick}>
-        <i className="bi bi-search"></i>
+        <Search size={18} />
         Buscar
     </button>
 );
 
 export const BtnFilter = ({ onClick, label = "Filtrar", className = "" }) => (
     <button type="button" className={`${BASE_BTN_CLASS} btn-primary ${className}`} onClick={onClick}>
-        <i className="bi bi-funnel-fill"></i>
+        <Filter size={18} />
         {label}
     </button>
 );
 
 export const BtnExport = ({ onClick, label = "Exportar Excel", className = "" }) => (
-    <button type="button" className={`${BASE_BTN_CLASS} btn-success text-white ${className}`} onClick={onClick}>
-        <i className="bi bi-file-earmark-excel-fill"></i>
+    <button type="button" className={`${BASE_BTN_CLASS} btn-primary text-white ${className}`} onClick={onClick}>
+        <Download size={18} />
         {label}
     </button>
 );
 
-export const BtnPrint = ({ onClick, label = "Imprimir", title = "Imprimir", iconOnly = false }) => {
-    if (iconOnly) return <BtnIcon icon="bi-printer-fill" color="secondary" onClick={onClick} title={title} />;
+export const BtnPrint = ({ onClick, label = "Imprimir", title = "Imprimir", iconOnly = false, className = "", size = "sm" }) => {
+    if (iconOnly) return <BtnIcon icon={Printer} color="secondary" onClick={onClick} title={title} size={size} />;
 
     return (
-        <button type="button" className={`${BASE_BTN_CLASS} btn-secondary text-white`} onClick={onClick}>
-            <i className="bi bi-printer-fill"></i>
+        <button type="button" className={`${BASE_BTN_CLASS} btn-secondary text-white btn-${size} ${className}`} onClick={onClick}>
+            <Printer size={18} />
             {label}
         </button>
     );
@@ -127,7 +127,7 @@ export const BtnPrint = ({ onClick, label = "Imprimir", title = "Imprimir", icon
 
 export const BtnBack = ({ onClick, label = "Volver", className = "" }) => (
     <button type="button" className={`${BASE_BTN_CLASS} btn-light text-muted border ${className}`} onClick={onClick}>
-        <i className="bi bi-arrow-left"></i>
+        <ArrowLeft size={18} />
         {label}
     </button>
 );
@@ -139,9 +139,24 @@ export const BtnBack = ({ onClick, label = "Volver", className = "" }) => (
 /**
  * For specialized actions like "Asientos", "Balance" that don't fit standard CRUD.
  */
-export const BtnAction = ({ label, icon, onClick, color = "primary", className = "" }) => (
-    <button type="button" className={`${BASE_BTN_CLASS} btn-${color} ${className}`} onClick={onClick}>
-        {icon && <i className={`bi ${icon}`}></i>}
+export const BtnAction = ({ label, icon: Icon, onClick, color = "primary", className = "", ...rest }) => (
+    <button type="button" className={`${BASE_BTN_CLASS} btn-${color} ${className}`} onClick={onClick} {...rest}>
+        {Icon && (typeof Icon === 'function' || typeof Icon === 'object' ? <Icon size={18} /> : null)}
+        {label}
+    </button>
+);
+
+
+
+export const BtnClear = ({ onClick, label = "Limpiar Filtros", className = "" }) => (
+    <button
+        type="button"
+        className={`btn text-warning-emphasis fw-bold border border-warning-subtle shadow-sm d-inline-flex align-items-center justify-content-center gap-2 transition-all hover:bg-white hover:text-danger ${className}`}
+        onClick={onClick}
+        style={{ height: '38px', backgroundColor: '#FFF9C4' }}
+        title="Limpiar filtros"
+    >
+        <Eraser size={16} />
         {label}
     </button>
 );

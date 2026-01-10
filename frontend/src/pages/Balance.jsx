@@ -160,55 +160,56 @@ const Balance = () => {
                         </button>
                     </div>
 
-                    <div className="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left border-collapse">
-                                <thead>
-                                    <tr className="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 font-bold tracking-wider">
-                                        <th className="p-4 w-32">Código</th>
-                                        <th className="p-4">Cuenta</th>
-                                        <th className="p-4 text-right">Debe</th>
-                                        <th className="p-4 text-right">Haber</th>
-                                        <th className="p-4 text-right">Saldo Deudor</th>
-                                        <th className="p-4 text-right">Saldo Acreedor</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-100">
-                                    {cuentas.map((c) => (
-                                        <tr key={c.id} className={`hover:bg-slate-50 transition-colors ${!c.nivel || c.nivel === 1 ? 'font-bold bg-slate-50/50' : ''}`}>
-                                            <td className="p-4 font-mono text-slate-600 text-sm">
-                                                {c.codigo}
-                                            </td>
-                                            <td className="p-4 text-slate-800">
-                                                <div style={{ paddingLeft: `${(c.nivel - 1) * 1.5}rem` }}>
-                                                    {c.nombre}
-                                                </div>
-                                            </td>
-                                            <td className="p-4 text-right font-mono text-slate-500 text-sm">
-                                                {c.debe > 0 ? c.debe.toLocaleString(undefined, { minimumFractionDigits: 2 }) : '-'}
-                                            </td>
-                                            <td className="p-4 text-right font-mono text-slate-500 text-sm">
-                                                {c.haber > 0 ? c.haber.toLocaleString(undefined, { minimumFractionDigits: 2 }) : '-'}
-                                            </td>
-                                            <td className="p-4 text-right font-mono text-slate-800 font-medium">
-                                                {c.saldo > 0 ? c.saldo.toLocaleString(undefined, { minimumFractionDigits: 2 }) : '-'}
-                                            </td>
-                                            <td className="p-4 text-right font-mono text-slate-800 font-medium">
-                                                {c.saldo < 0 ? Math.abs(c.saldo).toLocaleString(undefined, { minimumFractionDigits: 2 }) : '-'}
-                                            </td>
+                    {/* Tabla Standardizada */}
+                    <div className="card border-0 shadow mb-4 flex-grow-1 overflow-hidden d-flex flex-column">
+                        <div className="card-body p-0 d-flex flex-column overflow-hidden">
+                            <div className="table-responsive flex-grow-1 overflow-auto">
+                                <table className="table align-middle mb-0">
+                                    <thead className="bg-white border-bottom">
+                                        <tr>
+                                            <th className="ps-4 py-3 w-32 text-dark fw-bold">Código</th>
+                                            <th className="py-3 text-dark fw-bold">Cuenta</th>
+                                            <th className="text-end py-3 text-dark fw-bold">Debe</th>
+                                            <th className="text-end py-3 text-dark fw-bold">Haber</th>
+                                            <th className="text-end py-3 text-dark fw-bold">Saldo Deudor</th>
+                                            <th className="text-end pe-4 py-3 text-dark fw-bold">Saldo Acreedor</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                                <tfoot>
-                                    <tr className="bg-slate-100 border-t-2 border-slate-300 font-bold text-slate-800">
-                                        <td colSpan="2" className="p-4 text-right uppercase text-xs tracking-wider">Totales</td>
-                                        <td className="p-4 text-right font-mono">{totales.total_debe.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                                        <td className="p-4 text-right font-mono">{totales.total_haber.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                                        <td className="p-4 text-right font-mono">{totales.total_saldo_deudor.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                                        <td className="p-4 text-right font-mono">{totales.total_saldo_acreedor.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                                    </tr>
-                                </tfoot>
-                            </table>
+                                    </thead>
+                                    <tbody>
+                                        {cuentas.map((c) => (
+                                            <tr key={c.id} className={`${!c.nivel || c.nivel === 1 ? 'fw-bold bg-light' : ''} border-bottom-0`}>
+                                                <td className="ps-4 text-nowrap font-monospace text-muted py-3">{c.codigo}</td>
+                                                <td className="py-3">
+                                                    <div style={{ paddingLeft: `${(c.nivel - 1) * 1.5}rem` }}>
+                                                        {c.nombre}
+                                                    </div>
+                                                </td>
+                                                <td className="text-end font-monospace text-secondary py-3">
+                                                    {c.debe > 0 ? c.debe.toLocaleString(undefined, { minimumFractionDigits: 2 }) : '-'}
+                                                </td>
+                                                <td className="text-end font-monospace text-secondary py-3">
+                                                    {c.haber > 0 ? c.haber.toLocaleString(undefined, { minimumFractionDigits: 2 }) : '-'}
+                                                </td>
+                                                <td className="text-end font-monospace text-dark fw-medium py-3">
+                                                    {c.saldo > 0 ? c.saldo.toLocaleString(undefined, { minimumFractionDigits: 2 }) : '-'}
+                                                </td>
+                                                <td className="text-end pe-4 font-monospace text-dark fw-medium py-3">
+                                                    {c.saldo < 0 ? Math.abs(c.saldo).toLocaleString(undefined, { minimumFractionDigits: 2 }) : '-'}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                    <tfoot className="bg-light border-top">
+                                        <tr className="fw-bold">
+                                            <td colSpan="2" className="ps-4 py-3 text-end text-uppercase small text-muted align-middle">Totales</td>
+                                            <td className="text-end font-monospace align-middle text-success py-3">{totales.total_debe.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                            <td className="text-end font-monospace align-middle text-danger py-3">{totales.total_haber.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                            <td className="text-end font-monospace align-middle py-3">{totales.total_saldo_deudor.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                            <td className="text-end pe-4 font-monospace align-middle py-3">{totales.total_saldo_acreedor.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
