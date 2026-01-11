@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Search, User, Edit, Trash2, ArrowRightLeft, CreditCard, RotateCcw, Users } from 'lucide-react';
+import { Plus, Search, User, ArrowRightLeft, CreditCard, RotateCcw, Users, Pencil, Trash2 } from 'lucide-react';
 import ClienteForm from '../components/clientes/ClienteForm';
-import { BtnAdd, BtnEdit, BtnDelete, BtnAction, BtnIcon, BtnView } from '../components/CommonButtons';
+import { BtnAdd, BtnVertical } from '../components/CommonButtons';
 
 const Clientes = () => {
     const [clientes, setClientes] = useState([]);
@@ -10,15 +10,18 @@ const Clientes = () => {
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
-    const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [itemsPerPage, setItemsPerPage] = useState(0);
 
     useEffect(() => {
         fetch('/api/config/obtener/')
             .then(res => res.json())
             .then(data => {
-                if (data.items_por_pagina) setItemsPerPage(data.items_por_pagina);
+                setItemsPerPage(data.items_por_pagina || 10);
             })
-            .catch(console.error);
+            .catch(err => {
+                console.error(err);
+                setItemsPerPage(10); // Fallback
+            });
     }, []);
 
     // Filtros
@@ -31,16 +34,21 @@ const Clientes = () => {
     const [showForm, setShowForm] = useState(false);
     const [editingCliente, setEditingCliente] = useState(null);
 
-    const fetchClientes = useCallback(async () => {
+    const fetchClientes = useCallback(async (signal) => {
+        if (itemsPerPage === 0) return;
         setLoading(true);
         try {
             const params = new URLSearchParams({
-                q: filters.busqueda
+                q: filters.busqueda,
+                page: page,
+                items_per_page: itemsPerPage
             });
 
-            const response = await fetch(`/api/clientes/buscar/?${params}`);
+            const response = await fetch(`/api/clientes/buscar/?${params}`, { signal });
             const data = await response.json();
 
+            // The provided snippet for fetchClientes had a different structure (data.ok, data.data)
+            // Reverting to original structure but incorporating signal and itemsPerPage check
             let allClientes = Array.isArray(data) ? data : (data.results || []);
 
             // Client-side filtering for fiscal condition if API doesn't support it fully
@@ -55,7 +63,9 @@ const Clientes = () => {
             setClientes(allClientes.slice(start, start + itemsPerPage));
 
         } catch (error) {
-            console.error("Error al cargar clientes:", error);
+            if (error.name !== 'AbortError') {
+                console.error("Error al cargar clientes:", error);
+            }
             setClientes([]);
         } finally {
             setLoading(false);
@@ -63,8 +73,11 @@ const Clientes = () => {
     }, [page, filters, itemsPerPage]);
 
     useEffect(() => {
-        fetchClientes();
-    }, [fetchClientes]);
+        if (itemsPerPage === 0) return; // Only fetch if itemsPerPage is initialized
+        const controller = new AbortController();
+        fetchClientes(controller.signal);
+        return () => controller.abort();
+    }, [fetchClientes, itemsPerPage]); // Added itemsPerPage to dependencies
 
     const handleFilterChange = (e) => {
         const { name, value } = e.target;
@@ -109,13 +122,13 @@ const Clientes = () => {
     };
 
     return (
-        <div className="container-fluid px-4 pt-4 pb-0 h-100 d-flex flex-column bg-light fade-in" style={{ maxHeight: '100vh', overflow: 'hidden' }}>
+        <div className="container-fluid px-4 pt-4 pb-0 bg-light fade-in main-content-container">
             {/* Header */}
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <div>
                     <h2 className="text-primary fw-bold mb-0" style={{ fontSize: '2rem' }}>
                         <Users className="me-2 inline-block" size={32} />
-                        Cartera de Clientes
+                        Clientes
                     </h2>
                     <p className="text-muted mb-0 ps-1" style={{ fontSize: '1rem' }}>
                         Administra tu cartera de clientes y cuentas corrientes.
@@ -161,7 +174,7 @@ const Clientes = () => {
             {/* Tabla */}
             <div className="card border-0 shadow mb-4 flex-grow-1 overflow-hidden d-flex flex-column">
                 <div className="card-body p-0 d-flex flex-column overflow-hidden">
-                    <div className="table-responsive flex-grow-1 overflow-auto">
+                    <div className="table-responsive flex-grow-1 table-container-fixed">
                         <table className="table align-middle mb-0">
                             <thead className="bg-white border-bottom">
                                 <tr>
@@ -206,22 +219,20 @@ const Clientes = () => {
                                             </td>
                                             <td className="text-end pe-4 py-3">
                                                 <div className="d-flex justify-content-end gap-2">
-                                                    <button
+                                                    <BtnVertical
+                                                        icon={Pencil}
+                                                        label="Editar"
+                                                        color="warning"
                                                         onClick={() => handleEdit(c)}
-                                                        className="btn btn-primary btn-sm d-flex align-items-center justify-content-center px-2 shadow-sm"
                                                         title="Editar Cliente"
-                                                        style={{ width: '34px' }}
-                                                    >
-                                                        <Edit size={16} />
-                                                    </button>
-                                                    <button
+                                                    />
+                                                    <BtnVertical
+                                                        icon={Trash2}
+                                                        label="Eliminar"
+                                                        color="danger"
                                                         onClick={() => handleDelete(c.id)}
-                                                        className="btn btn-danger btn-sm d-flex align-items-center justify-content-center px-2 shadow-sm"
                                                         title="Eliminar Cliente"
-                                                        style={{ width: '34px' }}
-                                                    >
-                                                        <Trash2 size={16} />
-                                                    </button>
+                                                    />
                                                 </div>
                                             </td>
                                         </tr>

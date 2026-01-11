@@ -8336,71 +8336,89 @@ def api_presupuesto_cancelar(request, id):
     except Exception as e:
         return JsonResponse({'ok': False, 'error': str(e)})
 
+@login_required
+def api_presupuesto_detalle(request, id):
+    """API para obtener detalle de un presupuesto"""
+    try:
+        p = Presupuesto.objects.select_related('cliente', 'venta').prefetch_related('detalles__producto').get(id=id)
+    except Presupuesto.DoesNotExist:
+        return JsonResponse({'error': 'Presupuesto no encontrado'}, status=404)
+    
+    # Serializar detalles
+    detalles = []
+    for d in p.detalles.all():
+        detalles.append({
+            'id': d.id,
+            'producto_id': d.producto.id,
+            'producto_codigo': d.producto.codigo,
+            'producto_descripcion': d.producto.descripcion,
+            'cantidad': float(d.cantidad),
+            'precio_unitario': float(d.precio_unitario),
+            'subtotal': float(d.subtotal),
+        })
+    
+    return JsonResponse({
+        'id': p.id,
+        'fecha': p.fecha.strftime('%d/%m/%Y'),
+        'validez': p.validez,
+        'vencimiento': (p.fecha + datetime.timedelta(days=p.validez)).strftime('%d/%m/%Y'),
+        'cliente_id': p.cliente.id,
+        'cliente_nombre': p.cliente.nombre,
+        'cliente_cuit': p.cliente.cuit or '',
+        'cliente_telefono': p.cliente.telefono or '',
+        'cliente_email': p.cliente.email or '',
+        'estado': p.estado,
+        'total': float(p.total),
+        'observaciones': p.observaciones or '',
+        'venta_id': p.venta_id if p.venta else None,
+        'pedido_id': p.pedido_id if hasattr(p, 'pedido') and p.pedido else None, # Safely access pedido
+        'detalles': detalles,
+    })
+
 @csrf_exempt
 @require_POST
 @login_required
 @transaction.atomic
-def api_presupuesto_convertir(request, id):
+@csrf_exempt
+@require_POST
+@login_required
+@transaction.atomic
+def api_presupuesto_convertir_a_pedido(request, id):
     """
-    Convierte un Presupuesto en Venta.
-    1. Verifica Stock.
-    2. Crea Venta.
-    3. Descuenta Stock.
-    4. Genera movimientos contables (Asume EFECTIVO por defecto para simplificar '1 click').
+    Convierte un Presupuesto en PEDIDO.
+    1. NO Verifica Stock estricto (permite backorder).
+    2. Crea Pedido.
+    3. NO Descuenta Stock (se descuenta al facturar/remitear el pedido).
     """
     try:
         p = Presupuesto.objects.get(id=id)
         if p.estado != 'PENDIENTE':
             return JsonResponse({'ok': False, 'error': f'El presupuesto está {p.estado}'})
 
-        # 1. Verificar Stock
-        for det in p.detalles.all():
-            if det.producto.stock < det.cantidad:
-                return JsonResponse({'ok': False, 'error': f'Stock insuficiente para: {det.producto.descripcion}'})
-
-        # 2. Crear Venta
-        venta = Venta.objects.create(
+        # 1. Crear Pedido (Sin validar stock bloqueante)
+        pedido = Pedido.objects.create(
             cliente=p.cliente,
-            tipo_comprobante='B', # Default
             total=p.total,
-            estado='Emitida'
+            estado='PENDIENTE',
+            observaciones=f"Generado desde Presupuesto #{p.id}"
         )
 
-        # 3. Detalles y Stock
+        # 2. Detalles del Pedido
         for det in p.detalles.all():
-            DetalleVenta.objects.create(
-                venta=venta,
+            DetallePedido.objects.create(
+                pedido=pedido,
                 producto=det.producto,
                 cantidad=det.cantidad,
-                precio_unitario=det.precio_unitario, # Mantenemos el precio cotizado
+                precio_unitario=det.precio_unitario, # Precio congelado del presupuesto
                 subtotal=det.subtotal
             )
-            # Descontar stock
-            det.producto.stock -= det.cantidad
-            det.producto.save()
 
-        # 4. Actualizar Presupuesto
+        # 3. Actualizar Presupuesto
         p.estado = 'APROBADO'
-        p.venta = venta
+        p.pedido = pedido
         p.save()
 
-        # 5. Movimiento de Caja / Contabilidad (Asumimos Efectivo para completar el ciclo base)
-        # TODO: Idealmente preguntar medio de pago. Por ahora 'EFECTIVO' para cumplir '1 click'.
-        MovimientoCaja.objects.create(
-            tipo='Ingreso',
-            descripcion=f"Venta #{venta.id} (desde Presupuesto #{p.id})",
-            monto=venta.total,
-            usuario=request.user.username if request.user.is_authenticated else 'Sistema'
-        )
-        
-        # Contabilidad
-        try:
-            from .services import AccountingService
-            AccountingService.registrar_cobro_venta_contado(venta, venta.total) # Asume todo a caja
-        except Exception as e:
-            print(f"Error contabilidad conversion presupuesto: {e}")
-
-        return JsonResponse({'ok': True, 'venta_id': venta.id})
+        return JsonResponse({'ok': True, 'pedido_id': pedido.id, 'message': f'Pedido #{pedido.id} creado correctamente'})
 
     except Exception as e:
         import traceback

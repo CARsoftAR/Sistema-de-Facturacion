@@ -12,7 +12,7 @@ const Ventas = () => {
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
-    const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [itemsPerPage, setItemsPerPage] = useState(0); // 0 means not yet loaded
     const [busqueda, setBusqueda] = useState('');
 
     useEffect(() => {
@@ -20,17 +20,19 @@ const Ventas = () => {
         fetch('/api/config/obtener/')
             .then(res => res.json())
             .then(data => {
-                if (data.items_por_pagina) {
-                    setItemsPerPage(data.items_por_pagina);
-                }
+                setItemsPerPage(data.items_por_pagina || 10);
             })
-            .catch(err => console.error("Error loading config:", err));
+            .catch(err => {
+                console.error("Error loading config:", err);
+                setItemsPerPage(10); // Fallback
+            });
     }, []);
 
-    const fetchVentas = useCallback(async () => {
+    const fetchVentas = useCallback(async (signal) => {
+        if (itemsPerPage === 0) return;
         setLoading(true);
         try {
-            const response = await fetch('/api/ventas/listar/');
+            const response = await fetch('/api/ventas/listar/', { signal });
             const data = await response.json();
 
             if (data.ok || Array.isArray(data) || data.ventas) {
@@ -58,18 +60,20 @@ const Ventas = () => {
                 setVentas([]);
             }
         } catch (error) {
-            console.error("Error al cargar ventas:", error);
-            setVentas([]);
+            if (error.name !== 'AbortError') {
+                console.error("Error al cargar ventas:", error);
+                setVentas([]);
+            }
         } finally {
             setLoading(false);
         }
     }, [page, itemsPerPage, busqueda]);
 
     useEffect(() => {
-        if (itemsPerPage) {
-            fetchVentas();
-        }
-    }, [fetchVentas, itemsPerPage]);
+        const controller = new AbortController();
+        fetchVentas(controller.signal);
+        return () => controller.abort();
+    }, [fetchVentas]);
 
     const handleAnular = async (id) => {
         const result = await Swal.fire({

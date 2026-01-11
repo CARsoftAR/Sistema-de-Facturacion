@@ -247,13 +247,15 @@ urlpatterns = [
     # ==========================
     # PRESUPUESTOS (COTIZACIONES)
     # ==========================
-    path('presupuestos/', views.presupuestos_lista, name='presupuestos'),
-    path('presupuesto/nuevo/', views.presupuesto_nuevo, name='presupuesto_nuevo'),
-    path('presupuesto/editar/<int:id>/', views.presupuesto_editar, name='presupuesto_editar'),
+    path('presupuestos/', login_required(TemplateView.as_view(template_name="react_app.html")), name='presupuestos'),
+    path('presupuestos/nuevo/', login_required(TemplateView.as_view(template_name="react_app.html")), name='presupuesto_nuevo_react'),
+    path('presupuestos/<int:id>/', login_required(TemplateView.as_view(template_name="react_app.html")), name='presupuesto_detalle_react'),
     path('api/presupuestos/listar/', views.api_presupuestos_listar, name='api_presupuestos_listar'),
+    path('api/presupuesto/<int:id>/', views.api_presupuesto_detalle, name='api_presupuesto_detalle'),
     path('api/presupuesto/guardar/', views.api_presupuesto_guardar, name='api_presupuesto_guardar'),
     path('api/presupuesto/cancelar/<int:id>/', views.api_presupuesto_cancelar, name='api_presupuesto_cancelar'),
-    path('api/presupuesto/convertir/<int:id>/', views.api_presupuesto_convertir, name='api_presupuesto_convertir'),
+
+    path('api/presupuesto/convertir-pedido/<int:id>/', views.api_presupuesto_convertir_a_pedido, name='api_presupuesto_convertir_a_pedido'),
     path('presupuesto/pdf/<int:id>/', views.presupuesto_pdf, name='presupuesto_pdf'),
 
     # ===== MARCAS =====
@@ -295,6 +297,7 @@ urlpatterns = [
     # ==========================
     path('pedidos/', login_required(TemplateView.as_view(template_name="react_app.html")), name='pedidos'),
     path('pedidos/nuevo/', login_required(TemplateView.as_view(template_name="react_app.html")), name='pedido_nuevo'),
+    path('pedidos/<int:id>/', login_required(TemplateView.as_view(template_name="react_app.html")), name='pedido_detalle_react'),
     path('api/pedidos/lista/', views.api_pedidos_lista, name='api_pedidos_lista'),
     path('api/pedidos/<int:id>/', views.api_pedido_detalle, name='api_pedido_detalle'),
     path('api/pedidos/crear/', views.api_pedido_crear, name='api_pedido_crear'),

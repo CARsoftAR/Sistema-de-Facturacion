@@ -190,6 +190,7 @@ const Sidebar = ({ standalone = false }) => {
                             { label: 'Ventas', href: '/ventas', permission: 'ventas' },
                             { label: 'Compras', href: '/compras', permission: 'compras' },
                             { label: 'Pedidos', href: '/pedidos', permission: 'pedidos' },
+                            { label: 'Presupuestos', href: '/presupuestos', permission: 'presupuestos' },
                             { label: 'Remitos', href: '/remitos', permission: 'remitos' },
                             { label: 'Notas de Crédito', href: '/notas-credito', permission: 'ventas' },
                             { label: 'Notas de Débito', href: '/notas-debito', permission: 'ventas' },

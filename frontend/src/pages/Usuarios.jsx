@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Search, User, Edit, Trash2, RotateCcw, ShieldCheck, Mail, ShieldAlert } from 'lucide-react';
+import { Search, User, RotateCcw, ShieldCheck, Mail, Shield, Pencil, Trash2 } from 'lucide-react';
 import UsuarioForm from '../components/usuarios/UsuarioForm';
-import { BtnAdd } from '../components/CommonButtons';
+import { BtnAdd, BtnVertical } from '../components/CommonButtons';
 
 const Usuarios = () => {
     const [usuarios, setUsuarios] = useState([]);
@@ -206,22 +206,20 @@ const Usuarios = () => {
                                             </td>
                                             <td className="text-end pe-4 py-3">
                                                 <div className="d-flex justify-content-end gap-2">
-                                                    <button
+                                                    <BtnVertical
+                                                        icon={Pencil}
+                                                        label="Editar"
+                                                        color="warning"
                                                         onClick={() => handleEdit(u)}
-                                                        className="btn btn-outline-primary btn-sm d-flex align-items-center justify-content-center px-2 shadow-sm rounded-2"
                                                         title="Editar Usuario"
-                                                        style={{ width: '34px', height: '34px' }}
-                                                    >
-                                                        <Edit size={16} />
-                                                    </button>
-                                                    <button
+                                                    />
+                                                    <BtnVertical
+                                                        icon={Trash2}
+                                                        label="Eliminar"
+                                                        color="danger"
                                                         onClick={() => handleDelete(u.id)}
-                                                        className="btn btn-outline-danger btn-sm d-flex align-items-center justify-content-center px-2 shadow-sm rounded-2"
                                                         title="Eliminar Usuario"
-                                                        style={{ width: '34px', height: '34px' }}
-                                                    >
-                                                        <Trash2 size={16} />
-                                                    </button>
+                                                    />
                                                 </div>
                                             </td>
                                         </tr>

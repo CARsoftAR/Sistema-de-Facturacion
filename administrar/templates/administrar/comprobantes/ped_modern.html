@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Presupuesto #{{ pedido.id }}</title>
+    <title>Pedido #{{ pedido.id }}</title>
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Playfair+Display:wght@400;600;700&display=swap"
         rel="stylesheet">
@@ -242,7 +242,7 @@
                     <div
                         style="font-size: 32px; font-weight: 800; color: var(--primary-color); border: 3px solid var(--primary-color); padding: 5px 20px; border-radius: 8px; display: inline-block; margin-bottom: 5px;">
                         P</div>
-                    <div style="font-weight: 600; letter-spacing: 2px; color: var(--text-grey);">PRESUPUESTO</div>
+                    <div style="font-weight: 600; letter-spacing: 2px; color: var(--text-grey);">PEDIDO</div>
                 </div>
                 <div class="logo-container">
                     {% if empresa.logo %}
@@ -312,15 +312,14 @@
                         <td>$ {{ pedido.total|floatformat:2 }}</td>
                     </tr>
                     <tr class="total-row">
-                        <td class="label">TOTAL ESTIMADO</td>
+                        <td class="label">TOTAL</td>
                         <td>$ {{ pedido.total|floatformat:2 }}</td>
                     </tr>
                 </table>
             </div>
 
             <div class="footer-note">
-                <strong>Nota:</strong> Este documento es una estimación de presupuesto y no posee validez legal como
-                factura.
+                <strong>Nota:</strong> Este documento es un comprobante de pedido.
                 Los precios están sujetos a cambios sin previo aviso.
             </div>
         </div>

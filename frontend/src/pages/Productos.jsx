@@ -12,15 +12,18 @@ const Productos = () => {
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
-    const [itemsPerPage, setItemsPerPage] = useState(10); // Default per page
+    const [itemsPerPage, setItemsPerPage] = useState(0); // 0 means not yet loaded
 
     useEffect(() => {
         fetch('/api/config/obtener/')
             .then(res => res.json())
             .then(data => {
-                if (data.items_por_pagina) setItemsPerPage(data.items_por_pagina);
+                setItemsPerPage(data.items_por_pagina || 10);
             })
-            .catch(console.error);
+            .catch(err => {
+                console.error(err);
+                setItemsPerPage(10); // Fallback
+            });
     }, []);
 
     // Filtros - Inicializar con valores de la URL si existen
@@ -50,7 +53,8 @@ const Productos = () => {
     const [showForm, setShowForm] = useState(false);
     const [editingProduct, setEditingProduct] = useState(null);
 
-    const fetchProductos = useCallback(async () => {
+    const fetchProductos = useCallback(async (signal) => {
+        if (itemsPerPage === 0) return;
         setLoading(true);
         try {
             const params = new URLSearchParams({
@@ -59,14 +63,16 @@ const Productos = () => {
                 ...filters
             });
 
-            const response = await fetch(`/api/productos/lista/?${params}`);
+            const response = await fetch(`/api/productos/lista/?${params}`, { signal });
             const data = await response.json();
 
             setProductos(data.productos || []);
             setTotalPages(data.total_pages || 1);
             setTotalItems(data.total || 0);
         } catch (error) {
-            console.error("Error al cargar productos:", error);
+            if (error.name !== 'AbortError') {
+                console.error("Error al cargar productos:", error);
+            }
         } finally {
             setLoading(false);
         }
@@ -92,7 +98,9 @@ const Productos = () => {
     }, []);
 
     useEffect(() => {
-        fetchProductos();
+        const controller = new AbortController();
+        fetchProductos(controller.signal);
+        return () => controller.abort();
     }, [fetchProductos]);
 
     const handleFilterChange = (e) => {
@@ -140,7 +148,7 @@ const Productos = () => {
     const formatCurrency = (val) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(val);
 
     return (
-        <div className="container-fluid px-4 pt-4 pb-0 h-100 d-flex flex-column bg-light fade-in" style={{ maxHeight: '100vh', overflow: 'hidden' }}>
+        <div className="container-fluid px-4 pt-4 pb-0 bg-light fade-in main-content-container">
 
             {/* HEADER */}
             <div className="d-flex justify-content-between align-items-center mb-4">
@@ -203,7 +211,7 @@ const Productos = () => {
             {/* TABLA */}
             <div className="card border-0 shadow mb-4 flex-grow-1 overflow-hidden d-flex flex-column">
                 <div className="card-body p-0 d-flex flex-column overflow-hidden">
-                    <div className="table-responsive flex-grow-1 overflow-auto">
+                    <div className="table-responsive flex-grow-1 table-container-fixed">
                         <table className="table align-middle mb-0">
                             <thead className="bg-white border-bottom">
                                 <tr>

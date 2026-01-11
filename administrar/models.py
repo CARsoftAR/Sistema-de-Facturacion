@@ -447,6 +447,8 @@ class Presupuesto(models.Model):
 
     # Vínculo si se conviritió en venta
     venta = models.ForeignKey("Venta", on_delete=models.SET_NULL, null=True, blank=True, related_name='presupuesto_origen')
+    # Vínculo si se convirtió en pedido
+    pedido = models.ForeignKey("Pedido", on_delete=models.SET_NULL, null=True, blank=True, related_name='presupuesto_origen')
 
     def __str__(self):
         return f"Presupuesto #{self.id} - {self.cliente.nombre}"

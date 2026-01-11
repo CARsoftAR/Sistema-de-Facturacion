@@ -126,7 +126,11 @@ export const BtnPrint = ({ onClick, label = "Imprimir", title = "Imprimir", icon
 };
 
 export const BtnBack = ({ onClick, label = "Volver", className = "" }) => (
-    <button type="button" className={`${BASE_BTN_CLASS} btn-light text-muted border ${className}`} onClick={onClick}>
+    <button
+        type="button"
+        className={`px-5 py-2.5 text-sm font-bold text-white bg-red-500 hover:bg-red-600 rounded-xl transition-all border-0 flex items-center gap-2 shadow-lg shadow-red-500/20 active:scale-95 ${className}`}
+        onClick={onClick}
+    >
         <ArrowLeft size={18} />
         {label}
     </button>
