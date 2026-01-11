@@ -1,8 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FileText, User, MapPin, Printer } from 'lucide-react';
-import { BtnBack } from '../components/CommonButtons';
+import { FileText, User, MapPin, Printer, ArrowLeft } from 'lucide-react';
+import { BtnBack, BtnPrint } from '../components/CommonButtons';
+import Swal from 'sweetalert2';
 
 const DetalleRemito = () => {
     const { id } = useParams();
@@ -28,6 +29,10 @@ const DetalleRemito = () => {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handlePrint = () => {
+        window.open(`/comprobantes/remito/${id}/imprimir/?model=modern`, '_blank');
     };
 
     if (loading) {
@@ -59,13 +64,7 @@ const DetalleRemito = () => {
                 </div>
                 <div className="d-flex gap-2">
                     <BtnBack onClick={() => navigate('/remitos')} />
-                    <button
-                        className="btn btn-info text-white shadow-sm d-flex align-items-center gap-2 fw-bold"
-                        onClick={() => window.open(`/comprobantes/remito/${id}/imprimir/`, '_blank')}
-                    >
-                        <Printer size={18} />
-                        Imprimir
-                    </button>
+                    <BtnPrint onClick={handlePrint} />
                 </div>
             </div>
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Plus, Trash2, User, ShoppingCart, FileText, X, Check, ClipboardList, Save, AlertTriangle } from 'lucide-react';
 import { BtnSave, BtnCancel } from '../components/CommonButtons';
+import { useProductSearch } from '../hooks/useProductSearch';
 
 // Obtener CSRF Token
 function getCookie(name) {
@@ -42,20 +43,30 @@ const NuevoPedido = () => {
     const [sugerenciaClienteActiva, setSugerenciaClienteActiva] = useState(0);
 
     // Campos de entrada de producto
-    const [inputCodigo, setInputCodigo] = useState('');
-    const [inputProducto, setInputProducto] = useState('');
+    // ==================== PRODUCT SEARCH HOOK ====================
+    const {
+        inputCodigo, setInputCodigo,
+        inputProducto, setInputProducto,
+        codigosSugeridos, productosSugeridos,
+        mostrarSugerenciasCodigo, mostrarSugerenciasProducto,
+        sugerenciaCodigoActiva, sugerenciaActiva,
+        codigoListRef, productoListRef,
+        nextInputRef: productoRef,
+        handleCodigoKeyDown, handleProductoKeyDown,
+        handleCodigoBlur, handleProductoBlur,
+        seleccionar: seleccionarProducto,
+        limpiar: limpiarBusqueda
+    } = useProductSearch({
+        onSelect: (producto) => {
+            setProductoSeleccionado(producto);
+            setInputPrecio(producto.precio_efectivo.toString());
+            setTimeout(() => cantidadRef.current?.select(), 50);
+        }
+    });
+
     const [inputCantidad, setInputCantidad] = useState('1');
     const [inputPrecio, setInputPrecio] = useState('');
-
-    // Autocompletado de código
-    const [codigosSugeridos, setCodigosSugeridos] = useState([]);
-    const [mostrarSugerenciasCodigo, setMostrarSugerenciasCodigo] = useState(false);
-    const [sugerenciaCodigoActiva, setSugerenciaCodigoActiva] = useState(0);
-
-    const [productosSugeridos, setProductosSugeridos] = useState([]);
-    const [mostrarSugerenciasProducto, setMostrarSugerenciasProducto] = useState(false);
     const [productoSeleccionado, setProductoSeleccionado] = useState(null);
-    const [sugerenciaActiva, setSugerenciaActiva] = useState(0);
 
     const [items, setItems] = useState([]);
     const [observaciones, setObservaciones] = useState('');
@@ -68,14 +79,14 @@ const NuevoPedido = () => {
 
     // Referencias
     const codigoRef = useRef(null);
-    const productoRef = useRef(null);
+    // productoRef (from hook)
     const cantidadRef = useRef(null);
     const clienteInputRef = useRef(null);
 
     // Referencias para scroll automático en listas
     const clienteListRef = useRef(null);
-    const codigoListRef = useRef(null);
-    const productoListRef = useRef(null);
+    // codigoListRef (from hook)
+    // productoListRef (from hook)
 
     // ==================== FOCUS INICIAL ====================
     useEffect(() => {
@@ -100,46 +111,6 @@ const NuevoPedido = () => {
         }, 300);
         return () => clearTimeout(timer);
     }, [busquedaCliente]);
-
-    // ==================== BUSCAR POR CÓDIGO (autocompletado) ====================
-    useEffect(() => {
-        if (inputCodigo.length < 1) {
-            setCodigosSugeridos([]);
-            setMostrarSugerenciasCodigo(false);
-            return;
-        }
-        const timer = setTimeout(() => {
-            fetch(`/api/productos/buscar/?q=${encodeURIComponent(inputCodigo)}`)
-                .then(res => res.json())
-                .then(data => {
-                    setCodigosSugeridos(data.data || []);
-                    setMostrarSugerenciasCodigo(true);
-                    setSugerenciaCodigoActiva(0);
-                })
-                .catch(() => setCodigosSugeridos([]));
-        }, 150);
-        return () => clearTimeout(timer);
-    }, [inputCodigo]);
-
-    // ==================== BUSCAR PRODUCTO POR NOMBRE ====================
-    useEffect(() => {
-        if (inputProducto.length < 2) {
-            setProductosSugeridos([]);
-            setMostrarSugerenciasProducto(false);
-            return;
-        }
-        const timer = setTimeout(() => {
-            fetch(`/api/productos/buscar/?q=${encodeURIComponent(inputProducto)}`)
-                .then(res => res.json())
-                .then(data => {
-                    setProductosSugeridos(data.data || []);
-                    setMostrarSugerenciasProducto(true);
-                    setSugerenciaActiva(0);
-                })
-                .catch(() => setProductosSugeridos([]));
-        }, 200);
-        return () => clearTimeout(timer);
-    }, [inputProducto]);
 
     // ==================== OBTENER INICIALES ====================
     const getInitials = (nombre) => {
@@ -184,19 +155,6 @@ const NuevoPedido = () => {
         }
     };
 
-    // ==================== SELECCIONAR PRODUCTO ====================
-    const seleccionarProducto = (producto) => {
-        setProductoSeleccionado(producto);
-        setInputCodigo(producto.codigo);
-        setInputProducto(producto.descripcion);
-        setInputPrecio(producto.precio_efectivo.toString());
-        setMostrarSugerenciasProducto(false);
-        setMostrarSugerenciasCodigo(false);
-        setProductosSugeridos([]);
-        setCodigosSugeridos([]);
-        setTimeout(() => cantidadRef.current?.select(), 50);
-    };
-
     // ==================== AGREGAR PRODUCTO A LA LISTA ====================
     const agregarProductoALista = () => {
         if (!productoSeleccionado) return;
@@ -209,7 +167,7 @@ const NuevoPedido = () => {
         const cantidadTotal = existe ? existe.cantidad + cantidad : cantidad;
 
         if (cantidadTotal > productoSeleccionado.stock) {
-            // Abrir Modal Custom
+            // Abrir Modal Stock Custom
             setProductoPendiente({
                 producto: productoSeleccionado,
                 cantidad,
@@ -268,67 +226,14 @@ const NuevoPedido = () => {
     };
 
     const limpiarCamposEntrada = () => {
-        setInputCodigo('');
-        setInputProducto('');
+        limpiarBusqueda();
         setInputCantidad('1');
         setInputPrecio('');
         setProductoSeleccionado(null);
-        setProductosSugeridos([]);
-        setCodigosSugeridos([]);
-        setMostrarSugerenciasProducto(false);
-        setMostrarSugerenciasCodigo(false);
     };
 
     // ==================== MANEJO DE TECLAS - CÓDIGO/PRODUCTO ====================
-    const handleCodigoKeyDown = (e) => {
-        if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            const newIndex = Math.min(sugerenciaCodigoActiva + 1, codigosSugeridos.length - 1);
-            setSugerenciaCodigoActiva(newIndex);
-            const item = codigoListRef.current?.children[newIndex];
-            item?.scrollIntoView({ block: 'nearest' });
-        } else if (e.key === 'ArrowUp') {
-            e.preventDefault();
-            const newIndex = Math.max(sugerenciaCodigoActiva - 1, 0);
-            setSugerenciaCodigoActiva(newIndex);
-            const item = codigoListRef.current?.children[newIndex];
-            item?.scrollIntoView({ block: 'nearest' });
-        } else if (e.key === 'Enter') {
-            e.preventDefault();
-            if (mostrarSugerenciasCodigo && codigosSugeridos.length > 0) {
-                seleccionarProducto(codigosSugeridos[sugerenciaCodigoActiva]);
-            } else if (!inputCodigo.trim()) {
-                productoRef.current?.focus();
-            }
-        } else if (e.key === 'Escape') {
-            setMostrarSugerenciasCodigo(false);
-        }
-    };
-
-    const handleProductoKeyDown = (e) => {
-        if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            const newIndex = Math.min(sugerenciaActiva + 1, productosSugeridos.length - 1);
-            setSugerenciaActiva(newIndex);
-            const item = productoListRef.current?.children[newIndex];
-            item?.scrollIntoView({ block: 'nearest' });
-        } else if (e.key === 'ArrowUp') {
-            e.preventDefault();
-            const newIndex = Math.max(sugerenciaActiva - 1, 0);
-            setSugerenciaActiva(newIndex);
-            const item = productoListRef.current?.children[newIndex];
-            item?.scrollIntoView({ block: 'nearest' });
-        } else if (e.key === 'Enter') {
-            e.preventDefault();
-            if (mostrarSugerenciasProducto && productosSugeridos.length > 0) {
-                seleccionarProducto(productosSugeridos[sugerenciaActiva]);
-            } else if (productoSeleccionado) {
-                cantidadRef.current?.select();
-            }
-        } else if (e.key === 'Escape') {
-            setMostrarSugerenciasProducto(false);
-        }
-    };
+    // Handlers removed (handled by hook)
 
     const handleCantidadKeyDown = (e) => {
         if (e.key === 'Enter') {
@@ -408,7 +313,7 @@ const NuevoPedido = () => {
 
     // ==================== RENDER ====================
     return (
-        <div className="p-6 max-w-7xl mx-auto h-[calc(100vh-2rem)] flex flex-col">
+        <div className="p-6 max-w-7xl mx-auto h-[calc(100vh-2rem)] flex flex-col fade-in">
             {/* Header */}
             <div className="mb-6 flex-shrink-0 flex justify-between items-end">
                 <div>
@@ -578,7 +483,7 @@ const NuevoPedido = () => {
                                         value={inputCodigo}
                                         onChange={(e) => setInputCodigo(e.target.value.toUpperCase())}
                                         onKeyDown={handleCodigoKeyDown}
-                                        onBlur={() => setTimeout(() => setMostrarSugerenciasCodigo(false), 200)}
+                                        onBlur={handleCodigoBlur}
                                         placeholder="XXX"
                                         className="w-full px-3 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-slate-50 font-mono text-sm uppercase text-center font-bold tracking-wide"
                                     />
@@ -611,7 +516,7 @@ const NuevoPedido = () => {
                                         value={inputProducto}
                                         onChange={(e) => { setInputProducto(e.target.value); setProductoSeleccionado(null); }}
                                         onKeyDown={handleProductoKeyDown}
-                                        onBlur={() => setTimeout(() => setMostrarSugerenciasProducto(false), 200)}
+                                        onBlur={handleProductoBlur}
                                         placeholder="Buscar producto por nombre..."
                                         className="w-full px-3 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-slate-50 text-sm font-medium"
                                     />

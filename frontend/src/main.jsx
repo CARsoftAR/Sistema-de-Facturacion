@@ -13,6 +13,7 @@ if (rootElement) {
       <App />
     </StrictMode>,
   )
+  console.log('App Version: 2.1 - Cache Buster');
 }
 
 // Scenario 2: Sidebar Only (Legacy Django Pages)

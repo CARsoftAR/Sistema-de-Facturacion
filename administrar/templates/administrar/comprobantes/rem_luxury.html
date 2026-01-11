@@ -1,0 +1,150 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Remito {{ remito.numero_formateado }} - Luxury</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;600&family=Playfair+Display:wght@700;900&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --luxury-black: #1a1a1a;
+            --luxury-grey: #f4f4f4;
+            --luxury-gold: #c5a059;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 11px;
+            color: var(--luxury-black);
+            background: #ffffff;
+        }
+
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 0;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .side-accent {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 15mm;
+            height: 100%;
+            background: var(--luxury-black);
+        }
+
+        .main-content {
+            margin-left: 15mm;
+            padding: 20mm 15mm;
+        }
+
+        .luxury-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            border-bottom: 2px solid var(--luxury-grey);
+            padding-bottom: 15px;
+            margin-bottom: 40px;
+        }
+
+        .lux-logo {
+            font-family: 'Playfair Display', serif;
+            font-size: 32px;
+            font-weight: 900;
+        }
+
+        .remito-title {
+            color: var(--luxury-gold);
+            font-family: 'Playfair Display', serif;
+            font-size: 24px;
+            text-transform: uppercase;
+            letter-spacing: 5px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 50px;
+        }
+
+        th {
+            text-align: left;
+            padding: 15px 10px;
+            border-bottom: 2px solid var(--luxury-black);
+            text-transform: uppercase;
+            font-size: 10px;
+        }
+
+        td {
+            padding: 15px 10px;
+            border-bottom: 1px solid var(--luxury-grey);
+        }
+
+        .sig-section {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 80px;
+        }
+
+        .sig-box {
+            border-bottom: 1px solid var(--luxury-black);
+            width: 200px;
+            text-align: center;
+            padding-bottom: 5px;
+            font-style: italic;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page">
+        <div class="side-accent"></div>
+        <div class="main-content">
+            <header class="luxury-header">
+                <div>
+                    <div class="lux-logo">{{ empresa.nombre }}</div>
+                    <div style="font-size: 10px;">{{ empresa.direccion }}</div>
+                </div>
+                <div class="remito-title">Despacho</div>
+            </header>
+
+            <div style="margin-bottom: 40px;">
+                <p style="text-transform: uppercase; font-size: 9px; color: var(--luxury-gold); margin-bottom: 5px;">
+                    Consignatario</p>
+                <div style="font-family: 'Playfair Display', serif; font-size: 20px;">{{ remito.cliente.nombre }}</div>
+                <p>{{ remito.direccion_entrega|default:remito.cliente.domicilio }}</p>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 20%; text-align: center;">U. Cantidad</th>
+                        <th>Descripción Detallada</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in remito.detalles.all %}
+                    <tr>
+                        <td style="text-align: center; font-weight: 600;">{{ item.cantidad }}</td>
+                        <td>{{ item.producto.descripcion }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <div class="sig-section">
+                <div class="sig-box">Recepción y Conformidad</div>
+                <div class="sig-box">Control de Calidad</div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

@@ -27,7 +27,8 @@ urlpatterns = [
     path("menu-legacy/", views.menu, name="menu_legacy"),
     path("menu/", views.menu, name="menu_legacy_alias"),
 
-    path("dashboard/", views.dashboard, name="dashboard"),
+    path("dashboard/", TemplateView.as_view(template_name="react_app.html"), name="dashboard"),
+    path("api/dashboard/stats/", views.api_dashboard_stats, name="api_dashboard_stats"),
     path("estado/", views.estado_sistema, name="estado"),
     path("parametros/", views.parametros, name="parametros"),
     path("api/config/obtener/", views.api_empresa_config, name="api_empresa_config"),
@@ -288,6 +289,7 @@ urlpatterns = [
     path('api/pedidos/eliminar/<int:id>/', views.api_pedido_eliminar, name='api_pedido_eliminar'),
     path('api/pedidos/estado/<int:id>/', views.api_pedido_cambiar_estado, name='api_pedido_cambiar_estado'),
     path('api/pedidos/facturar/<int:id>/', views.api_pedido_facturar, name='api_pedido_facturar'),
+    path('pedidos/imprimir/<int:pedido_id>/', views.pedido_print, name='pedido_print'),
 
     # Usuarios
     path("usuarios/", views.usuarios_lista, name="usuarios_lista"),
@@ -323,8 +325,26 @@ urlpatterns = [
     # API for Detail
     path("api/remitos/<int:id>/", views.api_remito_detalle, name="api_remito_detalle"),
     
+    # API Crear Nota de Credito
+    path("api/notas-credito/crear/<int:venta_id>/", views.api_nota_credito_crear, name="api_nota_credito_crear"),
+    # API Detalle Nota de Credito
+    path("api/notas-credito/<int:id>/", views.api_nota_credito_detalle, name="api_nota_credito_detalle"),
+
+    # DEBIT NOTES
+    path("api/notas-debito/listar/", views.api_notas_debito_listar, name="api_notas_debito_listar"),
+    path("api/notas-debito/crear/<int:venta_id>/", views.api_nota_debito_crear, name="api_nota_debito_crear"),
+    path("api/notas-debito/<int:id>/", views.api_nota_debito_detalle, name="api_nota_debito_detalle"),
+
+    # React Routes for Details
+    path("comprobantes/remito/<int:id>/", TemplateView.as_view(template_name="react_app.html"), name="detalle_remito_react"),
+    path("comprobantes/nc/<int:id>/", TemplateView.as_view(template_name="react_app.html"), name="detalle_nc_react"),
+    path("comprobantes/nd/<int:id>/", TemplateView.as_view(template_name="react_app.html"), name="detalle_nd_react"),
+    path("notas-debito/", TemplateView.as_view(template_name="react_app.html"), name="notas_debito_react"),
+
     # Legacy Print (Keep existing)
     path("comprobantes/remito/<int:id>/imprimir/", views_comprobantes.imprimir_remito, name="imprimir_remito"),
+    path("comprobantes/nc/<int:id>/imprimir/", views_comprobantes.imprimir_nc, name="imprimir_nc"),
+    path("comprobantes/nd/<int:id>/imprimir/", views_comprobantes.imprimir_nd, name="imprimir_nd"),
 
     # ==========================
     # CTA. CTE. (CLIENTES Y PROVEEDORES)

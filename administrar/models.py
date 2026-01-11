@@ -804,7 +804,7 @@ class NotaDebito(models.Model):
     cliente = models.ForeignKey(Cliente, on_delete=models.PROTECT)
     venta_asociada = models.ForeignKey(Venta, on_delete=models.SET_NULL, null=True, blank=True, related_name="notas_debito")
     fecha = models.DateTimeField(auto_now_add=True)
-    tipo_comprobante = models.CharField(max_length=3, choices=[('NDA','Nota DÃ©bito A'), ('NDB','Nota DÃ©bito B'), ('NDC','Nota DÃ©bito C')])
+    tipo_comprobante = models.CharField(max_length=3, choices=[('NDA','Nota Débito A'), ('NDB','Nota Débito B'), ('NDC','Nota Débito C')])
     total = models.DecimalField(max_digits=12, decimal_places=2)
     cae = models.CharField(max_length=20, blank=True, null=True)
     motivo = models.TextField(blank=True)
@@ -817,6 +817,18 @@ class NotaDebito(models.Model):
 
     def __str__(self):
         return f"{self.tipo_comprobante} {self.numero_formateado()} - {self.cliente.nombre}"
+
+
+class DetalleNotaDebito(models.Model):
+    nota_debito = models.ForeignKey(NotaDebito, on_delete=models.CASCADE, related_name='detalles')
+    producto = models.ForeignKey(Producto, on_delete=models.PROTECT)
+    cantidad = models.DecimalField(max_digits=10, decimal_places=2)
+    precio_unitario = models.DecimalField(max_digits=10, decimal_places=2)
+    subtotal = models.DecimalField(max_digits=12, decimal_places=2)
+
+    def __str__(self):
+        return f"{self.producto.descripcion} x {self.cantidad}"
+
 
 
 class DetalleNotaDebito(models.Model):

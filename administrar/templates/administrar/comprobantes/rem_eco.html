@@ -1,0 +1,127 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Remito {{ remito.numero_formateado }} - Eco</title>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;700&family=Nunito:wght@300;600&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --eco-green: #6d8b74;
+            --eco-sage: #d0e8e0;
+            --eco-bg: #fdfdfb;
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            font-size: 11px;
+            color: #444;
+            background: var(--eco-bg);
+        }
+
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 15mm;
+            margin: 0 auto;
+            border-radius: 20px;
+            border: 2px solid var(--eco-sage);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .eco-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+        }
+
+        .company-name {
+            font-family: 'Quicksand', sans-serif;
+            font-size: 24px;
+            color: var(--eco-green);
+            font-weight: 700;
+        }
+
+        .eco-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 40px;
+        }
+
+        .eco-table th {
+            background: var(--eco-sage);
+            color: var(--eco-green);
+            padding: 10px;
+            text-align: left;
+        }
+
+        .eco-table td {
+            padding: 10px;
+            border-bottom: 1px dashed var(--eco-sage);
+        }
+
+        .footer-sig {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 50px;
+        }
+
+        .sig-bubble {
+            background: white;
+            border: 1px solid var(--eco-sage);
+            padding: 15px;
+            border-radius: 15px;
+            width: 200px;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page">
+        <header class="eco-header">
+            <div>
+                <div class="company-name">{{ empresa.nombre }}</div>
+                <div style="font-size: 10px;">{{ empresa.direccion }}</div>
+            </div>
+            <div style="text-align: right;">
+                <div style="color: var(--eco-green); font-weight: 700;">REMITO {{ remito.numero_formateado }}</div>
+                <div>FECHA: {{ remito.fecha|date:"d/m/Y" }}</div>
+            </div>
+        </header>
+
+        <div
+            style="margin-bottom: 30px; background: white; border-radius: 15px; padding: 15px; border: 1px solid var(--eco-sage);">
+            <b>ENTREGAR A:</b> {{ remito.cliente.nombre }}<br>
+            <b>DESTINO:</b> {{ remito.direccion_entrega|default:remito.cliente.domicilio }}
+        </div>
+
+        <table class="eco-table">
+            <thead>
+                <tr>
+                    <th style="width: 15%;">CANT</th>
+                    <th>DETALLE DE PRODUCTOS</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in remito.detalles.all %}
+                <tr>
+                    <td>{{ item.cantidad }}</td>
+                    <td>{{ item.producto.descripcion }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="footer-sig">
+            <div class="sig-bubble">RECIBIDO CONFORME</div>
+            <div class="sig-bubble">VERIFICADO</div>
+        </div>
+    </div>
+</body>
+
+</html>

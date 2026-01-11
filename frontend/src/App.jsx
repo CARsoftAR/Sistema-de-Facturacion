@@ -21,43 +21,14 @@ import Balance from './pages/Balance'
 import Remitos from './pages/Remitos'
 import NotasCredito from './pages/NotasCredito'
 import DetalleRemito from './pages/DetalleRemito'
+import DetalleNotaCredito from './pages/DetalleNotaCredito'
+import NotasDebito from './pages/NotasDebito'
+import DetalleNotaDebito from './pages/DetalleNotaDebito'
 
 import Parametros from './pages/Parametros'
 import ConfiguracionEmpresa from './pages/ConfiguracionEmpresa'
 
-// Componente Dashboard temporal con estilos Bootstrap
-const Dashboard = () => (
-  <div className="container-fluid p-4">
-    <header className="mb-4 d-flex align-items-center justify-content-between">
-      <div>
-        <h1 className="h3 fw-bold text-dark tracking-tight">Bienvenido a CARSOFT</h1>
-        <p className="text-secondary mt-1">Sistema Integral de Gestión</p>
-      </div>
-    </header>
-
-    <div className="row g-4 mb-4">
-      {[
-        { label: 'Ventas del Día', value: '$ 154,200', color: 'text-success', border: 'border-success' },
-        { label: 'Pedidos Pendientes', value: '12', color: 'text-primary', border: 'border-primary' },
-        { label: 'Stock Bajo', value: '5 Prod.', color: 'text-danger', border: 'border-danger' },
-        { label: 'Caja Actual', value: '$ 45,500', color: 'text-warning', border: 'border-warning' },
-      ].map((stat, i) => (
-        <div key={i} className="col-12 col-md-6 col-lg-3">
-          <div className="card h-100 border-0 shadow-sm">
-            <div className={`card-body border-start border-4 ${stat.border}`}>
-              <h6 className="card-subtitle mb-2 text-muted small text-uppercase">{stat.label}</h6>
-              <h2 className={`card-title mb-0 fw-bold ${stat.color}`}>{stat.value}</h2>
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-
-    <div className="card border-0 shadow-sm p-5 text-center text-muted">
-      <p className="mb-0">Selecciona una opción del menú para comenzar.</p>
-    </div>
-  </div>
-);
+import Dashboard from './pages/Dashboard'
 
 function App() {
   return (
@@ -71,7 +42,7 @@ function App() {
           <style>
             {`
               @media (min-width: 992px) {
-                main { margin-left: 260px !important; }
+                main { margin-left: 300px !important; }
               }
             `}
           </style>
@@ -101,7 +72,10 @@ function App() {
 
             <Route path="/remitos" element={<Remitos />} />
             <Route path="/comprobantes/remito/:id" element={<DetalleRemito />} />
+            <Route path="/comprobantes/nc/:id" element={<DetalleNotaCredito />} />
             <Route path="/notas-credito" element={<NotasCredito />} />
+            <Route path="/notas-debito" element={<NotasDebito />} />
+            <Route path="/comprobantes/nd/:id" element={<DetalleNotaDebito />} />
             <Route path="/proveedores" element={<Proveedores />} />
             <Route path="/caja" element={<Caja />} />
             <Route path="/caja/" element={<Caja />} />

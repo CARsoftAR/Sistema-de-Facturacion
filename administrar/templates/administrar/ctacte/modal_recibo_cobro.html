@@ -367,8 +367,10 @@
                     // Mostrar mensaje de éxito (no bloqueante o simplemente abrir)
                     // alert(`✅ Recibo ${resp.numero} generado exitosamente`);
 
-                    // Abrir impresión DIRECTAMENTE
-                    window.open(`/api/recibos/${resp.recibo_id}/imprimir/`, '_blank');
+                    // Abrir impresión con selección de estilo
+                    if (resp.recibo_id) {
+                        window.open(`/api/recibos/${resp.recibo_id}/imprimir/?model=modern`, '_blank');
+                    }
                 } else {
                     alert('❌ Error: ' + resp.error);
                 }

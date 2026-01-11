@@ -1,0 +1,207 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Factura {{ venta.numero_factura_formateado }} - Minimal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #000000;
+            --text-dark: #000000;
+            --text-grey: #444444;
+            --border-color: #000000;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            font-size: 11px;
+            color: var(--text-dark);
+            background: #ffffff;
+        }
+
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 15mm;
+            margin: 20px auto;
+            border: 1px solid #eee;
+            position: relative;
+        }
+
+        .header {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .company-name {
+            font-size: 24px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .voucher-type {
+            font-size: 40px;
+            font-weight: 700;
+            border: 2px solid #000;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+
+        .section-title {
+            text-transform: uppercase;
+            font-weight: 700;
+            border-bottom: 1px solid #000;
+            margin-bottom: 10px;
+            padding-bottom: 2px;
+        }
+
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 40px;
+        }
+
+        .items-table th {
+            text-align: left;
+            border-bottom: 2px solid #000;
+            padding: 10px 5px;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+
+        .items-table td {
+            padding: 10px 5px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .totals {
+            float: right;
+            width: 300px;
+        }
+
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+        }
+
+        .total-final {
+            border-top: 2px solid #000;
+            margin-top: 10px;
+            padding-top: 10px;
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        @media print {
+            .page {
+                margin: 0;
+                border: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page">
+        <div class="header">
+            <div>
+                <div class="company-name">{{ empresa.nombre }}</div>
+                <div style="margin-top: 10px; line-height: 1.4;">
+                    {{ empresa.direccion }}<br>
+                    {{ empresa.email }} | Tel: {{ empresa.telefono }}
+                </div>
+            </div>
+            <div style="text-align: right;">
+                <div style="font-size: 14px; font-weight: 700;">FACTURA ELECTRÓNICA</div>
+                <div style="font-size: 18px; margin-top: 5px;">{{ venta.numero_factura_formateado }}</div>
+                <div style="margin-top: 5px;">Fecha: {{ venta.fecha|date:"d/m/Y" }}</div>
+            </div>
+        </div>
+
+        <div class="info-grid">
+            <div>
+                <div class="section-title">Cliente</div>
+                <p><strong>{{ cliente.nombre }}</strong></p>
+                <p>{{ cliente.domicilio }}</p>
+                <p>{{ cliente.localidad.nombre }}, {{ cliente.provincia.nombre }}</p>
+                <p>CUIT: {{ cliente.cuit }}</p>
+            </div>
+            <div style="text-align: right;">
+                <div class="section-title">Detalles</div>
+                <p>Condición: {{ venta.condicion_venta }}</p>
+                <p>Vencimiento: {{ venta.fecha_vencimiento|date:"d/m/Y" }}</p>
+                {% if venta.pedido_origen %}
+                <p>Pedido Ref: #{{ venta.pedido_origen.id }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <table class="items-table">
+            <thead>
+                <tr>
+                    <th style="width: 10%;">Cant.</th>
+                    <th style="width: 60%;">Descripción</th>
+                    <th style="width: 15%; text-align: right;">P. Unit</th>
+                    <th style="width: 15%; text-align: right;">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in detalles %}
+                <tr>
+                    <td>{{ item.cantidad }}</td>
+                    <td>{{ item.producto.descripcion }}</td>
+                    <td style="text-align: right;">{{ item.precio_unitario|floatformat:2 }}</td>
+                    <td style="text-align: right;">{{ item.subtotal|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="totals">
+            <div class="total-row">
+                <span>Subtotal</span>
+                <span>$ {{ venta.subtotal|floatformat:2 }}</span>
+            </div>
+            {% if venta.iva_amount %}
+            <div class="total-row">
+                <span>IVA (21%)</span>
+                <span>$ {{ venta.iva_amount|floatformat:2 }}</span>
+            </div>
+            {% endif %}
+            <div class="total-row total-final">
+                <span>TOTAL</span>
+                <span>$ {{ venta.total|floatformat:2 }}</span>
+            </div>
+        </div>
+
+        <div style="margin-top: 100px; font-size: 9px; color: #888;">
+            <p>Comprobante generado por CARSOFT - Sistema de Facturación.</p>
+        </div>
+    </div>
+</body>
+
+</html>

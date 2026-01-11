@@ -1,0 +1,159 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Factura {{ venta.numero_factura_formateado }} - Classic</title>
+    <style>
+        :root {
+            --primary-color: #334455;
+            --bg-light: #f8f9fa;
+        }
+
+        body {
+            font-family: 'Times New Roman', serif;
+            font-size: 12px;
+            color: #333;
+            background: #eee;
+        }
+
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 20mm;
+            margin: 20px auto;
+            background: white;
+            border: 1px solid #ccc;
+        }
+
+        .header-table {
+            width: 100%;
+            border-bottom: 3px double var(--primary-color);
+            margin-bottom: 20px;
+        }
+
+        .company-info {
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .voucher-header {
+            text-align: center;
+            border: 1px solid #000;
+            padding: 10px;
+            background: var(--bg-light);
+        }
+
+        .main-table {
+            width: 100%;
+            border: 1px solid #000;
+            border-collapse: collapse;
+        }
+
+        .main-table th {
+            background: var(--bg-light);
+            border: 1px solid #000;
+            padding: 8px;
+            text-align: center;
+        }
+
+        .main-table td {
+            border: 1px solid #000;
+            padding: 8px;
+        }
+
+        .totals-table {
+            width: 300px;
+            margin-top: 20px;
+            float: right;
+            border-collapse: collapse;
+        }
+
+        .totals-table td {
+            border: 1px solid #000;
+            padding: 8px;
+            text-align: right;
+        }
+
+        .footer {
+            margin-top: 50px;
+            text-align: center;
+            clear: both;
+            font-size: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page">
+        <table class="header-table">
+            <tr>
+                <td class="company-info">
+                    <span style="font-size: 24px;">{{ empresa.nombre }}</span><br>
+                    {{ empresa.direccion }}<br>
+                    {{ empresa.email }}<br>
+                    {{ empresa.telefono }}
+                </td>
+                <td style="text-align: right;">
+                    <div class="voucher-header">
+                        <span style="font-size: 16px; font-weight: bold;">FACTURA</span><br>
+                        <span style="font-size: 14px;">N° {{ venta.numero_factura_formateado }}</span><br>
+                        <span>Fecha: {{ venta.fecha|date:"d/m/Y" }}</span>
+                    </div>
+                </td>
+            </tr>
+        </table>
+
+        <div style="margin-bottom: 20px;">
+            <strong>SEÑOR(ES):</strong> {{ cliente.nombre }}<br>
+            <strong>DOMICILIO:</strong> {{ cliente.domicilio }} - {{ cliente.localidad.nombre }}<br>
+            <strong>CUIT:</strong> {{ cliente.cuit }}
+        </div>
+
+        <table class="main-table">
+            <thead>
+                <tr>
+                    <th>CANT.</th>
+                    <th>DETALLE</th>
+                    <th>P. UNIT.</th>
+                    <th>TOTAL</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in detalles %}
+                <tr>
+                    <td style="text-align: center;">{{ item.cantidad }}</td>
+                    <td>{{ item.producto.descripcion }}</td>
+                    <td style="text-align: right;">{{ item.precio_unitario|floatformat:2 }}</td>
+                    <td style="text-align: right;">{{ item.subtotal|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <table class="totals-table">
+            <tr>
+                <td>SUBTOTAL</td>
+                <td>$ {{ venta.subtotal|floatformat:2 }}</td>
+            </tr>
+            {% if venta.iva_amount %}
+            <tr>
+                <td>IVA 21%</td>
+                <td>$ {{ venta.iva_amount|floatformat:2 }}</td>
+            </tr>
+            {% endif %}
+            <tr>
+                <td style="font-weight: bold;">TOTAL</td>
+                <td style="font-weight: bold;">$ {{ venta.total|floatformat:2 }}</td>
+            </tr>
+        </table>
+
+        <div class="footer">
+            <p>GRACIAS POR SU COMPRA</p>
+        </div>
+    </div>
+</body>
+
+</html>

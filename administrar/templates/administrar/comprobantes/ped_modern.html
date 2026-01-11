@@ -1,0 +1,337 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Presupuesto #{{ pedido.id }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Pacifico&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #6366f1;
+            /* Indigo */
+            --light-color: #eef2ff;
+            --text-dark: #1e293b;
+            --text-grey: #64748b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            font-size: 11px;
+            color: var(--text-dark);
+            background: #f8fafc;
+        }
+
+        .page {
+            background: white;
+            width: 210mm;
+            min-height: 297mm;
+            padding: 0;
+            margin: 20px auto;
+            position: relative;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .content-container {
+            padding: 15mm 15mm 10mm 15mm;
+            flex: 1;
+            position: relative;
+            z-index: 10;
+        }
+
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 40px;
+        }
+
+        .company-branding h1 {
+            font-family: 'Pacifico', cursive;
+            font-size: 28px;
+            color: var(--primary-color);
+            margin-bottom: 5px;
+            font-weight: 400;
+        }
+
+        .company-address {
+            font-size: 10px;
+            color: var(--text-grey);
+            line-height: 1.4;
+        }
+
+        .logo-container {
+            max-width: 200px;
+            max-height: 100px;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .logo-container img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+
+        .info-block h3 {
+            color: var(--primary-color);
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+            border-bottom: 2px solid var(--light-color);
+            padding-bottom: 5px;
+        }
+
+        .client-info p {
+            margin-bottom: 4px;
+        }
+
+        .order-details {
+            background: var(--light-color);
+            padding: 15px;
+            border-radius: 12px;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            font-size: 10px;
+        }
+
+        .detail-label {
+            color: var(--text-grey);
+            font-weight: 600;
+        }
+
+        .detail-value {
+            font-weight: 700;
+        }
+
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+
+        .items-table th {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 10px 15px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 10px;
+        }
+
+        .items-table th:first-child {
+            border-radius: 8px 0 0 8px;
+        }
+
+        .items-table th:last-child {
+            border-radius: 0 8px 8px 0;
+        }
+
+        .items-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--light-color);
+            font-size: 10px;
+        }
+
+        .totals-container {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 50px;
+        }
+
+        .totals-table {
+            width: 280px;
+        }
+
+        .totals-table td {
+            padding: 8px 0;
+            text-align: right;
+        }
+
+        .totals-table .label {
+            color: var(--text-grey);
+            padding-right: 20px;
+            font-weight: 500;
+        }
+
+        .totals-table .total-row td {
+            font-size: 18px;
+            color: var(--primary-color);
+            font-weight: 800;
+            padding-top: 15px;
+            border-top: 2px solid var(--primary-color);
+        }
+
+        .footer-note {
+            margin-top: 50px;
+            padding: 20px;
+            background: #fdfdfd;
+            border-left: 4px solid var(--primary-color);
+            font-style: italic;
+        }
+
+        .waves-container {
+            position: absolute;
+            bottom: -10px;
+            left: 0;
+            width: 100%;
+            line-height: 0;
+            z-index: 1;
+        }
+
+        @media print {
+            body {
+                background: white;
+            }
+
+            .page {
+                margin: 0;
+                box-shadow: none;
+                border-radius: 0;
+            }
+
+            .no-print {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page">
+        <div class="content-container">
+            <div class="header-row">
+                <div class="company-branding">
+                    <h1>{{ empresa.nombre }}</h1>
+                    <div class="company-address">
+                        {{ empresa.direccion }}<br>
+                        {{ empresa.email }}<br>
+                        Tel: {{ empresa.telefono }}
+                    </div>
+                </div>
+                <div style="text-align: center;">
+                    <div
+                        style="font-size: 32px; font-weight: 800; color: var(--primary-color); border: 3px solid var(--primary-color); padding: 5px 20px; border-radius: 8px; display: inline-block; margin-bottom: 5px;">
+                        P</div>
+                    <div style="font-weight: 600; letter-spacing: 2px; color: var(--text-grey);">PRESUPUESTO</div>
+                </div>
+                <div class="logo-container">
+                    {% if empresa.logo %}
+                    <img src="{{ empresa.logo.url }}" alt="Logo">
+                    {% else %}
+                    <span style="font-family: 'Pacifico', cursive; color: var(--primary-color); font-size: 24px;">{{
+                        empresa.nombre }}</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="info-grid">
+                <div class="info-block client-info">
+                    <h3>Cliente</h3>
+                    <p style="font-size: 14px; font-weight: 700; color: var(--text-dark);">{{ pedido.cliente.nombre }}
+                    </p>
+                    <p>{{ pedido.cliente.domicilio }}</p>
+                    <p>{{ pedido.cliente.localidad.nombre }}</p>
+                    <p>CUIT: {{ pedido.cliente.cuit }}</p>
+                </div>
+
+                <div class="info-block order-details">
+                    <h3>Información</h3>
+                    <div class="detail-row">
+                        <span class="detail-label">Número</span>
+                        <span class="detail-value">#{{ pedido.id }}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Fecha</span>
+                        <span class="detail-value">{{ pedido.fecha|date:"d/m/Y" }}</span>
+                    </div>
+                    {% if pedido.vencimiento %}
+                    <div class="detail-row">
+                        <span class="detail-label">Válido hasta</span>
+                        <span class="detail-value">{{ pedido.vencimiento|date:"d/m/Y" }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <table class="items-table">
+                <thead>
+                    <tr>
+                        <th style="width: 10%; text-align: center;">CANT.</th>
+                        <th style="width: 50%;">DESCRIPCIÓN</th>
+                        <th style="width: 20%; text-align: right;">PRECIO UNIT.</th>
+                        <th style="width: 20%; text-align: right;">TOTAL</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in pedido.detalles.all %}
+                    <tr>
+                        <td style="text-align: center; font-weight: 600;">{{ item.cantidad }}</td>
+                        <td>{{ item.producto.descripcion }}</td>
+                        <td style="text-align: right;">$ {{ item.precio_unitario|floatformat:2 }}</td>
+                        <td style="text-align: right; font-weight: 700;">$ {{ item.subtotal|floatformat:2 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <div class="totals-container">
+                <table class="totals-table">
+                    <tr>
+                        <td class="label">Subtotal</td>
+                        <td>$ {{ pedido.total|floatformat:2 }}</td>
+                    </tr>
+                    <tr class="total-row">
+                        <td class="label">TOTAL ESTIMADO</td>
+                        <td>$ {{ pedido.total|floatformat:2 }}</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="footer-note">
+                <strong>Nota:</strong> Este documento es una estimación de presupuesto y no posee validez legal como
+                factura.
+                Los precios están sujetos a cambios sin previo aviso.
+            </div>
+        </div>
+
+        <div class="waves-container">
+            <svg viewBox="0 0 1440 320" xmlns="http://www.w3.org/2000/svg">
+                <path fill="#6366f1" fill-opacity="0.3"
+                    d="M0,192L48,197.3C96,203,192,213,288,229.3C384,245,480,267,576,250.7C672,235,768,181,864,181.3C960,181,1056,235,1152,234.7C1248,235,1344,181,1392,154.7L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z">
+                </path>
+                <path fill="#6366f1" fill-opacity="1"
+                    d="M0,192L48,186.7C96,181,192,171,288,176C384,181,480,203,576,213.3C672,224,768,224,864,202.7C960,181,1056,139,1152,138.7C1248,139,1344,181,1392,202.7L1440,224L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z">
+                </path>
+            </svg>
+        </div>
+    </div>
+</body>
+
+</html>

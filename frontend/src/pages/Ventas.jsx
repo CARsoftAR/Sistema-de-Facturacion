@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ShoppingCart, Plus, Search, Printer, XCircle, AlertCircle, CheckCircle, Trash2, Filter, RotateCcw } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { BtnAdd, BtnDelete, BtnPrint, BtnAction, BtnClear } from '../components/CommonButtons';
+import Swal from 'sweetalert2';
+import { BtnAdd, BtnDelete, BtnPrint, BtnAction, BtnClear, BtnVertical } from '../components/CommonButtons';
+import EmptyState from '../components/EmptyState';
 
 const Ventas = () => {
     const navigate = useNavigate();
@@ -31,8 +33,10 @@ const Ventas = () => {
             const response = await fetch('/api/ventas/listar/');
             const data = await response.json();
 
-            if (data.ok) {
-                let allVentas = data.data || [];
+            if (data.ok || Array.isArray(data) || data.ventas) {
+                let allVentas = data.data || data.ventas || [];
+                // Fallback if data itself is the array (legacy)
+                if (Array.isArray(data)) allVentas = data;
 
                 if (busqueda) {
                     const q = busqueda.toLowerCase();
@@ -68,12 +72,105 @@ const Ventas = () => {
     }, [fetchVentas, itemsPerPage]);
 
     const handleAnular = async (id) => {
-        if (!window.confirm("¿Estás seguro de anular esta venta?")) return;
-        alert("La funcionalidad de anular aún no está implementada en el backend.");
+        const result = await Swal.fire({
+            title: '¿Anular Venta?',
+            text: "Se generará una NOTA DE CRÉDITO automática y se devolverá el stock. Esta acción no se puede deshacer.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Sí, anular venta',
+            cancelButtonText: 'Cancelar'
+        });
+
+        if (!result.isConfirmed) return;
+
+        try {
+            const response = await fetch(`/api/notas-credito/crear/${id}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+            const data = await response.json();
+
+            if (data.ok) {
+                Swal.fire(
+                    '¡Anulada!',
+                    `Venta anulada correctamente.<br>Nota de Crédito generada: <b>${data.message || '#' + data.id}</b>`,
+                    'success'
+                );
+                fetchVentas(); // Refresh list
+            } else {
+                Swal.fire(
+                    'Error',
+                    `No se pudo anular la venta: ${data.error}`,
+                    'error'
+                );
+            }
+        } catch (error) {
+            console.error("Error anular:", error);
+            Swal.fire(
+                'Error',
+                'Error de conexión al intentar anular la venta.',
+                'error'
+            );
+        }
+    };
+
+    const handlePrint = (id) => {
+        window.open(`/invoice/print/${id}/?model=modern`, '_blank');
+    };
+
+    const handleNotaDebito = async (id) => {
+        const { value: formValues } = await Swal.fire({
+            title: 'Crear Nota de Débito',
+            html:
+                '<input id="swal-input1" class="swal2-input" placeholder="Monto" type="number" step="0.01">' +
+                '<input id="swal-input2" class="swal2-input" placeholder="Motivo (ej: Interés, Error Facturación)">',
+            focusConfirm: false,
+            showCancelButton: true,
+            confirmButtonText: 'Crear',
+            cancelButtonText: 'Cancelar',
+            preConfirm: () => {
+                const monto = document.getElementById('swal-input1').value;
+                const motivo = document.getElementById('swal-input2').value;
+                if (!monto || monto <= 0) {
+                    Swal.showValidationMessage('Por favor ingrese un monto válido');
+                    return false;
+                }
+                if (!motivo) {
+                    Swal.showValidationMessage('Por favor ingrese un motivo');
+                    return false;
+                }
+                return { monto, motivo };
+            }
+        });
+
+        if (formValues) {
+            try {
+                const response = await fetch(`/api/notas-debito/crear/${id}/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formValues)
+                });
+                const data = await response.json();
+
+                if (data.ok) {
+                    Swal.fire('¡Creada!', data.message, 'success');
+                    fetchVentas();
+                } else {
+                    Swal.fire('Error', data.error, 'error');
+                }
+            } catch (error) {
+                console.error(error);
+                Swal.fire('Error', 'No se pudo crear la Nota de Débito', 'error');
+            }
+        }
     };
 
     return (
-        <div className="container-fluid px-4 pt-4 pb-0 h-100 d-flex flex-column bg-light" style={{ maxHeight: '100vh', overflow: 'hidden' }}>
+        <div className="container-fluid px-4 pt-4 pb-3 main-content-container bg-light fade-in">
             {/* Header */}
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <div>
@@ -116,9 +213,9 @@ const Ventas = () => {
             </div>
 
             {/* Tabla */}
-            <div className="card border-0 shadow mb-4 flex-grow-1 overflow-hidden d-flex flex-column">
+            <div className="card border-0 shadow mb-0 flex-grow-1 overflow-hidden d-flex flex-column">
                 <div className="card-body p-0 d-flex flex-column overflow-hidden">
-                    <div className="table-responsive flex-grow-1 overflow-auto">
+                    <div className="table-responsive flex-grow-1 table-container-fixed">
                         <table className="table align-middle mb-0">
                             <thead className="bg-white border-bottom">
                                 <tr>
@@ -140,9 +237,11 @@ const Ventas = () => {
                                     </tr>
                                 ) : ventas.length === 0 ? (
                                     <tr>
-                                        <td colSpan="7" className="text-center py-5 text-muted">
-                                            <div className="mb-3 opacity-50"><ShoppingCart size={40} /></div>
-                                            No se encontraron ventas registradas.
+                                        <td colSpan="7" className="py-5">
+                                            <EmptyState
+                                                title="No hay ventas registradas"
+                                                description="Las ventas que realices aparecerán en este listado."
+                                            />
                                         </td>
                                     </tr>
                                 ) : (
@@ -170,21 +269,28 @@ const Ventas = () => {
                                             </td>
                                             <td className="text-end pe-4 py-3">
                                                 <div className="d-flex justify-content-end gap-2">
-                                                    <button
-                                                        onClick={() => window.open(`/invoice/print/${v.id}/`, '_blank')}
-                                                        className="btn btn-info text-white btn-sm d-flex align-items-center gap-2 px-3 fw-bold shadow-sm"
+                                                    <BtnVertical
+                                                        icon={Printer}
+                                                        label="Imprimir"
+                                                        color="print"
+                                                        onClick={() => handlePrint(v.id)}
                                                         title="Imprimir Comprobante"
-                                                    >
-                                                        <Printer size={16} /> Imprimir
-                                                    </button>
-                                                    <button
+                                                        className="text-white"
+                                                    />
+                                                    <BtnVertical
+                                                        icon={Plus}
+                                                        label="Nota Débito"
+                                                        color="warning"
+                                                        onClick={() => handleNotaDebito(v.id)}
+                                                        title="Crear Nota de Débito"
+                                                    />
+                                                    <BtnVertical
+                                                        icon={Trash2}
+                                                        label="Anular"
+                                                        color="danger"
                                                         onClick={() => handleAnular(v.id)}
-                                                        className="btn btn-danger btn-sm d-flex align-items-center justify-content-center px-2"
                                                         title="Anular Venta"
-                                                        style={{ width: '34px' }}
-                                                    >
-                                                        <Trash2 size={16} />
-                                                    </button>
+                                                    />
                                                 </div>
                                             </td>
                                         </tr>
@@ -198,7 +304,6 @@ const Ventas = () => {
                     {!loading && (
                         <div className="d-flex justify-content-between align-items-center p-3 border-top bg-light">
                             <div className="d-flex align-items-center gap-2">
-                                <span className="text-muted small">Mostrando {ventas.length} de {totalItems} registros</span>
                                 <span className="text-muted small">Mostrando {ventas.length} de {totalItems} registros</span>
                             </div>
 

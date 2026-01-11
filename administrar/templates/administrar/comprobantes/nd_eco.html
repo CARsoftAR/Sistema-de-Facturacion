@@ -1,0 +1,123 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nota de Débito {{ nota.numero_formateado }} - Eco</title>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;700&family=Nunito:wght@300;600&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --eco-purple: #9b59b6;
+            --eco-lilac: #ebdef0;
+            --eco-bg: #fdfafb;
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            font-size: 11px;
+            color: #4a235a;
+            background: var(--eco-bg);
+        }
+
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 15mm;
+            margin: 0 auto;
+            border-radius: 20px;
+            border: 2px solid var(--eco-lilac);
+            background: #fff;
+            position: relative;
+            overflow: hidden;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+        }
+
+        .company-name {
+            font-family: 'Quicksand', sans-serif;
+            font-size: 24px;
+            color: var(--eco-purple);
+            font-weight: 700;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 40px;
+        }
+
+        th {
+            background: var(--eco-lilac);
+            color: var(--eco-purple);
+            padding: 10px;
+            text-align: left;
+        }
+
+        td {
+            padding: 10px;
+            border-bottom: 1px dashed var(--eco-lilac);
+        }
+
+        .total-box {
+            background: var(--eco-purple);
+            color: white;
+            border-radius: 15px;
+            padding: 15px 30px;
+            float: right;
+            font-family: 'Quicksand', sans-serif;
+            font-size: 18px;
+            font-weight: 700;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page">
+        <header>
+            <div>
+                <div class="company-name">{{ empresa.nombre }}</div>
+                <div style="font-size: 10px; color: #888;">{{ empresa.direccion }}</div>
+            </div>
+            <div style="text-align: right;">
+                <div style="color: var(--eco-purple); font-weight: 700;">NOTA DE DÉBITO</div>
+                <div>N° {{ nota.numero_formateado }}</div>
+            </div>
+        </header>
+
+        <div style="margin-bottom: 30px; padding: 15px; border: 1px solid var(--eco-lilac); border-radius: 15px;">
+            <b>DEUDOR:</b> {{ nota.cliente.nombre }}<br>
+            <b>FECHA:</b> {{ nota.fecha|date:"d/m/Y" }}<br>
+            <b>CONCEPTO:</b> {{ nota.motivo|default:"Ajuste de Saldo" }}
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>CONCEPTO DE CARGO</th>
+                    <th style="text-align: right;">TOTAL</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in detalles %}
+                <tr>
+                    <td>{{ item.producto.descripcion }} ({{ item.cantidad }} u)</td>
+                    <td style="text-align: right;">$ {{ item.subtotal|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="total-box">
+            DÉBITO TOTAL: $ {{ nota.total|floatformat:2 }}
+        </div>
+    </div>
+</body>
+
+</html>

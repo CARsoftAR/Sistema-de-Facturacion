@@ -15,8 +15,10 @@ const ConfiguracionEmpresa = () => {
         condicion_fiscal: 'RI',
         iibb: '',
         inicio_actividades: '',
-        moneda_predeterminada: 'ARS'
+        moneda_predeterminada: 'ARS',
+        logo: null
     });
+    const [logoPreview, setLogoPreview] = useState(null);
     const [message, setMessage] = useState(null);
 
     useEffect(() => {
@@ -28,6 +30,9 @@ const ConfiguracionEmpresa = () => {
             const response = await axios.get('/api/config/obtener/');
             if (response.data) {
                 setConfig(prev => ({ ...prev, ...response.data }));
+                if (response.data.logo) {
+                    setLogoPreview(response.data.logo);
+                }
             }
         } catch (error) {
             console.error("Error cargando configuración:", error);
@@ -43,9 +48,29 @@ const ConfiguracionEmpresa = () => {
         setMessage(null);
 
         try {
-            const response = await axios.post('/api/config/guardar/', config);
+            const formData = new FormData();
+            // Agregar todos los campos de config al formData
+            Object.keys(config).forEach(key => {
+                if (key === 'logo') {
+                    if (config.logo instanceof File) {
+                        formData.append('logo', config.logo);
+                    }
+                } else {
+                    formData.append(key, config[key]);
+                }
+            });
+
+            const response = await axios.post('/api/config/guardar/', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+
             if (response.data.ok) {
                 setMessage({ type: 'success', text: 'Datos guardados correctamente.' });
+                if (response.data.logo_url) {
+                    setLogoPreview(response.data.logo_url);
+                }
                 setTimeout(() => setMessage(null), 3000);
             } else {
                 setMessage({ type: 'error', text: 'Error al guardar: ' + response.data.error });
@@ -61,6 +86,18 @@ const ConfiguracionEmpresa = () => {
     const handleChange = (e) => {
         const { name, value } = e.target;
         setConfig(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleLogoChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setConfig(prev => ({ ...prev, logo: file }));
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setLogoPreview(reader.result);
+            };
+            reader.readAsDataURL(file);
+        }
     };
 
     if (loading) return (
@@ -116,9 +153,38 @@ const ConfiguracionEmpresa = () => {
                                                 Información General
                                             </h5>
 
-                                            <div className="row g-3 mb-3">
-                                                <div className="col-12">
-                                                    <div className="form-floating">
+                                            <div className="row g-3 mb-4">
+                                                <div className="col-12 col-md-4">
+                                                    <div className="d-flex flex-column align-items-center justify-content-center p-3 border rounded-3 bg-white shadow-sm h-100" style={{ minHeight: '180px' }}>
+                                                        {logoPreview ? (
+                                                            <div className="position-relative w-100 h-100 d-flex align-items-center justify-content-center overflow-hidden rounded-2">
+                                                                <img src={logoPreview} alt="Logo Preview" style={{ maxWidth: '100%', maxHeight: '140px', objectFit: 'contain' }} />
+                                                                <label htmlFor="logo-upload" className="position-absolute bottom-0 start-0 end-0 bg-dark bg-opacity-50 text-white text-center py-1 cursor-pointer" style={{ fontSize: '10px' }}>
+                                                                    Cambiar Logo
+                                                                </label>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="text-center text-muted">
+                                                                <Building size={48} className="mb-2 opacity-25" />
+                                                                <p className="small mb-0">Sin Logo</p>
+                                                            </div>
+                                                        )}
+                                                        <input
+                                                            type="file"
+                                                            id="logo-upload"
+                                                            className="d-none"
+                                                            accept="image/*"
+                                                            onChange={handleLogoChange}
+                                                        />
+                                                        {!logoPreview && (
+                                                            <label htmlFor="logo-upload" className="btn btn-sm btn-outline-primary mt-2">
+                                                                Subir Logo
+                                                            </label>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                <div className="col-12 col-md-8">
+                                                    <div className="form-floating mb-3">
                                                         <input
                                                             type="text"
                                                             className="form-control fw-bold"
@@ -130,8 +196,6 @@ const ConfiguracionEmpresa = () => {
                                                         />
                                                         <label htmlFor="nombre">Nombre / Razón Social</label>
                                                     </div>
-                                                </div>
-                                                <div className="col-12">
                                                     <div className="form-floating">
                                                         <input
                                                             type="text"

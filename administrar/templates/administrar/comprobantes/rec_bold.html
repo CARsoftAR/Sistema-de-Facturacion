@@ -1,0 +1,148 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recibo {{ recibo.numero }} - Bold</title>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;900&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --primary-bold: #2ecc71;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            font-size: 11px;
+            color: #000;
+            background: #fff;
+        }
+
+        .page {
+            width: 210mm;
+            min-height: 148mm;
+            padding: 15mm;
+            margin: 0 auto;
+            border: 15px solid var(--primary-bold);
+            position: relative;
+        }
+
+        .bold-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 30px;
+        }
+
+        .company-name {
+            font-family: 'Archivo Black', sans-serif;
+            font-size: 32px;
+            line-height: 0.8;
+            text-transform: uppercase;
+        }
+
+        .rec-badge {
+            background: #000;
+            color: #fff;
+            padding: 10px 20px;
+            font-family: 'Archivo Black', sans-serif;
+            font-size: 18px;
+            transform: rotate(2deg);
+        }
+
+        .data-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .label {
+            font-family: 'Archivo Black', sans-serif;
+            text-transform: uppercase;
+            border-bottom: 5px solid var(--primary-bold);
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-block: 20px;
+        }
+
+        th {
+            font-family: 'Archivo Black', sans-serif;
+            text-align: left;
+            padding: 10px;
+            font-size: 12px;
+            border-bottom: 8px solid #000;
+        }
+
+        td {
+            border-bottom: 2px solid #eee;
+            padding: 12px 10px;
+            font-weight: 900;
+        }
+
+        .total-bold {
+            text-align: right;
+            margin-top: 30px;
+        }
+
+        .big-amount {
+            font-family: 'Archivo Black', sans-serif;
+            font-size: 40px;
+            color: var(--primary-bold);
+            line-height: 1;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page">
+        <header class="bold-header">
+            <div class="company-name">{{ empresa.nombre }}</div>
+            <div class="rec-badge">PAGO_EXITO</div>
+        </header>
+
+        <div class="data-grid">
+            <div>
+                <div class="label">PAGADOR</div>
+                <div style="font-size: 18px; font-weight: 900;">{{ entidad.nombre }}</div>
+                <p style="font-weight: 600; margin-top: 5px;">SON: {{ total_escrito }}</p>
+            </div>
+            <div style="text-align: right;">
+                <div class="label">N° RECIBO</div>
+                <div style="font-size: 18px; font-weight: 900;">{{ recibo.numero }}</div>
+                <p>FECHA: {{ recibo.fecha|date:"d/m/Y" }}</p>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>ITEM_DESCRIPCIÓN</th>
+                    <th style="text-align: right;">VALOR</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in recibo.items.all %}
+                <tr>
+                    <td>{{ item.concepto|default:"Acreditación de saldo" }}</td>
+                    <td style="text-align: right;">$ {{ item.importe|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="total-bold">
+            <div class="label">Monto Recibido</div>
+            <div class="big-amount">$ {{ recibo.monto|floatformat:2 }}</div>
+        </div>
+    </div>
+</body>
+
+</html>

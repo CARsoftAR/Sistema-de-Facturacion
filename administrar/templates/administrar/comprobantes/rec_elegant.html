@@ -1,0 +1,130 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recibo {{ recibo.numero }} - Elegant</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Lato:wght@300;400&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --primary-green: #3a5a40;
+            --accent: #a3b18a;
+            --bg: #fdfdfd;
+        }
+
+        body {
+            font-family: 'Lato', sans-serif;
+            font-size: 11px;
+            color: #344e41;
+            background: var(--bg);
+        }
+
+        .page {
+            width: 210mm;
+            min-height: 148mm;
+            padding: 15mm;
+            margin: 0 auto;
+            background: white;
+            border: 1px solid var(--accent);
+            position: relative;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .company-name {
+            font-family: 'Playfair Display', serif;
+            font-size: 24px;
+            color: var(--primary-green);
+            letter-spacing: 2px;
+        }
+
+        .recibo-label {
+            font-family: 'Playfair Display', serif;
+            font-style: italic;
+            font-size: 20px;
+            color: var(--accent);
+        }
+
+        .data-section {
+            border-bottom: 1px solid var(--accent);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-block: 20px;
+        }
+
+        th {
+            font-family: 'Playfair Display', serif;
+            text-align: left;
+            color: var(--primary-green);
+            border-bottom: 1px solid var(--accent);
+            padding: 5px;
+        }
+
+        td {
+            padding: 8px 5px;
+            border-bottom: 1px solid #f9f9f9;
+        }
+
+        .total-elegant {
+            float: right;
+            margin-top: 20px;
+            font-family: 'Playfair Display', serif;
+            font-size: 24px;
+            color: var(--primary-green);
+            border-top: 2px solid var(--accent);
+            padding-top: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page">
+        <header>
+            <div class="company-name">{{ empresa.nombre }}</div>
+            <div class="recibo-label">Voucher de Cobranza</div>
+            <div style="font-size: 10px;">{{ recibo.numero }} | {{ recibo.fecha|date:"d M Y" }}</div>
+        </header>
+
+        <div class="data-section">
+            <p style="text-transform: uppercase; font-size: 8px; color: var(--accent);">Pagador</p>
+            <div style="font-family: 'Playfair Display', serif; font-size: 16px;">{{ entidad.nombre }}</div>
+            <p style="font-style: italic; font-size: 10px; margin-top: 5px;">Recibimos la suma de: {{ total_escrito }}
+            </p>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Descripción del Pago</th>
+                    <th style="text-align: right;">Monto</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in recibo.items.all %}
+                <tr>
+                    <td style="font-weight: 300;">{{ item.concepto|default:"Aplicación de fondos" }}</td>
+                    <td style="text-align: right; font-weight: 600;">$ {{ item.importe|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="total-elegant">
+            $ {{ recibo.monto|floatformat:2 }}
+        </div>
+    </div>
+</body>
+
+</html>

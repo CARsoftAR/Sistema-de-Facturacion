@@ -1,0 +1,150 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recibo {{ recibo.numero }} - Luxury</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;600&family=Playfair+Display:wght@700;900&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --lux-emerald: #064e3b;
+            --lux-black: #1a1a1a;
+            --lux-grey: #f7f7f7;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 11px;
+            color: var(--lux-black);
+            background: #ffffff;
+        }
+
+        .page {
+            width: 210mm;
+            min-height: 148mm;
+            padding: 0;
+            margin: 0 auto;
+            position: relative;
+            border: 1px solid #eee;
+        }
+
+        .side-accent {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 10mm;
+            height: 100%;
+            background: var(--lux-emerald);
+        }
+
+        .main-content {
+            margin-left: 10mm;
+            padding: 15mm;
+        }
+
+        .lux-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            border-bottom: 2px solid var(--lux-grey);
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }
+
+        .lux-logo {
+            font-family: 'Playfair Display', serif;
+            font-size: 28px;
+            font-weight: 900;
+        }
+
+        .rec-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 20px;
+            color: var(--lux-emerald);
+            text-transform: uppercase;
+            letter-spacing: 5px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-block: 25px;
+        }
+
+        th {
+            text-align: left;
+            padding: 12px 10px;
+            border-bottom: 2px solid var(--lux-black);
+            text-transform: uppercase;
+            font-size: 9px;
+        }
+
+        td {
+            padding: 12px 10px;
+            border-bottom: 1px solid var(--lux-grey);
+        }
+
+        .lux-total {
+            text-align: right;
+            margin-top: 30px;
+        }
+
+        .amt-big {
+            font-family: 'Playfair Display', serif;
+            font-size: 32px;
+            border-top: 4px solid var(--lux-emerald);
+            display: inline-block;
+            padding-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page">
+        <div class="side-accent"></div>
+        <div class="main-content">
+            <header class="lux-header">
+                <div>
+                    <div class="lux-logo">{{ empresa.nombre }}</div>
+                    <div style="font-size: 10px; margin-top: 5px;">{{ empresa.direccion }}</div>
+                </div>
+                <div class="rec-title">Confirmación de Pago</div>
+            </header>
+
+            <div style="margin-bottom: 25px;">
+                <p style="text-transform: uppercase; font-size: 8px; color: var(--lux-emerald);">Recibimos de</p>
+                <div style="font-family: 'Playfair Display', serif; font-size: 18px;">{{ entidad.nombre }}</div>
+                <p style="font-style: italic; font-size: 10px; margin-top: 5px;">PESOS: {{ total_escrito }}</p>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 70%;">Descripción de Fondos</th>
+                        <th style="text-align: right;">Crédito</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in recibo.items.all %}
+                    <tr>
+                        <td style="font-weight: 600;">{{ item.concepto|default:"Ingreso a cuenta corriente" }}</td>
+                        <td style="text-align: right;">$ {{ item.importe|floatformat:2 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <div class="lux-total">
+                <span style="font-size: 9px; text-transform: uppercase; letter-spacing: 2px;">Monto Total de
+                    Operación</span><br>
+                <div class="amt-big">$ {{ recibo.monto|floatformat:2 }}</div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

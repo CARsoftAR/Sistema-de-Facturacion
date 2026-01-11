@@ -1,0 +1,188 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nota de Crédito {{ nota.numero_formateado }}</title>
+    <style>
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            color: #222;
+            line-height: 1.4;
+            background: #ccc;
+        }
+
+        .page {
+            background: white;
+            width: 210mm;
+            min-height: 297mm;
+            padding: 15mm;
+            margin: 10mm auto;
+            border: 1px solid #999;
+        }
+
+        .border-box {
+            border: 1px solid #333;
+            padding: 10px;
+            margin-bottom: 15px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .header-left {
+            width: 40%;
+        }
+
+        .header-center {
+            width: 20%;
+            text-align: center;
+            border: 2px solid #000;
+            padding: 10px;
+            font-size: 40px;
+            font-weight: bold;
+        }
+
+        .header-right {
+            width: 40%;
+            text-align: right;
+        }
+
+        .title-bar {
+            background: #444;
+            color: white;
+            padding: 5px 10px;
+            text-transform: uppercase;
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        .grid-2 {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .grid-2>div {
+            width: 48%;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        th {
+            border: 1px solid #333;
+            background: #eee;
+            padding: 5px;
+            font-size: 12px;
+        }
+
+        td {
+            border: 1px solid #333;
+            padding: 5px;
+            font-size: 12px;
+        }
+
+        .total-box {
+            border: 2px solid #000;
+            padding: 10px;
+            float: right;
+            width: 200px;
+            text-align: right;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        @media print {
+            body {
+                background: white;
+            }
+
+            .page {
+                margin: 0;
+                border: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page">
+        <div class="header border-box">
+            <div class="header-left">
+                <h1 style="margin: 0;">{{ empresa.nombre }}</h1>
+                <p>{{ empresa.direccion }}</p>
+                <p>Tel: {{ empresa.telefono }}</p>
+                <p>Email: {{ empresa.email }}</p>
+            </div>
+            <div class="header-center">
+                {{ nota.tipo_comprobante|slice:":-1" }}
+            </div>
+            <div class="header-right">
+                <h2 style="margin: 0;">NOTA DE CRÉDITO</h2>
+                <p>Número: {{ nota.numero_formateado }}</p>
+                <p>Fecha: {{ nota.fecha|date:"d/m/Y" }}</p>
+                <p>CUIT: {{ empresa.cuit|default:"--" }}</p>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <div class="border-box">
+                <div class="title-bar">Cliente</div>
+                <p><strong>{{ nota.cliente.nombre }}</strong></p>
+                <p>{{ nota.cliente.domicilio }}</p>
+                <p>{{ nota.cliente.localidad.nombre }}</p>
+                <p>IVA: {{ nota.cliente.condicion_iva|default:"Consumidor Final" }}</p>
+                <p>CUIT: {{ nota.cliente.cuit }}</p>
+            </div>
+            <div class="border-box">
+                <div class="title-bar">Referencia</div>
+                <p>Venta: {% if nota.venta_asociada %}{{ nota.venta_asociada.tipo_comprobante }} {{
+                    nota.venta_asociada.numero_factura_formateado }}{% else %}N/A{% endif %}</p>
+                <p>Motivo: {{ nota.motivo|default:"Anulación de factura" }}</p>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Cantidad</th>
+                    <th>Código</th>
+                    <th>Descripción</th>
+                    <th>P. Unitario</th>
+                    <th>Importe</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in detalles %}
+                <tr>
+                    <td style="text-align: center;">{{ item.cantidad }}</td>
+                    <td style="text-align: center;">{{ item.producto.codigo|default:"--" }}</td>
+                    <td>{{ item.producto.descripcion }}</td>
+                    <td style="text-align: right;">{{ item.precio_unitario|floatformat:2 }}</td>
+                    <td style="text-align: right;">{{ item.subtotal|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div style="overflow: hidden;">
+            <div class="total-box">
+                TOTAL: $ {{ nota.total|floatformat:2 }}
+            </div>
+        </div>
+
+        <div style="margin-top: 100px; text-align: center; border-top: 1px dashed #333; padding-top: 10px;">
+            Firma del Cliente
+        </div>
+    </div>
+</body>
+
+</html>

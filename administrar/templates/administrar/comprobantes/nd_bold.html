@@ -1,0 +1,148 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nota de Débito {{ nota.numero_formateado }} - Bold</title>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;900&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --primary-bold: #8e44ad;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            font-size: 11px;
+            color: #000;
+            background: #fff;
+        }
+
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 20mm;
+            margin: 0 auto;
+            border: 15px solid var(--primary-bold);
+            position: relative;
+        }
+
+        .bold-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 50px;
+        }
+
+        .company-name {
+            font-family: 'Archivo Black', sans-serif;
+            font-size: 40px;
+            line-height: 0.8;
+            text-transform: uppercase;
+        }
+
+        .nd-badge {
+            background: #000;
+            color: #fff;
+            padding: 10px 25px;
+            font-family: 'Archivo Black', sans-serif;
+            font-size: 20px;
+            transform: rotate(3deg);
+        }
+
+        .data-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 50px;
+        }
+
+        .label {
+            font-family: 'Archivo Black', sans-serif;
+            text-transform: uppercase;
+            border-bottom: 5px solid var(--primary-bold);
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-block: 50px;
+        }
+
+        th {
+            font-family: 'Archivo Black', sans-serif;
+            text-align: left;
+            padding: 10px;
+            font-size: 14px;
+            border-bottom: 8px solid #000;
+        }
+
+        td {
+            border-bottom: 2px solid #eee;
+            padding: 15px 10px;
+            font-weight: 900;
+        }
+
+        .total-bold {
+            text-align: right;
+            margin-top: 50px;
+        }
+
+        .big-amount {
+            font-family: 'Archivo Black', sans-serif;
+            font-size: 50px;
+            color: var(--primary-bold);
+            line-height: 1;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page">
+        <header class="bold-header">
+            <div class="company-name">{{ empresa.nombre }}</div>
+            <div class="nd-badge">DÉBITO</div>
+        </header>
+
+        <div class="data-grid">
+            <div>
+                <div class="label">A Cargo de</div>
+                <div style="font-size: 18px; font-weight: 900;">{{ nota.cliente.nombre }}</div>
+                <p>N° DE NOTA: {{ nota.numero_formateado }}</p>
+            </div>
+            <div style="text-align: right;">
+                <div class="label">Fecha</div>
+                <div style="font-size: 18px; font-weight: 900;">{{ nota.fecha|date:"d/m/Y" }}</div>
+                <p>MOTIVO: {{ nota.motivo|default:"Intereses" }}</p>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Detalle del Cargo Extra</th>
+                    <th style="text-align: right;">Importe</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in detalles %}
+                <tr>
+                    <td>{{ item.producto.descripcion }} ({{ item.cantidad }} u)</td>
+                    <td style="text-align: right;">$ {{ item.subtotal|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="total-bold">
+            <div class="label">Total a Debitar</div>
+            <div class="big-amount">$ {{ nota.total|floatformat:2 }}</div>
+        </div>
+    </div>
+</body>
+
+</html>

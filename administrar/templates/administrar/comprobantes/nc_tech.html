@@ -1,0 +1,144 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nota de Crédito {{ nota.numero_formateado }} - Tech</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&family=Orbitron:wght@400;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --primary-orange: #ff9d00;
+            --bg-dark: #0a0a0a;
+        }
+
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: #e0e0e0;
+            background: #111;
+        }
+
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 15mm;
+            margin: 0 auto;
+            background: var(--bg-dark);
+            border: 2px solid #222;
+            position: relative;
+        }
+
+        .tech-header {
+            border-left: 5px solid var(--primary-orange);
+            padding-left: 20px;
+            margin-bottom: 40px;
+        }
+
+        .company-name {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 24px;
+            color: var(--primary-orange);
+        }
+
+        .data-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-bottom: 40px;
+            border: 1px solid #333;
+            padding: 15px;
+        }
+
+        .label {
+            color: #555;
+            text-transform: uppercase;
+            font-size: 9px;
+            margin-bottom: 3px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+
+        th {
+            text-align: left;
+            padding: 10px;
+            background: #1a1a1a;
+            color: #ffcc00;
+            text-transform: uppercase;
+            font-size: 10px;
+        }
+
+        td {
+            padding: 10px;
+            border-bottom: 1px solid #1a1a1a;
+        }
+
+        .totals-tech {
+            float: right;
+            width: 250px;
+            border-top: 1px solid var(--primary-orange);
+            padding-top: 10px;
+            text-align: right;
+        }
+
+        .final-amount {
+            font-size: 24px;
+            color: var(--primary-orange);
+            font-weight: 700;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page">
+        <div class="tech-header">
+            <div class="company-name">{{ empresa.nombre }}</div>
+            <div style="font-size: 9px; margin-top: 5px;">CREDIT_ADJUSTMENT_LOG // {{ nota.numero_formateado }}</div>
+        </div>
+
+        <div class="data-grid">
+            <div>
+                <div class="label">CLIENT_ENTITY</div>
+                <div>{{ nota.cliente.nombre }}</div>
+            </div>
+            <div style="text-align: right;">
+                <div class="label">DATE_STAMP</div>
+                <div>{{ nota.fecha|date:"Y-m-d" }}</div>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>ITEM_DESC</th>
+                    <th style="text-align: center;">QTY</th>
+                    <th style="text-align: right;">CREDIT_AMT</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in detalles %}
+                <tr>
+                    <td>{{ item.producto.descripcion }}</td>
+                    <td style="text-align: center;">{{ item.cantidad }}</td>
+                    <td style="text-align: right;">$ {{ item.subtotal|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="totals-tech">
+            <div class="label">TOTAL_DISCOUNT_APPLIED</div>
+            <div class="final-amount">$ {{ nota.total|floatformat:2 }}</div>
+        </div>
+    </div>
+</body>
+
+</html>

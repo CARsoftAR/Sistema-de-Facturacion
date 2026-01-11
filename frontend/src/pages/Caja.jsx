@@ -258,7 +258,7 @@ const Caja = () => {
     const formatCurrency = (val) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(val);
 
     return (
-        <div className="container-fluid px-4 pt-4 pb-0 h-100 d-flex flex-column bg-light" style={{ maxHeight: '100vh', overflow: 'hidden' }}>
+        <div className="container-fluid px-4 pt-4 pb-0 h-100 d-flex flex-column bg-light fade-in" style={{ maxHeight: '100vh', overflow: 'hidden' }}>
             {/* Compact Header with Integrated Balance */}
             <div className="d-flex flex-column flex-xl-row justify-content-between align-items-xl-center mb-4 gap-3">
                 {/* Title Section */}
@@ -693,8 +693,6 @@ const Caja = () => {
             )}
 
             <style>{`
-                .scale-in { animation: scaleIn 0.2s ease-out; }
-                @keyframes scaleIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
                 .hover-bg-primary:hover { background-color: #e7f1ff !important; color: #0d6efd !important; }
                 .hover-bg-danger:hover { background-color: #f8d7da !important; color: #dc3545 !important; }
                 .input-group-merge .form-control:focus { border-color: #dee2e6; }

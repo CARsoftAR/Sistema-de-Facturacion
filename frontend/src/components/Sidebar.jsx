@@ -134,7 +134,7 @@ const Sidebar = ({ standalone = false }) => {
             <div
                 className={`d-flex flex-column flex-shrink-0 p-3 text-white bg-black position-fixed h-100 top-0 start-0 shadow-lg`}
                 style={{
-                    width: '260px',
+                    width: '300px',
                     zIndex: 1040,
                     transition: 'transform 0.3s ease-in-out',
                     transform: mobileOpen ? 'translateX(0)' : 'translateX(0)', // Default for desktop
@@ -143,9 +143,9 @@ const Sidebar = ({ standalone = false }) => {
                 {/* Logo Area */}
                 <div className="d-flex align-items-center gap-3 px-2 mb-4 pb-3 border-bottom border-light border-opacity-25">
                     <div className="bg-primary rounded d-flex align-items-center justify-content-center shadow-sm" style={{ width: '32px', height: '32px' }}>
-                        <span className="text-white fw-bold fs-5">C</span>
+                        <span className="text-white fw-bold fs-5">G</span>
                     </div>
-                    <span className="fs-4 fw-bold tracking-tight text-white">CARSOFT</span>
+                    <span className="fs-5 fw-bold tracking-tight text-white">Distribuidora GANY</span>
                 </div>
 
                 {/* Scrollable Menu Area */}
@@ -174,17 +174,18 @@ const Sidebar = ({ standalone = false }) => {
                             { label: 'Pedidos', href: '/pedidos' },
                             { label: 'Remitos', href: '/remitos' },
                             { label: 'Notas de Crédito', href: '/notas-credito' },
+                            { label: 'Notas de Débito', href: '/notas-debito' },
                         ]}
                     />
 
                     <SidebarItem
                         icon={Package}
-                        label="Productos"
+                        label="Gestión de Productos"
                         isOpen={openSection === 'productos'}
                         onToggle={() => toggleSection('productos')}
                         standalone={standalone}
                         subItems={[
-                            { label: 'Gestión de Productos', href: '/productos' },
+                            { label: 'Productos', href: '/productos' },
                             { label: 'Actualizar Precios', href: '/precios/actualizar' },
                         ]}
                     />

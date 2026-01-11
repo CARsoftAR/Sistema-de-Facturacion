@@ -1,0 +1,196 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Factura {{ venta.numero_factura_formateado }} - Luxury</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;600&family=Playfair+Display:wght@700;900&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --luxury-black: #1a1a1a;
+            --luxury-grey: #f4f4f4;
+            --luxury-gold: #c5a059;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 11px;
+            color: var(--luxury-black);
+            background: #ffffff;
+        }
+
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 0;
+            margin: 20px auto;
+            position: relative;
+        }
+
+        .side-accent {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 15mm;
+            height: 100%;
+            background: var(--luxury-black);
+        }
+
+        .main-content {
+            margin-left: 15mm;
+            padding: 20mm 15mm;
+        }
+
+        .luxury-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 10px solid var(--luxury-grey);
+            padding-bottom: 20px;
+            margin-bottom: 50px;
+        }
+
+        .luxury-logo {
+            font-family: 'Playfair Display', serif;
+            font-size: 42px;
+            font-weight: 900;
+            letter-spacing: -1px;
+        }
+
+        .invoice-title {
+            text-align: right;
+            font-family: 'Playfair Display', serif;
+            font-size: 24px;
+            text-transform: uppercase;
+            letter-spacing: 5px;
+            color: var(--luxury-gold);
+        }
+
+        .luxury-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 50px;
+            margin-bottom: 50px;
+        }
+
+        .label {
+            text-transform: uppercase;
+            font-weight: 600;
+            font-size: 10px;
+            letter-spacing: 1px;
+            color: var(--luxury-gold);
+            margin-bottom: 5px;
+        }
+
+        .luxury-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 50px;
+        }
+
+        .luxury-table th {
+            text-align: left;
+            padding: 15px 10px;
+            border-bottom: 2px solid var(--luxury-black);
+            text-transform: uppercase;
+            font-size: 10px;
+        }
+
+        .luxury-table td {
+            padding: 20px 10px;
+            border-bottom: 1px solid var(--luxury-grey);
+        }
+
+        .luxury-totals {
+            text-align: right;
+            margin-top: 30px;
+        }
+
+        .luxury-total-box {
+            background: var(--luxury-black);
+            color: white;
+            padding: 20px 30px;
+            display: inline-block;
+            margin-top: 10px;
+        }
+
+        .total-amount {
+            font-family: 'Playfair Display', serif;
+            font-size: 32px;
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page">
+        <div class="side-accent"></div>
+        <div class="main-content">
+            <header class="luxury-header">
+                <div class="luxury-logo">{{ empresa.nombre|slice:":1" }}</div>
+                <div>
+                    <div class="luxury-logo" style="font-size: 24px;">{{ empresa.nombre }}</div>
+                    <div style="font-size: 10px; text-align: right; margin-top: 5px;">
+                        {{ empresa.direccion }}
+                    </div>
+                </div>
+                <div class="invoice-title">Factura</div>
+            </header>
+
+            <div class="luxury-grid">
+                <div>
+                    <div class="label">Preparado para</div>
+                    <div style="font-family: 'Playfair Display', serif; font-size: 20px; margin-bottom: 10px;">{{
+                        cliente.nombre }}</div>
+                    <p>{{ cliente.domicilio }}</p>
+                    <p>{{ cliente.localidad.nombre }}, {{ cliente.provincia.nombre }}</p>
+                    <p>CUIT: {{ cliente.cuit }}</p>
+                </div>
+                <div style="text-align: right;">
+                    <div class="label">Detalles del Comprobante</div>
+                    <p>Referencia: {{ venta.numero_factura_formateado }}</p>
+                    <p>Fecha: {{ venta.fecha|date:"d/m/Y" }}</p>
+                    <p>Condición: {{ venta.condicion_venta }}</p>
+                </div>
+            </div>
+
+            <table class="luxury-table">
+                <thead>
+                    <tr>
+                        <th style="width: 60%;">Descripción</th>
+                        <th style="text-align: center;">Cantidad</th>
+                        <th style="text-align: right;">Precio Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in detalles %}
+                    <tr>
+                        <td style="font-weight: 600;">{{ item.producto.descripcion }}</td>
+                        <td style="text-align: center;">{{ item.cantidad }}</td>
+                        <td style="text-align: right;">$ {{ item.subtotal|floatformat:2 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <div class="luxury-totals">
+                <p style="margin-bottom: 5px;">Subtotal: $ {{ venta.subtotal|floatformat:2 }}</p>
+                <div class="luxury-total-box">
+                    <span class="label" style="color: white; opacity: 0.6;">Monto Total</span>
+                    <span class="total-amount">$ {{ venta.total|floatformat:2 }}</span>
+                </div>
+            </div>
+
+            <div
+                style="margin-top: 100px; font-size: 9px; opacity: 0.5; text-transform: uppercase; letter-spacing: 2px;">
+                Elegancia y Precisión por CARSOFT Commercial Systems.
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

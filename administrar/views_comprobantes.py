@@ -113,4 +113,64 @@ def detalle_remito(request, id):
 def imprimir_remito(request, id):
     remito = get_object_or_404(Remito, pk=id)
     empresa = Empresa.objects.first()
-    return render(request, 'administrar/comprobantes/imprimir_remito.html', {'remito': remito, 'empresa': empresa})
+    
+    model = request.GET.get('model', 'modern')
+    modelos_validos = ['modern', 'minimal', 'classic', 'elegant', 'tech', 'industrial', 'eco', 'compact', 'luxury', 'bold']
+    if model not in modelos_validos:
+        model = 'modern'
+        
+    context = {'remito': remito, 'empresa': empresa}
+    template_name = f'administrar/comprobantes/rem_{model}.html'
+    
+    try:
+        return render(request, template_name, context)
+    except:
+        return render(request, 'administrar/comprobantes/rem_modern.html', context)
+
+@login_required
+def imprimir_nc(request, id):
+    nc = get_object_or_404(NotaCredito, pk=id)
+    empresa = Empresa.objects.first()
+    
+    model = request.GET.get('model', 'modern')
+    modelos_validos = ['modern', 'minimal', 'classic', 'elegant', 'tech', 'industrial', 'eco', 'compact', 'luxury', 'bold']
+    
+    if model not in modelos_validos:
+        model = 'modern'
+        
+    template_name = f'administrar/comprobantes/nc_{model}.html'
+    
+    context = {
+        'nota': nc,
+        'empresa': empresa,
+        'detalles': nc.detalles.all()
+    }
+    
+    try:
+        return render(request, template_name, context)
+    except:
+        return render(request, 'administrar/comprobantes/nc_modern.html', context)
+
+@login_required
+def imprimir_nd(request, id):
+    nd = get_object_or_404(NotaDebito, pk=id)
+    empresa = Empresa.objects.first()
+    
+    model = request.GET.get('model', 'modern')
+    modelos_validos = ['modern', 'minimal', 'classic', 'elegant', 'tech', 'industrial', 'eco', 'compact', 'luxury', 'bold']
+    
+    if model not in modelos_validos:
+        model = 'modern'
+        
+    template_name = f'administrar/comprobantes/nd_{model}.html'
+    
+    context = {
+        'nota': nd,
+        'empresa': empresa,
+        'detalles': nd.detalles.all()
+    }
+    
+    try:
+        return render(request, template_name, context)
+    except:
+        return render(request, 'administrar/comprobantes/nd_modern.html', context)

@@ -1,0 +1,123 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recibo {{ recibo.numero }} - Eco</title>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;700&family=Nunito:wght@300;600&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --eco-green: #2d6a4f;
+            --eco-soft: #d8f3dc;
+            --eco-bg: #f7fff7;
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            font-size: 11px;
+            color: #1b4332;
+            background: var(--eco-bg);
+        }
+
+        .page {
+            width: 210mm;
+            min-height: 148mm;
+            padding: 15mm;
+            margin: 0 auto;
+            border-radius: 20px;
+            border: 2px solid var(--eco-soft);
+            background: #fff;
+            position: relative;
+            overflow: hidden;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 25px;
+        }
+
+        .company-name {
+            font-family: 'Quicksand', sans-serif;
+            font-size: 24px;
+            color: var(--eco-green);
+            font-weight: 700;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-block: 20px;
+        }
+
+        th {
+            background: var(--eco-soft);
+            color: var(--eco-green);
+            padding: 8px;
+            text-align: left;
+        }
+
+        td {
+            padding: 8px;
+            border-bottom: 1px dashed var(--eco-soft);
+        }
+
+        .total-box {
+            background: var(--eco-green);
+            color: white;
+            border-radius: 12px;
+            padding: 12px 25px;
+            float: right;
+            font-family: 'Quicksand', sans-serif;
+            font-size: 20px;
+            font-weight: 700;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page">
+        <header>
+            <div>
+                <div class="company-name">{{ empresa.nombre }}</div>
+                <div style="font-size: 10px; opacity: 0.7;">{{ empresa.direccion }}</div>
+            </div>
+            <div style="text-align: right;">
+                <div style="color: var(--eco-green); font-weight: 700;">RECIBO {{ recibo.numero }}</div>
+                <div>{{ recibo.fecha|date:"d M Y" }}</div>
+            </div>
+        </header>
+
+        <div style="margin-bottom: 20px; padding: 12px; border: 1px solid var(--eco-soft); border-radius: 12px;">
+            <p>RECIBIMOS DE: <b>{{ entidad.nombre }}</b></p>
+            <p style="font-style: italic; margin-top: 5px;">SON: {{ total_escrito }}</p>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>CONCEPTO</th>
+                    <th style="text-align: right;">TOTAL</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in recibo.items.all %}
+                <tr>
+                    <td>{{ item.concepto|default:"Ingreso de fondos" }}</td>
+                    <td style="text-align: right;">$ {{ item.importe|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="total-box">
+            TOTAL: $ {{ recibo.monto|floatformat:2 }}
+        </div>
+    </div>
+</body>
+
+</html>

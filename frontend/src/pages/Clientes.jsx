@@ -109,7 +109,7 @@ const Clientes = () => {
     };
 
     return (
-        <div className="container-fluid px-4 pt-4 pb-0 h-100 d-flex flex-column bg-light" style={{ maxHeight: '100vh', overflow: 'hidden' }}>
+        <div className="container-fluid px-4 pt-4 pb-0 h-100 d-flex flex-column bg-light fade-in" style={{ maxHeight: '100vh', overflow: 'hidden' }}>
             {/* Header */}
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <div>

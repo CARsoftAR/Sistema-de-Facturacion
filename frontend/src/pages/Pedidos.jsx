@@ -2,7 +2,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ShoppingCart, Plus, Search, Calendar, RefreshCw, Check, AlertCircle, FileText, Trash2, CheckCircle2, Clock } from 'lucide-react';
-import { BtnAdd, BtnDelete, BtnAction, BtnClear } from '../components/CommonButtons';
+import { BtnAdd, BtnDelete, BtnAction, BtnClear, BtnVertical } from '../components/CommonButtons';
+import EmptyState from '../components/EmptyState';
 
 const Pedidos = () => {
     const navigate = useNavigate();
@@ -118,6 +119,10 @@ const Pedidos = () => {
         }
     };
 
+    const handlePrint = (id) => {
+        window.open(`/pedidos/imprimir/${id}/?model=modern`, '_blank');
+    };
+
     const handleDelete = async (id) => {
         if (!window.confirm("¿Está seguro de eliminar este pedido?")) return;
 
@@ -150,7 +155,7 @@ const Pedidos = () => {
     };
 
     return (
-        <div className="container-fluid px-4 pt-4 pb-0 h-100 d-flex flex-column bg-light" style={{ maxHeight: '100vh', overflow: 'hidden' }}>
+        <div className="container-fluid px-4 pt-4 pb-3 main-content-container bg-light fade-in">
             {/* HEADER */}
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <div>
@@ -231,9 +236,9 @@ const Pedidos = () => {
 
 
             {/* TABLA */}
-            <div className="card border-0 shadow mb-4 flex-grow-1 overflow-hidden d-flex flex-column">
+            <div className="card border-0 shadow mb-0 flex-grow-1 overflow-hidden d-flex flex-column">
                 <div className="card-body p-0 d-flex flex-column overflow-hidden">
-                    <div className="table-responsive flex-grow-1 overflow-auto">
+                    <div className="table-responsive flex-grow-1 table-container-fixed">
                         <table className="table align-middle mb-0">
                             <thead className="bg-white border-bottom">
                                 <tr>
@@ -255,9 +260,11 @@ const Pedidos = () => {
                                     </tr>
                                 ) : pedidos.length === 0 ? (
                                     <tr>
-                                        <td colSpan="7" className="text-center py-5 text-muted">
-                                            <div className="mb-3 opacity-50"><ShoppingCart size={40} /></div>
-                                            No se encontraron pedidos.
+                                        <td colSpan="7" className="py-5">
+                                            <EmptyState
+                                                title="No hay pedidos pendientes"
+                                                description="Los pedidos de clientes aparecerán aquí."
+                                            />
                                         </td>
                                     </tr>
                                 ) : (
@@ -274,23 +281,29 @@ const Pedidos = () => {
                                             <td className="text-end pe-4 py-3">
                                                 <div className="d-flex justify-content-end gap-2">
                                                     {p.estado !== 'FACTURADO' && (
-                                                        <button
+                                                        <BtnVertical
+                                                            icon={FileText}
+                                                            label="Facturar"
+                                                            color="success"
                                                             onClick={() => handleFacturar(p.id)}
-                                                            className="btn btn-success btn-sm d-flex align-items-center gap-2 px-3 fw-bold shadow-sm"
                                                             title="Facturar (Convertir a Venta)"
-                                                        >
-                                                            <FileText size={16} /> Facturar
-                                                        </button>
+                                                        />
                                                     )}
+                                                    <BtnVertical
+                                                        icon={FileText}
+                                                        label="Imprimir"
+                                                        color="info"
+                                                        onClick={() => handlePrint(p.id)}
+                                                        title="Imprimir Presupuesto / Pedido"
+                                                    />
                                                     {p.estado !== 'FACTURADO' && (
-                                                        <button
+                                                        <BtnVertical
+                                                            icon={Trash2}
+                                                            label="Eliminar"
+                                                            color="danger"
                                                             onClick={() => handleDelete(p.id)}
-                                                            className="btn btn-danger btn-sm d-flex align-items-center justify-content-center px-2"
                                                             title="Eliminar Pedido"
-                                                            style={{ width: '34px' }}
-                                                        >
-                                                            <Trash2 size={16} />
-                                                        </button>
+                                                        />
                                                     )}
                                                 </div>
                                             </td>

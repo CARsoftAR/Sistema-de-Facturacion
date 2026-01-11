@@ -16,7 +16,8 @@ import {
     X
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { BtnAdd, BtnEdit, BtnDelete, BtnAction, BtnIcon, BtnView, BtnCancel, BtnSave, BtnClear } from '../components/CommonButtons';
+import { BtnAdd, BtnEdit, BtnDelete, BtnAction, BtnIcon, BtnView, BtnCancel, BtnSave, BtnClear, BtnVertical } from '../components/CommonButtons';
+import EmptyState from '../components/EmptyState';
 
 const Compras = () => {
     const navigate = useNavigate();
@@ -162,7 +163,7 @@ const Compras = () => {
     );
 
     return (
-        <div className="container-fluid px-4 pt-4 pb-0 h-100 d-flex flex-column bg-light" style={{ maxHeight: '100vh', overflow: 'hidden' }}>
+        <div className="container-fluid px-4 pt-4 pb-3 main-content-container bg-light fade-in">
             {/* Header */}
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <div>
@@ -219,9 +220,9 @@ const Compras = () => {
             </div>
 
             {/* Tabla */}
-            <div className="card border-0 shadow mb-4 flex-grow-1 overflow-hidden d-flex flex-column">
+            <div className="card border-0 shadow mb-0 flex-grow-1 overflow-hidden d-flex flex-column">
                 <div className="card-body p-0 d-flex flex-column overflow-hidden">
-                    <div className="table-responsive flex-grow-1 overflow-auto">
+                    <div className="table-responsive flex-grow-1 table-container-fixed">
                         <table className="table align-middle mb-0">
                             <thead className="bg-white border-bottom">
                                 <tr>
@@ -238,9 +239,14 @@ const Compras = () => {
                                     <tr><td colSpan="6" className="text-center py-5"><div className="spinner-border text-primary" role="status"></div></td></tr>
                                 ) : itemsToShow.length === 0 ? (
                                     <tr>
-                                        <td colSpan="6" className="text-center py-5 text-muted">
-                                            <div className="mb-3 opacity-50"><ShoppingBag size={40} /></div>
-                                            No se encontraron órdenes de compra.
+                                        <td colSpan="6" className="py-5">
+                                            <EmptyState
+                                                icon={ShoppingBag}
+                                                title="No hay órdenes de compra"
+                                                description="Las compras a proveedores aparecerán aquí."
+                                                iconColor="text-blue-500"
+                                                bgIconColor="bg-blue-50"
+                                            />
                                         </td>
                                     </tr>
                                 ) : (
@@ -256,30 +262,30 @@ const Compras = () => {
                                             <td className="text-end pe-4 py-3">
                                                 <div className="d-flex justify-content-end gap-2">
                                                     {orden.estado === 'PENDIENTE' && (
-                                                        <button
+                                                        <BtnVertical
+                                                            icon={Truck}
+                                                            label="Recibir"
+                                                            color="success"
                                                             onClick={() => handleRecibir(orden)}
-                                                            className="btn btn-success btn-sm d-flex align-items-center gap-2 px-3 fw-bold shadow-sm"
                                                             title="Recibir Mercadería"
-                                                        >
-                                                            <Truck size={16} /> Recibir
-                                                        </button>
+                                                        />
                                                     )}
-                                                    <button
+                                                    <BtnVertical
+                                                        icon={Eye}
+                                                        label="Ver"
+                                                        color="info"
                                                         onClick={() => handleVerDetalle(orden)}
-                                                        className="btn btn-info text-white btn-sm d-flex align-items-center gap-2 px-3 fw-bold"
                                                         title="Ver Detalle"
-                                                    >
-                                                        <Eye size={16} /> Ver
-                                                    </button>
+                                                        className="text-white"
+                                                    />
                                                     {orden.estado === 'PENDIENTE' && (
-                                                        <button
+                                                        <BtnVertical
+                                                            icon={Trash2}
+                                                            label="Cancelar"
+                                                            color="danger"
                                                             onClick={() => handleEliminar(orden.id)}
-                                                            className="btn btn-danger btn-sm d-flex align-items-center justify-content-center px-2"
                                                             title="Cancelar Orden"
-                                                            style={{ width: '34px' }}
-                                                        >
-                                                            <Trash2 size={16} />
-                                                        </button>
+                                                        />
                                                     )}
                                                 </div>
                                             </td>

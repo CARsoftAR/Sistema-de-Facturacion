@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Box, Search, Plus, RotateCcw, Package, AlertTriangle, CheckCircle } from 'lucide-react';
 import ProductoForm from '../components/productos/ProductoForm';
-import { BtnAdd, BtnEdit, BtnDelete, BtnAction, BtnClear } from '../components/CommonButtons';
+import { BtnAdd, BtnEdit, BtnDelete, BtnAction, BtnClear, BtnVertical } from '../components/CommonButtons';
 
 const Productos = () => {
     const [searchParams] = useSearchParams();
@@ -140,7 +140,7 @@ const Productos = () => {
     const formatCurrency = (val) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(val);
 
     return (
-        <div className="container-fluid px-4 pt-4 pb-0 h-100 d-flex flex-column bg-light" style={{ maxHeight: '100vh', overflow: 'hidden' }}>
+        <div className="container-fluid px-4 pt-4 pb-0 h-100 d-flex flex-column bg-light fade-in" style={{ maxHeight: '100vh', overflow: 'hidden' }}>
 
             {/* HEADER */}
             <div className="d-flex justify-content-between align-items-center mb-4">
@@ -185,7 +185,7 @@ const Productos = () => {
                                 {rubros.map(r => <option key={r.id} value={r.id}>{r.nombre}</option>)}
                             </select>
                         </div>
-                        <div className="col-md-3">
+                        <div className="col-md-2">
                             <select className="form-select" name="stock" value={filters.stock} onChange={handleFilterChange}>
                                 <option value="todos">Todo el Stock</option>
                                 <option value="con_stock">Con Stock</option>
@@ -247,22 +247,21 @@ const Productos = () => {
                                             </td>
                                             <td className="text-end pe-4 py-3">
                                                 <div className="d-flex justify-content-end gap-2">
-                                                    <button
+                                                    <BtnVertical
+                                                        icon={Box}
+                                                        label="Editar"
                                                         onClick={() => handleEdit(p)}
-                                                        className="btn btn-primary btn-sm d-flex align-items-center justify-content-center px-2 shadow-sm"
+                                                        color="warning"
                                                         title="Editar Producto"
-                                                        style={{ width: '34px' }}
-                                                    >
-                                                        <Box size={16} />
-                                                    </button>
-                                                    <button
+                                                    />
+                                                    <BtnVertical
+                                                        icon={Plus}
+                                                        label="Eliminar"
                                                         onClick={() => handleDelete(p.id)}
-                                                        className="btn btn-danger btn-sm d-flex align-items-center justify-content-center px-2 shadow-sm"
+                                                        color="danger"
                                                         title="Eliminar Producto"
-                                                        style={{ width: '34px' }}
-                                                    >
-                                                        <Plus size={16} className="rotate-45" />
-                                                    </button>
+                                                        className="rotate-icon-45"
+                                                    />
                                                 </div>
                                             </td>
                                         </tr>

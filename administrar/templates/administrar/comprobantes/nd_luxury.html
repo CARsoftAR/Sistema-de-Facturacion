@@ -1,0 +1,152 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nota de Débito {{ nota.numero_formateado }} - Luxury</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;600&family=Playfair+Display:wght@700;900&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --lux-indigo: #483d8b;
+            --lux-black: #1a1a1a;
+            --lux-grey: #f4f4f4;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 11px;
+            color: var(--lux-black);
+            background: #ffffff;
+        }
+
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 0;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .side-accent {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 15mm;
+            height: 100%;
+            background: var(--lux-indigo);
+        }
+
+        .main-content {
+            margin-left: 15mm;
+            padding: 20mm 15mm;
+        }
+
+        .luxury-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            border-bottom: 2px solid var(--lux-grey);
+            padding-bottom: 15px;
+            margin-bottom: 40px;
+        }
+
+        .lux-name {
+            font-family: 'Playfair Display', serif;
+            font-size: 32px;
+            font-weight: 900;
+        }
+
+        .nd-title {
+            color: var(--lux-indigo);
+            font-family: 'Playfair Display', serif;
+            font-size: 24px;
+            text-transform: uppercase;
+            letter-spacing: 5px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 50px;
+        }
+
+        th {
+            text-align: left;
+            padding: 15px 10px;
+            border-bottom: 2px solid var(--lux-black);
+            text-transform: uppercase;
+            font-size: 10px;
+        }
+
+        td {
+            padding: 15px 10px;
+            border-bottom: 1px solid var(--lux-grey);
+        }
+
+        .total-box {
+            border-bottom: 5px solid var(--lux-indigo);
+            display: inline-block;
+            padding-bottom: 5px;
+        }
+
+        .total-amount {
+            font-family: 'Playfair Display', serif;
+            font-size: 32px;
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page">
+        <div class="side-accent"></div>
+        <div class="main-content">
+            <header class="luxury-header">
+                <div>
+                    <div class="lux-name">{{ empresa.nombre }}</div>
+                    <div style="font-size: 10px;">{{ empresa.direccion }}</div>
+                </div>
+                <div class="nd-title">Cargo de Débito</div>
+            </header>
+
+            <div style="margin-bottom: 40px;">
+                <p style="text-transform: uppercase; font-size: 9px; color: var(--lux-indigo); margin-bottom: 5px;">
+                    Titular del Cargo</p>
+                <div style="font-family: 'Playfair Display', serif; font-size: 20px;">{{ nota.cliente.nombre }}</div>
+                <p>N° DE NOTA: {{ nota.numero_formateado }}</p>
+                <p>FECHA: {{ nota.fecha|date:"d M Y" }}</p>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 70%;">Concepto y Referencia</th>
+                        <th style="text-align: right;">Total Cargo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in detalles %}
+                    <tr>
+                        <td style="font-weight: 600;">{{ item.producto.descripcion }} ({{ item.cantidad }} u)</td>
+                        <td style="text-align: right;">$ {{ item.subtotal|floatformat:2 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <div style="text-align: right;">
+                <div class="total-box">
+                    <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 2px;">Monto de Débito
+                        Final</span>
+                    <span class="total-amount">$ {{ nota.total|floatformat:2 }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

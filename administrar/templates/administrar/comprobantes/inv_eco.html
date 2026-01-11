@@ -1,0 +1,197 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Factura {{ venta.numero_factura_formateado }} - Eco</title>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;700&family=Nunito:wght@300;600&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --eco-green: #6d8b74;
+            --eco-sage: #d0e8e0;
+            --eco-earth: #8d7b68;
+            --eco-bg: #fdfdfb;
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            font-size: 11px;
+            color: #444;
+            background: #f0f2f0;
+        }
+
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 15mm;
+            margin: 20px auto;
+            background: var(--eco-bg);
+            border-radius: 20px;
+            border: 2px solid var(--eco-sage);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .leaf-decoration {
+            position: absolute;
+            top: -20px;
+            right: -20px;
+            width: 150px;
+            height: 150px;
+            background: var(--eco-sage);
+            opacity: 0.3;
+            border-radius: 50%;
+        }
+
+        .eco-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 40px;
+        }
+
+        .company-name {
+            font-family: 'Quicksand', sans-serif;
+            font-size: 28px;
+            color: var(--eco-green);
+            font-weight: 700;
+        }
+
+        .eco-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .info-bubble {
+            background: white;
+            border-radius: 15px;
+            padding: 15px;
+            border: 1px solid var(--eco-sage);
+        }
+
+        .label {
+            font-family: 'Quicksand', sans-serif;
+            font-weight: 700;
+            color: var(--eco-green);
+            font-size: 10px;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .eco-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 40px;
+        }
+
+        .eco-table th {
+            text-align: left;
+            padding: 12px;
+            background: var(--eco-sage);
+            color: var(--eco-green);
+            border-radius: 10px 10px 0 0;
+            font-weight: 700;
+        }
+
+        .eco-table td {
+            padding: 12px;
+            border-bottom: 1px dashed var(--eco-sage);
+        }
+
+        .eco-totals {
+            float: right;
+            width: 280px;
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            border: 2px solid var(--eco-green);
+        }
+
+        .total-amount {
+            font-family: 'Quicksand', sans-serif;
+            font-size: 20px;
+            color: var(--eco-green);
+            font-weight: 700;
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid var(--eco-sage);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page">
+        <div class="leaf-decoration"></div>
+        <header class="eco-header">
+            <div>
+                <div class="company-name">{{ empresa.nombre }}</div>
+                <div style="font-size: 10px; color: var(--eco-earth); margin-top: 5px;">
+                    {{ empresa.direccion }}<br>
+                    {{ empresa.email }}
+                </div>
+            </div>
+            <div style="text-align: right;">
+                <div class="label">Comprobante Digital</div>
+                <div style="font-size: 14px; font-weight: 600;">{{ venta.numero_factura_formateado }}</div>
+                <div style="font-size: 10px; color: var(--eco-earth);">{{ venta.fecha|date:"d M Y" }}</div>
+            </div>
+        </header>
+
+        <div class="eco-grid">
+            <div class="info-bubble">
+                <div class="label">Facturar a</div>
+                <div style="font-size: 14px; font-weight: 600; margin-bottom: 5px;">{{ cliente.nombre }}</div>
+                <p>{{ cliente.domicilio }}</p>
+                <p>{{ cliente.localidad.nombre }}</p>
+            </div>
+            <div class="info-bubble">
+                <div class="label">Detalles de Venta</div>
+                <p>Condición: {{ venta.condicion_venta }}</p>
+                <p>Vencimiento: {{ venta.fecha_vencimiento|date:"d/m/Y" }}</p>
+            </div>
+        </div>
+
+        <table class="eco-table">
+            <thead>
+                <tr>
+                    <th>Descripción</th>
+                    <th style="text-align: center;">Cantidad</th>
+                    <th style="text-align: right;">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in detalles %}
+                <tr>
+                    <td>{{ item.producto.descripcion }}</td>
+                    <td style="text-align: center;">{{ item.cantidad }}</td>
+                    <td style="text-align: right;">$ {{ item.subtotal|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="eco-totals">
+            <div style="display: flex; justify-content: space-between; color: var(--eco-earth);">
+                <span>Subtotal</span>
+                <span>$ {{ venta.subtotal|floatformat:2 }}</span>
+            </div>
+            <div class="total-amount">
+                <span>TOTAL</span>
+                <span>$ {{ venta.total|floatformat:2 }}</span>
+            </div>
+        </div>
+
+        <div style="margin-top: 100px; text-align: center; color: var(--eco-green); font-size: 10px;">
+            <p>🌿 Gracias por preferir una facturación libre de papel innecesario.</p>
+        </div>
+    </div>
+</body>
+
+</html>

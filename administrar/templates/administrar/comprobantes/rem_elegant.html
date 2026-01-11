@@ -1,0 +1,144 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Remito {{ remito.numero_formateado }} - Elegant</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Lato:wght@300;400&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #8e735b;
+            --gold-accent: #c5a059;
+            --bg-cream: #faf9f6;
+        }
+
+        body {
+            font-family: 'Lato', sans-serif;
+            font-size: 11px;
+            background: var(--bg-cream);
+            color: #2c2c2c;
+        }
+
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 20mm;
+            margin: 0 auto;
+            background: white;
+            border: 1px solid var(--gold-accent);
+            position: relative;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .company-name {
+            font-family: 'Playfair Display', serif;
+            font-size: 28px;
+            color: var(--primary-color);
+            letter-spacing: 2px;
+        }
+
+        .remito-label {
+            font-family: 'Playfair Display', serif;
+            font-style: italic;
+            font-size: 24px;
+            color: var(--gold-accent);
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 40px;
+        }
+
+        th {
+            font-family: 'Playfair Display', serif;
+            text-align: left;
+            border-bottom: 1px solid var(--gold-accent);
+            padding: 10px;
+            color: var(--primary-color);
+        }
+
+        td {
+            padding: 10px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .sig-elegant {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 60px;
+            font-style: italic;
+            color: var(--primary-color);
+        }
+
+        .sig-line {
+            border-top: 1px solid var(--gold-accent);
+            width: 180px;
+            text-align: center;
+            padding-top: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page">
+        <header>
+            <div class="company-name">{{ empresa.nombre }}</div>
+            <div class="remito-label">Documento de Entrega</div>
+            <div style="font-size: 12px; margin-top: 5px;">{{ remito.numero_formateado }} | {{ remito.fecha|date:"d M Y"
+                }}</div>
+        </header>
+
+        <div class="info-grid">
+            <div style="border-left: 2px solid var(--gold-accent); padding-left: 15px;">
+                <p style="text-transform: uppercase; font-size: 9px; color: var(--gold-accent);">Destinatario</p>
+                <p style="font-family: 'Playfair Display', serif; font-size: 16px;">{{ remito.cliente.nombre }}</p>
+                <p>{{ remito.cliente.domicilio }}</p>
+            </div>
+            <div style="text-align: right; border-right: 2px solid var(--gold-accent); padding-right: 15px;">
+                <p style="text-transform: uppercase; font-size: 9px; color: var(--gold-accent);">Detalles de Envío</p>
+                <p>Destino: {{ remito.direccion_entrega|default:remito.cliente.domicilio }}</p>
+                <p>Transporte: {{ remito.transportista|default:"-" }}</p>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 20%; text-align: center;">Cantidad</th>
+                    <th>Descripción de Mercadería</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in remito.detalles.all %}
+                <tr>
+                    <td style="text-align: center; font-weight: bold;">{{ item.cantidad }}</td>
+                    <td>{{ item.producto.descripcion }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="sig-elegant">
+            <div class="sig-line">Firma del Destinatario</div>
+            <div class="sig-line">Control de Expedición</div>
+        </div>
+    </div>
+</body>
+
+</html>

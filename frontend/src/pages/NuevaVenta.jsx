@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { Search, Plus, Trash2, User, ShoppingCart, CreditCard, DollarSign, FileText, X, Check, Banknote } from 'lucide-react';
 import { BtnSave, BtnCancel } from '../components/CommonButtons';
+import { useProductSearch } from '../hooks/useProductSearch';
 
 // Obtener CSRF Token
 function getCookie(name) {
@@ -76,20 +77,32 @@ const NuevaVenta = () => {
     const [sugerenciaClienteActiva, setSugerenciaClienteActiva] = useState(0);
 
     // Campos de entrada de producto
-    const [inputCodigo, setInputCodigo] = useState('');
-    const [inputProducto, setInputProducto] = useState('');
+    // ==================== PRODUCT SEARCH HOOK ====================
+    const {
+        inputCodigo, setInputCodigo,
+        inputProducto, setInputProducto,
+        codigosSugeridos, productosSugeridos,
+        mostrarSugerenciasCodigo, mostrarSugerenciasProducto,
+        sugerenciaCodigoActiva, sugerenciaActiva,
+        codigoListRef, productoListRef,
+        nextInputRef: productoRef, // Aliasing to match existing usage or replace it
+        handleCodigoKeyDown, handleProductoKeyDown,
+        handleCodigoBlur, handleProductoBlur,
+        seleccionar: seleccionarProducto,
+        limpiar: limpiarBusqueda
+    } = useProductSearch({
+        onSelect: (producto) => {
+            const precio = medioPago === 'TARJETA' ? producto.precio_tarjeta : producto.precio_efectivo;
+            setProductoSeleccionado(producto);
+            setInputPrecio(precio.toString());
+            // Focus quantity
+            setTimeout(() => cantidadRef.current?.select(), 50);
+        }
+    });
+
     const [inputCantidad, setInputCantidad] = useState('1');
     const [inputPrecio, setInputPrecio] = useState('');
-
-    // Autocompletado de código
-    const [codigosSugeridos, setCodigosSugeridos] = useState([]);
-    const [mostrarSugerenciasCodigo, setMostrarSugerenciasCodigo] = useState(false);
-    const [sugerenciaCodigoActiva, setSugerenciaCodigoActiva] = useState(0);
-
-    const [productosSugeridos, setProductosSugeridos] = useState([]);
-    const [mostrarSugerenciasProducto, setMostrarSugerenciasProducto] = useState(false);
     const [productoSeleccionado, setProductoSeleccionado] = useState(null);
-    const [sugerenciaActiva, setSugerenciaActiva] = useState(0);
 
     const [items, setItems] = useState([]);
     const [medioPago, setMedioPago] = useState('EFECTIVO');
@@ -114,79 +127,12 @@ const NuevaVenta = () => {
 
     // Referencias
     const codigoRef = useRef(null);
-    const productoRef = useRef(null);
+    // productoRef is now from hook
     const cantidadRef = useRef(null);
     const clienteInputRef = useRef(null);
-    // Refs eliminados para usar IDs directos en el modal de pago
 
-    // Referencias para scroll automático en listas
+    // Referencias para scroll automático en listas (Hooks refs used for product/code)
     const clienteListRef = useRef(null);
-    const codigoListRef = useRef(null);
-    const productoListRef = useRef(null);
-
-    // ==================== FOCUS INICIAL ====================
-    useEffect(() => {
-        setTimeout(() => clienteInputRef.current?.focus(), 100);
-    }, []);
-
-    // ==================== BUSCAR CLIENTE ====================
-    useEffect(() => {
-        if (busquedaCliente.length < 2) {
-            setClientesSugeridos([]);
-            return;
-        }
-        const timer = setTimeout(() => {
-            fetch(`/api/clientes/buscar/?q=${encodeURIComponent(busquedaCliente)}`)
-                .then(res => res.json())
-                .then(data => {
-                    setClientesSugeridos(data.data || []);
-                    setMostrarSugerenciasCliente(true);
-                    setSugerenciaClienteActiva(0);
-                })
-                .catch(() => setClientesSugeridos([]));
-        }, 300);
-        return () => clearTimeout(timer);
-    }, [busquedaCliente]);
-
-    // ==================== BUSCAR POR CÓDIGO (autocompletado) ====================
-    useEffect(() => {
-        if (inputCodigo.length < 1) {
-            setCodigosSugeridos([]);
-            setMostrarSugerenciasCodigo(false);
-            return;
-        }
-        const timer = setTimeout(() => {
-            fetch(`/api/productos/buscar/?q=${encodeURIComponent(inputCodigo)}`)
-                .then(res => res.json())
-                .then(data => {
-                    setCodigosSugeridos(data.data || []);
-                    setMostrarSugerenciasCodigo(true);
-                    setSugerenciaCodigoActiva(0);
-                })
-                .catch(() => setCodigosSugeridos([]));
-        }, 150);
-        return () => clearTimeout(timer);
-    }, [inputCodigo]);
-
-    // ==================== BUSCAR PRODUCTO POR NOMBRE ====================
-    useEffect(() => {
-        if (inputProducto.length < 2) {
-            setProductosSugeridos([]);
-            setMostrarSugerenciasProducto(false);
-            return;
-        }
-        const timer = setTimeout(() => {
-            fetch(`/api/productos/buscar/?q=${encodeURIComponent(inputProducto)}`)
-                .then(res => res.json())
-                .then(data => {
-                    setProductosSugeridos(data.data || []);
-                    setMostrarSugerenciasProducto(true);
-                    setSugerenciaActiva(0);
-                })
-                .catch(() => setProductosSugeridos([]));
-        }, 200);
-        return () => clearTimeout(timer);
-    }, [inputProducto]);
 
     // ==================== BUSCAR BANCO ====================
     useEffect(() => {
@@ -203,6 +149,31 @@ const NuevaVenta = () => {
         setMostrarSugerenciasBanco(resultados.length > 0);
         setSugerenciaBancoActiva(0);
     }, [datosCheque.banco]);
+
+    // ==================== BUSCAR CLIENTE ====================
+    useEffect(() => {
+        if (!busquedaCliente || busquedaCliente.length < 2) {
+            setClientesSugeridos([]);
+            setMostrarSugerenciasCliente(false);
+            return;
+        }
+
+        const fetchClientes = async () => {
+            try {
+                const response = await fetch(`/api/clientes/buscar/?q=${encodeURIComponent(busquedaCliente)}`);
+                const data = await response.json();
+                const listado = data.data || [];
+                setClientesSugeridos(listado);
+                setMostrarSugerenciasCliente(listado.length > 0);
+                setSugerenciaClienteActiva(0);
+            } catch (error) {
+                console.error("Error buscando clientes:", error);
+            }
+        };
+
+        const timer = setTimeout(fetchClientes, 300);
+        return () => clearTimeout(timer);
+    }, [busquedaCliente]);
 
     // ==================== OBTENER INICIALES ====================
     const getInitials = (nombre) => {
@@ -246,20 +217,6 @@ const NuevaVenta = () => {
         } else if (e.key === 'Escape') {
             setMostrarSugerenciasCliente(false);
         }
-    };
-
-    // ==================== SELECCIONAR PRODUCTO ====================
-    const seleccionarProducto = (producto) => {
-        const precio = medioPago === 'TARJETA' ? producto.precio_tarjeta : producto.precio_efectivo;
-        setProductoSeleccionado(producto);
-        setInputCodigo(producto.codigo);
-        setInputProducto(producto.descripcion);
-        setInputPrecio(precio.toString());
-        setMostrarSugerenciasProducto(false);
-        setMostrarSugerenciasCodigo(false);
-        setProductosSugeridos([]);
-        setCodigosSugeridos([]);
-        setTimeout(() => cantidadRef.current?.select(), 50);
     };
 
     // ==================== CERRAR ALERTA STOCK ====================
@@ -321,66 +278,10 @@ const NuevaVenta = () => {
     };
 
     const limpiarCamposEntrada = () => {
-        setInputCodigo('');
-        setInputProducto('');
+        limpiarBusqueda();
         setInputCantidad('1');
         setInputPrecio('');
         setProductoSeleccionado(null);
-        setProductosSugeridos([]);
-        setCodigosSugeridos([]);
-        setMostrarSugerenciasProducto(false);
-        setMostrarSugerenciasCodigo(false);
-    };
-
-    // ==================== MANEJO DE TECLAS - CÓDIGO ====================
-    const handleCodigoKeyDown = (e) => {
-        if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            const newIndex = Math.min(sugerenciaCodigoActiva + 1, codigosSugeridos.length - 1);
-            setSugerenciaCodigoActiva(newIndex);
-            const item = codigoListRef.current?.children[newIndex];
-            item?.scrollIntoView({ block: 'nearest' });
-        } else if (e.key === 'ArrowUp') {
-            e.preventDefault();
-            const newIndex = Math.max(sugerenciaCodigoActiva - 1, 0);
-            setSugerenciaCodigoActiva(newIndex);
-            const item = codigoListRef.current?.children[newIndex];
-            item?.scrollIntoView({ block: 'nearest' });
-        } else if (e.key === 'Enter') {
-            e.preventDefault();
-            if (mostrarSugerenciasCodigo && codigosSugeridos.length > 0) {
-                seleccionarProducto(codigosSugeridos[sugerenciaCodigoActiva]);
-            } else if (!inputCodigo.trim()) {
-                productoRef.current?.focus();
-            }
-        } else if (e.key === 'Escape') {
-            setMostrarSugerenciasCodigo(false);
-        }
-    };
-
-    const handleProductoKeyDown = (e) => {
-        if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            const newIndex = Math.min(sugerenciaActiva + 1, productosSugeridos.length - 1);
-            setSugerenciaActiva(newIndex);
-            const item = productoListRef.current?.children[newIndex];
-            item?.scrollIntoView({ block: 'nearest' });
-        } else if (e.key === 'ArrowUp') {
-            e.preventDefault();
-            const newIndex = Math.max(sugerenciaActiva - 1, 0);
-            setSugerenciaActiva(newIndex);
-            const item = productoListRef.current?.children[newIndex];
-            item?.scrollIntoView({ block: 'nearest' });
-        } else if (e.key === 'Enter') {
-            e.preventDefault();
-            if (mostrarSugerenciasProducto && productosSugeridos.length > 0) {
-                seleccionarProducto(productosSugeridos[sugerenciaActiva]);
-            } else if (productoSeleccionado) {
-                cantidadRef.current?.select();
-            }
-        } else if (e.key === 'Escape') {
-            setMostrarSugerenciasProducto(false);
-        }
     };
 
     const handleCantidadKeyDown = (e) => {
@@ -523,7 +424,7 @@ const NuevaVenta = () => {
 
     // ==================== RENDER ====================
     return (
-        <div className="p-6 max-w-7xl mx-auto h-[calc(100vh-2rem)] flex flex-col">
+        <div className="p-6 max-w-7xl mx-auto h-[calc(100vh-2rem)] flex flex-col fade-in">
             {/* Header */}
             <div className="mb-6 flex-shrink-0 flex justify-between items-end">
                 <div>
@@ -702,7 +603,7 @@ const NuevaVenta = () => {
                                         value={inputCodigo}
                                         onChange={(e) => setInputCodigo(e.target.value.toUpperCase())}
                                         onKeyDown={handleCodigoKeyDown}
-                                        onBlur={() => setTimeout(() => setMostrarSugerenciasCodigo(false), 200)}
+                                        onBlur={handleCodigoBlur}
                                         placeholder="XXX"
                                         className="w-full px-3 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-slate-50 font-mono text-sm uppercase text-center font-bold tracking-wide"
                                     />
@@ -735,7 +636,7 @@ const NuevaVenta = () => {
                                         value={inputProducto}
                                         onChange={(e) => { setInputProducto(e.target.value); setProductoSeleccionado(null); }}
                                         onKeyDown={handleProductoKeyDown}
-                                        onBlur={() => setTimeout(() => setMostrarSugerenciasProducto(false), 200)}
+                                        onBlur={handleProductoBlur}
                                         placeholder="Buscar producto por nombre..."
                                         className="w-full px-3 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-slate-50 text-sm font-medium"
                                     />

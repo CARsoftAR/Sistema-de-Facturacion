@@ -5,7 +5,8 @@ import {
     Printer, Eye, FileText, Calendar, Search,
     ArrowUpDown, Filter, X
 } from 'lucide-react';
-import { BtnView, BtnPrint, BtnClear } from '../components/CommonButtons';
+import { BtnView, BtnPrint, BtnClear, BtnVertical } from '../components/CommonButtons';
+import EmptyState from '../components/EmptyState';
 
 const Remitos = () => {
     const navigate = useNavigate();
@@ -61,7 +62,7 @@ const Remitos = () => {
     }, [fetchRemitos]);
 
     const handlePrint = (id) => {
-        window.open(`/comprobantes/remito/${id}/imprimir/`, '_blank');
+        window.open(`/comprobantes/remito/${id}/imprimir/?model=modern`, '_blank');
     };
 
     const handleView = (id) => {
@@ -80,7 +81,7 @@ const Remitos = () => {
     };
 
     return (
-        <div className="container-fluid px-4 pt-4 pb-0 h-100 d-flex flex-column bg-light" style={{ maxHeight: '100vh', overflow: 'hidden' }}>
+        <div className="container-fluid px-4 pt-4 pb-3 main-content-container bg-light fade-in">
             {/* Header */}
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <div>
@@ -130,9 +131,9 @@ const Remitos = () => {
             </div>
 
             {/* Table */}
-            <div className="card border-0 shadow mb-4 flex-grow-1 overflow-hidden d-flex flex-column">
+            <div className="card border-0 shadow mb-0 flex-grow-1 overflow-hidden d-flex flex-column">
                 <div className="card-body p-0 d-flex flex-column overflow-hidden">
-                    <div className="table-responsive flex-grow-1 overflow-auto">
+                    <div className="table-responsive flex-grow-1 table-container-fixed">
                         <table className="table align-middle mb-0">
                             <thead className="bg-white border-bottom">
                                 <tr>
@@ -153,9 +154,14 @@ const Remitos = () => {
                                     </tr>
                                 ) : remitos.length === 0 ? (
                                     <tr>
-                                        <td colSpan="6" className="text-center py-5 text-muted small">
-                                            <div className="mb-3 opacity-50"><FileText size={40} /></div>
-                                            No se encontraron remitos registrados.
+                                        <td colSpan="6" className="py-5">
+                                            <EmptyState
+                                                icon={FileText}
+                                                title="No hay remitos"
+                                                description="Los remitos generados aparecerán aquí."
+                                                iconColor="text-blue-500"
+                                                bgIconColor="bg-blue-50"
+                                            />
                                         </td>
                                     </tr>
                                 ) : (
@@ -183,14 +189,22 @@ const Remitos = () => {
                                             </td>
                                             <td className="pe-4 text-end py-3">
                                                 <div className="d-flex justify-content-end gap-2">
-                                                    <BtnView onClick={() => handleView(remito.id)} />
-                                                    <button
-                                                        className="btn btn-primary text-white btn-sm d-flex align-items-center gap-2 px-3 fw-bold shadow-sm"
+                                                    <BtnVertical
+                                                        icon={Eye}
+                                                        label="Ver"
+                                                        color="info" // text-white needed? Remitos "Ver" was text-white
+                                                        onClick={() => handleView(remito.id)}
+                                                        title="Ver Detalle"
+                                                        className="text-white"
+                                                    />
+                                                    <BtnVertical
+                                                        icon={Printer}
+                                                        label="Imprimir"
+                                                        color="print"
                                                         onClick={() => handlePrint(remito.id)}
                                                         title="Imprimir Remito"
-                                                    >
-                                                        <Printer size={16} /> Imprimir
-                                                    </button>
+                                                        className="text-white"
+                                                    />
                                                 </div>
                                             </td>
                                         </tr>

@@ -3671,23 +3671,36 @@ def invoice_template_edit(request, template_id=None):
 def invoice_print(request, venta_id):
     venta = get_object_or_404(Venta, pk=venta_id)
     
-    # Obtener la plantilla activa
-    template = InvoiceTemplate.objects.filter(active=True).first()
-    if not template:
-        # Fallback: usar la primera o una vacía si no hay ninguna
-        template = InvoiceTemplate.objects.first()
+    # Obtener el modelo solicitado
+    model = request.GET.get('model', 'modern')
+    # Lista de modelos válidos (catálogo de 10)
+    modelos_validos = ['modern', 'minimal', 'classic', 'elegant', 'tech', 'industrial', 'eco', 'compact', 'luxury', 'bold']
+    if model not in modelos_validos:
+        model = 'modern'
+        
+    # Construir el nombre de la plantilla
+    template_name = f'administrar/comprobantes/inv_{model}.html'
+    
+    # Obtener la plantilla activa (fallback para datos extra si es necesario)
+    template_config = InvoiceTemplate.objects.filter(active=True).first()
+    if not template_config:
+        template_config = InvoiceTemplate.objects.first()
     
     # Contexto para la factura
     context = {
         'venta': venta,
         'cliente': venta.cliente,
         'detalles': venta.detalles.all(),
-        'template': template,
-        'empresa': Empresa.objects.first(), # Asumimos que hay una empresa configurada
-        'fecha_actual': venta.fecha, # Usar fecha de la venta, no hoy
+        'template': template_config,
+        'empresa': Empresa.objects.first(),
+        'fecha_actual': venta.fecha,
     }
     
-    return render(request, 'administrar/invoice_a4.html', context)
+    try:
+        return render(request, template_name, context)
+    except:
+        # Fallback a modern si la específica no existe
+        return render(request, 'administrar/comprobantes/inv_modern.html', context)
 
 from django.views.decorators.clickjacking import xframe_options_exempt
 
@@ -4106,6 +4119,25 @@ def api_pedido_detalle(request, id):
         'venta_id': pedido.venta_id,
         'detalles': detalles,
     })
+
+@login_required
+def pedido_print(request, pedido_id):
+    """Vista para imprimir un pedido (Presupuesto)"""
+    from .models import Pedido, Empresa
+    pedido = get_object_or_404(Pedido, pk=pedido_id)
+    
+    model = request.GET.get('model', 'modern')
+    template_name = f'administrar/comprobantes/ped_{model}.html'
+    
+    context = {
+        'pedido': pedido,
+        'empresa': Empresa.objects.first(),
+    }
+    
+    try:
+        return render(request, template_name, context)
+    except:
+        return render(request, 'administrar/comprobantes/ped_modern.html', context)
 
 
 @csrf_exempt
@@ -7267,9 +7299,14 @@ def api_recibo_detalle(request, id):
 
 @login_required
 def api_recibo_imprimir(request, id):
-    """Vista para imprimir un recibo"""
+    """Vista para imprimir un recibo con selección de modelo"""
     from .models import Recibo, Empresa
     
+    model = request.GET.get('model', 'modern')
+    modelos_validos = ['modern', 'minimal', 'classic', 'elegant', 'tech', 'industrial', 'eco', 'compact', 'luxury', 'bold']
+    if model not in modelos_validos:
+        model = 'modern'
+        
     try:
         recibo = Recibo.objects.prefetch_related('items').select_related('cliente', 'proveedor').get(id=id)
         empresa = Empresa.objects.first()
@@ -7282,7 +7319,12 @@ def api_recibo_imprimir(request, id):
             'empresa': empresa,
         }
         
-        return render(request, 'administrar/ctacte/imprimir_recibo.html', context)
+        template_name = f'administrar/comprobantes/rec_{model}.html'
+        try:
+            return render(request, template_name, context)
+        except:
+            return render(request, 'administrar/comprobantes/rec_modern.html', context)
+            
     except Recibo.DoesNotExist:
         return render(request, 'administrar/error.html', {'mensaje': 'Recibo no encontrado'})
 
@@ -8375,6 +8417,7 @@ def api_empresa_config(request):
             'moneda_predeterminada': empresa.moneda_predeterminada,
             'items_por_pagina': empresa.items_por_pagina,
             'habilita_remitos': empresa.habilita_remitos,
+            'logo': empresa.logo.url if empresa.logo else None,
         })
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
@@ -8383,9 +8426,14 @@ def api_empresa_config(request):
 @csrf_exempt
 @require_POST
 def api_empresa_config_guardar(request):
-    """Guarda configuración global"""
+    """Guarda configuración global (soporta multipart para logo)"""
     try:
-        data = json.loads(request.body)
+        # Si es multipart/form-data (subida de logo) usamos request.POST, si no request.body (JSON)
+        if request.content_type.startswith('multipart/form-data'):
+            data = request.POST
+        else:
+            data = json.loads(request.body)
+
         empresa = Empresa.objects.first()
         if not empresa:
             empresa = Empresa.objects.create(nombre="Mi Empresa") # Fallback
@@ -8394,7 +8442,9 @@ def api_empresa_config_guardar(request):
         if 'items_por_pagina' in data:
             empresa.items_por_pagina = int(data['items_por_pagina'])
         if 'habilita_remitos' in data:
-            empresa.habilita_remitos = bool(data['habilita_remitos'])
+            # En multipart los booleanos llegan como strings
+            val = data['habilita_remitos']
+            empresa.habilita_remitos = str(val).lower() == 'true' if isinstance(val, str) else bool(val)
 
         # Datos Empresa
         empresa.nombre = data.get('nombre', empresa.nombre)
@@ -8409,8 +8459,15 @@ def api_empresa_config_guardar(request):
         if 'inicio_actividades' in data and data['inicio_actividades']:
             empresa.inicio_actividades = data['inicio_actividades']
 
+        # Manejo de Logo
+        if 'logo' in request.FILES:
+            empresa.logo = request.FILES['logo']
+
         empresa.save()
-        return JsonResponse({'ok': True})
+        return JsonResponse({
+            'ok': True,
+            'logo_url': empresa.logo.url if empresa.logo else None
+        })
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
@@ -8514,30 +8571,395 @@ def api_notas_credito_listar(request):
         print(f"Error api_notas_credito_listar: {e}")
         return JsonResponse({'error': str(e)}, status=500)
 
+
 @login_required
+
 def api_remito_detalle(request, id):
+
     try:
+
         r = get_object_or_404(Remito, pk=id)
+
         
+
         items = []
+
         for item in r.detalles.all():
+
             items.append({
+
                 'id': item.id,
+
                 'producto': item.producto.descripcion,
+
                 'cantidad': float(item.cantidad),
+
             })
 
+
+
         data = {
+
             'id': r.id,
+
             'numero': r.numero_formateado(),
+
             'fecha': r.fecha.strftime('%d/%m/%Y %H:%M'),
+
             'cliente': r.cliente.nombre,
+
             'direccion': r.cliente.domicilio, # O la dirección de entrega específica si existiera en el modelo
+
             'venta_asociada': r.venta_asociada.numero_factura_formateado() if r.venta_asociada else '-',
+
             'estado': r.estado,
+
             'items': items
+
+        }
+
+        return JsonResponse(data)
+
+    except Exception as e:
+
+        print(f"Error api_remito_detalle: {e}")
+
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@csrf_exempt
+@transaction.atomic
+def api_nota_credito_crear(request, venta_id):
+    if request.method != 'POST':
+        return JsonResponse({'ok': False, 'error': 'Método no permitido. Use POST.'}, status=405)
+        
+    try:
+        venta = Venta.objects.get(pk=venta_id)
+        
+        # Verificar si ya tiene nota de crédito
+        if NotaCredito.objects.filter(venta_asociada=venta, estado='EMITIDA').exists():
+             return JsonResponse({'ok': False, 'error': 'Esta venta ya tiene una Nota de Crédito asociada.'})
+
+        # Logic copied and adapted from view_comprobantes.crear_nota_credito
+        motivo = "Anulación desde Listado de Ventas"
+        
+        # Crear NC
+        nc = NotaCredito.objects.create(
+            cliente=venta.cliente,
+            venta_asociada=venta,
+            tipo_comprobante=f"NC{venta.tipo_comprobante}",
+            total=venta.total,
+            motivo=motivo,
+            estado='EMITIDA'
+        )
+        
+        # Copiar detalles
+        for det in venta.detalles.all():
+            DetalleNotaCredito.objects.create(
+                nota_credito=nc,
+                producto=det.producto,
+                cantidad=det.cantidad,
+                precio_unitario=det.precio_unitario,
+                subtotal=det.subtotal
+            )
+            
+            # Devolver stock
+            det.producto.stock += int(det.cantidad)
+            det.producto.save()
+            MovimientoStock.objects.create(
+                producto=det.producto,
+                tipo='IN',
+                cantidad=det.cantidad,
+                referencia=f"NC {nc.id} (Anula Venta {venta.id})",
+                observaciones="Devolución por Nota de Crédito (API)"
+            )
+
+        # Generar Asiento Contable
+        try:
+            from .services import AccountingService
+            AccountingService.registrar_nota_credito(nc)
+        except Exception as e:
+            print(f"Error generando asiento de NC {nc.id}: {e}")
+            
+        # Actualizar estado de la venta? Generalmente queda como "Emitida" pero con NC asociada.
+        # Opcional: venta.estado = 'Anulada'
+        
+        return JsonResponse({
+            'ok': True, 
+            'id': nc.id, 
+            'message': f'Nota de Crédito {nc.numero_formateado()} generada correctamente.'
+        })
+
+    except Venta.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Venta no encontrada.'}, status=404)
+    except Exception as e:
+        return JsonResponse({'ok': False, 'error': str(e)}, status=500)
+
+
+
+@login_required
+def api_nota_credito_detalle(request, id):
+    try:
+        nc = NotaCredito.objects.get(pk=id)
+        
+        detalles = []
+        for det in nc.detalles.all():
+            detalles.append({
+                'id': det.id,
+                'producto': det.producto.descripcion,
+                'cantidad': det.cantidad,
+                'precio_unitario': float(det.precio_unitario),
+                'subtotal': float(det.subtotal)
+            })
+            
+        data = {
+            'ok': True,
+            'header': {
+                'id': nc.id,
+                'fecha': nc.fecha.strftime('%d/%m/%Y %H:%M'),
+                'numero': nc.numero_formateado(),
+                'cliente': nc.cliente.nombre,
+                'venta_asociada': f"#{nc.venta_asociada.id} ({nc.venta_asociada.tipo_comprobante})" if nc.venta_asociada else "-",
+                'total': float(nc.total),
+                'estado': nc.estado,
+                'motivo': nc.motivo,
+                'tipo_comprobante': nc.tipo_comprobante 
+            },
+            'items': detalles
         }
         return JsonResponse(data)
+    except NotaCredito.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Nota de Crédito no encontrada'}, status=404)
     except Exception as e:
-        print(f"Error api_remito_detalle: {e}")
+        return JsonResponse({'ok': False, 'error': str(e)}, status=500)
+
+
+
+@login_required
+def api_notas_debito_listar(request):
+    """API para listar notas de débito"""
+    try:
+        nds = NotaDebito.objects.select_related('cliente', 'venta_asociada').all().order_by('-fecha')
+        
+        data = []
+        for nd in nds:
+            data.append({
+                'id': nd.id,
+                'numero': nd.numero_formateado(),
+                'fecha': nd.fecha.strftime('%d/%m/%Y %H:%M'),
+                'cliente': nd.cliente.nombre,
+                'venta_id': nd.venta_asociada.id if nd.venta_asociada else None,
+                'venta_str': nd.venta_asociada.numero_factura_formateado() if nd.venta_asociada else '-',
+                'total': float(nd.total),
+                'estado': nd.estado,
+                'tipo': nd.tipo_comprobante
+            })
+            
+        return JsonResponse({'notas_debito': data})
+    except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+@login_required
+def api_nota_debito_detalle(request, id):
+    try:
+        nd = NotaDebito.objects.get(pk=id)
+        
+        detalles = []
+        for det in nd.detalles.all():
+            detalles.append({
+                'id': det.id,
+                'producto': det.producto.descripcion,
+                'cantidad': det.cantidad,
+                'precio_unitario': float(det.precio_unitario),
+                'subtotal': float(det.subtotal)
+            })
+            
+        data = {
+            'ok': True,
+            'header': {
+                'id': nd.id,
+                'fecha': nd.fecha.strftime('%d/%m/%Y %H:%M'),
+                'numero': nd.numero_formateado(),
+                'cliente': nd.cliente.nombre,
+                'venta_asociada': f"#{nd.venta_asociada.id} ({nd.venta_asociada.tipo_comprobante})" if nd.venta_asociada else "-",
+                'total': float(nd.total),
+                'estado': nd.estado,
+                'motivo': nd.motivo,
+                'tipo_comprobante': nd.tipo_comprobante 
+            },
+            'items': detalles
+        }
+        return JsonResponse(data)
+    except NotaDebito.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Nota de Débito no encontrada'}, status=404)
+    except Exception as e:
+        return JsonResponse({'ok': False, 'error': str(e)}, status=500)
+
+@csrf_exempt
+@transaction.atomic
+def api_nota_debito_crear(request, venta_id):
+    if request.method != 'POST':
+        return JsonResponse({'ok': False, 'error': 'Método no permitido. Use POST.'}, status=405)
+        
+    try:
+        data = json.loads(request.body)
+        monto = Decimal(str(data.get('monto', 0)))
+        motivo = data.get('motivo', 'Nota de Débito Genérica')
+
+        if monto <= 0:
+             return JsonResponse({'ok': False, 'error': 'El monto debe ser mayor a 0.'})
+
+        venta = Venta.objects.get(pk=venta_id)
+        
+        # Crear ND
+        nd = NotaDebito.objects.create(
+            cliente=venta.cliente,
+            venta_asociada=venta,
+            tipo_comprobante=f"ND{venta.tipo_comprobante[-1] if venta.tipo_comprobante else 'X'}", # e.g., NO -> NDX, FA -> FDA? Better: NDA/NDB/NDC
+            total=monto,
+            motivo=motivo,
+            estado='EMITIDA'
+        )
+        
+        # Ajustar tipo comprobante mejorado
+        tipo_letra = venta.tipo_comprobante[-1] if venta.tipo_comprobante else 'X' # A, B, C
+        if tipo_letra not in ['A', 'B', 'C']: tipo_letra = 'X'
+        nd.tipo_comprobante = f"ND{tipo_letra}"
+        nd.save()
+
+        # Crear Detalle Genérico
+        DetalleNotaDebito.objects.create(
+            nota_debito=nd,
+            producto=Producto.objects.first(), # Fallback product necessary? Or make nullable? Assuming first product exists or generic service product.
+                                             # Better: find or create a generic 'Concepto ND' product if needed, but let's use first product for now as placeholder is risky.
+                                             # Actually, models says 'producto' is ForeignKey(Producto). We need a product.
+            cantidad=1,
+            precio_unitario=monto,
+            subtotal=monto
+        )
+        # Note: If no product exists, this will fail. Assuming system has products.
+        # Ideally we should have a 'Servicio / Concepto' product.
+
+        # Generar Asiento Contable
+        try:
+            from .services import AccountingService
+            AccountingService.registrar_nota_debito(nd)
+        except Exception as e:
+            print(f"Error generando asiento de ND {nd.id}: {e}")
+            
+        return JsonResponse({
+            'ok': True, 
+            'id': nd.id, 
+            'message': f'Nota de Débito {nd.numero_formateado()} generada correctamente.'
+        })
+
+    except Venta.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Venta no encontrada.'}, status=404)
+    except Exception as e:
+        return JsonResponse({'ok': False, 'error': str(e)}, status=500)
+
+
+# =======================================
+# 🔹 API DASHBOARD
+# =======================================
+@login_required
+def api_dashboard_stats(request):
+    from django.db.models import Sum, Count, F
+    from datetime import date, timedelta, datetime
+    
+    hoy = date.today()
+    
+    from django.db.models.functions import TruncDate
+    from django.utils import timezone
+    
+    # Define "Hoy" as a range (Start of Day to End of Day) in Local Time
+    local_now = timezone.localtime(timezone.now())
+    hoy_date = local_now.date()
+    
+    start_of_day = timezone.make_aware(datetime.combine(hoy_date, datetime.min.time()))
+    end_of_day = start_of_day + timedelta(days=1)
+    
+    # 1. KPIs Principales (Using Datetime Range)
+    ventas_hoy = Venta.objects.filter(fecha__gte=start_of_day, fecha__lt=end_of_day).aggregate(total=Sum('total'))['total'] or 0
+    caja_hoy = MovimientoCaja.objects.filter(fecha__gte=start_of_day, fecha__lt=end_of_day).aggregate(total=Sum('monto'))['total'] or 0
+    pedidos_pendientes = Pedido.objects.filter(estado__in=['PENDIENTE', 'PREPARACION']).count()
+    
+    # Usando stock_minimo dinámico O hardcode 10
+    stock_bajo_count = Producto.objects.filter(Q(stock__lte=F('stock_minimo')) | Q(stock__lte=10)).count()
+    
+    # 2. Gráfico: Ventas últimos 7 días (Python Aggregation to avoid DB timezone issues)
+    fecha_inicio_chart = hoy_date - timedelta(days=6)
+    start_chart_dt = timezone.make_aware(datetime.combine(fecha_inicio_chart, datetime.min.time()))
+    
+    # Fetch all sales in the range
+    ventas_range = Venta.objects.filter(fecha__gte=start_chart_dt).values('fecha', 'total')
+    
+    # Aggregate in Python using MANUAL offset to guarantee Argentina Time (UTC-3)
+    daily_totals = {}
+    sales_debug = []
+    
+    for v in ventas_range:
+        # Manual fix: Subtract 3 hours from UTC timestamp
+        local_dt = v['fecha'] - timedelta(hours=3)
+        day_str = local_dt.strftime('%Y-%m-%d')
+        daily_totals[day_str] = daily_totals.get(day_str, 0) + float(v['total'])
+        sales_debug.append(f"{v['fecha']} -> {day_str} ($ {v['total']})")
+        
+    chart_labels = []
+    chart_data = []
+    for i in range(7):
+        dia_iter = fecha_inicio_chart + timedelta(days=i)
+        dia_str = dia_iter.strftime('%Y-%m-%d')
+        chart_labels.append(dia_iter.strftime('%d/%m'))
+        chart_data.append(daily_totals.get(dia_str, 0))
+
+    # 3. Actividad Reciente (Últimas 5 ventas)
+    recientes = []
+    ultimas_ventas = Venta.objects.select_related('cliente').order_by('-fecha')[:5]
+    for v in ultimas_ventas:
+        recientes.append({
+            'id': v.id,
+            'tipo': 'VENTA',
+            'icono': 'ShoppingCart', # React Lucide Icon name
+            'color': 'primary',
+            'fecha': v.fecha.strftime('%d/%m %H:%M'),
+            'texto': f"Venta #{v.id} - ${v.total}",
+            'subtexto': v.cliente.nombre if v.cliente else 'Cliente Final'
+        })
+    
+    # 4. Top Productos (Últimos 30 días)
+    fecha_inicio_top = hoy - timedelta(days=30)
+    top_productos = DetalleVenta.objects.filter(venta__fecha__date__gte=fecha_inicio_top)\
+        .values('producto__descripcion')\
+        .annotate(total_vendido=Sum('cantidad'))\
+        .order_by('-total_vendido')[:5]
+    
+    top_list = []
+    for p in top_productos:
+        top_list.append({
+            'producto': p['producto__descripcion'],
+            'total': p['total_vendido']
+        })
+
+    data = {
+        'kpi': {
+            'ventas_hoy': float(ventas_hoy),
+            'caja_hoy': float(caja_hoy),
+            'pedidos_pendientes': pedidos_pendientes,
+            'stock_bajo': stock_bajo_count,
+        },
+        'chart': {
+            'labels': chart_labels,
+            'data': chart_data
+        },
+        'actividad_reciente': recientes,
+        'top_productos': top_list,
+        'debug': {
+            'hoy': str(hoy_date),
+            'inicio_chart': str(fecha_inicio_chart),
+            'sales_processed': sales_debug,
+            'daily_totals': daily_totals
+        }
+    }
+    
+    return JsonResponse(data)

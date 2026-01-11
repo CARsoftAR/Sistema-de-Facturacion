@@ -4,6 +4,7 @@ import { Search, Plus, Trash2, User, ShoppingCart, Check, X, ClipboardList, PenT
 
 import { useNavigate } from 'react-router-dom';
 import { BtnSave, BtnCancel } from '../components/CommonButtons';
+import { useProductSearch } from '../hooks/useProductSearch';
 
 // Componente helper para inputs con autofocus (mismo que NuevaVenta)
 const AutoFocusInput = ({ onKeyDownNext, ...props }) => {
@@ -116,21 +117,31 @@ const NuevaCompra = () => {
     }, [datosCheque.banco]);
 
     // Campos de entrada de producto
-    const [inputCodigo, setInputCodigo] = useState('');
-    const [inputProducto, setInputProducto] = useState('');
+    // ==================== PRODUCT SEARCH HOOK ====================
+    const {
+        inputCodigo, setInputCodigo,
+        inputProducto, setInputProducto,
+        codigosSugeridos, productosSugeridos,
+        mostrarSugerenciasCodigo, mostrarSugerenciasProducto,
+        sugerenciaCodigoActiva, sugerenciaActiva,
+        codigoListRef, productoListRef,
+        nextInputRef: productoRef,
+        handleCodigoKeyDown, handleProductoKeyDown,
+        handleCodigoBlur, handleProductoBlur,
+        seleccionar: seleccionarProducto,
+        limpiar: limpiarBusqueda
+    } = useProductSearch({
+        onSelect: (producto) => {
+            setProductoSeleccionado(producto);
+            // Sugerir el costo actual o "0"
+            setInputCosto(producto.costo ? producto.costo.toString() : '0');
+            setTimeout(() => cantidadRef.current?.select(), 50);
+        }
+    });
+
     const [inputCantidad, setInputCantidad] = useState('1');
     const [inputCosto, setInputCosto] = useState(''); // Costo unitario
-
-    // Autocompletado de código
-    const [codigosSugeridos, setCodigosSugeridos] = useState([]);
-    const [mostrarSugerenciasCodigo, setMostrarSugerenciasCodigo] = useState(false);
-    const [sugerenciaCodigoActiva, setSugerenciaCodigoActiva] = useState(0);
-
-    // Autocompletado de producto
-    const [productosSugeridos, setProductosSugeridos] = useState([]);
-    const [mostrarSugerenciasProducto, setMostrarSugerenciasProducto] = useState(false);
     const [productoSeleccionado, setProductoSeleccionado] = useState(null);
-    const [sugerenciaActiva, setSugerenciaActiva] = useState(0);
 
     const [items, setItems] = useState([]);
     const [observaciones, setObservaciones] = useState('');
@@ -139,15 +150,15 @@ const NuevaCompra = () => {
 
     // Refs
     const codigoRef = useRef(null);
-    const productoRef = useRef(null);
+    // productoRef (from hook)
     const cantidadRef = useRef(null);
     const costoRef = useRef(null);
     const proveedorInputRef = useRef(null);
 
     // Refs para scroll
     const proveedorListRef = useRef(null);
-    const codigoListRef = useRef(null);
-    const productoListRef = useRef(null);
+    // codigoListRef (from hook)
+    // productoListRef (from hook)
 
     // ==================== FOCUS INICIAL ====================
     useEffect(() => {
@@ -183,46 +194,6 @@ const NuevaCompra = () => {
         return () => clearTimeout(timer);
     }, [busquedaProveedor]);
 
-    // ==================== BUSCAR POR CÓDIGO ====================
-    useEffect(() => {
-        if (inputCodigo.length < 1) {
-            setCodigosSugeridos([]);
-            setMostrarSugerenciasCodigo(false);
-            return;
-        }
-        const timer = setTimeout(() => {
-            fetch(`/api/productos/buscar/?q=${encodeURIComponent(inputCodigo)}`)
-                .then(res => res.json())
-                .then(data => {
-                    setCodigosSugeridos(data.data || []);
-                    setMostrarSugerenciasCodigo(true);
-                    setSugerenciaCodigoActiva(0);
-                })
-                .catch(() => setCodigosSugeridos([]));
-        }, 150);
-        return () => clearTimeout(timer);
-    }, [inputCodigo]);
-
-    // ==================== BUSCAR PRODUCTO POR NOMBRE ====================
-    useEffect(() => {
-        if (inputProducto.length < 2) {
-            setProductosSugeridos([]);
-            setMostrarSugerenciasProducto(false);
-            return;
-        }
-        const timer = setTimeout(() => {
-            fetch(`/api/productos/buscar/?q=${encodeURIComponent(inputProducto)}`)
-                .then(res => res.json())
-                .then(data => {
-                    setProductosSugeridos(data.data || []);
-                    setMostrarSugerenciasProducto(true);
-                    setSugerenciaActiva(0);
-                })
-                .catch(() => setProductosSugeridos([]));
-        }, 200);
-        return () => clearTimeout(timer);
-    }, [inputProducto]);
-
     // ==================== SELECCIONAR PROVEEDOR ====================
     const seleccionarProveedor = (p) => {
         setProveedor(p);
@@ -230,47 +201,6 @@ const NuevaCompra = () => {
         setMostrarSugerenciasProveedor(false);
         setProveedoresSugeridos([]);
         setTimeout(() => codigoRef.current?.focus(), 100);
-    };
-
-    // ==================== MANEJO DE TECLAS - PROVEEDOR ====================
-    const handleProveedorKeyDown = (e) => {
-        if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            // Si no hay sugerencias, buscamos (incluso vacío para traer todos/recientes)
-            if (!mostrarSugerenciasProveedor || proveedoresSugeridos.length === 0) {
-                buscarProveedores(busquedaProveedor);
-                return;
-            }
-            const newIndex = Math.min(sugerenciaProveedorActiva + 1, proveedoresSugeridos.length - 1);
-            setSugerenciaProveedorActiva(newIndex);
-            proveedorListRef.current?.children[newIndex]?.scrollIntoView({ block: 'nearest' });
-        } else if (e.key === 'ArrowUp') {
-            e.preventDefault();
-            const newIndex = Math.max(sugerenciaProveedorActiva - 1, 0);
-            setSugerenciaProveedorActiva(newIndex);
-            proveedorListRef.current?.children[newIndex]?.scrollIntoView({ block: 'nearest' });
-        } else if (e.key === 'Enter') {
-            e.preventDefault();
-            if (proveedoresSugeridos.length > 0) {
-                seleccionarProveedor(proveedoresSugeridos[sugerenciaProveedorActiva]);
-            }
-        } else if (e.key === 'Escape') {
-            setMostrarSugerenciasProveedor(false);
-        }
-    };
-
-    // ==================== SELECCIONAR PRODUCTO ====================
-    const seleccionarProducto = (producto) => {
-        setProductoSeleccionado(producto);
-        setInputCodigo(producto.codigo);
-        setInputProducto(producto.descripcion);
-        // Sugerir el costo actual o precio 0 si no tenemos data de costo
-        setInputCosto(producto.costo ? producto.costo.toString() : '0');
-        setMostrarSugerenciasProducto(false);
-        setMostrarSugerenciasCodigo(false);
-        setProductosSugeridos([]);
-        setCodigosSugeridos([]);
-        setTimeout(() => cantidadRef.current?.select(), 50);
     };
 
     // ==================== AGREGAR PRODUCTO A LA LISTA ====================
@@ -307,59 +237,14 @@ const NuevaCompra = () => {
     };
 
     const limpiarCamposEntrada = () => {
-        setInputCodigo('');
-        setInputProducto('');
+        limpiarBusqueda();
         setInputCantidad('1');
         setInputCosto('');
         setProductoSeleccionado(null);
-        setProductosSugeridos([]);
-        setCodigosSugeridos([]);
-        setMostrarSugerenciasProducto(false);
-        setMostrarSugerenciasCodigo(false);
     };
 
     // ==================== MANEJO DE TECLAS - UTILS ====================
-    const handleCodigoKeyDown = (e) => {
-        if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            const newIndex = Math.min(sugerenciaCodigoActiva + 1, codigosSugeridos.length - 1);
-            setSugerenciaCodigoActiva(newIndex);
-            codigoListRef.current?.children[newIndex]?.scrollIntoView({ block: 'nearest' });
-        } else if (e.key === 'ArrowUp') {
-            e.preventDefault();
-            const newIndex = Math.max(sugerenciaCodigoActiva - 1, 0);
-            setSugerenciaCodigoActiva(newIndex);
-            codigoListRef.current?.children[newIndex]?.scrollIntoView({ block: 'nearest' });
-        } else if (e.key === 'Enter') {
-            e.preventDefault();
-            if (mostrarSugerenciasCodigo && codigosSugeridos.length > 0) {
-                seleccionarProducto(codigosSugeridos[sugerenciaCodigoActiva]);
-            } else if (!inputCodigo.trim()) {
-                productoRef.current?.focus();
-            }
-        } else if (e.key === 'Escape') setMostrarSugerenciasCodigo(false);
-    };
-
-    const handleProductoKeyDown = (e) => {
-        if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            const newIndex = Math.min(sugerenciaActiva + 1, productosSugeridos.length - 1);
-            setSugerenciaActiva(newIndex);
-            productoListRef.current?.children[newIndex]?.scrollIntoView({ block: 'nearest' });
-        } else if (e.key === 'ArrowUp') {
-            e.preventDefault();
-            const newIndex = Math.max(sugerenciaActiva - 1, 0);
-            setSugerenciaActiva(newIndex);
-            productoListRef.current?.children[newIndex]?.scrollIntoView({ block: 'nearest' });
-        } else if (e.key === 'Enter') {
-            e.preventDefault();
-            if (mostrarSugerenciasProducto && productosSugeridos.length > 0) {
-                seleccionarProducto(productosSugeridos[sugerenciaActiva]);
-            } else if (productoSeleccionado) {
-                cantidadRef.current?.select();
-            }
-        } else if (e.key === 'Escape') setMostrarSugerenciasProducto(false);
-    };
+    // Code/Product handlers removed (handled by hook)
 
     const handleCantidadKeyDown = (e) => {
         if (e.key === 'Enter') {
@@ -474,7 +359,7 @@ const NuevaCompra = () => {
     const totalGeneral = items.reduce((acc, i) => acc + i.subtotal, 0);
 
     return (
-        <div className="p-6 max-w-7xl mx-auto h-[calc(100vh-2rem)] flex flex-col">
+        <div className="p-6 max-w-7xl mx-auto h-[calc(100vh-2rem)] flex flex-col fade-in">
             {/* Header */}
             <div className="mb-6 flex-shrink-0 flex justify-between items-end">
                 <div>
@@ -618,7 +503,7 @@ const NuevaCompra = () => {
                                         value={inputCodigo}
                                         onChange={(e) => setInputCodigo(e.target.value.toUpperCase())}
                                         onKeyDown={handleCodigoKeyDown}
-                                        onBlur={() => setTimeout(() => setMostrarSugerenciasCodigo(false), 200)}
+                                        onBlur={handleCodigoBlur}
                                         placeholder="XXX"
                                         className="w-full px-3 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-slate-50 font-mono text-sm uppercase text-center font-bold tracking-wide"
                                     />
@@ -647,7 +532,7 @@ const NuevaCompra = () => {
                                         value={inputProducto}
                                         onChange={(e) => { setInputProducto(e.target.value); setProductoSeleccionado(null); }}
                                         onKeyDown={handleProductoKeyDown}
-                                        onBlur={() => setTimeout(() => setMostrarSugerenciasProducto(false), 200)}
+                                        onBlur={handleProductoBlur}
                                         placeholder="Buscar producto..."
                                         className="w-full px-3 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-slate-50 text-sm font-medium"
                                     />

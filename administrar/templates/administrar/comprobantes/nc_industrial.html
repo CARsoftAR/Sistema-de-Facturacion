@@ -1,0 +1,145 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nota de Crédito {{ nota.numero_formateado }} - Industrial</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Roboto:wght@400;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --ind-orange: #d35400;
+            --ind-black: #2c3e50;
+            --ind-grey: #ecf0f1;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            font-size: 11px;
+            color: var(--ind-black);
+            background: #f4f4f4;
+        }
+
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 10mm;
+            margin: 0 auto;
+            background: white;
+            border: 5px solid var(--ind-black);
+        }
+
+        .industrial-header {
+            background: var(--ind-black);
+            color: var(--ind-orange);
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .company-name {
+            font-family: 'Barlow Condensed', sans-serif;
+            font-size: 32px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .data-card {
+            border: 2px solid var(--ind-black);
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .label {
+            background: var(--ind-black);
+            color: white;
+            padding: 2px 8px;
+            font-size: 9px;
+            margin-bottom: 10px;
+            display: inline-block;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+
+        th {
+            border: 2px solid var(--ind-black);
+            background: var(--ind-grey);
+            padding: 10px;
+            text-align: left;
+        }
+
+        td {
+            border: 2px solid var(--ind-black);
+            padding: 10px;
+        }
+
+        .totals-ind {
+            float: right;
+            width: 300px;
+            background: var(--ind-orange);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .big-number {
+            font-size: 28px;
+            font-family: 'Barlow Condensed', sans-serif;
+            font-weight: 800;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page">
+        <header class="industrial-header">
+            <div class="company-name">{{ empresa.nombre }}</div>
+            <div style="font-family: 'Barlow Condensed', sans-serif; font-size: 20px; color: white;">NOTA DE CRÉDITO //
+                {{ nota.numero_formateado }}</div>
+        </header>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div class="data-card">
+                <span class="label">CLIENT_REF</span>
+                <div style="font-size: 14px; font-weight: 700;">{{ nota.cliente.nombre }}</div>
+                <p>CUIT: {{ nota.cliente.cuit }}</p>
+            </div>
+            <div class="data-card">
+                <span class="label">LOG_DATA</span>
+                <p>FECHA: {{ nota.fecha|date:"d/m/Y" }}</p>
+                <p>REF_ORIGEN: {{ nota.venta_asociada.numero_factura_formateado|default:"-" }}</p>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>ADJUSTMENT_DETAIL</th>
+                    <th style="text-align: right;">CREDIT_SUBTOTAL</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in detalles %}
+                <tr>
+                    <td style="font-weight: 700;">{{ item.producto.descripcion }} ({{ item.cantidad }} unidad/es)</td>
+                    <td style="text-align: right;">$ {{ item.subtotal|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="totals-ind">
+            <div style="font-size: 10px; text-transform: uppercase; font-weight: 700;">VALOR_TOTAL_CRÉDITO</div>
+            <div class="big-number">$ {{ nota.total|floatformat:2 }}</div>
+        </div>
+    </div>
+</body>
+
+</html>

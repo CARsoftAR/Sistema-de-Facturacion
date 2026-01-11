@@ -1,0 +1,210 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Factura {{ venta.numero_factura_formateado }} - Industrial</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Roboto:wght@400;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --ind-yellow: #ffc107;
+            --ind-black: #212529;
+            --ind-grey: #e9ecef;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            font-size: 11px;
+            color: var(--ind-black);
+            background: #f0f0f0;
+        }
+
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 10mm;
+            margin: 20px auto;
+            background: white;
+            border: 4px solid var(--ind-black);
+            position: relative;
+        }
+
+        .industrial-header {
+            background: var(--ind-black);
+            color: var(--ind-yellow);
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .company-name {
+            font-family: 'Barlow Condensed', sans-serif;
+            font-size: 36px;
+            font-weight: 800;
+            text-transform: uppercase;
+            line-height: 1;
+        }
+
+        .voucher-box {
+            background: var(--ind-yellow);
+            color: var(--ind-black);
+            padding: 10px 20px;
+            text-align: center;
+            font-weight: 800;
+            font-family: 'Barlow Condensed', sans-serif;
+            font-size: 24px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .data-card {
+            border: 2px solid var(--ind-black);
+            padding: 15px;
+        }
+
+        .card-label {
+            background: var(--ind-black);
+            color: white;
+            padding: 2px 8px;
+            font-size: 9px;
+            font-weight: 700;
+            display: inline-block;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        .ind-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+
+        .ind-table th {
+            background: var(--ind-grey);
+            border: 2px solid var(--ind-black);
+            padding: 10px;
+            text-align: left;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+
+        .ind-table td {
+            border: 2px solid var(--ind-black);
+            padding: 10px;
+        }
+
+        .ind-totals {
+            float: right;
+            width: 300px;
+        }
+
+        .ind-total-row {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid #ddd;
+            padding: 8px 0;
+        }
+
+        .grand-total {
+            background: var(--ind-yellow);
+            border: 2px solid var(--ind-black);
+            padding: 15px;
+            font-size: 24px;
+            font-weight: 800;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .warning-strip {
+            height: 10px;
+            background: repeating-linear-gradient(45deg, var(--ind-yellow), var(--ind-yellow) 10px, var(--ind-black) 10px, var(--ind-black) 20px);
+            margin-top: 50px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page">
+        <header class="industrial-header">
+            <div>
+                <div class="company-name">{{ empresa.nombre }}</div>
+                <div style="font-size: 10px; margin-top: 5px;">{{ empresa.direccion }} | {{ empresa.email }}</div>
+            </div>
+            <div class="voucher-box">
+                {{ venta.numero_factura_formateado }}
+            </div>
+        </header>
+
+        <div class="info-grid">
+            <div class="data-card">
+                <span class="card-label">CLIENTE_TARGET</span>
+                <div style="font-size: 14px; font-weight: 700;">{{ cliente.nombre }}</div>
+                <p>{{ cliente.domicilio }}</p>
+                <p>{{ cliente.localidad.nombre }}</p>
+                <p>CUIT: {{ cliente.cuit }}</p>
+            </div>
+            <div class="data-card">
+                <span class="card-label">TRANS_LOG</span>
+                <p>FECHA: {{ venta.fecha|date:"d/m/Y" }}</p>
+                <p>VENCE: {{ venta.fecha_vencimiento|date:"d/m/Y" }}</p>
+                <p>TERM: {{ venta.condicion_venta }}</p>
+            </div>
+        </div>
+
+        <table class="ind-table">
+            <thead>
+                <tr>
+                    <th>CANT</th>
+                    <th>DETALLE_DEL_PRODUCTO</th>
+                    <th style="text-align: right;">UNIT</th>
+                    <th style="text-align: right;">SUBTOTAL</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in detalles %}
+                <tr>
+                    <td style="font-weight: 700;">{{ item.cantidad }}</td>
+                    <td>{{ item.producto.descripcion }}</td>
+                    <td style="text-align: right;">{{ item.precio_unitario|floatformat:2 }}</td>
+                    <td style="text-align: right;">{{ item.subtotal|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="ind-totals">
+            <div class="ind-total-row">
+                <span>PARCIAL</span>
+                <span>$ {{ venta.subtotal|floatformat:2 }}</span>
+            </div>
+            {% if venta.iva_amount %}
+            <div class="ind-total-row">
+                <span>TAX_IVA</span>
+                <span>$ {{ venta.iva_amount|floatformat:2 }}</span>
+            </div>
+            {% endif %}
+            <div class="grand-total">
+                TOTAL: $ {{ venta.total|floatformat:2 }}
+            </div>
+        </div>
+
+        <div class="warning-strip"></div>
+        <div
+            style="text-align: center; margin-top: 10px; font-weight: 800; font-size: 10px; text-transform: uppercase;">
+            CARSOFT INDUSTRIAL SYSTEMS // DOCUMENTO_OFICIAL
+        </div>
+    </div>
+</body>
+
+</html>

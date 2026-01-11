@@ -1,0 +1,148 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Remito {{ remito.numero_formateado }} - Industrial</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Roboto:wght@400;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --ind-yellow: #ffc107;
+            --ind-black: #212529;
+            --ind-grey: #e9ecef;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            font-size: 11px;
+            color: var(--ind-black);
+            background: #f0f0f0;
+        }
+
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 10mm;
+            margin: 0 auto;
+            background: white;
+            border: 4px solid var(--ind-black);
+        }
+
+        .industrial-header {
+            background: var(--ind-black);
+            color: var(--ind-yellow);
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .company-name {
+            font-family: 'Barlow Condensed', sans-serif;
+            font-size: 28px;
+            text-transform: uppercase;
+        }
+
+        .data-card {
+            border: 2px solid var(--ind-black);
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+
+        .card-label {
+            background: var(--ind-black);
+            color: white;
+            padding: 2px 8px;
+            font-size: 9px;
+            font-weight: 700;
+            display: inline-block;
+            margin-bottom: 5px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+
+        th {
+            background: var(--ind-grey);
+            border: 2px solid var(--ind-black);
+            padding: 10px;
+            text-align: left;
+        }
+
+        td {
+            border: 2px solid var(--ind-black);
+            padding: 10px;
+        }
+
+        .footer-sig {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 50px;
+        }
+
+        .signature {
+            border: 2px solid var(--ind-black);
+            width: 220px;
+            text-align: center;
+            padding: 10px;
+            font-weight: 800;
+            font-family: 'Barlow Condensed', sans-serif;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page">
+        <header class="industrial-header">
+            <div class="company-name">{{ empresa.nombre }}</div>
+            <div
+                style="text-align: right; background: var(--ind-yellow); color: var(--ind-black); padding: 5px 15px; font-weight: 800;">
+                REMITO: {{ remito.numero_formateado }}</div>
+        </header>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div class="data-card">
+                <span class="card-label">CLIENTE</span>
+                <div style="font-weight: 700;">{{ remito.cliente.nombre }}</div>
+                <div>{{ remito.cliente.domicilio }}</div>
+            </div>
+            <div class="data-card">
+                <span class="card-label">LOGISTICA</span>
+                <div>FECHA: {{ remito.fecha|date:"d/m/Y" }}</div>
+                <div>DESTINO: {{ remito.direccion_entrega|default:remito.cliente.domicilio }}</div>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 15%;">CANT</th>
+                    <th>DETALLE_CARGA</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in remito.detalles.all %}
+                <tr>
+                    <td style="font-weight: 700; text-align: center;">{{ item.cantidad }}</td>
+                    <td>{{ item.producto.descripcion }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="footer-sig">
+            <div class="signature">FIRMA RECEPTOR</div>
+            <div class="signature">DESPACHO INTERNO</div>
+        </div>
+    </div>
+</body>
+
+</html>

@@ -115,10 +115,10 @@ export const BtnExport = ({ onClick, label = "Exportar Excel", className = "" })
 );
 
 export const BtnPrint = ({ onClick, label = "Imprimir", title = "Imprimir", iconOnly = false, className = "", size = "sm" }) => {
-    if (iconOnly) return <BtnIcon icon={Printer} color="secondary" onClick={onClick} title={title} size={size} />;
+    if (iconOnly) return <BtnIcon icon={Printer} color="print" onClick={onClick} title={title} size={size} />;
 
     return (
-        <button type="button" className={`${BASE_BTN_CLASS} btn-secondary text-white btn-${size} ${className}`} onClick={onClick}>
+        <button type="button" className={`${BASE_BTN_CLASS} btn-print text-white btn-${size} ${className}`} onClick={onClick}>
             <Printer size={18} />
             {label}
         </button>
@@ -148,15 +148,38 @@ export const BtnAction = ({ label, icon: Icon, onClick, color = "primary", class
 
 
 
+
+
+
 export const BtnClear = ({ onClick, label = "Limpiar Filtros", className = "" }) => (
     <button
         type="button"
-        className={`btn text-warning-emphasis fw-bold border border-warning-subtle shadow-sm d-inline-flex align-items-center justify-content-center gap-2 transition-all hover:bg-white hover:text-danger ${className}`}
+        className={`btn text-dark fw-bold border border-success-subtle shadow-sm d-inline-flex align-items-center justify-content-center gap-2 transition-all hover:bg-white hover:text-danger ${className}`}
         onClick={onClick}
-        style={{ height: '38px', backgroundColor: '#FFF9C4' }}
+        style={{ height: '38px', backgroundColor: '#e2f9e3' }}
         title="Limpiar filtros"
     >
         <Eraser size={16} />
         {label}
+    </button>
+);
+// ============================================================================
+// SPECIALTY BUTTONS
+// ============================================================================
+
+/**
+ * Vertical Button (Icon on top, Text on bottom)
+ * Based on user requirement for "Standardized" vertical buttons
+ */
+export const BtnVertical = ({ icon: Icon, label, onClick, color = "primary", className = "", style = {}, ...rest }) => (
+    <button
+        type="button"
+        className={`btn btn-${color} text-white rounded-2 shadow-sm d-inline-flex flex-column align-items-center justify-content-center border-0 p-1 ${className}`}
+        onClick={onClick}
+        style={{ width: '70px', height: '48px', ...style }}
+        {...rest}
+    >
+        {Icon && <Icon size={20} className="mb-1" />}
+        <span style={{ fontSize: '0.7rem', fontWeight: '600', lineHeight: '1.1' }}>{label}</span>
     </button>
 );

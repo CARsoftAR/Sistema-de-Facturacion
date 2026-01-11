@@ -1,0 +1,163 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Factura {{ venta.numero_factura_formateado }} - Bold</title>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;900&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --primary-bold: #ff0055;
+            --bg-bold: #ffffff;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            font-size: 11px;
+            color: #000;
+            background: #fdfdfd;
+        }
+
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 20mm;
+            margin: 20px auto;
+            background: white;
+            border: 15px solid var(--primary-bold);
+            position: relative;
+        }
+
+        .bold-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 60px;
+        }
+
+        .company-name {
+            font-family: 'Archivo Black', sans-serif;
+            font-size: 48px;
+            line-height: 0.8;
+            color: #000;
+            text-transform: uppercase;
+        }
+
+        .voucher-number {
+            background: var(--primary-bold);
+            color: white;
+            padding: 10px 20px;
+            font-family: 'Archivo Black', sans-serif;
+            font-size: 24px;
+            transform: rotate(-2deg);
+            display: inline-block;
+        }
+
+        .bold-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 50px;
+            margin-bottom: 50px;
+        }
+
+        .label {
+            font-family: 'Archivo Black', sans-serif;
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            border-bottom: 5px solid var(--primary-bold);
+            display: inline-block;
+        }
+
+        .bold-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 50px;
+        }
+
+        .bold-table th {
+            font-family: 'Archivo Black', sans-serif;
+            text-align: left;
+            padding: 10px;
+            font-size: 14px;
+            text-transform: uppercase;
+            border-bottom: 8px solid #000;
+        }
+
+        .bold-table td {
+            padding: 15px 10px;
+            font-weight: 900;
+            font-size: 13px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .totals-bold {
+            text-align: right;
+            margin-top: 50px;
+        }
+
+        .grand-total {
+            font-family: 'Archivo Black', sans-serif;
+            font-size: 60px;
+            line-height: 1;
+            color: var(--primary-bold);
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page">
+        <header class="bold-header">
+            <div class="company-name">{{ empresa.nombre }}</div>
+            <div class="voucher-number">{{ venta.numero_factura_formateado }}</div>
+        </header>
+
+        <div class="bold-grid">
+            <div>
+                <div class="label">Pagar a</div>
+                <div style="font-size: 18px; font-weight: 900;">{{ cliente.nombre }}</div>
+                <p>{{ cliente.domicilio }}</p>
+                <p>CUIT: {{ cliente.cuit }}</p>
+            </div>
+            <div style="text-align: right;">
+                <div class="label">Fecha</div>
+                <div style="font-size: 18px; font-weight: 900;">{{ venta.fecha|date:"d/m/Y" }}</div>
+                <p>Vencimiento: {{ venta.fecha_vencimiento|date:"d/m/Y" }}</p>
+            </div>
+        </div>
+
+        <table class="bold-table">
+            <thead>
+                <tr>
+                    <th>Detalle</th>
+                    <th style="text-align: center;">Cantidad</th>
+                    <th style="text-align: right;">Importe</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in detalles %}
+                <tr>
+                    <td>{{ item.producto.descripcion }}</td>
+                    <td style="text-align: center;">{{ item.cantidad }}</td>
+                    <td style="text-align: right;">$ {{ item.subtotal|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="totals-bold">
+            <div class="label">Monto Total</div>
+            <div class="grand-total">$ {{ venta.total|floatformat:2 }}</div>
+        </div>
+
+        <div style="margin-top: 100px; font-family: 'Archivo Black', sans-serif; font-size: 10px; opacity: 0.2;">
+            POWERED BY CARSOFT BOLD ENGINE // NO_REGRETS
+        </div>
+    </div>
+</body>
+
+</html>

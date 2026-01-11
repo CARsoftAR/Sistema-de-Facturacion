@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+import Swal from 'sweetalert2';
 import {
-    Printer, Eye, Search, Filter, X, ArrowDownCircle
+    Printer, Eye, Search, Filter, X, ArrowDownCircle, Plus
 } from 'lucide-react';
-import { BtnView, BtnPrint, BtnClear } from '../components/CommonButtons';
+import { BtnView, BtnPrint, BtnClear, BtnVertical } from '../components/CommonButtons';
+import EmptyState from '../components/EmptyState';
 
 const NotasCredito = () => {
+    const navigate = useNavigate();
     const [notas, setNotas] = useState([]);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
@@ -58,7 +61,7 @@ const NotasCredito = () => {
     }, [fetchNotas]);
 
     const handlePrint = (id) => {
-        window.open(`/comprobantes/nc/${id}/imprimir/`, '_blank');
+        window.open(`/comprobantes/nc/${id}/imprimir/?model=modern`, '_blank');
     };
 
     const handleView = (id) => {
@@ -77,7 +80,7 @@ const NotasCredito = () => {
     };
 
     return (
-        <div className="container-fluid px-4 pt-4 pb-0 h-100 d-flex flex-column bg-light" style={{ maxHeight: '100vh', overflow: 'hidden' }}>
+        <div className="container-fluid px-4 pt-4 pb-0 h-100 d-flex flex-column bg-light fade-in" style={{ maxHeight: '100vh', overflow: 'hidden' }}>
             {/* Header */}
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <div>
@@ -151,9 +154,14 @@ const NotasCredito = () => {
                                     </tr>
                                 ) : notas.length === 0 ? (
                                     <tr>
-                                        <td colSpan="7" className="text-center py-5 text-muted small">
-                                            <div className="mb-3 opacity-50"><ArrowDownCircle size={40} /></div>
-                                            No se encontraron notas de crédito.
+                                        <td colSpan="7" className="py-5">
+                                            <EmptyState
+                                                icon={ArrowDownCircle}
+                                                title="No hay notas de crédito"
+                                                description="Las devoluciones y anulaciones aparecerán aquí."
+                                                iconColor="text-blue-500"
+                                                bgIconColor="bg-blue-50"
+                                            />
                                         </td>
                                     </tr>
                                 ) : (
@@ -184,13 +192,22 @@ const NotasCredito = () => {
                                             </td>
                                             <td className="pe-4 text-end py-3">
                                                 <div className="d-flex justify-content-end gap-2">
-                                                    <button
+                                                    <BtnVertical
+                                                        icon={Eye}
+                                                        label="Ver"
+                                                        color="info"
                                                         onClick={() => handleView(nota.id)}
-                                                        className="btn btn-outline-secondary btn-sm"
                                                         title="Ver Detalle"
-                                                    >
-                                                        <Eye size={16} />
-                                                    </button>
+                                                        className="text-white"
+                                                    />
+                                                    <BtnVertical
+                                                        icon={Printer}
+                                                        label="Imprimir"
+                                                        color="print"
+                                                        onClick={() => handlePrint(nota.id)}
+                                                        title="Imprimir Comprobante"
+                                                        className="text-white"
+                                                    />
                                                 </div>
                                             </td>
                                         </tr>
