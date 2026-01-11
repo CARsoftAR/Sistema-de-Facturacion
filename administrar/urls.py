@@ -52,13 +52,15 @@ urlpatterns = [
     # ==========================
     path("ventas/", login_required(TemplateView.as_view(template_name="react_app.html")), name="ventas"),
     path("ventas/nuevo/", login_required(TemplateView.as_view(template_name="react_app.html")), name="venta_nueva"),
-    path("ventas/<int:venta_id>/", views.detalle_venta, name="detalle_venta"),
+    path("ventas/<int:id>/", login_required(TemplateView.as_view(template_name="react_app.html")), name="detalle_venta_react"),
     path("api/ventas/listar/", views.api_ventas_listar, name="api_ventas_listar"),
+    path("api/ventas/<int:id>/", views.api_venta_detalle, name="api_venta_detalle"),
     path("api/ventas/guardar/", views.api_venta_guardar, name="api_venta_guardar"),
     path("api/productos/buscar/", views.api_productos_buscar, name="api_productos_buscar"),
 
     path("compras/", login_required(TemplateView.as_view(template_name="react_app.html")), name="compras"),
     path("compras/nueva/", login_required(TemplateView.as_view(template_name="react_app.html")), name="compras_nueva"),
+    path("compras/<int:id>/", login_required(TemplateView.as_view(template_name="react_app.html")), name="detalle_compra_react"),
     path("api/compras/listar/", views.api_compras_listar, name="api_compras_listar"),
     path("api/compras/orden/guardar/", views.api_orden_compra_guardar, name="api_orden_compra_guardar"),
     path("api/compras/orden/<int:id>/recibir/", views.api_orden_compra_recibir, name="api_orden_compra_recibir"),

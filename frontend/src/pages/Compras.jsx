@@ -45,9 +45,7 @@ const Compras = () => {
             .catch(console.error);
     }, []);
 
-    // Estado para modal de Detalle
-    const [showModalDetalle, setShowModalDetalle] = useState(false);
-    const [ordenDetalle, setOrdenDetalle] = useState(null);
+
 
     useEffect(() => {
         fetchCompras();
@@ -116,21 +114,7 @@ const Compras = () => {
         }
     };
 
-    const handleVerDetalle = async (orden) => {
-        try {
-            const response = await fetch(`/api/compras/orden/${orden.id}/detalle/`);
-            const data = await response.json();
-            if (data.error) {
-                alert(data.error);
-            } else {
-                setOrdenDetalle(data);
-                setShowModalDetalle(true);
-            }
-        } catch (error) {
-            console.error(error);
-            alert('Error al cargar detalle');
-        }
-    };
+
 
     // Filtros
     const ordenesFiltradas = ordenes.filter(orden => {
@@ -274,7 +258,7 @@ const Compras = () => {
                                                         icon={Eye}
                                                         label="Ver"
                                                         color="info"
-                                                        onClick={() => handleVerDetalle(orden)}
+                                                        onClick={() => navigate(`/compras/${orden.id}`)}
                                                         title="Ver Detalle"
                                                         className="text-white"
                                                     />
@@ -366,43 +350,7 @@ const Compras = () => {
                 </div>
             )}
 
-            {/* Modal Detalle */}
-            {showModalDetalle && ordenDetalle && (
-                <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden border border-slate-200 max-h-[90vh] flex flex-col">
-                        <div className="px-6 py-4 border-b flex justify-between items-center bg-gray-50">
-                            <div>
-                                <h5 className="font-bold text-lg text-gray-800 m-0">Detalle Compra #{ordenDetalle.id}</h5>
-                                <p className="text-sm text-gray-500 m-0">{ordenDetalle.proveedor} - {ordenDetalle.fecha}</p>
-                            </div>
-                            <button onClick={() => setShowModalDetalle(false)} className="text-gray-400 hover:text-red-500"><XCircle size={24} /></button>
-                        </div>
-                        <div className="p-6 overflow-y-auto">
-                            <div className="flex justify-between items-center mb-4 p-3 bg-slate-50 rounded-xl">
-                                <span className="font-bold text-slate-600 uppercase text-xs">Total</span>
-                                <span className="text-2xl font-bold text-green-600">$ {parseFloat(ordenDetalle.total).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
-                            </div>
-                            <div className="space-y-3">
-                                {ordenDetalle.items.map((item, idx) => (
-                                    <div key={idx} className="flex justify-between items-start text-sm border-b border-gray-100 pb-2">
-                                        <div>
-                                            <p className="font-medium text-gray-800">{item.producto}</p>
-                                            <p className="text-xs text-gray-500">Cant: {item.cantidad}</p>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="font-bold text-gray-700">$ {parseFloat(item.subtotal).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</p>
-                                            <p className="text-xs text-gray-400">$ {parseFloat(item.precio).toLocaleString('es-AR', { minimumFractionDigits: 2 })} c/u</p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                        <div className="px-6 py-4 bg-gray-50 border-t text-right">
-                            <button className="btn btn-secondary px-6" onClick={() => setShowModalDetalle(false)}>Cerrar</button>
-                        </div>
-                    </div>
-                </div>
-            )}
+
         </div>
     );
 };

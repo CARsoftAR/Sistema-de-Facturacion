@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { ShoppingCart, Plus, Search, Printer, XCircle, AlertCircle, CheckCircle, Trash2, Filter, RotateCcw } from 'lucide-react';
+import { ShoppingCart, Plus, Search, Printer, XCircle, AlertCircle, CheckCircle, Trash2, Filter, RotateCcw, Eye } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { BtnAdd, BtnDelete, BtnPrint, BtnAction, BtnClear, BtnVertical } from '../components/CommonButtons';
@@ -279,6 +279,14 @@ const Ventas = () => {
                                                         color="print"
                                                         onClick={() => handlePrint(v.id)}
                                                         title="Imprimir Comprobante"
+                                                        className="text-white"
+                                                    />
+                                                    <BtnVertical
+                                                        icon={Eye}
+                                                        label="Ver"
+                                                        color="info"
+                                                        onClick={() => navigate(`/ventas/${v.id}`)}
+                                                        title="Ver Detalle"
                                                         className="text-white"
                                                     />
                                                     <BtnVertical

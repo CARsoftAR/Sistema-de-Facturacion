@@ -12,6 +12,8 @@ import NuevoPedido from './pages/NuevoPedido'
 import DetallePedido from './pages/DetallePedido'
 import Compras from './pages/Compras'
 import NuevaCompra from './pages/NuevaCompra'
+import DetalleCompra from './pages/DetalleCompra'
+import DetalleVenta from './pages/DetalleVenta'
 import Caja from './pages/Caja'
 import ActualizarPrecios from './pages/ActualizarPrecios'
 import PlanCuentas from './pages/PlanCuentas'
@@ -128,6 +130,7 @@ function App() {
             <Route path="/contabilidad/balance" element={<ProtectedRoute permission="contabilidad"><Balance /></ProtectedRoute>} />
             <Route path="/ventas" element={<ProtectedRoute permission="ventas"><Ventas /></ProtectedRoute>} />
             <Route path="/ventas/nuevo" element={<ProtectedRoute permission="ventas"><NuevaVenta /></ProtectedRoute>} />
+            <Route path="/ventas/:id" element={<ProtectedRoute permission="ventas"><DetalleVenta /></ProtectedRoute>} />
             <Route path="/pedidos" element={<ProtectedRoute permission="ventas"><Pedidos /></ProtectedRoute>} />
             <Route path="/pedidos/nuevo" element={<ProtectedRoute permission="ventas"><NuevoPedido /></ProtectedRoute>} />
             <Route path="/pedidos/:id" element={<ProtectedRoute permission="ventas"><DetallePedido /></ProtectedRoute>} />
@@ -138,6 +141,7 @@ function App() {
 
             <Route path="/compras" element={<ProtectedRoute permission="compras"><Compras /></ProtectedRoute>} />
             <Route path="/compras/nueva" element={<ProtectedRoute permission="compras"><NuevaCompra /></ProtectedRoute>} />
+            <Route path="/compras/:id" element={<ProtectedRoute permission="compras"><DetalleCompra /></ProtectedRoute>} />
 
 
             <Route path="/remitos" element={<ProtectedRoute permission="ventas"><Remitos /></ProtectedRoute>} />

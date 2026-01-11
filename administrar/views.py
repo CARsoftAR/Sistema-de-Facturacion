@@ -1924,19 +1924,25 @@ def api_orden_compra_detalle(request, id):
         return JsonResponse({"error": "Orden de compra no encontrada"}, status=404)
 
     items = [{
-        "producto": f"{d.producto.codigo} - {d.producto.descripcion}",
-        "cantidad": d.cantidad,
-        "precio": d.precio,
-        "subtotal": d.subtotal,
+        "id": d.id,
+        "producto_id": d.producto.id,
+        "producto_codigo": d.producto.codigo,
+        "producto_descripcion": d.producto.descripcion,
+        "cantidad": float(d.cantidad),
+        "precio": float(d.precio),
+        "subtotal": float(d.subtotal),
     } for d in oc.detalles.all()]
 
     return JsonResponse({
         "id": oc.id,
-        "proveedor": oc.proveedor.nombre,
         "fecha": oc.fecha.strftime("%d/%m/%Y %H:%M"),
+        "proveedor": oc.proveedor.nombre,
+        "proveedor_cuit": oc.proveedor.cuit,
+        "proveedor_telefono": oc.proveedor.telefono,
+        "proveedor_email": oc.proveedor.email,
         "estado": oc.estado,
         "observaciones": oc.observaciones or "",
-        "total": oc.total_estimado,
+        "total": float(oc.total_estimado),
         "items": items,
     })
 
@@ -2965,6 +2971,44 @@ def api_ventas_listar(request):
         })
     
     return JsonResponse({"ok": True, "data": data})
+
+@login_required
+def api_venta_detalle(request, id):
+    """API para obtener detalles de una venta específica"""
+    try:
+        venta = Venta.objects.select_related('cliente', 'pedido_origen').get(pk=id)
+        
+        detalles = []
+        for det in venta.detalles.select_related('producto').all():
+            detalles.append({
+                'id': det.id,
+                'producto_id': det.producto.id,
+                'producto_codigo': det.producto.codigo,
+                'producto_descripcion': det.producto.descripcion,
+                'cantidad': float(det.cantidad),
+                'precio_unitario': float(det.precio_unitario),
+                'subtotal': float(det.subtotal)
+            })
+
+        data = {
+            'id': venta.id,
+            'fecha': venta.fecha.strftime('%d/%m/%Y %H:%M'),
+            'cliente_nombre': venta.cliente.nombre,
+            'cliente_telefono': venta.cliente.telefono,
+            'cliente_email': venta.cliente.email,
+            'tipo_comprobante': venta.tipo_comprobante,
+            'total': float(venta.total),
+            'estado': venta.estado,
+            'medio_pago': venta.medio_pago,
+            'cae': venta.cae,
+            'pedido_origen_id': venta.pedido_origen.id if venta.pedido_origen else None,
+            'detalles': detalles
+        }
+        return JsonResponse(data)
+    except Venta.DoesNotExist:
+        return JsonResponse({'error': 'Venta no encontrada'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 
 @require_POST
