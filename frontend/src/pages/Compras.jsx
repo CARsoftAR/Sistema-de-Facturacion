@@ -208,14 +208,14 @@ const Compras = () => {
                 <div className="card-body p-0 d-flex flex-column overflow-hidden">
                     <div className="table-responsive flex-grow-1 table-container-fixed">
                         <table className="table align-middle mb-0">
-                            <thead className="bg-white border-bottom">
+                            <thead className="table-dark" style={{ backgroundColor: '#212529', color: '#fff' }}>
                                 <tr>
-                                    <th className="ps-4 py-3 text-dark fw-bold" style={{ width: '100px' }}>N° Orden</th>
-                                    <th className="py-3 text-dark fw-bold">Proveedor</th>
-                                    <th className="py-3 text-dark fw-bold">Fecha</th>
-                                    <th className="py-3 text-dark fw-bold text-center">Estado</th>
-                                    <th className="py-3 text-dark fw-bold text-end pe-4">Total Est.</th>
-                                    <th className="py-3 text-dark fw-bold text-end pe-4">Acciones</th>
+                                    <th className="ps-4 py-3 fw-bold text-nowrap" style={{ width: '140px' }}>N° Orden</th>
+                                    <th className="py-3 fw-bold">Proveedor</th>
+                                    <th className="py-3 fw-bold">Fecha</th>
+                                    <th className="py-3 fw-bold text-center">Estado</th>
+                                    <th className="py-3 fw-bold text-end pe-4">Total Est.</th>
+                                    <th className="py-3 fw-bold text-end pe-4">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
