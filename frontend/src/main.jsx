@@ -4,13 +4,16 @@ import { BrowserRouter } from 'react-router-dom'
 import './index.css'
 import App from './App.jsx'
 import Sidebar from './components/Sidebar.jsx'
+import { AuthProvider } from './context/AuthContext'
 
 // Scenario 1: Full SPA App (e.g., Home Page)
 const rootElement = document.getElementById('root')
 if (rootElement) {
   createRoot(rootElement).render(
     <StrictMode>
-      <App />
+      <AuthProvider>
+        <App />
+      </AuthProvider>
     </StrictMode>,
   )
   console.log('App Version: 2.1 - Cache Buster');
@@ -23,7 +26,9 @@ if (sidebarElement) {
   createRoot(sidebarElement).render(
     <StrictMode>
       <BrowserRouter>
-        <Sidebar standalone={true} />
+        <AuthProvider>
+          <Sidebar standalone={true} />
+        </AuthProvider>
       </BrowserRouter>
     </StrictMode>,
   )

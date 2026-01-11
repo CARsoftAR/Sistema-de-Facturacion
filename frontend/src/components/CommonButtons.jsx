@@ -62,11 +62,11 @@ export const BtnSave = ({ label = "Guardar", onClick, loading = false, className
 export const BtnCancel = ({ label = "Cancelar", onClick, className = "", ...rest }) => (
     <button
         type="button"
-        className={`px-5 py-2.5 text-sm font-bold text-slate-600 hover:text-slate-800 hover:bg-slate-200/50 rounded-xl transition-colors border-0 ${className}`}
+        className={`px-5 py-2.5 text-sm font-bold text-white bg-red-500 hover:bg-red-600 rounded-xl transition-all border-0 flex items-center gap-2 shadow-lg shadow-red-500/20 active:scale-95 ${className}`}
         onClick={onClick}
         {...rest}
     >
-        <X size={18} className="me-1" />
+        <X size={18} />
         {label}
     </button>
 );

@@ -1,8 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LogOut, User, Bell, Search } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 const TopNavbar = () => {
+    const { user } = useAuth();
     const navigate = useNavigate();
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
@@ -107,8 +109,8 @@ const TopNavbar = () => {
                 {/* User Profile */}
                 <div className="d-flex align-items-center gap-3" ref={dropdownRef}>
                     <div className="text-end d-none d-sm-block">
-                        <p className="mb-0 fw-bold text-dark small leading-none">Admin</p>
-                        <p className="mb-0 text-muted small" style={{ fontSize: '0.75rem' }}>Administrador</p>
+                        <p className="mb-0 fw-bold text-dark small leading-none">{user?.username || 'Invitado'}</p>
+                        <p className="mb-0 text-muted small" style={{ fontSize: '0.75rem' }}>{user?.rol || 'Rol'}</p>
                     </div>
 
                     <div className="position-relative">
@@ -117,8 +119,12 @@ const TopNavbar = () => {
                             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                             style={{ width: '40px', height: '40px' }}
                         >
-                            <div className="w-100 h-100 bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center transition-all">
-                                <User size={20} />
+                            <div className="w-100 h-100 bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center transition-all overflow-hidden">
+                                {user?.imagen_url ? (
+                                    <img src={user.imagen_url} alt="Profile" className="w-100 h-100 object-fit-cover" />
+                                ) : (
+                                    <User size={20} />
+                                )}
                             </div>
                         </button>
 
@@ -126,7 +132,7 @@ const TopNavbar = () => {
                             <ul className="position-absolute end-0 mt-2 bg-white shadow-lg border border-light-subtle rounded-3 p-2 list-unstyled z-3" style={{ minWidth: '220px' }}>
                                 <li className="px-3 py-2 border-bottom mb-2 bg-light rounded-top-2">
                                     <p className="mb-0 fw-bold text-dark small leading-tight">Panel de Usuario</p>
-                                    <p className="mb-0 text-muted small" style={{ fontSize: '0.75rem' }}>admin@carsoft.com</p>
+                                    <p className="mb-0 text-muted small" style={{ fontSize: '0.75rem' }}>{user?.email || ''}</p>
                                 </li>
                                 <li>
                                     <button className="dropdown-item rounded-2 py-2 d-flex align-items-center gap-2 px-3 transition-all hover-bg-primary-subtle border-0 bg-transparent text-start w-100 small">

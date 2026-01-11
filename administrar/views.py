@@ -56,12 +56,19 @@ def verificar_permiso(permiso):
                     'configuracion': perfil.acceso_configuracion,
                     'usuarios': perfil.acceso_usuarios,
                     'reportes': perfil.acceso_reportes,
+                    'pedidos': perfil.acceso_pedidos,
+                    'bancos': perfil.acceso_bancos,
+                    'ctacte': perfil.acceso_ctacte,
+                    'remitos': perfil.acceso_remitos,
                 }
                 
                 if campos_permisos.get(permiso, False):
                     return view_func(request, *args, **kwargs)
             except PerfilUsuario.DoesNotExist:
                 pass
+                
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.path.startswith('/api/'):
+                return JsonResponse({'ok': False, 'error': 'No tienes permisos para acceder a esta sección.'}, status=403)
                 
             messages.error(request, 'No tienes permisos para acceder a esta sección.')
             return redirect('menu')
@@ -131,6 +138,39 @@ def login_view(request):
     
     return render(request, 'administrar/login.html')
 
+def register_view(request):
+    from django.contrib.auth.forms import UserCreationForm
+    from .models import PerfilUsuario
+    
+    if request.method == 'POST':
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            
+            # --- SECURITY ENHANCEMENT: Lock down new user ---
+            # Create a profile with ALL permissions set to False by default
+            # This ensures they can log in but can't access any sensitive module
+            PerfilUsuario.objects.create(
+                user=user,
+                acceso_ventas=False,
+                acceso_compras=False,
+                acceso_productos=False,
+                acceso_clientes=False,
+                acceso_proveedores=False,
+                acceso_caja=False,
+                acceso_contabilidad=False,
+                acceso_configuracion=False,
+                acceso_usuarios=False,
+                acceso_reportes=False
+            )
+            
+            login(request, user)
+            return redirect('dashboard')
+    else:
+        form = UserCreationForm()
+    
+    return render(request, 'administrar/register.html', {'form': form})
+
 def logout_view(request):
     logout(request)
     messages.success(request, 'Has cerrado sesión correctamente')
@@ -174,6 +214,7 @@ def menu(request):
     return render(request, "administrar/menu.html")
 
 @login_required
+@verificar_permiso('reportes')
 def dashboard(request):
     from django.db.models import Sum, Count, F
     from datetime import date, timedelta, datetime
@@ -1283,6 +1324,41 @@ def api_mi_perfil_imagen(request):
         perfil.save()
         
         return JsonResponse({'ok': True, 'url': perfil.imagen.url})
+    except Exception as e:
+        return JsonResponse({'ok': False, 'error': str(e)})
+
+@login_required
+def api_mi_perfil_info(request):
+    """Retorna información del perfil y permisos del usuario actual"""
+    try:
+        perfil, created = PerfilUsuario.objects.get_or_create(user=request.user)
+        data = {
+            'id': request.user.id,
+            'username': request.user.username,
+            'email': request.user.email,
+            'first_name': request.user.first_name,
+            'last_name': request.user.last_name,
+            'is_staff': request.user.is_staff,
+            'rol': 'Administrador' if request.user.is_staff else 'Vendedor',
+            'permisos': {
+                'ventas': perfil.acceso_ventas,
+                'compras': perfil.acceso_compras,
+                'productos': perfil.acceso_productos,
+                'clientes': perfil.acceso_clientes,
+                'proveedores': perfil.acceso_proveedores,
+                'caja': perfil.acceso_caja,
+                'contabilidad': perfil.acceso_contabilidad,
+                'configuracion': perfil.acceso_configuracion,
+                'usuarios': perfil.acceso_usuarios,
+                'reportes': perfil.acceso_reportes,
+                'pedidos': perfil.acceso_pedidos,
+                'bancos': perfil.acceso_bancos,
+                'ctacte': perfil.acceso_ctacte,
+                'remitos': perfil.acceso_remitos,
+            },
+            'imagen_url': perfil.imagen.url if perfil.imagen else None
+        }
+        return JsonResponse({'ok': True, 'data': data})
     except Exception as e:
         return JsonResponse({'ok': False, 'error': str(e)})
 
@@ -5858,7 +5934,11 @@ def api_usuarios_listar(request):
                 'contabilidad': perfil.acceso_contabilidad,
                 'configuracion': perfil.acceso_configuracion,
                 'usuarios': perfil.acceso_usuarios,
-                'reportes': perfil.acceso_reportes
+                'reportes': perfil.acceso_reportes,
+                'pedidos': perfil.acceso_pedidos,
+                'bancos': perfil.acceso_bancos,
+                'ctacte': perfil.acceso_ctacte,
+                'remitos': perfil.acceso_remitos,
             }
         except PerfilUsuario.DoesNotExist:
             u['permisos'] = {}
@@ -5889,7 +5969,11 @@ def api_usuario_detalle(request, id):
                 'contabilidad': perfil.acceso_contabilidad,
                 'configuracion': perfil.acceso_configuracion,
                 'usuarios': perfil.acceso_usuarios,
-                'reportes': perfil.acceso_reportes
+                'reportes': perfil.acceso_reportes,
+                'pedidos': perfil.acceso_pedidos,
+                'bancos': perfil.acceso_bancos,
+                'ctacte': perfil.acceso_ctacte,
+                'remitos': perfil.acceso_remitos,
             }
         except PerfilUsuario.DoesNotExist:
             pass
@@ -5957,7 +6041,11 @@ def api_usuario_crear(request):
             acceso_contabilidad=permisos.get('contabilidad', False),
             acceso_configuracion=permisos.get('configuracion', False),
             acceso_usuarios=permisos.get('usuarios', False),
-            acceso_reportes=permisos.get('reportes', False)
+            acceso_reportes=permisos.get('reportes', False),
+            acceso_pedidos=permisos.get('pedidos', False),
+            acceso_bancos=permisos.get('bancos', False),
+            acceso_ctacte=permisos.get('ctacte', False),
+            acceso_remitos=permisos.get('remitos', False),
         )
         
         return JsonResponse({'ok': True, 'data': {'id': usuario.id}})
@@ -6003,6 +6091,10 @@ def api_usuario_editar(request, id):
         perfil.acceso_configuracion = permisos.get('configuracion', perfil.acceso_configuracion)
         perfil.acceso_usuarios = permisos.get('usuarios', perfil.acceso_usuarios)
         perfil.acceso_reportes = permisos.get('reportes', perfil.acceso_reportes)
+        perfil.acceso_pedidos = permisos.get('pedidos', perfil.acceso_pedidos)
+        perfil.acceso_bancos = permisos.get('bancos', perfil.acceso_bancos)
+        perfil.acceso_ctacte = permisos.get('ctacte', perfil.acceso_ctacte)
+        perfil.acceso_remitos = permisos.get('remitos', perfil.acceso_remitos)
         
         perfil.save()
         
@@ -8863,6 +8955,7 @@ def api_nota_debito_crear(request, venta_id):
 # 🔹 API DASHBOARD
 # =======================================
 @login_required
+@verificar_permiso('reportes')
 def api_dashboard_stats(request):
     from django.db.models import Sum, Count, F
     from datetime import date, timedelta, datetime

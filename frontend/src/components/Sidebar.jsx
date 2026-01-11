@@ -19,11 +19,25 @@ import {
     ClipboardList,
     LogOut
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
-const SidebarItem = ({ icon: Icon, label, href, subItems, isOpen, activeSubItem, onToggle, standalone }) => {
+const SidebarItem = ({ icon: Icon, label, href, subItems, isOpen, activeSubItem, onToggle, standalone, permission }) => {
+    const { hasPermission } = useAuth();
     const isExpanded = isOpen;
     const hasSubItems = subItems && subItems.length > 0;
     const location = useLocation();
+
+    // Check permissions for main item
+    if (permission && !hasPermission(permission)) {
+        return null;
+    }
+
+    // Filter subItems based on permissions
+    const visibleSubItems = subItems ? subItems.filter(item => !item.permission || hasPermission(item.permission)) : [];
+
+    if (hasSubItems && visibleSubItems.length === 0) {
+        return null;
+    }
 
     const handleClick = (e) => {
         if (hasSubItems) {
@@ -40,7 +54,7 @@ const SidebarItem = ({ icon: Icon, label, href, subItems, isOpen, activeSubItem,
     };
 
     // Check if this item is active (including subitems)
-    const isActive = location.pathname === href || (subItems && subItems.some(item => location.pathname === item.href));
+    const isActive = location.pathname === href || (visibleSubItems && visibleSubItems.some(item => location.pathname === item.href));
 
     return (
         <div className="mb-1">
@@ -85,7 +99,7 @@ const SidebarItem = ({ icon: Icon, label, href, subItems, isOpen, activeSubItem,
             {hasSubItems && isExpanded && (
                 <div className="ms-4 mt-1 border-start border-light border-opacity-25 ps-3">
                     <div className="d-flex flex-column gap-1">
-                        {subItems.map((item, index) => (
+                        {visibleSubItems.map((item, index) => (
                             standalone ? (
                                 <a
                                     key={index}
@@ -112,6 +126,7 @@ const SidebarItem = ({ icon: Icon, label, href, subItems, isOpen, activeSubItem,
 };
 
 const Sidebar = ({ standalone = false }) => {
+    const { hasPermission } = useAuth();
     const [openSection, setOpenSection] = useState(null);
     const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -151,15 +166,18 @@ const Sidebar = ({ standalone = false }) => {
                 {/* Scrollable Menu Area */}
                 <div className="flex-grow-1 overflow-auto custom-scrollbar" style={{ scrollbarWidth: 'thin', scrollbarColor: '#475569 #000000' }}>
 
-                    <div className="mb-2 px-2 small fw-bold text-uppercase text-light text-opacity-50" style={{ fontSize: '0.75rem', letterSpacing: '0.05em' }}>
-                        Comercial
-                    </div>
+                    {(hasPermission('reportes') || hasPermission('ventas') || hasPermission('compras') || hasPermission('productos') || hasPermission('clientes') || hasPermission('proveedores')) && (
+                        <div className="mb-2 px-2 small fw-bold text-uppercase text-light text-opacity-50" style={{ fontSize: '0.75rem', letterSpacing: '0.05em' }}>
+                            Comercial
+                        </div>
+                    )}
 
                     <SidebarItem
                         icon={LayoutDashboard}
                         label="Dashboard"
                         href="/dashboard"
                         standalone={standalone}
+                        permission="reportes"
                     />
 
                     <SidebarItem
@@ -169,12 +187,12 @@ const Sidebar = ({ standalone = false }) => {
                         onToggle={() => toggleSection('operaciones')}
                         standalone={standalone}
                         subItems={[
-                            { label: 'Ventas', href: '/ventas' },
-                            { label: 'Compras', href: '/compras' },
-                            { label: 'Pedidos', href: '/pedidos' },
-                            { label: 'Remitos', href: '/remitos' },
-                            { label: 'Notas de Crédito', href: '/notas-credito' },
-                            { label: 'Notas de Débito', href: '/notas-debito' },
+                            { label: 'Ventas', href: '/ventas', permission: 'ventas' },
+                            { label: 'Compras', href: '/compras', permission: 'compras' },
+                            { label: 'Pedidos', href: '/pedidos', permission: 'pedidos' },
+                            { label: 'Remitos', href: '/remitos', permission: 'remitos' },
+                            { label: 'Notas de Crédito', href: '/notas-credito', permission: 'ventas' },
+                            { label: 'Notas de Débito', href: '/notas-debito', permission: 'ventas' },
                         ]}
                     />
 
@@ -184,6 +202,7 @@ const Sidebar = ({ standalone = false }) => {
                         isOpen={openSection === 'productos'}
                         onToggle={() => toggleSection('productos')}
                         standalone={standalone}
+                        permission="productos"
                         subItems={[
                             { label: 'Productos', href: '/productos' },
                             { label: 'Actualizar Precios', href: '/precios/actualizar' },
@@ -195,6 +214,7 @@ const Sidebar = ({ standalone = false }) => {
                         label="Clientes"
                         href="/clientes"
                         standalone={standalone}
+                        permission="clientes"
                     />
 
                     <SidebarItem
@@ -202,11 +222,14 @@ const Sidebar = ({ standalone = false }) => {
                         label="Proveedores"
                         href="/proveedores"
                         standalone={standalone}
+                        permission="proveedores"
                     />
 
-                    <div className="my-3 px-2 small fw-bold text-uppercase text-light text-opacity-50" style={{ fontSize: '0.75rem', letterSpacing: '0.05em' }}>
-                        Datos Varios
-                    </div>
+                    {(hasPermission('configuracion')) && (
+                        <div className="my-3 px-2 small fw-bold text-uppercase text-light text-opacity-50" style={{ fontSize: '0.75rem', letterSpacing: '0.05em' }}>
+                            Datos Varios
+                        </div>
+                    )}
 
                     <SidebarItem
                         icon={BookOpen}
@@ -214,6 +237,7 @@ const Sidebar = ({ standalone = false }) => {
                         isOpen={openSection === 'maestros'}
                         onToggle={() => toggleSection('maestros')}
                         standalone={standalone}
+                        permission="configuracion"
                         subItems={[
                             { label: 'Categorías', href: '/categorias' },
                             { label: 'Marcas', href: '/marcas' },
@@ -222,21 +246,25 @@ const Sidebar = ({ standalone = false }) => {
                         ]}
                     />
 
-                    <div className="my-3 px-2 small fw-bold text-uppercase text-light text-opacity-50" style={{ fontSize: '0.75rem', letterSpacing: '0.05em' }}>
-                        Tesorería
-                    </div>
+                    {(hasPermission('caja') || hasPermission('bancos') || hasPermission('ctacte')) && (
+                        <div className="my-3 px-2 small fw-bold text-uppercase text-light text-opacity-50" style={{ fontSize: '0.75rem', letterSpacing: '0.05em' }}>
+                            Tesorería
+                        </div>
+                    )}
 
                     <SidebarItem
                         icon={Banknote}
                         label="Caja"
                         href="/caja"
                         standalone={standalone}
+                        permission="caja"
                     />
                     <SidebarItem
                         icon={Wallet}
-                        label="Cheques"
+                        label="Cheques / Bancos"
                         href="/cheques"
                         standalone={standalone}
+                        permission="bancos"
                     />
                     <SidebarItem
                         icon={CreditCard}
@@ -245,14 +273,16 @@ const Sidebar = ({ standalone = false }) => {
                         onToggle={() => toggleSection('ctas-corrientes')}
                         standalone={standalone}
                         subItems={[
-                            { label: 'De Clientes', href: '/ctas-corrientes/clientes' },
-                            { label: 'De Proveedores', href: '/ctas-corrientes/proveedores' },
+                            { label: 'De Clientes', href: '/ctas-corrientes/clientes', permission: 'ctacte' },
+                            { label: 'De Proveedores', href: '/ctas-corrientes/proveedores', permission: 'ctacte' },
                         ]}
                     />
 
-                    <div className="my-3 px-2 small fw-bold text-uppercase text-light text-opacity-50" style={{ fontSize: '0.75rem', letterSpacing: '0.05em' }}>
-                        Contabilidad
-                    </div>
+                    {(hasPermission('contabilidad')) && (
+                        <div className="my-3 px-2 small fw-bold text-uppercase text-light text-opacity-50" style={{ fontSize: '0.75rem', letterSpacing: '0.05em' }}>
+                            Contabilidad
+                        </div>
+                    )}
 
                     <SidebarItem
                         icon={FileText}
@@ -260,6 +290,7 @@ const Sidebar = ({ standalone = false }) => {
                         isOpen={openSection === 'contabilidad'}
                         onToggle={() => toggleSection('contabilidad')}
                         standalone={standalone}
+                        permission="contabilidad"
                         subItems={[
                             { label: 'Plan de Cuentas', href: '/contabilidad/plan-cuentas/' },
                             { label: 'Ejercicios Contables', href: '/contabilidad/ejercicios/' },
@@ -270,9 +301,11 @@ const Sidebar = ({ standalone = false }) => {
                         ]}
                     />
 
-                    <div className="my-3 px-2 small fw-bold text-uppercase text-light text-opacity-50" style={{ fontSize: '0.75rem', letterSpacing: '0.05em' }}>
-                        Sistema
-                    </div>
+                    {(hasPermission('usuarios') || hasPermission('configuracion')) && (
+                        <div className="my-3 px-2 small fw-bold text-uppercase text-light text-opacity-50" style={{ fontSize: '0.75rem', letterSpacing: '0.05em' }}>
+                            Sistema
+                        </div>
+                    )}
                     <SidebarItem
                         icon={Settings}
                         label="Configuración"
@@ -280,11 +313,10 @@ const Sidebar = ({ standalone = false }) => {
                         onToggle={() => toggleSection('configuracion')}
                         standalone={standalone}
                         subItems={[
-                            { label: 'Datos de Empresa', href: '/configuracion/empresa' },
-                            { label: 'Parámetros', href: '/parametros' },
-                            { label: 'Usuarios', href: '/usuarios' },
-                            { label: 'Permisos', href: '/permisos' },
-                            { label: 'Respaldos', href: '/backups' },
+                            { label: 'Datos de Empresa', href: '/configuracion/empresa', permission: 'configuracion' },
+                            { label: 'Parámetros', href: '/parametros', permission: 'configuracion' },
+                            { label: 'Usuarios', href: '/usuarios', permission: 'usuarios' },
+                            { label: 'Respaldos', href: '/backups', permission: 'configuracion' },
                         ]}
                     />
 

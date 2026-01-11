@@ -6,7 +6,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Recibo {{ recibo.numero }}</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Pacifico&display=swap"
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Playfair+Display:wght@400;600;700&display=swap"
         rel="stylesheet">
     <style>
         :root {
@@ -57,7 +58,7 @@
         }
 
         .company-branding h1 {
-            font-family: 'Pacifico', cursive;
+            font-family: 'Playfair Display', serif;
             font-size: 28px;
             color: var(--primary-color);
             margin-bottom: 5px;
@@ -66,16 +67,18 @@
 
         .logo-container {
             max-width: 200px;
-            max-height: 80px;
+            height: auto;
+            max-height: 150px;
             display: flex;
             justify-content: flex-end;
             align-items: center;
-            overflow: hidden;
         }
 
         .logo-container img {
             max-width: 100%;
-            max-height: 100%;
+            max-height: 150px;
+            width: auto;
+            height: auto;
             object-fit: contain;
         }
 
@@ -154,7 +157,8 @@
                     {% if empresa.logo %}
                     <img src="{{ empresa.logo.url }}" alt="Logo">
                     {% else %}
-                    <span style="font-family: 'Pacifico', cursive; color: var(--primary-color); font-size: 24px;">{{
+                    <span
+                        style="font-family: 'Playfair Display', serif; color: var(--primary-color); font-size: 24px;">{{
                         empresa.nombre }}</span>
                     {% endif %}
                 </div>

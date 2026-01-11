@@ -1,4 +1,6 @@
 ﻿from django.urls import path
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth import views as auth_views
 from django.views.generic import TemplateView
 # Force reload 2
 from . import views
@@ -18,44 +20,54 @@ urlpatterns = [
     # AUTENTICACIÓN
     # ==========================
     path("login/", views.login_view, name="login"),
+    path("login-gallery/", TemplateView.as_view(template_name="administrar/login_gallery.html"), name="login_gallery"),
     path("logout/", views.logout_view, name="logout"),
+
+    # Password Reset
+    path('password_reset/', auth_views.PasswordResetView.as_view(template_name='administrar/password_reset_form.html'), name='password_reset'),
+    path('password_reset/done/', auth_views.PasswordResetDoneView.as_view(template_name='administrar/password_reset_done.html'), name='password_reset_done'),
+    path('reset/<uidb64>/<token>/', auth_views.PasswordResetConfirmView.as_view(template_name='administrar/password_reset_confirm.html'), name='password_reset_confirm'),
+    path('reset/done/', auth_views.PasswordResetCompleteView.as_view(template_name='administrar/password_reset_complete.html'), name='password_reset_complete'),
+
+    # Registration
+    path('register/', views.register_view, name="register"),
 
     # ==========================
     # MENÚ PRINCIPAL
     # ==========================
-    path("", TemplateView.as_view(template_name="react_app.html"), name="menu"),
+    path("", login_required(TemplateView.as_view(template_name="react_app.html")), name="menu"),
     path("menu-legacy/", views.menu, name="menu_legacy"),
     path("menu/", views.menu, name="menu_legacy_alias"),
 
-    path("dashboard/", TemplateView.as_view(template_name="react_app.html"), name="dashboard"),
+    path("dashboard/", login_required(TemplateView.as_view(template_name="react_app.html")), name="dashboard"),
     path("api/dashboard/stats/", views.api_dashboard_stats, name="api_dashboard_stats"),
     path("estado/", views.estado_sistema, name="estado"),
     path("parametros/", views.parametros, name="parametros"),
     path("api/config/obtener/", views.api_empresa_config, name="api_empresa_config"),
     path("api/config/guardar/", views.api_empresa_config_guardar, name="api_empresa_config_guardar"),
-    path("configuracion/empresa/", TemplateView.as_view(template_name="react_app.html"), name="configuracion_empresa_react"),
+    path("configuracion/empresa/", login_required(TemplateView.as_view(template_name="react_app.html")), name="configuracion_empresa_react"),
 
     # ==========================
     # MÓDULOS COMERCIALES
     # ==========================
-    path("ventas/", TemplateView.as_view(template_name="react_app.html"), name="ventas"),
-    path("ventas/nuevo/", TemplateView.as_view(template_name="react_app.html"), name="venta_nueva"),
+    path("ventas/", login_required(TemplateView.as_view(template_name="react_app.html")), name="ventas"),
+    path("ventas/nuevo/", login_required(TemplateView.as_view(template_name="react_app.html")), name="venta_nueva"),
     path("ventas/<int:venta_id>/", views.detalle_venta, name="detalle_venta"),
     path("api/ventas/listar/", views.api_ventas_listar, name="api_ventas_listar"),
     path("api/ventas/guardar/", views.api_venta_guardar, name="api_venta_guardar"),
     path("api/productos/buscar/", views.api_productos_buscar, name="api_productos_buscar"),
 
-    path("compras/", TemplateView.as_view(template_name="react_app.html"), name="compras"),
-    path("compras/nueva/", TemplateView.as_view(template_name="react_app.html"), name="compras_nueva"),
+    path("compras/", login_required(TemplateView.as_view(template_name="react_app.html")), name="compras"),
+    path("compras/nueva/", login_required(TemplateView.as_view(template_name="react_app.html")), name="compras_nueva"),
     path("api/compras/listar/", views.api_compras_listar, name="api_compras_listar"),
     path("api/compras/orden/guardar/", views.api_orden_compra_guardar, name="api_orden_compra_guardar"),
     path("api/compras/orden/<int:id>/recibir/", views.api_orden_compra_recibir, name="api_orden_compra_recibir"),
     path("api/compras/orden/<int:id>/cancelar/", views.api_orden_compra_cancelar, name="api_orden_compra_cancelar"),
     path("api/compras/orden/<int:id>/detalle/", views.api_orden_compra_detalle, name="api_orden_compra_detalle"),
 
-    path("clientes/", TemplateView.as_view(template_name="react_app.html"), name="clientes"),
-    path("proveedores/", TemplateView.as_view(template_name="react_app.html"), name="proveedores"),
-    path("caja/", TemplateView.as_view(template_name="react_app.html"), name="caja"),
+    path("clientes/", login_required(TemplateView.as_view(template_name="react_app.html")), name="clientes"),
+    path("proveedores/", login_required(TemplateView.as_view(template_name="react_app.html")), name="proveedores"),
+    path("caja/", login_required(TemplateView.as_view(template_name="react_app.html")), name="caja"),
     
     # API Caja
     path("api/caja/movimientos/", views.api_caja_movimientos_lista, name="api_caja_movimientos_lista"),
@@ -116,11 +128,11 @@ urlpatterns = [
     path("api/contabilidad/reportes/resumen-ejercicio/", views.api_reporte_resumen_ejercicio, name="api_reporte_resumen_ejercicio"),
 
     # Vistas Contabilidad (Migración a React)
-    path("contabilidad/plan-cuentas/", TemplateView.as_view(template_name="react_app.html"), name="plancuentas"),
-    path("contabilidad/ejercicios/", TemplateView.as_view(template_name="react_app.html"), name="ejercicios"),
-    path("contabilidad/asientos/", TemplateView.as_view(template_name="react_app.html"), name="asientos"),
-    path("contabilidad/balance/", TemplateView.as_view(template_name="react_app.html"), name="balance"),
-    path("contabilidad/mayor/", TemplateView.as_view(template_name="react_app.html"), name="mayor"),
+    path("contabilidad/plan-cuentas/", login_required(TemplateView.as_view(template_name="react_app.html")), name="plancuentas"),
+    path("contabilidad/ejercicios/", login_required(TemplateView.as_view(template_name="react_app.html")), name="ejercicios"),
+    path("contabilidad/asientos/", login_required(TemplateView.as_view(template_name="react_app.html")), name="asientos"),
+    path("contabilidad/balance/", login_required(TemplateView.as_view(template_name="react_app.html")), name="balance"),
+    path("contabilidad/mayor/", login_required(TemplateView.as_view(template_name="react_app.html")), name="mayor"),
     path("contabilidad/reportes/", lambda request: render(request, "administrar/contabilidad/reportes.html"), name="reportes_contables"),
     
     # ==========================
@@ -137,13 +149,14 @@ urlpatterns = [
     path("logs/", views.logs, name="logs"),
 
     # ==========================
-    # USUARIOS Y SEGURIDAD
+    # USUARIOS Y SEGURIDAD (REACT)
     # ==========================
-    path("usuarios/", views.usuarios, name="usuarios"),
-    path("admin_usuarios/", views.admin_usuarios, name="admin_usuarios"),
-    path("admin_personalizado/", views.admin_personalizado, name="admin_personalizado"),
-    path("seguridad/", views.seguridad, name="seguridad"),
-    path("mi-perfil/", views.mi_perfil, name="mi_perfil"),
+    path("usuarios/", login_required(TemplateView.as_view(template_name="react_app.html")), name="usuarios_react_main"),
+    path("admin_usuarios/", login_required(TemplateView.as_view(template_name="react_app.html")), name="admin_usuarios_react"),
+    path("admin_personalizado/", login_required(TemplateView.as_view(template_name="react_app.html")), name="admin_personalizado_react"),
+    path("seguridad/", login_required(TemplateView.as_view(template_name="react_app.html")), name="seguridad_react"),
+    path("mi-perfil/", login_required(TemplateView.as_view(template_name="react_app.html")), name="mi_perfil_react"),
+    path("api/mi-perfil/info/", views.api_mi_perfil_info, name="api_mi_perfil_info"),
     path("api/mi-perfil/password/", views.api_mi_perfil_password, name="api_mi_perfil_password"),
     path("api/mi-perfil/imagen/", views.api_mi_perfil_imagen, name="api_mi_perfil_imagen"),
 
@@ -155,15 +168,15 @@ urlpatterns = [
     # ==========================
     # CRUD PRODUCTOS (REACT)
     # ==========================
-    path("productos/", TemplateView.as_view(template_name="react_app.html"), name="productos"),
-    path("productos/nuevo/", TemplateView.as_view(template_name="react_app.html"), name="producto_nuevo"),
+    path("productos/", login_required(TemplateView.as_view(template_name="react_app.html")), name="productos"),
+    path("productos/nuevo/", login_required(TemplateView.as_view(template_name="react_app.html")), name="producto_nuevo"),
 
     # ==========================
-    # CRUD PROVEEDORES (HTML)
+    # CRUD PROVEEDORES (REACT)
     # ==========================
-    path("proveedores/nuevo/", views.proveedor_nuevo, name="proveedor_nuevo"),
-    path("proveedores/editar/<int:id>/", views.proveedor_editar, name="proveedor_editar"),
-    path("proveedores/eliminar/<int:id>/", views.proveedor_eliminar, name="proveedor_eliminar"),
+    path("proveedores/nuevo/", login_required(TemplateView.as_view(template_name="react_app.html")), name="proveedor_nuevo_react"),
+    path("proveedores/editar/<int:id>/", login_required(TemplateView.as_view(template_name="react_app.html")), name="proveedor_editar_react"),
+    path("proveedores/eliminar/<int:id>/", views.api_proveedores_eliminar, name="proveedor_eliminar_api"),
 
     # ==========================
     # RUBROS (HTML + API)
@@ -220,7 +233,7 @@ urlpatterns = [
 
     # Actualización masiva de precios
     path("actualizar-precios/", views.actualizar_precios, name="actualizar_precios"),
-    path("precios/actualizar/", TemplateView.as_view(template_name="react_app.html"), name="precios_actualizar_react"),
+    path("precios/actualizar/", login_required(TemplateView.as_view(template_name="react_app.html")), name="precios_actualizar_react"),
     path("api/precios/actualizar-masivo/", views.api_actualizar_precios_masivo, name="api_actualizar_precios_masivo"),
 
     # ==========================
@@ -280,8 +293,8 @@ urlpatterns = [
     # ==========================
     # PEDIDOS - MODERNA
     # ==========================
-    path('pedidos/', TemplateView.as_view(template_name="react_app.html"), name='pedidos'),
-    path('pedidos/nuevo/', TemplateView.as_view(template_name="react_app.html"), name='pedido_nuevo'),
+    path('pedidos/', login_required(TemplateView.as_view(template_name="react_app.html")), name='pedidos'),
+    path('pedidos/nuevo/', login_required(TemplateView.as_view(template_name="react_app.html")), name='pedido_nuevo'),
     path('api/pedidos/lista/', views.api_pedidos_lista, name='api_pedidos_lista'),
     path('api/pedidos/<int:id>/', views.api_pedido_detalle, name='api_pedido_detalle'),
     path('api/pedidos/crear/', views.api_pedido_crear, name='api_pedido_crear'),
@@ -292,7 +305,7 @@ urlpatterns = [
     path('pedidos/imprimir/<int:pedido_id>/', views.pedido_print, name='pedido_print'),
 
     # Usuarios
-    path("usuarios/", views.usuarios_lista, name="usuarios_lista"),
+    path("usuarios/", login_required(TemplateView.as_view(template_name="react_app.html")), name="usuarios_react"),
     path("api/usuarios/listar/", views.api_usuarios_listar, name="api_usuarios_listar"),
     path("api/usuarios/<int:id>/", views.api_usuario_detalle, name="api_usuario_detalle"),
     path("api/usuarios/crear/", views.api_usuario_crear, name="api_usuario_crear"),
@@ -311,8 +324,8 @@ urlpatterns = [
     # ==========================
     # COMPROBANTES (NC, ND, REMITOS)
     # ==========================
-    path('remitos/', TemplateView.as_view(template_name="react_app.html"), name='remitos_react'),
-    path('notas-credito/', TemplateView.as_view(template_name="react_app.html"), name='notas_credito_react'),
+    path('remitos/', login_required(TemplateView.as_view(template_name="react_app.html")), name='remitos_react'),
+    path('notas-credito/', login_required(TemplateView.as_view(template_name="react_app.html")), name='notas_credito_react'),
 
     path("comprobantes/nc-nd/", views_comprobantes.lista_nc_nd, name="lista_nc_nd"),
     path("api/notas-credito/listar/", views.api_notas_credito_listar, name="api_notas_credito_listar"),
@@ -321,7 +334,7 @@ urlpatterns = [
     path("comprobantes/nc/crear/<int:venta_id>/", views_comprobantes.crear_nota_credito, name="crear_nota_credito"),
     path("comprobantes/remito/crear/<int:venta_id>/", views_comprobantes.crear_remito, name="crear_remito"),
     # React Route for Detail
-    path("comprobantes/remito/<int:id>/", TemplateView.as_view(template_name="react_app.html"), name="detalle_remito_react"),
+    path("comprobantes/remito/<int:id>/", login_required(TemplateView.as_view(template_name="react_app.html")), name="detalle_remito_react"),
     # API for Detail
     path("api/remitos/<int:id>/", views.api_remito_detalle, name="api_remito_detalle"),
     
@@ -336,10 +349,10 @@ urlpatterns = [
     path("api/notas-debito/<int:id>/", views.api_nota_debito_detalle, name="api_nota_debito_detalle"),
 
     # React Routes for Details
-    path("comprobantes/remito/<int:id>/", TemplateView.as_view(template_name="react_app.html"), name="detalle_remito_react"),
-    path("comprobantes/nc/<int:id>/", TemplateView.as_view(template_name="react_app.html"), name="detalle_nc_react"),
-    path("comprobantes/nd/<int:id>/", TemplateView.as_view(template_name="react_app.html"), name="detalle_nd_react"),
-    path("notas-debito/", TemplateView.as_view(template_name="react_app.html"), name="notas_debito_react"),
+    path("comprobantes/remito/<int:id>/", login_required(TemplateView.as_view(template_name="react_app.html")), name="detalle_remito_react"),
+    path("comprobantes/nc/<int:id>/", login_required(TemplateView.as_view(template_name="react_app.html")), name="detalle_nc_react"),
+    path("comprobantes/nd/<int:id>/", login_required(TemplateView.as_view(template_name="react_app.html")), name="detalle_nd_react"),
+    path("notas-debito/", login_required(TemplateView.as_view(template_name="react_app.html")), name="notas_debito_react"),
 
     # Legacy Print (Keep existing)
     path("comprobantes/remito/<int:id>/imprimir/", views_comprobantes.imprimir_remito, name="imprimir_remito"),

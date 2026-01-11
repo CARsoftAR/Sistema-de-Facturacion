@@ -620,6 +620,13 @@ class PerfilUsuario(models.Model):
     acceso_configuracion = models.BooleanField(default=False, verbose_name="Acceso a ConfiguraciÃ³n")
     acceso_usuarios = models.BooleanField(default=False, verbose_name="Acceso a Usuarios")
     acceso_reportes = models.BooleanField(default=False, verbose_name="Acceso a Reportes")
+    
+    # Nuevos permisos granulares
+    acceso_pedidos = models.BooleanField(default=False, verbose_name="Acceso a Pedidos")
+    acceso_bancos = models.BooleanField(default=False, verbose_name="Acceso a Bancos")
+    acceso_ctacte = models.BooleanField(default=False, verbose_name="Acceso a Ctas. Corrientes")
+    acceso_remitos = models.BooleanField(default=False, verbose_name="Acceso a Remitos")
+    
     imagen = models.ImageField(upload_to='perfiles/', blank=True, null=True, verbose_name="Imagen de Perfil")
 
     def __str__(self):

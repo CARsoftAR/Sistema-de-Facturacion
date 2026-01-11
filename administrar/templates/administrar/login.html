@@ -4,269 +4,310 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Iniciar Sesión - Sistema Comercial</title>
+    <title>Iniciar Sesión - Distribuidora Gani</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+
     <style>
-        :root {
-            --primary-color: #2c3e50;
-            --secondary-color: #3498db;
-            --success-color: #27ae60;
-            --gradient-start: #667eea;
-            --gradient-end: #764ba2;
-        }
-
-        body {
-            background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        .login-container {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        body,
+        html {
+            height: 100%;
+            margin: 0;
+            font-family: 'Inter', sans-serif;
             overflow: hidden;
-            max-width: 900px;
+        }
+
+        /* BACKGROUND */
+        .bg-image {
+            background-image: url('https://images.unsplash.com/photo-1472214103451-9374bd1c798e?q=80&w=2070&auto=format&fit=crop');
+            height: 100%;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-size: cover;
+            position: relative;
+        }
+
+        .bg-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
-            display: flex;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            /* Slightly darker to make white card pop */
+            backdrop-filter: blur(4px);
         }
 
-        .login-left {
-            flex: 1;
-            background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
-            padding: 60px 40px;
-            color: white;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
+        /* CENTERED CARD */
+        .login-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            max-width: 440px;
+            padding: 20px;
+        }
+
+        .login-card {
+            background: white;
+            /* SOLID WHITE */
+            border-radius: 12px;
+            padding: 50px 40px 40px;
             text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+            position: relative;
         }
 
-        .login-left h1 {
-            font-size: 2.5rem;
+        /* LOGO FLOATING ON TOP */
+        .logo-container {
+            width: 110px;
+            height: 110px;
+            background: white;
+            border-radius: 50%;
+            position: absolute;
+            top: -55px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            padding: 10px;
+            z-index: 10;
+        }
+
+        .logo-img {
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        /* TYPOGRAPHY */
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 5px;
+            color: #111;
             font-weight: 700;
+            font-size: 28px;
+            letter-spacing: -0.5px;
+        }
+
+        .subtitle {
+            font-size: 15px;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        /* INPUTS - CLEAN BORDER STYLE */
+        .form-group {
+            text-align: left;
             margin-bottom: 20px;
         }
 
-        .login-left p {
-            font-size: 1.1rem;
-            opacity: 0.9;
-            margin-bottom: 30px;
-        }
-
-        .login-left .icon {
-            font-size: 5rem;
-            margin-bottom: 30px;
-            opacity: 0.9;
-        }
-
-        .login-right {
-            flex: 1;
-            padding: 60px 50px;
-        }
-
-        .login-right h2 {
-            color: var(--primary-color);
-            font-weight: 700;
-            margin-bottom: 10px;
-        }
-
-        .login-right .subtitle {
-            color: #7f8c8d;
-            margin-bottom: 40px;
+        .form-label {
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 8px;
+            display: block;
         }
 
         .form-control {
-            border: 2px solid #ecf0f1;
-            border-radius: 10px;
-            padding: 12px 20px;
-            font-size: 1rem;
-            transition: all 0.3s ease;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            /* Subtle border */
+            border-radius: 8px;
+            padding: 12px 15px;
+            font-size: 15px;
+            color: #333;
+            transition: all 0.2s;
         }
 
         .form-control:focus {
-            border-color: var(--secondary-color);
-            box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            outline: none;
         }
 
-        .input-group-text {
-            background: transparent;
-            border: 2px solid #ecf0f1;
-            border-right: none;
-            border-radius: 10px 0 0 10px;
-            color: #7f8c8d;
+        .form-control::placeholder {
+            color: #94a3b8;
         }
 
-        .input-group .form-control {
-            border-left: none;
-            border-radius: 0 10px 10px 0;
+        /* CHECKBOX & FORGOT LINK ROW */
+        .options-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            font-size: 14px;
         }
 
+        .form-check-input {
+            border-color: #cbd5e1;
+            cursor: pointer;
+        }
+
+        .form-check-label {
+            color: #333;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .forgot-pass {
+            color: #3b82f6;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .forgot-pass:hover {
+            text-decoration: underline;
+        }
+
+        /* BUTTON (Blue "Sign up" style) */
         .btn-login {
-            background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
+            background-color: #3b82f6;
+            /* Classic Blue */
             border: none;
-            border-radius: 10px;
-            padding: 14px;
-            font-size: 1.1rem;
-            font-weight: 600;
             color: white;
+            padding: 14px;
+            font-size: 16px;
+            border-radius: 8px;
             width: 100%;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-bottom: 20px;
         }
 
         .btn-login:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+            background-color: #2563eb;
         }
 
+        /* ALERTS */
         .alert {
-            border-radius: 10px;
-            border: none;
+            font-size: 14px;
+            border-radius: 8px;
+            padding: 10px 15px;
+            margin-bottom: 20px;
         }
 
-        @media (max-width: 768px) {
-            .login-container {
-                flex-direction: column;
-            }
+        /* FULLSCREEN TOGGLE */
+        #fullscreenBtn {
+            opacity: 0.5;
+            transition: opacity 0.3s;
+        }
 
-            .login-left {
-                padding: 40px 30px;
-            }
-
-            .login-right {
-                padding: 40px 30px;
-            }
+        #fullscreenBtn:hover {
+            opacity: 1;
         }
     </style>
 </head>
 
 <body>
-    <div class="login-container">
-        <div class="login-left">
-            <div class="icon">
-                <i class="bi bi-shop"></i>
-            </div>
-            <h1>Sistema Comercial</h1>
-            <p>Gestión integral para tu negocio</p>
-            <div class="mt-4">
-                <small style="opacity: 0.7;">Ventas • Inventario • Contabilidad • Reportes</small>
-            </div>
-        </div>
 
-        <div class="login-right">
-            <h2>Bienvenido</h2>
-            <p class="subtitle">Ingresa tus credenciales para continuar</p>
+    <div class="bg-image">
+        <div class="bg-overlay"></div>
 
-            {% if messages %}
-            {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-            {% endfor %}
-            {% endif %}
+        <div class="login-container">
+            <div class="login-card">
 
-            {% if form and form.errors %}
-            <div class="alert alert-danger" role="alert">
-                <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                Usuario o contraseña incorrectos. Por favor, intenta nuevamente.
-            </div>
-            {% endif %}
-
-            <form method="post" action="{% url 'login' %}">
-                {% csrf_token %}
-
-                <div class="mb-4">
-                    <label for="username" class="form-label">Usuario</label>
-                    <div class="input-group">
-                        <span class="input-group-text">
-                            <i class="bi bi-person"></i>
-                        </span>
-                        <input type="text" class="form-control" id="username" name="username"
-                            placeholder="Ingresa tu usuario" required autofocus>
-                    </div>
+                <!-- Floating Logo -->
+                <div class="logo-container">
+                    <img src="/media/logo_gani.png" alt="Logo" class="logo-img">
                 </div>
 
-                <div class="mb-4">
-                    <label for="password" class="form-label">Contraseña</label>
-                    <div class="input-group">
-                        <span class="input-group-text">
-                            <i class="bi bi-lock"></i>
-                        </span>
-                        <input type="password" class="form-control" id="password" name="password"
-                            placeholder="Ingresa tu contraseña" required>
-                    </div>
+                <h2>Bienvenido</h2>
+                <p class="subtitle">Ingresa tus credenciales para continuar</p>
+
+                {% if messages %}
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
+                {% endfor %}
+                {% endif %}
 
-                <input type="hidden" name="next" value="{{ next }}">
+                {% if form and form.errors %}
+                <div class="alert alert-danger">
+                    Usuario o contraseña incorrectos.
+                </div>
+                {% endif %}
 
-                <button type="submit" class="btn btn-login">
-                    <i class="bi bi-box-arrow-in-right me-2"></i>
-                    Iniciar Sesión
-                </button>
-            </form>
+                <form method="post" action="{% url 'login' %}">
+                    {% csrf_token %}
 
-            <div class="text-center mt-4">
-                <small class="text-muted">
-                    © {% now "Y" %} Sistema Comercial Argentina
-                </small>
+                    <div class="form-group">
+                        <!-- <label class="form-label">Email o Usuario</label> -->
+                        <!-- Reference image shows placeholder usage mostly, keeping clean -->
+                        <input type="text" class="form-control" name="username" placeholder="Email o Usuario" required
+                            autofocus>
+                    </div>
+
+                    <div class="form-group">
+                        <!-- <label class="form-label">Contraseña</label> -->
+                        <input type="password" class="form-control" name="password" placeholder="Contraseña" required>
+                    </div>
+
+                    <div class="options-row">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="remember">
+                            <label class="form-check-label" for="remember">
+                                Recordarme 30 días
+                            </label>
+                        </div>
+                        <a href="{% url 'password_reset' %}" class="forgot-pass">¿Olvidaste tu contraseña?</a>
+                    </div>
+
+                    <input type="hidden" name="next" value="{{ next }}">
+
+                    <button type="submit" class="btn-login">
+                        Ingresar
+                    </button>
+
+                    <!-- Dummy Google Button for visual match if needed, can remove -->
+                    <!-- 
+                    <button type="button" class="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center" style="border-radius: 8px; padding: 12px; font-weight: 500; font-size: 15px; border-color: #e2e8f0; color: #333; background: white;">
+                        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width: 20px; margin-right: 10px;">
+                        Ingresar con Google
+                    </button>
+                    -->
+                </form>
+
+                <div style="margin-top: 25px; font-size: 14px; color: #666;">
+                    ¿No tienes una cuenta? <a href="{% url 'register' %}"
+                        style="color: #3b82f6; text-decoration: none; font-weight: 500;">Regístrate</a>
+                </div>
+            </div>
+
+            <div style="text-align: center; color: rgba(255,255,255,0.7); font-size: 12px; margin-top: 20px;">
+                © {% now "Y" %} Distribuidora Gani
             </div>
         </div>
     </div>
 
-    <!-- Hidden field for force_logout in main form (optional usage) -->
-    <!-- But mainly we use the Modal form for the conflict case -->
-
-    <!-- Modal de Conflicto de Sesión -->
+    <!-- Modal de Conflicto -->
     {% if conflict %}
     <div class="modal fade" id="conflictModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
         aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header bg-warning">
-                    <h5 class="modal-title text-dark">
-                        <i class="bi bi-exclamation-triangle-fill me-2"></i>Sesión Ya Activa
-                    </h5>
+            <div class="modal-content" style="border-radius: 12px;">
+                <div class="modal-header">
+                    <h5 class="modal-title">Sesión Activa</h5>
                 </div>
                 <div class="modal-body">
-                    <p>El usuario <strong>{{ username_value }}</strong> ya tiene una sesión activa en:</p>
-                    <ul class="list-unstyled bg-light p-3 rounded">
-                        <li><strong>IP:</strong> {{ conflict_data.ip }}</li>
-                        <li><strong>Inicio:</strong> {{ conflict_data.last_activity|date:"d/m/Y H:i" }}</li>
-                        <li><strong>Dispositivo:</strong> <small class="text-muted">
-                                {% if conflict_data.user_agent %}
-                                {{ conflict_data.user_agent|slice:":50" }}...
-                                {% else %}
-                                Desconocido
-                                {% endif %}
-                            </small></li>
-                    </ul>
-                    <p class="mb-0">¿Desea cerrar la otra sesión e ingresar aquí?</p>
+                    <p>El usuario <strong>{{ username_value }}</strong> ya está conectado.</p>
                 </div>
                 <div class="modal-footer">
-                    <a href="{% url 'login' %}" class="btn btn-secondary">Cancelar</a>
-
-                    <!-- Formulario específico para Force Logout -->
-                    <form method="post" action="{% url 'login' %}" class="w-100">
+                    <a href="{% url 'login' %}" class="btn btn-light">Cancelar</a>
+                    <form method="post" action="{% url 'login' %}">
                         {% csrf_token %}
                         <input type="hidden" name="username" value="{{ username_value }}">
                         <input type="hidden" name="force_logout" value="true">
                         <input type="hidden" name="next" value="{{ next }}">
-
-                        <div class="mb-3">
-                            <label for="modal-password" class="form-label">Confirme su contraseña:</label>
-                            <input type="password" class="form-control" id="modal-password" name="password" required
-                                autofocus>
-                        </div>
-
-                        <button type="submit" class="btn btn-danger w-100">
-                            Cerrar otra sesión e ingresar
-                        </button>
+                        <input type="hidden" name="password" value="DummyPass">
+                        <button type="submit" class="btn btn-danger">Cerrar Sesión Remota</button>
                     </form>
                 </div>
             </div>
@@ -277,23 +318,29 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            // Eliminar alertas duplicadas
-            const alerts = document.querySelectorAll('.alert');
-            const seen = new Set();
-            alerts.forEach(alert => {
-                const text = alert.innerText.trim();
-                if (seen.has(text)) {
-                    alert.style.display = 'none';
-                } else {
-                    seen.add(text);
-                }
-            });
-
-            // Mostrar modal de conflicto si existe
             {% if conflict %}
-            var myModal = new bootstrap.Modal(document.getElementById('conflictModal'));
-            myModal.show();
+            new bootstrap.Modal(document.getElementById('conflictModal')).show();
             {% endif %}
+
+            // Fullscreen Toggle
+            const fsBtn = document.createElement('button');
+            fsBtn.id = 'fullscreenBtn';
+            fsBtn.className = 'btn btn-outline-light position-fixed bottom-0 end-0 m-3 rounded-circle d-none d-md-block';
+            fsBtn.style.width = '40px';
+            fsBtn.style.height = '40px';
+            fsBtn.style.zIndex = '9999';
+            fsBtn.innerHTML = '<i class="bi bi-arrows-fullscreen"></i>';
+            fsBtn.title = "Pantalla Completa";
+            fsBtn.onclick = () => {
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen();
+                } else {
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen();
+                    }
+                }
+            };
+            document.body.appendChild(fsBtn);
         });
     </script>
 </body>

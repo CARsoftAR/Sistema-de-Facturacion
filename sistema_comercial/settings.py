@@ -173,3 +173,11 @@ X_FRAME_OPTIONS = 'SAMEORIGIN'
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/login/'
+
+# Session Settings
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+SESSION_COOKIE_AGE = 28800  # 8 hours in seconds
+
+# Email Settings (Console for development, change for production)
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL = 'Sistema Gani <noreply@distribuidoragani.com>'
