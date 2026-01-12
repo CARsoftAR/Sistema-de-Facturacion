@@ -209,9 +209,9 @@ const DetallePresupuesto = () => {
                             </span>
                         </div>
 
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm text-left">
-                                <thead className="bg-gray-50 text-gray-500 uppercase font-semibold">
+                        <div className="overflow-auto" style={{ height: '700px' }}>
+                            <table className="w-full text-sm text-left relative min-h-full">
+                                <thead className="bg-gray-900 text-white uppercase font-semibold sticky top-0 z-10">
                                     <tr>
                                         <th className="px-6 py-3">Producto</th>
                                         <th className="px-6 py-3 text-center">Cant</th>
@@ -237,12 +237,13 @@ const DetallePresupuesto = () => {
                                             </td>
                                         </tr>
                                     ))}
+                                    <tr style={{ height: '100%' }}><td colSpan="4"></td></tr>
                                 </tbody>
-                                <tfoot className="bg-gray-50 border-t border-gray-200">
+                                <tfoot className="bg-gray-900 border-t border-gray-700 sticky bottom-0 z-10 shadow-[0_-2px_4px_rgba(0,0,0,0.2)]">
                                     <tr>
-                                        <td colSpan="3" className="px-6 py-4 text-right text-gray-500 font-bold uppercase tracking-wider">Total</td>
+                                        <td colSpan="3" className="px-6 py-4 text-right text-gray-400 font-bold uppercase tracking-wider">Total</td>
                                         <td className="px-6 py-4 text-right">
-                                            <div className="text-2xl font-black text-indigo-600 flex items-baseline justify-end gap-1">
+                                            <div className="text-2xl font-black text-white flex items-baseline justify-end gap-1">
                                                 <span>$</span>
                                                 {presupuesto.total.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
                                             </div>

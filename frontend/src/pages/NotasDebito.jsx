@@ -66,7 +66,7 @@ const NotasDebito = () => {
     };
 
     const handleView = (id) => {
-        window.open(`/comprobantes/nd/${id}/`, '_blank');
+        navigate(`/comprobantes/nd/${id}/`);
     };
 
     const handleFilterChange = (e) => {
@@ -135,15 +135,15 @@ const NotasDebito = () => {
                 <div className="card-body p-0 d-flex flex-column overflow-hidden">
                     <div className="table-responsive flex-grow-1 overflow-auto">
                         <table className="table align-middle mb-0">
-                            <thead className="bg-white border-bottom">
+                            <thead className="table-dark" style={{ backgroundColor: '#212529', color: '#fff' }}>
                                 <tr>
-                                    <th className="ps-4 py-3 text-dark fw-bold">Fecha</th>
-                                    <th className="py-3 text-dark fw-bold">Número</th>
-                                    <th className="py-3 text-dark fw-bold">Cliente</th>
-                                    <th className="py-3 text-dark fw-bold">Venta Orig.</th>
-                                    <th className="py-3 text-dark fw-bold">Total</th>
-                                    <th className="py-3 text-dark fw-bold">Estado</th>
-                                    <th className="pe-4 py-3 text-end text-dark fw-bold">Acciones</th>
+                                    <th className="ps-4 py-3 fw-bold">Fecha</th>
+                                    <th className="py-3 fw-bold">Número</th>
+                                    <th className="py-3 fw-bold">Cliente</th>
+                                    <th className="py-3 fw-bold">Venta Orig.</th>
+                                    <th className="py-3 fw-bold">Total</th>
+                                    <th className="py-3 fw-bold">Estado</th>
+                                    <th className="pe-4 py-3 text-end fw-bold">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>

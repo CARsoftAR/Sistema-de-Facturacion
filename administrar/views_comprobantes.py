@@ -174,3 +174,65 @@ def imprimir_nd(request, id):
         return render(request, template_name, context)
     except:
         return render(request, 'administrar/comprobantes/nd_modern.html', context)
+
+@login_required
+def api_nota_credito_detalle(request, id):
+    try:
+        nc = NotaCredito.objects.get(pk=id)
+        
+        items = [{
+            'id': d.id,
+            'producto': d.producto.descripcion,
+            'cantidad': float(d.cantidad),
+            'precio_unitario': float(d.precio_unitario),
+            'subtotal': float(d.subtotal)
+        } for d in nc.detalles.all()]
+
+        data = {
+            'ok': True,
+            'header': {
+                'id': nc.id,
+                'numero': nc.numero_formateado(),
+                'fecha': nc.fecha.strftime('%d/%m/%Y %H:%M'),
+                'cliente': nc.cliente.nombre,
+                'venta_asociada': f"#{nc.venta_asociada.id}" if nc.venta_asociada else "-",
+                'total': float(nc.total),
+                'motivo': nc.motivo,
+                'estado': nc.estado
+            },
+            'items': items
+        }
+        return JsonResponse(data)
+    except NotaCredito.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Nota de Crédito no encontrada'}, status=404)
+
+@login_required
+def api_nota_debito_detalle(request, id):
+    try:
+        nd = NotaDebito.objects.get(pk=id)
+        
+        items = [{
+            'id': d.id,
+            'producto': d.producto.descripcion,
+            'cantidad': float(d.cantidad),
+            'precio_unitario': float(d.precio_unitario),
+            'subtotal': float(d.subtotal)
+        } for d in nd.detalles.all()]
+
+        data = {
+            'ok': True,
+            'header': {
+                'id': nd.id,
+                'numero': nd.numero_formateado(),
+                'fecha': nd.fecha.strftime('%d/%m/%Y %H:%M'),
+                'cliente': nd.cliente.nombre,
+                'venta_asociada': f"#{nd.venta_asociada.id}" if nd.venta_asociada else "-",
+                'total': float(nd.total),
+                'motivo': nd.motivo,
+                'estado': nd.estado
+            },
+            'items': items
+        }
+        return JsonResponse(data)
+    except NotaDebito.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Nota de Débito no encontrada'}, status=404)
