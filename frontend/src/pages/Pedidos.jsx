@@ -294,7 +294,7 @@ const Pedidos = () => {
                                             <td className="text-end pe-4 py-3">
                                                 <div className="d-flex justify-content-end gap-2">
                                                     <BtnView onClick={() => navigate(`/pedidos/${p.id}`)} />
-                                                    {p.estado === 'Pendiente' && (
+                                                    {p.estado !== 'FACTURADO' && p.estado !== 'CANCELADO' && (
                                                         <BtnTableAction
                                                             icon={FileText}
                                                             label="Facturar"
