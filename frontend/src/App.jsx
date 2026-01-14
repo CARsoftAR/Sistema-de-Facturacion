@@ -35,6 +35,7 @@ import Parametros from './pages/Parametros'
 import ConfiguracionEmpresa from './pages/ConfiguracionEmpresa'
 import Dashboard from './pages/Dashboard'
 import Usuarios from './pages/Usuarios'
+import Cheques from './pages/Cheques'
 import { useAuth } from './context/AuthContext'
 
 const ProtectedRoute = ({ children, permission, isHome }) => {
@@ -154,6 +155,7 @@ function App() {
               <Route path="/proveedores" element={<ProtectedRoute permission="proveedores"><Proveedores /></ProtectedRoute>} />
               <Route path="/caja" element={<ProtectedRoute permission="caja"><Caja /></ProtectedRoute>} />
               <Route path="/caja/" element={<ProtectedRoute permission="caja"><Caja /></ProtectedRoute>} />
+              <Route path="/cheques" element={<ProtectedRoute permission="bancos"><Cheques /></ProtectedRoute>} />
               <Route path="/usuarios" element={<ProtectedRoute permission="usuarios"><Usuarios /></ProtectedRoute>} />
             </Routes>
           </div>
