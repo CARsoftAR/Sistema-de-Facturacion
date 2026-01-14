@@ -99,7 +99,7 @@ function App() {
 
   return (
     <Router>
-      <div className="d-flex min-vh-100 bg-light">
+      <div className="d-flex vh-100 overflow-hidden bg-light">
         <Sidebar />
 
         {/* Main Content Area - Offset by sidebar width on desktop */}
@@ -112,49 +112,51 @@ function App() {
               }
             `}
           </style>
-          <Routes>
-            <Route path="/" element={<ProtectedRoute permission="reportes" isHome={true}><Dashboard /></ProtectedRoute>} />
-            <Route path="/dashboard" element={<ProtectedRoute permission="reportes" isHome={true}><Dashboard /></ProtectedRoute>} />
-            <Route path="/clientes/" element={<ProtectedRoute permission="clientes"><Clientes /></ProtectedRoute>} />
-            <Route path="/clientes" element={<ProtectedRoute permission="clientes"><Clientes /></ProtectedRoute>} />
-            <Route path="/productos" element={<ProtectedRoute permission="productos"><Productos /></ProtectedRoute>} />
-            <Route path="/productos/nuevo" element={<Navigate to="/productos" replace />} />
-            <Route path="/precios/actualizar" element={<ProtectedRoute permission="productos"><ActualizarPrecios /></ProtectedRoute>} />
-            <Route path="/precios/actualizar" element={<ProtectedRoute permission="productos"><ActualizarPrecios /></ProtectedRoute>} />
-            <Route path="/parametros" element={<ProtectedRoute permission="configuracion"><Parametros /></ProtectedRoute>} />
-            <Route path="/configuracion/empresa" element={<ProtectedRoute permission="configuracion"><ConfiguracionEmpresa /></ProtectedRoute>} />
-            <Route path="/contabilidad/plan-cuentas" element={<ProtectedRoute permission="contabilidad"><PlanCuentas /></ProtectedRoute>} />
-            <Route path="/contabilidad/ejercicios" element={<ProtectedRoute permission="contabilidad"><Ejercicios /></ProtectedRoute>} />
-            <Route path="/contabilidad/asientos" element={<ProtectedRoute permission="contabilidad"><Asientos /></ProtectedRoute>} />
-            <Route path="/contabilidad/mayor" element={<ProtectedRoute permission="contabilidad"><LibroMayor /></ProtectedRoute>} />
-            <Route path="/contabilidad/balance" element={<ProtectedRoute permission="contabilidad"><Balance /></ProtectedRoute>} />
-            <Route path="/ventas" element={<ProtectedRoute permission="ventas"><Ventas /></ProtectedRoute>} />
-            <Route path="/ventas/nuevo" element={<ProtectedRoute permission="ventas"><NuevaVenta /></ProtectedRoute>} />
-            <Route path="/ventas/:id" element={<ProtectedRoute permission="ventas"><DetalleVenta /></ProtectedRoute>} />
-            <Route path="/pedidos" element={<ProtectedRoute permission="ventas"><Pedidos /></ProtectedRoute>} />
-            <Route path="/pedidos/nuevo" element={<ProtectedRoute permission="ventas"><NuevoPedido /></ProtectedRoute>} />
-            <Route path="/pedidos/:id" element={<ProtectedRoute permission="ventas"><DetallePedido /></ProtectedRoute>} />
+          <div className="flex-grow-1 overflow-auto custom-scrollbar">
+            <Routes>
+              <Route path="/" element={<ProtectedRoute permission="reportes" isHome={true}><Dashboard /></ProtectedRoute>} />
+              <Route path="/dashboard" element={<ProtectedRoute permission="reportes" isHome={true}><Dashboard /></ProtectedRoute>} />
+              <Route path="/clientes/" element={<ProtectedRoute permission="clientes"><Clientes /></ProtectedRoute>} />
+              <Route path="/clientes" element={<ProtectedRoute permission="clientes"><Clientes /></ProtectedRoute>} />
+              <Route path="/productos" element={<ProtectedRoute permission="productos"><Productos /></ProtectedRoute>} />
+              <Route path="/productos/nuevo" element={<Navigate to="/productos" replace />} />
+              <Route path="/precios/actualizar" element={<ProtectedRoute permission="productos"><ActualizarPrecios /></ProtectedRoute>} />
+              <Route path="/precios/actualizar" element={<ProtectedRoute permission="productos"><ActualizarPrecios /></ProtectedRoute>} />
+              <Route path="/parametros" element={<ProtectedRoute permission="configuracion"><Parametros /></ProtectedRoute>} />
+              <Route path="/configuracion/empresa" element={<ProtectedRoute permission="configuracion"><ConfiguracionEmpresa /></ProtectedRoute>} />
+              <Route path="/contabilidad/plan-cuentas" element={<ProtectedRoute permission="contabilidad"><PlanCuentas /></ProtectedRoute>} />
+              <Route path="/contabilidad/ejercicios" element={<ProtectedRoute permission="contabilidad"><Ejercicios /></ProtectedRoute>} />
+              <Route path="/contabilidad/asientos" element={<ProtectedRoute permission="contabilidad"><Asientos /></ProtectedRoute>} />
+              <Route path="/contabilidad/mayor" element={<ProtectedRoute permission="contabilidad"><LibroMayor /></ProtectedRoute>} />
+              <Route path="/contabilidad/balance" element={<ProtectedRoute permission="contabilidad"><Balance /></ProtectedRoute>} />
+              <Route path="/ventas" element={<ProtectedRoute permission="ventas"><Ventas /></ProtectedRoute>} />
+              <Route path="/ventas/nuevo" element={<ProtectedRoute permission="ventas"><NuevaVenta /></ProtectedRoute>} />
+              <Route path="/ventas/:id" element={<ProtectedRoute permission="ventas"><DetalleVenta /></ProtectedRoute>} />
+              <Route path="/pedidos" element={<ProtectedRoute permission="ventas"><Pedidos /></ProtectedRoute>} />
+              <Route path="/pedidos/nuevo" element={<ProtectedRoute permission="ventas"><NuevoPedido /></ProtectedRoute>} />
+              <Route path="/pedidos/:id" element={<ProtectedRoute permission="ventas"><DetallePedido /></ProtectedRoute>} />
 
-            <Route path="/presupuestos" element={<ProtectedRoute permission="ventas"><Presupuestos /></ProtectedRoute>} />
-            <Route path="/presupuestos/nuevo" element={<ProtectedRoute permission="ventas"><NuevoPresupuesto /></ProtectedRoute>} />
-            <Route path="/presupuestos/:id" element={<ProtectedRoute permission="ventas"><DetallePresupuesto /></ProtectedRoute>} />
+              <Route path="/presupuestos" element={<ProtectedRoute permission="ventas"><Presupuestos /></ProtectedRoute>} />
+              <Route path="/presupuestos/nuevo" element={<ProtectedRoute permission="ventas"><NuevoPresupuesto /></ProtectedRoute>} />
+              <Route path="/presupuestos/:id" element={<ProtectedRoute permission="ventas"><DetallePresupuesto /></ProtectedRoute>} />
 
-            <Route path="/compras" element={<ProtectedRoute permission="compras"><Compras /></ProtectedRoute>} />
-            <Route path="/compras/nueva" element={<ProtectedRoute permission="compras"><NuevaCompra /></ProtectedRoute>} />
-            <Route path="/compras/:id" element={<ProtectedRoute permission="compras"><DetalleCompra /></ProtectedRoute>} />
+              <Route path="/compras" element={<ProtectedRoute permission="compras"><Compras /></ProtectedRoute>} />
+              <Route path="/compras/nueva" element={<ProtectedRoute permission="compras"><NuevaCompra /></ProtectedRoute>} />
+              <Route path="/compras/:id" element={<ProtectedRoute permission="compras"><DetalleCompra /></ProtectedRoute>} />
 
 
-            <Route path="/remitos" element={<ProtectedRoute permission="ventas"><Remitos /></ProtectedRoute>} />
-            <Route path="/comprobantes/remito/:id" element={<ProtectedRoute permission="ventas"><DetalleRemito /></ProtectedRoute>} />
-            <Route path="/comprobantes/nc/:id" element={<ProtectedRoute permission="ventas"><DetalleNotaCredito /></ProtectedRoute>} />
-            <Route path="/notas-credito" element={<ProtectedRoute permission="ventas"><NotasCredito /></ProtectedRoute>} />
-            <Route path="/notas-debito" element={<ProtectedRoute permission="ventas"><NotasDebito /></ProtectedRoute>} />
-            <Route path="/comprobantes/nd/:id" element={<ProtectedRoute permission="ventas"><DetalleNotaDebito /></ProtectedRoute>} />
-            <Route path="/proveedores" element={<ProtectedRoute permission="proveedores"><Proveedores /></ProtectedRoute>} />
-            <Route path="/caja" element={<ProtectedRoute permission="caja"><Caja /></ProtectedRoute>} />
-            <Route path="/caja/" element={<ProtectedRoute permission="caja"><Caja /></ProtectedRoute>} />
-            <Route path="/usuarios" element={<ProtectedRoute permission="usuarios"><Usuarios /></ProtectedRoute>} />
-          </Routes>
+              <Route path="/remitos" element={<ProtectedRoute permission="ventas"><Remitos /></ProtectedRoute>} />
+              <Route path="/comprobantes/remito/:id" element={<ProtectedRoute permission="ventas"><DetalleRemito /></ProtectedRoute>} />
+              <Route path="/comprobantes/nc/:id" element={<ProtectedRoute permission="ventas"><DetalleNotaCredito /></ProtectedRoute>} />
+              <Route path="/notas-credito" element={<ProtectedRoute permission="ventas"><NotasCredito /></ProtectedRoute>} />
+              <Route path="/notas-debito" element={<ProtectedRoute permission="ventas"><NotasDebito /></ProtectedRoute>} />
+              <Route path="/comprobantes/nd/:id" element={<ProtectedRoute permission="ventas"><DetalleNotaDebito /></ProtectedRoute>} />
+              <Route path="/proveedores" element={<ProtectedRoute permission="proveedores"><Proveedores /></ProtectedRoute>} />
+              <Route path="/caja" element={<ProtectedRoute permission="caja"><Caja /></ProtectedRoute>} />
+              <Route path="/caja/" element={<ProtectedRoute permission="caja"><Caja /></ProtectedRoute>} />
+              <Route path="/usuarios" element={<ProtectedRoute permission="usuarios"><Usuarios /></ProtectedRoute>} />
+            </Routes>
+          </div>
         </main>
       </div>
     </Router>

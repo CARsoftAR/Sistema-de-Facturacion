@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { ShoppingCart, Plus, Search, Printer, XCircle, AlertCircle, CheckCircle, Trash2, Filter, RotateCcw, Eye } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
-import { BtnAdd, BtnDelete, BtnPrint, BtnAction, BtnClear, BtnVertical } from '../components/CommonButtons';
+import { showDeleteAlert } from '../utils/alerts';
+import { BtnAdd, BtnDelete, BtnAction, BtnClear, BtnView, BtnPrint, BtnTableAction } from '../components/CommonButtons';
 import EmptyState from '../components/EmptyState';
 
 const Ventas = () => {
@@ -76,16 +77,11 @@ const Ventas = () => {
     }, [fetchVentas]);
 
     const handleAnular = async (id) => {
-        const result = await Swal.fire({
-            title: '¿Anular Venta?',
-            text: "Se generará una NOTA DE CRÉDITO automática y se devolverá el stock. Esta acción no se puede deshacer.",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Sí, anular venta',
-            cancelButtonText: 'Cancelar'
-        });
+        const result = await showDeleteAlert(
+            '¿Anular Venta?',
+            "Se generará una NOTA DE CRÉDITO automática y se devolverá el stock. Esta acción no se puede deshacer.",
+            'Sí, anular venta'
+        );
 
         if (!result.isConfirmed) return;
 
@@ -273,36 +269,21 @@ const Ventas = () => {
                                             </td>
                                             <td className="text-end pe-4 py-3">
                                                 <div className="d-flex justify-content-end gap-2">
-                                                    <BtnVertical
-                                                        icon={Printer}
-                                                        label="Imprimir"
-                                                        color="print"
-                                                        onClick={() => handlePrint(v.id)}
-                                                        title="Imprimir Comprobante"
-                                                        className="text-white"
-                                                    />
-                                                    <BtnVertical
-                                                        icon={Eye}
-                                                        label="Ver"
-                                                        color="info"
-                                                        onClick={() => navigate(`/ventas/${v.id}`)}
-                                                        title="Ver Detalle"
-                                                        className="text-white"
-                                                    />
-                                                    <BtnVertical
-                                                        icon={Plus}
-                                                        label="Nota Débito"
-                                                        color="warning"
-                                                        onClick={() => handleNotaDebito(v.id)}
-                                                        title="Crear Nota de Débito"
-                                                    />
-                                                    <BtnVertical
-                                                        icon={Trash2}
-                                                        label="Anular"
-                                                        color="danger"
-                                                        onClick={() => handleAnular(v.id)}
-                                                        title="Anular Venta"
-                                                    />
+                                                    <div className="d-flex justify-content-end gap-2">
+                                                        <BtnPrint onClick={() => handlePrint(v.id)} />
+                                                        <BtnView onClick={() => navigate(`/ventas/${v.id}`)} />
+                                                        <BtnTableAction
+                                                            icon={Plus}
+                                                            label="Nota Débito"
+                                                            color="warning"
+                                                            onClick={() => handleNotaDebito(v.id)}
+                                                        />
+                                                        <BtnDelete
+                                                            label="Anular"
+                                                            onClick={() => handleAnular(v.id)}
+                                                            title="Anular Venta"
+                                                        />
+                                                    </div>
                                                 </div>
                                             </td>
                                         </tr>

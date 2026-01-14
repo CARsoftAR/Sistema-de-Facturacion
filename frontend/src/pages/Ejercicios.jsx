@@ -1,6 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Calendar } from 'lucide-react';
+import { showDeleteAlert } from '../utils/alerts';
 
 const Ejercicios = () => {
     const [ejercicios, setEjercicios] = useState([]);
@@ -80,7 +82,19 @@ const Ejercicios = () => {
     };
 
     const handleDelete = async (ej) => {
-        if (!window.confirm(`¿Eliminar ejercicio ${ej.descripcion}?`)) return;
+        const result = await showDeleteAlert(
+            `¿Eliminar ejercicio ${ej.descripcion}?`,
+            "Esta acción eliminará el ejercicio contable y todos sus asientos asociados de forma permanente.",
+            'Eliminar',
+            {
+                iconComponent: (
+                    <div className="rounded-circle d-flex align-items-center justify-content-center bg-danger-subtle text-danger mx-auto" style={{ width: '80px', height: '80px' }}>
+                        <Calendar size={40} strokeWidth={1.5} />
+                    </div>
+                )
+            }
+        );
+        if (!result.isConfirmed) return;
         try {
             const getCookie = (name) => {
                 let cookieValue = null;

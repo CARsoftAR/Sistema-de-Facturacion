@@ -16,7 +16,8 @@ import {
     X
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { BtnAdd, BtnEdit, BtnDelete, BtnAction, BtnIcon, BtnView, BtnCancel, BtnSave, BtnClear, BtnVertical } from '../components/CommonButtons';
+import { BtnAdd, BtnDelete, BtnAction, BtnClear, BtnView } from '../components/CommonButtons';
+import { showDeleteAlert } from '../utils/alerts';
 import EmptyState from '../components/EmptyState';
 
 const Compras = () => {
@@ -100,7 +101,19 @@ const Compras = () => {
     };
 
     const handleEliminar = async (id) => {
-        if (!window.confirm('¿Estás seguro de cancelar esta orden?')) return;
+        const result = await showDeleteAlert(
+            '¿Cancelar Orden?',
+            'Esta acción cancelará la orden de compra. Si ya fue recibida, no podrá cancelarse.',
+            'Sí, cancelar',
+            {
+                iconComponent: (
+                    <div className="rounded-circle d-flex align-items-center justify-content-center bg-danger-subtle text-danger mx-auto" style={{ width: '80px', height: '80px' }}>
+                        <ShoppingBag size={40} strokeWidth={1.5} />
+                    </div>
+                )
+            }
+        );
+        if (!result.isConfirmed) return;
         try {
             const response = await fetch(`/api/compras/orden/${id}/cancelar/`, { method: 'POST' });
             const data = await response.json();
@@ -246,7 +259,7 @@ const Compras = () => {
                                             <td className="text-end pe-4 py-3">
                                                 <div className="d-flex justify-content-end gap-2">
                                                     {orden.estado === 'PENDIENTE' && (
-                                                        <BtnVertical
+                                                        <BtnAction
                                                             icon={Truck}
                                                             label="Recibir"
                                                             color="success"
@@ -254,21 +267,12 @@ const Compras = () => {
                                                             title="Recibir Mercadería"
                                                         />
                                                     )}
-                                                    <BtnVertical
-                                                        icon={Eye}
-                                                        label="Ver"
-                                                        color="info"
-                                                        onClick={() => navigate(`/compras/${orden.id}`)}
-                                                        title="Ver Detalle"
-                                                        className="text-white"
-                                                    />
+                                                    <BtnView onClick={() => navigate(`/compras/${orden.id}`)} />
                                                     {orden.estado === 'PENDIENTE' && (
-                                                        <BtnVertical
-                                                            icon={Trash2}
+                                                        <BtnDelete
                                                             label="Cancelar"
-                                                            color="danger"
                                                             onClick={() => handleEliminar(orden.id)}
-                                                            title="Cancelar Orden"
+                                                            title="Cancelar Compra"
                                                         />
                                                     )}
                                                 </div>

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, User, Bell, Search } from 'lucide-react';
+import { LogOut, User, Bell, Search, Maximize, Minimize } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const TopNavbar = () => {
@@ -8,12 +8,57 @@ const TopNavbar = () => {
     const navigate = useNavigate();
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
+    const [isFullscreen, setIsFullscreen] = useState(false);
     const [notifications, setNotifications] = useState([
         { id: 1, title: 'Nueva venta registrada', detail: 'Venta #1045 por $12,500', path: '/ventas' },
         { id: 2, title: 'Stock bajo detectado', detail: 'Hay productos con stock bajo mínimo', path: '/productos?stock=bajo' },
         { id: 3, title: 'Pedido recibido', detail: 'Proveedor CARSOFT envió pedido #88', path: '/pedidos?estado=PENDIENTE' }
     ]);
     const dropdownRef = useRef(null);
+
+    const toggleFullScreen = () => {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().then(() => {
+                setIsFullscreen(true);
+            }).catch(err => {
+                console.error(`Error attempting to enable fullscreen: ${err.message}`);
+            });
+        } else {
+            if (document.exitFullscreen) {
+                document.exitFullscreen().then(() => {
+                    setIsFullscreen(false);
+                });
+            }
+        }
+    };
+
+    useEffect(() => {
+        const handleFullscreenChange = () => {
+            setIsFullscreen(!!document.fullscreenElement);
+        };
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+
+        // Auto-Fullscreen on first interaction (Browser restriction workaround)
+        const attemptAutoFullscreen = () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(() => {
+                    // Silent fail if browser blocks it
+                });
+            }
+            // Remove listener after first interaction to avoid repeated attempts
+            document.removeEventListener('click', attemptAutoFullscreen);
+            document.removeEventListener('keydown', attemptAutoFullscreen);
+        };
+
+        document.addEventListener('click', attemptAutoFullscreen);
+        document.addEventListener('keydown', attemptAutoFullscreen);
+
+        return () => {
+            document.removeEventListener('fullscreenchange', handleFullscreenChange);
+            document.removeEventListener('click', attemptAutoFullscreen);
+            document.removeEventListener('keydown', attemptAutoFullscreen);
+        };
+    }, []);
 
     const handleLogout = () => {
         window.location.href = '/logout/';
@@ -53,6 +98,15 @@ const TopNavbar = () => {
 
             {/* User Actions */}
             <div className="d-flex align-items-center gap-3 ms-auto">
+                {/* Fullscreen Toggle */}
+                <button
+                    onClick={toggleFullScreen}
+                    className="btn btn-link text-secondary p-2 rounded-circle hover-bg-light border-0 shadow-none d-none d-md-flex align-items-center justify-content-center"
+                    title={isFullscreen ? "Salir de pantalla completa" : "Pantalla completa"}
+                >
+                    {isFullscreen ? <Minimize size={20} /> : <Maximize size={20} />}
+                </button>
+
                 {/* Notifications */}
                 <div className="position-relative">
                     <button

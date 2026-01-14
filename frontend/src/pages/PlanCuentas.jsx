@@ -1,6 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
+import { BookOpen } from 'lucide-react';
 import { BtnAdd, BtnEdit, BtnDelete, BtnAction, BtnIcon, BtnCancel, BtnSave } from '../components/CommonButtons';
+import { showDeleteAlert } from '../utils/alerts';
 
 // ROW COMPONENT (Premium Design)
 // ROW COMPONENT (Premium Design)
@@ -310,7 +312,19 @@ const PlanCuentas = () => {
     };
 
     const handleDelete = async (id, nombre) => {
-        if (!window.confirm(`¿Eliminar cuenta ${nombre}?`)) return;
+        const result = await showDeleteAlert(
+            `¿Eliminar cuenta ${nombre}?`,
+            "Esta acción eliminará la cuenta contable. Si tiene movimientos asociados, no podrá ser eliminada.",
+            'Eliminar',
+            {
+                iconComponent: (
+                    <div className="rounded-circle d-flex align-items-center justify-content-center bg-danger-subtle text-danger mx-auto" style={{ width: '80px', height: '80px' }}>
+                        <BookOpen size={40} strokeWidth={1.5} />
+                    </div>
+                )
+            }
+        );
+        if (!result.isConfirmed) return;
 
         try {
             const getCookie = (name) => {

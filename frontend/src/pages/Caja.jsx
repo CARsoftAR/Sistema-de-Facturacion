@@ -19,7 +19,8 @@ import {
     LogOut
 } from 'lucide-react';
 import Swal from 'sweetalert2';
-import { BtnClear } from '../components/CommonButtons';
+import { BtnClear, BtnEdit, BtnDelete } from '../components/CommonButtons';
+import { showDeleteAlert } from '../utils/alerts';
 
 const Caja = () => {
     const [movimientos, setMovimientos] = useState([]);
@@ -139,16 +140,10 @@ const Caja = () => {
     };
 
     const handleDeleteMovimiento = async (id) => {
-        const result = await Swal.fire({
-            title: '¿Estás seguro?',
-            text: "Esta acción no se puede deshacer",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Sí, eliminar',
-            cancelButtonText: 'Cancelar'
-        });
+        const result = await showDeleteAlert(
+            "¿Eliminar movimiento?",
+            "Esta acción eliminará el registro de caja de forma permanente. El saldo se recalculará automáticamente."
+        );
 
         if (result.isConfirmed) {
             try {
@@ -449,22 +444,8 @@ const Caja = () => {
                                             </td>
                                             <td className="pe-4 text-end py-3">
                                                 <div className="d-flex justify-content-end gap-2">
-                                                    <button
-                                                        onClick={() => openEditModal(mov)}
-                                                        className="btn btn-primary btn-sm d-flex align-items-center justify-content-center px-2 shadow-sm"
-                                                        title="Editar"
-                                                        style={{ width: '34px' }}
-                                                    >
-                                                        <Pencil size={16} />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDeleteMovimiento(mov.id)}
-                                                        className="btn btn-danger btn-sm d-flex align-items-center justify-content-center px-2 shadow-sm"
-                                                        title="Eliminar"
-                                                        style={{ width: '34px' }}
-                                                    >
-                                                        <Trash2 size={16} />
-                                                    </button>
+                                                    <BtnEdit onClick={() => openEditModal(mov)} />
+                                                    <BtnDelete onClick={() => handleDeleteMovimiento(mov.id)} />
                                                 </div>
                                             </td>
                                         </tr>

@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import {
     FileText, Plus, Search, Trash2, Save, X, Calendar, DollarSign, Filter, RefreshCw
 } from 'lucide-react';
+import { showDeleteAlert } from '../utils/alerts';
 
 // Helper recursivo para aplanar el plan de cuentas
 const flattenCuentas = (nodes, result = []) => {
@@ -202,7 +203,19 @@ const Asientos = () => {
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm("¿Confirma la eliminación de este asiento? Esta acción reversará los movimientos.")) return;
+        const result = await showDeleteAlert(
+            "¿Eliminar asiento?",
+            "Esta acción eliminará el asiento contable de forma permanente. Los saldos de las cuentas se recalcularán.",
+            'Eliminar',
+            {
+                iconComponent: (
+                    <div className="rounded-circle d-flex align-items-center justify-content-center bg-danger-subtle text-danger mx-auto" style={{ width: '80px', height: '80px' }}>
+                        <FileText size={40} strokeWidth={1.5} />
+                    </div>
+                )
+            }
+        );
+        if (!result.isConfirmed) return;
         // API call...
         try {
             const getCookie = (name) => {

@@ -5,7 +5,7 @@ import {
     Printer, Eye, FileText, Calendar, Search,
     ArrowUpDown, Filter, X
 } from 'lucide-react';
-import { BtnView, BtnPrint, BtnClear, BtnVertical } from '../components/CommonButtons';
+import { BtnView, BtnPrint, BtnClear } from '../components/CommonButtons';
 import EmptyState from '../components/EmptyState';
 
 const Remitos = () => {
@@ -189,22 +189,8 @@ const Remitos = () => {
                                             </td>
                                             <td className="pe-4 text-end py-3">
                                                 <div className="d-flex justify-content-end gap-2">
-                                                    <BtnVertical
-                                                        icon={Eye}
-                                                        label="Ver"
-                                                        color="info" // text-white needed? Remitos "Ver" was text-white
-                                                        onClick={() => handleView(remito.id)}
-                                                        title="Ver Detalle"
-                                                        className="text-white"
-                                                    />
-                                                    <BtnVertical
-                                                        icon={Printer}
-                                                        label="Imprimir"
-                                                        color="print"
-                                                        onClick={() => handlePrint(remito.id)}
-                                                        title="Imprimir Remito"
-                                                        className="text-white"
-                                                    />
+                                                    <BtnView onClick={() => navigate(`/remitos/${remito.id}`)} />
+                                                    <BtnPrint onClick={() => window.open(`/api/remitos/${remito.id}/pdf/`, '_blank')} />
                                                 </div>
                                             </td>
                                         </tr>

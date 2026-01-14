@@ -2,7 +2,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, Search, User, ArrowRightLeft, CreditCard, RotateCcw, Users, Pencil, Trash2 } from 'lucide-react';
 import ClienteForm from '../components/clientes/ClienteForm';
-import { BtnAdd, BtnVertical } from '../components/CommonButtons';
+import { BtnAdd, BtnEdit, BtnDelete, BtnAction, BtnClear, BtnVertical } from '../components/CommonButtons';
+import { showDeleteAlert } from '../utils/alerts';
 
 const Clientes = () => {
     const [clientes, setClientes] = useState([]);
@@ -103,7 +104,19 @@ const Clientes = () => {
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm("¿Está seguro de eliminar este cliente?")) return;
+        const result = await showDeleteAlert(
+            "¿Eliminar cliente?",
+            "Esta acción eliminará al cliente. Su historial de ventas se conservará, pero no podrá asociarse a nuevos comprobantes.",
+            'Eliminar',
+            {
+                iconComponent: (
+                    <div className="rounded-circle d-flex align-items-center justify-content-center bg-danger-subtle text-danger mx-auto" style={{ width: '80px', height: '80px' }}>
+                        <Users size={40} strokeWidth={1.5} />
+                    </div>
+                )
+            }
+        );
+        if (!result.isConfirmed) return;
 
         try {
             const res = await fetch(`/api/clientes/${id}/eliminar/`, { method: 'POST' });
@@ -219,20 +232,10 @@ const Clientes = () => {
                                             </td>
                                             <td className="text-end pe-4 py-3">
                                                 <div className="d-flex justify-content-end gap-2">
-                                                    <BtnVertical
-                                                        icon={Pencil}
-                                                        label="Editar"
-                                                        color="warning"
-                                                        onClick={() => handleEdit(c)}
-                                                        title="Editar Cliente"
-                                                    />
-                                                    <BtnVertical
-                                                        icon={Trash2}
-                                                        label="Eliminar"
-                                                        color="danger"
-                                                        onClick={() => handleDelete(c.id)}
-                                                        title="Eliminar Cliente"
-                                                    />
+                                                    <div className="d-flex justify-content-end gap-2">
+                                                        <BtnEdit onClick={() => handleEdit(c)} />
+                                                        <BtnDelete onClick={() => handleDelete(c.id)} />
+                                                    </div>
                                                 </div>
                                             </td>
                                         </tr>

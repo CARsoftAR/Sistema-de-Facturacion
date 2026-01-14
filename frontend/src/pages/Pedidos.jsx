@@ -2,7 +2,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ShoppingCart, Plus, Search, Calendar, RefreshCw, Check, AlertCircle, FileText, Trash2, CheckCircle2, Clock, Eye } from 'lucide-react';
-import { BtnAdd, BtnDelete, BtnAction, BtnClear, BtnVertical } from '../components/CommonButtons';
+import { BtnAdd, BtnDelete, BtnAction, BtnClear, BtnView, BtnPrint, BtnTableAction } from '../components/CommonButtons';
+import { showDeleteAlert } from '../utils/alerts';
 import EmptyState from '../components/EmptyState';
 
 const Pedidos = () => {
@@ -124,7 +125,19 @@ const Pedidos = () => {
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm("¿Está seguro de eliminar este pedido?")) return;
+        const result = await showDeleteAlert(
+            "¿Eliminar pedido?",
+            "Esta acción eliminará el pedido de forma permanente. Si el pedido ya fue facturado, esta acción no revertirá la venta.",
+            'Eliminar',
+            {
+                iconComponent: (
+                    <div className="rounded-circle d-flex align-items-center justify-content-center bg-danger-subtle text-danger mx-auto" style={{ width: '80px', height: '80px' }}>
+                        <ShoppingCart size={40} strokeWidth={1.5} />
+                    </div>
+                )
+            }
+        );
+        if (!result.isConfirmed) return;
 
         try {
             const res = await fetch(`/api/pedidos/eliminar/${id}/`, { method: 'POST' });
@@ -280,38 +293,17 @@ const Pedidos = () => {
                                             </td>
                                             <td className="text-end pe-4 py-3">
                                                 <div className="d-flex justify-content-end gap-2">
-                                                    <BtnVertical
-                                                        icon={Eye}
-                                                        label="Ver"
-                                                        color="primary"
-                                                        onClick={() => navigate(`/pedidos/${p.id}`)}
-                                                        title="Ver Detalle del Pedido"
-                                                    />
-                                                    {p.estado !== 'FACTURADO' && (
-                                                        <BtnVertical
+                                                    <BtnView onClick={() => navigate(`/pedidos/${p.id}`)} />
+                                                    {p.estado === 'Pendiente' && (
+                                                        <BtnTableAction
                                                             icon={FileText}
                                                             label="Facturar"
                                                             color="success"
                                                             onClick={() => handleFacturar(p.id)}
-                                                            title="Facturar (Convertir a Venta)"
                                                         />
                                                     )}
-                                                    <BtnVertical
-                                                        icon={FileText}
-                                                        label="Imprimir"
-                                                        color="info"
-                                                        onClick={() => handlePrint(p.id)}
-                                                        title="Imprimir Presupuesto / Pedido"
-                                                    />
-                                                    {p.estado !== 'FACTURADO' && (
-                                                        <BtnVertical
-                                                            icon={Trash2}
-                                                            label="Eliminar"
-                                                            color="danger"
-                                                            onClick={() => handleDelete(p.id)}
-                                                            title="Eliminar Pedido"
-                                                        />
-                                                    )}
+                                                    <BtnPrint onClick={() => window.open(`/api/pedidos/${p.id}/pdf/`, '_blank')} />
+                                                    <BtnDelete onClick={() => handleDelete(p.id)} />
                                                 </div>
                                             </td>
                                         </tr>

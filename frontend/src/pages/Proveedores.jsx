@@ -1,8 +1,9 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Truck, Plus, Search, Trash2, Edit, Phone, Mail, MapPin, X, Save, Building2, CreditCard, RotateCcw } from 'lucide-react';
+import { Truck, Plus, Search, Trash2, Phone, Mail, MapPin, X, Save, Building2, CreditCard, RotateCcw } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { BtnAdd, BtnEdit, BtnDelete, BtnCancel, BtnSave } from '../components/CommonButtons';
+import { BtnAdd, BtnEdit, BtnDelete, BtnAction, BtnClear } from '../components/CommonButtons';
+import { showDeleteAlert } from '../utils/alerts';
 
 const Proveedores = () => {
     const [proveedores, setProveedores] = useState([]);
@@ -73,7 +74,19 @@ const Proveedores = () => {
     }, [fetchProveedores]);
 
     const handleEliminar = async (id) => {
-        if (!window.confirm("¿Estás seguro de eliminar este proveedor?")) return;
+        const result = await showDeleteAlert(
+            "¿Eliminar proveedor?",
+            "Esta acción eliminará al proveedor. Su historial de compras se conservará, pero no podrá asociarse a nuevos comprobantes.",
+            'Eliminar',
+            {
+                iconComponent: (
+                    <div className="rounded-circle d-flex align-items-center justify-content-center bg-danger-subtle text-danger mx-auto" style={{ width: '80px', height: '80px' }}>
+                        <Truck size={40} strokeWidth={1.5} />
+                    </div>
+                )
+            }
+        );
+        if (!result.isConfirmed) return;
         try {
             const response = await fetch(`/api/proveedores/${id}/eliminar/`, { method: 'POST' });
             const data = await response.json();
@@ -249,22 +262,8 @@ const Proveedores = () => {
                                             </td>
                                             <td className="text-end pe-4 py-3">
                                                 <div className="d-flex justify-content-end gap-2">
-                                                    <button
-                                                        onClick={() => openModal(p)}
-                                                        className="btn btn-primary btn-sm d-flex align-items-center justify-content-center px-2 shadow-sm"
-                                                        title="Editar Proveedor"
-                                                        style={{ width: '34px' }}
-                                                    >
-                                                        <Edit size={16} />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleEliminar(p.id)}
-                                                        className="btn btn-danger btn-sm d-flex align-items-center justify-content-center px-2 shadow-sm"
-                                                        title="Eliminar Proveedor"
-                                                        style={{ width: '34px' }}
-                                                    >
-                                                        <Trash2 size={16} />
-                                                    </button>
+                                                    <BtnEdit onClick={() => openModal(p)} />
+                                                    <BtnDelete onClick={() => handleEliminar(p.id)} />
                                                 </div>
                                             </td>
                                         </tr>

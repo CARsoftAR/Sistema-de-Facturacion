@@ -5,7 +5,7 @@ import Swal from 'sweetalert2';
 import {
     Printer, Eye, Search, Filter, X, ArrowDownCircle, Plus
 } from 'lucide-react';
-import { BtnView, BtnPrint, BtnClear, BtnVertical } from '../components/CommonButtons';
+import { BtnView, BtnPrint, BtnClear, BtnDelete } from '../components/CommonButtons';
 import EmptyState from '../components/EmptyState';
 
 const NotasDebito = () => {
@@ -193,22 +193,9 @@ const NotasDebito = () => {
                                             </td>
                                             <td className="pe-4 text-end py-3">
                                                 <div className="d-flex justify-content-end gap-2">
-                                                    <BtnVertical
-                                                        icon={Eye}
-                                                        label="Ver"
-                                                        color="info"
-                                                        onClick={() => handleView(nota.id)}
-                                                        title="Ver Detalle"
-                                                        className="text-white"
-                                                    />
-                                                    <BtnVertical
-                                                        icon={Printer}
-                                                        label="Imprimir"
-                                                        color="print"
-                                                        onClick={() => handlePrint(nota.id)}
-                                                        title="Imprimir Comprobante"
-                                                        className="text-white"
-                                                    />
+                                                    <BtnView onClick={() => navigate(`/notas-debito/${nota.id}`)} />
+                                                    <BtnPrint onClick={() => window.open(`/api/notas-debito/${nota.id}/pdf/`, '_blank')} />
+                                                    <BtnDelete onClick={() => handleDelete(nota.id)} label="Anular" />
                                                 </div>
                                             </td>
                                         </tr>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { FileText, Plus, Search, Calendar, RefreshCw, Check, AlertCircle, ShoppingCart, Trash2, CheckCircle2, Clock, Eye, Briefcase } from 'lucide-react';
-import { BtnAdd, BtnDelete, BtnAction, BtnClear, BtnVertical } from '../components/CommonButtons';
+import { BtnAdd, BtnDelete, BtnAction, BtnClear, BtnView, BtnPrint, BtnTableAction } from '../components/CommonButtons';
 import EmptyState from '../components/EmptyState';
 
 const Presupuestos = () => {
@@ -190,22 +190,18 @@ const Presupuestos = () => {
                                             <td className="text-center py-3">{getEstadoBadge(p.estado)}</td>
                                             <td className="text-end pe-4 py-3">
                                                 <div className="d-flex justify-content-end gap-2">
-                                                    <BtnVertical
-                                                        icon={Eye}
-                                                        label="Ver"
-                                                        color="primary"
-                                                        onClick={() => navigate(`/presupuestos/${p.id}`)}
-                                                        title="Ver Detalle"
-                                                    />
+                                                    <BtnView onClick={() => navigate(`/presupuestos/${p.id}`)} />
                                                     {p.estado === 'PENDIENTE' && (
-                                                        <BtnVertical
+                                                        <BtnTableAction
                                                             icon={ShoppingCart}
-                                                            label="Convertir"
+                                                            label="A Pedido"
                                                             color="success"
-                                                            onClick={() => navigate(`/presupuestos/${p.id}`)}
+                                                            onClick={() => handleConvertToPedido(p)}
                                                             title="Convertir a Pedido"
                                                         />
                                                     )}
+                                                    <BtnPrint onClick={() => handlePrint(p.id)} />
+                                                    <BtnDelete onClick={() => handleDelete(p.id)} />
                                                 </div>
                                             </td>
                                         </tr>

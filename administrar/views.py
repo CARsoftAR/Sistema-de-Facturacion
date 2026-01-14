@@ -9019,72 +9019,187 @@ def api_nota_debito_crear(request, venta_id):
 @login_required
 @verificar_permiso('reportes')
 def api_dashboard_stats(request):
-    from django.db.models import Sum, Count, F
+    from django.db.models import Sum, Count, F, Q
     from datetime import date, timedelta, datetime
-    
-    hoy = date.today()
-    
-    from django.db.models.functions import TruncDate
     from django.utils import timezone
     
-    # Define "Hoy" as a range (Start of Day to End of Day) in Local Time
+    # 1. Determine Date Range (Default: Current Month)
     local_now = timezone.localtime(timezone.now())
     hoy_date = local_now.date()
     
-    start_of_day = timezone.make_aware(datetime.combine(hoy_date, datetime.min.time()))
-    end_of_day = start_of_day + timedelta(days=1)
+    fecha_start_str = request.GET.get('fecha_start')
+    fecha_end_str = request.GET.get('fecha_end')
     
-    # 1. KPIs Principales (Using Datetime Range)
-    ventas_hoy = Venta.objects.filter(fecha__gte=start_of_day, fecha__lt=end_of_day).aggregate(total=Sum('total'))['total'] or 0
-    caja_hoy = MovimientoCaja.objects.filter(fecha__gte=start_of_day, fecha__lt=end_of_day).aggregate(total=Sum('monto'))['total'] or 0
-    pedidos_pendientes = Pedido.objects.filter(estado__in=['PENDIENTE', 'PREPARACION']).count()
+    if fecha_start_str and fecha_end_str:
+        try:
+            dt_start_date = datetime.strptime(fecha_start_str, '%Y-%m-%d').date()
+            dt_start = timezone.make_aware(datetime.combine(dt_start_date, datetime.min.time()))
+            
+            dt_end_date = datetime.strptime(fecha_end_str, '%Y-%m-%d').date()
+            dt_end = timezone.make_aware(datetime.combine(dt_end_date, datetime.max.time()))
+        except ValueError:
+            dt_start = timezone.make_aware(datetime.combine(hoy_date.replace(day=1), datetime.min.time()))
+            dt_end = timezone.make_aware(datetime.combine(hoy_date, datetime.max.time()))
+    else:
+        # Default: Current Month (1st to Now)
+        dt_start = timezone.make_aware(datetime.combine(hoy_date.replace(day=1), datetime.min.time()))
+        dt_end = timezone.make_aware(datetime.combine(hoy_date, datetime.max.time()))
+
+    # --- 1. RENTABILIDAD (Dynamic Date Range) ---
+    # Ventas en el rango
+    ventas_rango = Venta.objects.filter(fecha__range=(dt_start, dt_end))
+    agregado_ventas = ventas_rango.aggregate(total=Sum('total'), cantidad=Count('id'))
+    total_ventas = agregado_ventas['total'] or 0
+    cantidad_ventas = agregado_ventas['cantidad'] or 0
     
-    # Usando stock_minimo dinámico O hardcode 10
-    stock_bajo_count = Producto.objects.filter(Q(stock__lte=F('stock_minimo')) | Q(stock__lte=10)).count()
+    ticket_promedio = float(total_ventas) / cantidad_ventas if cantidad_ventas > 0 else 0
     
-    # 2. Gráfico: Ventas últimos 7 días (Python Aggregation to avoid DB timezone issues)
+    # Costo Estimado (Approximation using current Product cost)
+    detalles_rango = DetalleVenta.objects.filter(venta__in=ventas_rango).select_related('producto')
+    total_costo = sum((d.cantidad * d.producto.costo) for d in detalles_rango)
+    
+    ganancia_bruta = float(total_ventas) - float(total_costo)
+    
+    # Gastos Operativos (Egresos de Caja en el rango)
+    total_gastos = MovimientoCaja.objects.filter(
+        fecha__range=(dt_start, dt_end), 
+        tipo='Egreso'
+    ).aggregate(total=Sum('monto'))['total'] or 0
+    
+    ganancia_neta = ganancia_bruta - float(total_gastos)
+    
+    rentabilidad = {
+        'start': dt_start.strftime('%d/%m/%Y'),
+        'end': dt_end.strftime('%d/%m/%Y'),
+        'ventas': float(total_ventas),
+        'cantidad_ventas': cantidad_ventas,
+        'ticket_promedio': float(ticket_promedio),
+        'costos': float(total_costo),
+        'ganancia_bruta': float(ganancia_bruta),
+        'gastos': float(total_gastos),
+        'ganancia_neta': float(ganancia_neta),
+        'margen': round((float(ganancia_neta) / float(total_ventas) * 100), 1) if total_ventas > 0 else 0
+    }
+    
+    # --- 1.1 Top Clientes (Dynamic Date Range) ---
+    top_clientes_qs = ventas_rango.values('cliente__nombre')\
+        .annotate(total_comprado=Sum('total'), cantidad_compras=Count('id'))\
+        .order_by('-total_comprado')[:5]
+        
+    top_clientes = []
+    for c in top_clientes_qs:
+        top_clientes.append({
+            'cliente': c['cliente__nombre'],
+            'total': float(c['total_comprado']),
+            'cantidad': c['cantidad_compras']
+        })
+
+    # --- 2. KPIs Principales ---
+    # We keep these as TODAY/REALTIME for operational awareness, independent of the profitability filter
+    today_start = timezone.make_aware(datetime.combine(hoy_date, datetime.min.time()))
+    today_end = today_start + timedelta(days=1)
+    
+    ventas_hoy = Venta.objects.filter(fecha__gte=today_start, fecha__lt=today_end).aggregate(total=Sum('total'))['total'] or 0
+    ingresos_caja = MovimientoCaja.objects.filter(fecha__gte=today_start, fecha__lt=today_end, tipo='Ingreso').aggregate(total=Sum('monto'))['total'] or 0
+    egresos_caja = MovimientoCaja.objects.filter(fecha__gte=today_start, fecha__lt=today_end, tipo='Egreso').aggregate(total=Sum('monto'))['total'] or 0
+    caja_hoy_neto = ingresos_caja - egresos_caja
+    
+    # Pendientes Query & List
+    pedidos_pendientes_qs = Pedido.objects.filter(estado__in=['PENDIENTE', 'PREPARACION']).order_by('-fecha')
+    pedidos_pendientes_count = pedidos_pendientes_qs.count()
+    pedidos_pendientes_list = [{
+        'id': p.id,
+        'cliente': p.cliente.nombre,
+        'total': float(p.total),
+        'fecha': p.fecha.strftime('%d/%m %H:%M'),
+        'estado': p.estado
+    } for p in pedidos_pendientes_qs[:10]] # Limit to 10 for dashboard
+
+    # Low Stock Query & List
+    stock_bajo_qs = Producto.objects.filter(Q(stock__lte=F('stock_minimo')) | Q(stock__lte=5)).order_by('stock')
+    stock_bajo_count = stock_bajo_qs.count()
+    stock_bajo_list = [{
+        'id': p.id,
+        'nombre': p.descripcion, # Fixed: was p.nombre
+        'stock': float(p.stock),
+        'minimo': float(p.stock_minimo)
+    } for p in stock_bajo_qs[:10]] # Limit to 10 for dashboard
+    
+    kpi = {
+        'ventas_hoy': float(ventas_hoy),
+        'caja_hoy': float(caja_hoy_neto),
+        'pedidos_pendientes': pedidos_pendientes_count,
+        'stock_bajo': stock_bajo_count,
+    }
+
+    # --- 3. Chart: Ventas vs Compras (Last 7 days fixed) ---
     fecha_inicio_chart = hoy_date - timedelta(days=6)
     start_chart_dt = timezone.make_aware(datetime.combine(fecha_inicio_chart, datetime.min.time()))
     
-    # Fetch all sales in the range
     ventas_range = Venta.objects.filter(fecha__gte=start_chart_dt).values('fecha', 'total')
+    compras_range = Compra.objects.filter(fecha__gte=start_chart_dt).values('fecha', 'total')
     
-    # Aggregate in Python using MANUAL offset to guarantee Argentina Time (UTC-3)
-    daily_totals = {}
-    sales_debug = []
+    daily_ventas = {}
+    daily_compras = {}
     
     for v in ventas_range:
-        # Manual fix: Subtract 3 hours from UTC timestamp
         local_dt = v['fecha'] - timedelta(hours=3)
         day_str = local_dt.strftime('%Y-%m-%d')
-        daily_totals[day_str] = daily_totals.get(day_str, 0) + float(v['total'])
-        sales_debug.append(f"{v['fecha']} -> {day_str} ($ {v['total']})")
+        daily_ventas[day_str] = daily_ventas.get(day_str, 0) + float(v['total'])
         
+    for c in compras_range:
+        local_dt = c['fecha'] - timedelta(hours=3)
+        day_str = local_dt.strftime('%Y-%m-%d')
+        daily_compras[day_str] = daily_compras.get(day_str, 0) + float(c['total'])
+
     chart_labels = []
-    chart_data = []
+    data_ventas = []
+    data_compras = []
+    
     for i in range(7):
         dia_iter = fecha_inicio_chart + timedelta(days=i)
         dia_str = dia_iter.strftime('%Y-%m-%d')
         chart_labels.append(dia_iter.strftime('%d/%m'))
-        chart_data.append(daily_totals.get(dia_str, 0))
+        data_ventas.append(daily_ventas.get(dia_str, 0))
+        data_compras.append(daily_compras.get(dia_str, 0))
 
-    # 3. Actividad Reciente (Últimas 5 ventas)
+    chart_datasets = [
+        {'label': 'Ventas', 'data': data_ventas, 'borderColor': '#0d6efd', 'backgroundColor': 'rgba(13, 110, 253, 0.1)'},
+        {'label': 'Compras', 'data': data_compras, 'borderColor': '#dc3545', 'backgroundColor': 'rgba(220, 53, 69, 0.1)'}
+    ]
+    
+    # --- 4. Actividad Reciente ---
     recientes = []
-    ultimas_ventas = Venta.objects.select_related('cliente').order_by('-fecha')[:5]
+    ultimas_ventas = Venta.objects.select_related('cliente').order_by('-fecha')[:8]
     for v in ultimas_ventas:
         recientes.append({
-            'id': v.id,
+            'timestamp': v.fecha.timestamp(),
             'tipo': 'VENTA',
-            'icono': 'ShoppingCart', # React Lucide Icon name
+            'icono': 'ShoppingCart',
             'color': 'primary',
-            'fecha': v.fecha.strftime('%d/%m %H:%M'),
+            'fecha': (v.fecha - timedelta(hours=3)).strftime('%d/%m %H:%M'),
             'texto': f"Venta #{v.id} - ${v.total}",
             'subtexto': v.cliente.nombre if v.cliente else 'Cliente Final'
         })
+    ultimas_compras = Compra.objects.select_related('proveedor').order_by('-fecha')[:8]
+    for c in ultimas_compras:
+        recientes.append({
+            'timestamp': c.fecha.timestamp(),
+            'tipo': 'COMPRA',
+            'icono': 'Truck', 
+            'color': 'danger',
+            'fecha': (c.fecha - timedelta(hours=3)).strftime('%d/%m %H:%M'),
+            'texto': f"Compra #{c.id} - ${c.total}",
+            'subtexto': c.proveedor.nombre if c.proveedor else 'Proveedor General'
+        })
+    recientes.sort(key=lambda x: x['timestamp'], reverse=True)
+    recientes = recientes[:10]
+
+    # --- 5. Top Productos (Last 30 days fixed) ---
+    fecha_inicio_top_date = hoy_date - timedelta(days=30)
+    start_top_dt = timezone.make_aware(datetime.combine(fecha_inicio_top_date, datetime.min.time()))
     
-    # 4. Top Productos (Últimos 30 días)
-    fecha_inicio_top = hoy - timedelta(days=30)
-    top_productos = DetalleVenta.objects.filter(venta__fecha__date__gte=fecha_inicio_top)\
+    top_productos = DetalleVenta.objects.filter(venta__fecha__gte=start_top_dt)\
         .values('producto__descripcion')\
         .annotate(total_vendido=Sum('cantidad'))\
         .order_by('-total_vendido')[:5]
@@ -9092,29 +9207,27 @@ def api_dashboard_stats(request):
     top_list = []
     for p in top_productos:
         top_list.append({
-            'producto': p['producto__descripcion'],
-            'total': p['total_vendido']
+            'producto': p['producto__descripcion'] or "Producto Desconocido",
+            'total': float(p['total_vendido'] or 0)
         })
 
     data = {
-        'kpi': {
-            'ventas_hoy': float(ventas_hoy),
-            'caja_hoy': float(caja_hoy),
-            'pedidos_pendientes': pedidos_pendientes,
-            'stock_bajo': stock_bajo_count,
-        },
+        'kpi': kpi,
+        'rentabilidad': rentabilidad,
         'chart': {
             'labels': chart_labels,
-            'data': chart_data
+            'data': data_ventas,
+            'datasets': chart_datasets
         },
         'actividad_reciente': recientes,
         'top_productos': top_list,
-        'debug': {
-            'hoy': str(hoy_date),
-            'inicio_chart': str(fecha_inicio_chart),
-            'sales_processed': sales_debug,
-            'daily_totals': daily_totals
-        }
+        'top_clientes': top_clientes,
+        'stock_bajo_list': stock_bajo_list, # New
+        'pedidos_pendientes_list': pedidos_pendientes_list # New
     }
     
     return JsonResponse(data)
+
+
+
+

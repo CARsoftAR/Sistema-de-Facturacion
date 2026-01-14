@@ -1,12 +1,14 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { Box, Search, Plus, RotateCcw, Package, AlertTriangle, CheckCircle } from 'lucide-react';
+import { useLocation, useSearchParams } from 'react-router-dom';
+import { Pencil, Trash2, Search, Plus, RotateCcw, Package, AlertTriangle, CheckCircle } from 'lucide-react';
 import ProductoForm from '../components/productos/ProductoForm';
 import { BtnAdd, BtnEdit, BtnDelete, BtnAction, BtnClear, BtnVertical } from '../components/CommonButtons';
+import { showDeleteAlert } from '../utils/alerts';
 
 const Productos = () => {
     const [searchParams] = useSearchParams();
+    const location = useLocation();
     const [productos, setProductos] = useState([]);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
@@ -26,28 +28,28 @@ const Productos = () => {
             });
     }, []);
 
-    // Filtros - Inicializar con valores de la URL si existen
-    const [filters, setFilters] = useState({
-        busqueda: searchParams.get('busqueda') || '',
-        marca: searchParams.get('marca') || '',
-        rubro: searchParams.get('rubro') || '',
-        stock: searchParams.get('stock') || 'todos'
-    });
+    // Filtros - Inicializar con valores de la URL actual
+    const getFiltersFromURL = () => {
+        const params = new URLSearchParams(location.search);
+        return {
+            busqueda: params.get('busqueda') || '',
+            marca: params.get('marca') || '',
+            rubro: params.get('rubro') || '',
+            stock: params.get('stock') || 'todos'
+        };
+    };
+
+    const [filters, setFilters] = useState(getFiltersFromURL());
 
     // Auxiliares para filtros
     const [marcas, setMarcas] = useState([]);
     const [rubros, setRubros] = useState([]);
 
-    // Sincronizar filtros con la URL cuando cambien los parámetros
+    // Sincronizar filtros con la URL cuando cambia location.search
     useEffect(() => {
-        setFilters({
-            busqueda: searchParams.get('busqueda') || '',
-            marca: searchParams.get('marca') || '',
-            rubro: searchParams.get('rubro') || '',
-            stock: searchParams.get('stock') || 'todos'
-        });
+        setFilters(getFiltersFromURL());
         setPage(1);
-    }, [searchParams]);
+    }, [location.search]);
 
     // Modal Form
     const [showForm, setShowForm] = useState(false);
@@ -127,7 +129,19 @@ const Productos = () => {
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm("¿Está seguro de eliminar este producto?")) return;
+        const result = await showDeleteAlert(
+            "¿Eliminar producto?",
+            "Esta acción eliminará el producto del catálogo. El historial de ventas no se borra, pero dejará de estar disponible para nuevas operaciones.",
+            'Eliminar',
+            {
+                iconComponent: (
+                    <div className="rounded-circle d-flex align-items-center justify-content-center bg-danger-subtle text-danger mx-auto" style={{ width: '80px', height: '80px' }}>
+                        <Package size={40} strokeWidth={1.5} />
+                    </div>
+                )
+            }
+        );
+        if (!result.isConfirmed) return;
 
         try {
             const res = await fetch(`/api/productos/${id}/eliminar/`);
@@ -255,21 +269,10 @@ const Productos = () => {
                                             </td>
                                             <td className="text-end pe-4 py-3">
                                                 <div className="d-flex justify-content-end gap-2">
-                                                    <BtnVertical
-                                                        icon={Box}
-                                                        label="Editar"
-                                                        onClick={() => handleEdit(p)}
-                                                        color="warning"
-                                                        title="Editar Producto"
-                                                    />
-                                                    <BtnVertical
-                                                        icon={Plus}
-                                                        label="Eliminar"
-                                                        onClick={() => handleDelete(p.id)}
-                                                        color="danger"
-                                                        title="Eliminar Producto"
-                                                        className="rotate-icon-45"
-                                                    />
+                                                    <div className="d-flex justify-content-end gap-2">
+                                                        <BtnEdit onClick={() => handleEdit(p)} />
+                                                        <BtnDelete onClick={() => handleDelete(p.id)} />
+                                                    </div>
                                                 </div>
                                             </td>
                                         </tr>
