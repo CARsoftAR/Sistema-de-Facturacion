@@ -10,7 +10,7 @@ import {
     Calendar
 } from 'lucide-react';
 import Swal from 'sweetalert2';
-import { BtnEdit, BtnDelete } from '../components/CommonButtons';
+import { BtnEdit, BtnDelete, BtnAdd } from '../components/CommonButtons';
 
 const Cheques = () => {
     const [loading, setLoading] = useState(true);
