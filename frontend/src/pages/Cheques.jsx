@@ -173,46 +173,58 @@ const Cheques = () => {
 
             {/* KPI Cards */}
             <div className="row g-3 mb-4">
-                {/* En Cartera (Terceros) - Blue */}
+                {/* En Cartera (Terceros) - Blue (Primary) */}
                 <div className="col-12 col-md-6 col-xl-3">
-                    <div className="card border-0 shadow-sm text-white h-100 rounded-3" style={{ background: '#0d6efd' }}>
-                        <div className="card-body p-3">
-                            <h6 className="card-title mb-2 opacity-75 fw-bold" style={{ fontSize: '0.9rem' }}>En Cartera (Terceros)</h6>
-                            <h3 className="mb-0 fw-bold">{formatCurrency(kpis.cartera_terceros.total)}</h3>
-                            <small className="opacity-75 fw-medium">{kpis.cartera_terceros.count} cheques</small>
+                    <div className="card shadow-sm h-100 border-0" style={{ background: 'linear-gradient(145deg, #dbeafe 0%, #ffffff 100%)' }}>
+                        <div className="card-body p-3 d-flex flex-column justify-content-between">
+                            <div className="d-flex justify-content-between align-items-center mb-2">
+                                <div className="text-muted xsmall fw-bold" style={{ fontSize: '0.7rem' }}>EN CARTERA (TERCEROS)</div>
+                                <div className="p-2 bg-primary bg-opacity-10 rounded text-primary"><ArrowDownLeft size={18} /></div>
+                            </div>
+                            <h3 className="mb-0 fw-bold text-primary">{formatCurrency(kpis.cartera_terceros.total)}</h3>
+                            <div className="text-muted mt-1" style={{ fontSize: '0.8rem' }}>{kpis.cartera_terceros.count} cheques</div>
                         </div>
                     </div>
                 </div>
 
-                {/* A Pagar (Propios) - Yellow/Warning */}
+                {/* A Pagar (Propios) - Yellow (Warning) */}
                 <div className="col-12 col-md-6 col-xl-3">
-                    <div className="card border-0 shadow-sm h-100 rounded-3" style={{ background: '#ffc107', color: '#664d03' }}>
-                        <div className="card-body p-3">
-                            <h6 className="card-title mb-2 opacity-75 fw-bold" style={{ fontSize: '0.9rem' }}>A Pagar (Propios)</h6>
-                            <h3 className="mb-0 fw-bold">{formatCurrency(kpis.apagar_propios.total)}</h3>
-                            <small className="opacity-75 fw-medium">Pendientes de cobro</small>
+                    <div className="card shadow-sm h-100 border-0" style={{ background: 'linear-gradient(145deg, #fef9c3 0%, #ffffff 100%)' }}>
+                        <div className="card-body p-3 d-flex flex-column justify-content-between">
+                            <div className="d-flex justify-content-between align-items-center mb-2">
+                                <div className="text-muted xsmall fw-bold" style={{ fontSize: '0.7rem' }}>A PAGAR (PROPIOS)</div>
+                                <div className="p-2 bg-warning bg-opacity-10 rounded text-warning"><ArrowUpRight size={18} /></div>
+                            </div>
+                            <h3 className="mb-0 fw-bold text-warning" style={{ color: '#d97706' }}>{formatCurrency(kpis.apagar_propios.total)}</h3>
+                            <div className="text-muted mt-1" style={{ fontSize: '0.8rem' }}>Pendientes de cobro</div>
                         </div>
                     </div>
                 </div>
 
-                {/* Depositados (Mes) - Green */}
+                {/* Depositados (Mes) - Green (Success) */}
                 <div className="col-12 col-md-6 col-xl-3">
-                    <div className="card border-0 shadow-sm text-white h-100 rounded-3" style={{ background: '#198754' }}>
-                        <div className="card-body p-3">
-                            <h6 className="card-title mb-2 opacity-75 fw-bold" style={{ fontSize: '0.9rem' }}>Depositados (Mes)</h6>
-                            <h3 className="mb-0 fw-bold">{formatCurrency(kpis.depositados_mes.total)}</h3>
-                            <small className="opacity-75 fw-medium">Este mes</small>
+                    <div className="card shadow-sm h-100 border-0" style={{ background: 'linear-gradient(145deg, #dcfce7 0%, #ffffff 100%)' }}>
+                        <div className="card-body p-3 d-flex flex-column justify-content-between">
+                            <div className="d-flex justify-content-between align-items-center mb-2">
+                                <div className="text-muted xsmall fw-bold" style={{ fontSize: '0.7rem' }}>DEPOSITADOS (MES)</div>
+                                <div className="p-2 bg-success bg-opacity-10 rounded text-success"><CheckCircle2 size={18} /></div>
+                            </div>
+                            <h3 className="mb-0 fw-bold text-success">{formatCurrency(kpis.depositados_mes.total)}</h3>
+                            <div className="text-muted mt-1" style={{ fontSize: '0.8rem' }}>Este mes</div>
                         </div>
                     </div>
                 </div>
 
-                {/* Rechazados - Red */}
+                {/* Rechazados - Red (Danger) */}
                 <div className="col-12 col-md-6 col-xl-3">
-                    <div className="card border-0 shadow-sm text-white h-100 rounded-3" style={{ background: '#dc3545' }}>
-                        <div className="card-body p-3">
-                            <h6 className="card-title mb-2 opacity-75 fw-bold" style={{ fontSize: '0.9rem' }}>Rechazados</h6>
-                            <h3 className="mb-0 fw-bold">{formatCurrency(kpis.rechazados.total)}</h3>
-                            <small className="opacity-75 fw-medium">Total histórico</small>
+                    <div className="card shadow-sm h-100 border-0" style={{ background: 'linear-gradient(145deg, #fee2e2 0%, #ffffff 100%)' }}>
+                        <div className="card-body p-3 d-flex flex-column justify-content-between">
+                            <div className="d-flex justify-content-between align-items-center mb-2">
+                                <div className="text-muted xsmall fw-bold" style={{ fontSize: '0.7rem' }}>RECHAZADOS</div>
+                                <div className="p-2 bg-danger bg-opacity-10 rounded text-danger"><AlertCircle size={18} /></div>
+                            </div>
+                            <h3 className="mb-0 fw-bold text-danger">{formatCurrency(kpis.rechazados.total)}</h3>
+                            <div className="text-muted mt-1" style={{ fontSize: '0.8rem' }}>Total histórico</div>
                         </div>
                     </div>
                 </div>

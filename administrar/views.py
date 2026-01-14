@@ -4,6 +4,7 @@ from django.db.models import Q
 from django.contrib import messages
 from django.db import transaction
 from django.core.management import call_command
+from django.core.paginator import Paginator
 import io
 import datetime
 from django.views.decorators.csrf import csrf_exempt, csrf_protect
@@ -8164,33 +8165,36 @@ def api_cheques_listar(request):
         total = cheques.count()
         cheques_page = cheques[(page - 1) * per_page : page * per_page]
 
+        cheques_qs = cheques
+        paginator = Paginator(cheques_qs, per_page)
+        cheques_page = paginator.get_page(page)
+
         data = []
         for c in cheques_page:
             data.append({
                 'id': c.id,
-                'fecha_pago': c.fecha_pago.strftime('%d/%m/%Y'),
+                'fecha_pago': c.fecha_pago.strftime('%d/%m/%Y') if c.fecha_pago else '-',
                 'banco': c.banco,
                 'numero': c.numero,
                 'origen_destino': c.cliente.nombre if c.cliente else (c.destinatario or c.firmante or '-'),
                 'monto': float(c.monto),
                 'tipo': c.tipo,
-        paginator = Paginator(cheques_qs, per_page)
-        cheques_page = paginator.get_page(page)
+                'estado': c.estado,
+            })
+
+        print(f"DEBUG: Found {total} cheques. Page has {len(data)} items.")
 
         return JsonResponse({
             'ok': True,
-            'data': list(cheques_page.object_list.values(
-                'id', 'fecha_pago', 'banco', 'numero', 'firmante', 'monto', 'tipo', 'estado',
-                'cliente__nombre', 'destinatario', 'fecha_emision'
-            )),
+            'data': data,
             'total': paginator.count,
             'total_pages': paginator.num_pages,
             'current_page': page,
             'kpis': {
                 'cartera_terceros': {'total': kpi_cartera_terceros_total, 'count': kpi_cartera_terceros_count},
-                'apagar_propios': {'total': kpi_apagar_propios_total},
-                'depositados_mes': {'total': kpi_depositados_mes},
-                'rechazados': {'total': kpi_rechazados}
+                'apagar_propios': {'total': kpi_propios_total},
+                'depositados_mes': {'total': kpi_depositados_total},
+                'rechazados': {'total': kpi_rechazados_total}
             }
         })
 
