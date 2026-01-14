@@ -8174,25 +8174,60 @@ def api_cheques_listar(request):
                 'origen_destino': c.cliente.nombre if c.cliente else (c.destinatario or c.firmante or '-'),
                 'monto': float(c.monto),
                 'tipo': c.tipo,
-                'estado': c.estado,
-            })
+        paginator = Paginator(cheques_qs, per_page)
+        cheques_page = paginator.get_page(page)
 
         return JsonResponse({
             'ok': True,
-            'data': data,
-            'total': total,
-            'page': page,
-            'total_pages': (total + per_page - 1) // per_page,
+            'data': list(cheques_page.object_list.values(
+                'id', 'fecha_pago', 'banco', 'numero', 'firmante', 'monto', 'tipo', 'estado',
+                'cliente__nombre', 'destinatario', 'fecha_emision'
+            )),
+            'total': paginator.count,
+            'total_pages': paginator.num_pages,
+            'current_page': page,
             'kpis': {
-                'cartera_terceros': {'total': float(kpi_cartera_terceros_total), 'count': kpi_cartera_terceros_count},
-                'apagar_propios': {'total': float(kpi_propios_total)},
-                'depositados_mes': {'total': float(kpi_depositados_total)},
-                'rechazados': {'total': float(kpi_rechazados_total)},
+                'cartera_terceros': {'total': kpi_cartera_terceros_total, 'count': kpi_cartera_terceros_count},
+                'apagar_propios': {'total': kpi_apagar_propios_total},
+                'depositados_mes': {'total': kpi_depositados_mes},
+                'rechazados': {'total': kpi_rechazados}
             }
         })
 
     except Exception as e:
-        return JsonResponse({'ok': False, 'error': str(e)})
+        print(f"Error api_cheques_listar: {e}")
+        return JsonResponse({'ok': False, 'error': str(e)}, status=500)
+
+@login_required
+def api_cheque_cambiar_estado(request, id):
+    from .models import Cheque
+    import json
+    
+    if request.method != 'POST':
+        return JsonResponse({'ok': False, 'error': 'Método no permitido'}, status=405)
+        
+    try:
+        cheque = Cheque.objects.get(id=id)
+        data = json.loads(request.body)
+        nuevo_estado = data.get('estado')
+        
+        valid_states = ['CARTERA', 'DEPOSITADO', 'COBRADO', 'ENTREGADO', 'RECHAZADO', 'ANULADO']
+        
+        if nuevo_estado not in valid_states:
+            return JsonResponse({'ok': False, 'error': 'Estado inválido'}, status=400)
+            
+        # Basic validation of transitions could be added here
+        # For now, we allow flexibility as requested by user
+        
+        cheque.estado = nuevo_estado
+        cheque.save()
+        
+        return JsonResponse({'ok': True, 'message': f'Estado actualizado a {nuevo_estado}'})
+        
+    except Cheque.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Cheque no encontrado'}, status=404)
+    except Exception as e:
+        return JsonResponse({'ok': False, 'error': str(e)}, status=500)
 
 @login_required
 def api_bancos_listar(request):

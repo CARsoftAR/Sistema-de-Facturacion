@@ -402,5 +402,6 @@ urlpatterns = [
     
     # CHEQUES
     path("api/cheques/listar/", views.api_cheques_listar, name="api_cheques_listar"),
+    path("api/cheques/<int:id>/cambiar-estado/", views.api_cheque_cambiar_estado, name="api_cheque_cambiar_estado"),
 
 ]

@@ -7,7 +7,9 @@ import {
     ArrowDownLeft, // For "En Cartera" (Received)
     CheckCircle2,  // For "Depositados"
     AlertCircle,   // For "Rechazados"
-    Calendar
+    Calendar,
+    RotateCcw,
+    ChevronDown
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { BtnEdit, BtnDelete, BtnAdd } from '../components/CommonButtons';
@@ -91,8 +93,65 @@ const Cheques = () => {
         return <span className="badge bg-light text-dark border px-2 py-1 rounded-2">TERCERO</span>;
     };
 
+    const [openDropdownId, setOpenDropdownId] = useState(null);
+
+    const toggleDropdown = (id) => {
+        if (openDropdownId === id) {
+            setOpenDropdownId(null);
+        } else {
+            setOpenDropdownId(id);
+        }
+    };
+
+    // Close dropdown when clicking outside (simple implementation using a invisible backdrop)
+    const CloseBackdrop = () => (
+        openDropdownId ? (
+            <div
+                className="position-fixed top-0 start-0 w-100 h-100"
+                style={{ zIndex: 998 }}
+                onClick={() => setOpenDropdownId(null)}
+            />
+        ) : null
+    );
+
+    const handleEstadoChange = async (cheque, nuevoEstado) => {
+        setOpenDropdownId(null); // Close dropdown
+        const result = await Swal.fire({
+            title: '¿Confirmar cambio de estado?',
+            text: `El cheque ${cheque.numero} pasará a estado ${nuevoEstado}`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, cambiar',
+            cancelButtonText: 'Cancelar'
+        });
+
+        if (result.isConfirmed) {
+            try {
+                const response = await fetch(`/api/cheques/${cheque.id}/cambiar-estado/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ estado: nuevoEstado })
+                });
+                const data = await response.json();
+
+                if (data.ok) {
+                    Swal.fire('Actualizado', `El estado se actualizó a ${nuevoEstado}`, 'success');
+                    fetchCheques();
+                } else {
+                    Swal.fire('Error', data.error || 'No se pudo actualizar el estado', 'error');
+                }
+            } catch (error) {
+                console.error(error);
+                Swal.fire('Error', 'Error de conexión', 'error');
+            }
+        }
+    };
+
     return (
         <div className="container-fluid px-4 pt-4 pb-0 h-100 d-flex flex-column bg-light fade-in">
+            <CloseBackdrop />
             {/* Header */}
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <div>
@@ -266,10 +325,46 @@ const Cheques = () => {
                                             {getEstadoBadge(c.estado)}
                                         </td>
                                         <td className="text-end pe-4">
-                                            <div className="d-flex justify-content-end gap-2">
-                                                <BtnEdit onClick={() => Swal.fire('Info', 'Funcionalidad de edición pendiente', 'info')} />
-                                                <BtnDelete onClick={() => Swal.fire('Info', 'Funcionalidad de eliminar pendiente', 'info')} />
-                                                {/* Could add Deposit/Deliver actions here later */}
+                                            <div className="position-relative d-inline-block">
+                                                <button
+                                                    className={`btn btn-sm border shadow-sm d-flex align-items-center gap-1 ${openDropdownId === c.id ? 'btn-primary text-white' : 'btn-light'}`}
+                                                    onClick={(e) => { e.stopPropagation(); toggleDropdown(c.id); }}
+                                                >
+                                                    Acciones <ChevronDown size={14} />
+                                                </button>
+
+                                                {openDropdownId === c.id && (
+                                                    <div
+                                                        className="position-absolute end-0 mt-1 bg-white border shadow rounded-3 py-2 fade-in"
+                                                        style={{ zIndex: 1000, minWidth: '180px' }}
+                                                    >
+                                                        <ul className="list-unstyled mb-0">
+                                                            {c.estado === 'CARTERA' && (
+                                                                <>
+                                                                    <li><button className="dropdown-item d-flex align-items-center py-2 px-3 text-success" onClick={() => handleEstadoChange(c, 'DEPOSITADO')}><CheckCircle2 size={16} className="me-2" />Depositar</button></li>
+                                                                    <li><button className="dropdown-item d-flex align-items-center py-2 px-3 text-primary" onClick={() => handleEstadoChange(c, 'COBRADO')}><CheckCircle2 size={16} className="me-2" />Cobrar</button></li>
+                                                                    <li><button className="dropdown-item d-flex align-items-center py-2 px-3 text-secondary" onClick={() => handleEstadoChange(c, 'ENTREGADO')}><ArrowUpRight size={16} className="me-2" />Entregar</button></li>
+                                                                    <li><hr className="dropdown-divider mx-2" /></li>
+                                                                </>
+                                                            )}
+                                                            {(c.estado === 'DEPOSITADO' || c.estado === 'ENTREGADO' || c.estado === 'COBRADO') && (
+                                                                <>
+                                                                    <li><button className="dropdown-item d-flex align-items-center py-2 px-3 text-warning" onClick={() => handleEstadoChange(c, 'CARTERA')}><ArrowDownLeft size={16} className="me-2" />Volver a Cartera</button></li>
+                                                                    {c.estado === 'DEPOSITADO' && (
+                                                                        <li><button className="dropdown-item d-flex align-items-center py-2 px-3 text-danger" onClick={() => handleEstadoChange(c, 'RECHAZADO')}><AlertCircle size={16} className="me-2" />Marcar Rechazado</button></li>
+                                                                    )}
+                                                                    <li><hr className="dropdown-divider mx-2" /></li>
+                                                                </>
+                                                            )}
+                                                            {c.estado === 'RECHAZADO' && (
+                                                                <li><button className="dropdown-item d-flex align-items-center py-2 px-3 text-primary" onClick={() => handleEstadoChange(c, 'CARTERA')}><RotateCcw size={16} className="me-2" />Recuperar (Cartera)</button></li>
+                                                            )}
+
+                                                            <li><button className="dropdown-item d-flex align-items-center py-2 px-3" onClick={() => Swal.fire('Info', 'Editar pendiente', 'info')}>Editar</button></li>
+                                                            <li><button className="dropdown-item d-flex align-items-center py-2 px-3 text-danger" onClick={() => Swal.fire('Info', 'Eliminar pendiente', 'info')}>Eliminar</button></li>
+                                                        </ul>
+                                                    </div>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>
