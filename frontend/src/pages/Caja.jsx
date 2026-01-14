@@ -24,8 +24,10 @@ import { showDeleteAlert } from '../utils/alerts';
 
 const Caja = () => {
     const [movimientos, setMovimientos] = useState([]);
-    const [saldoActual, setSaldoActual] = useState(0);
     const [loading, setLoading] = useState(true);
+    const [saldoActual, setSaldoActual] = useState(0);
+    const [saldoFiltrado, setSaldoFiltrado] = useState(0);
+    const [cajaAbierta, setCajaAbierta] = useState(false);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
@@ -53,7 +55,6 @@ const Caja = () => {
     const [showAperturaModal, setShowAperturaModal] = useState(false);
     const [showCierreModal, setShowCierreModal] = useState(false);
     const [editingMovimiento, setEditingMovimiento] = useState(null);
-    const [cajaAbierta, setCajaAbierta] = useState(false);
     const [cajaData, setCajaData] = useState(null);
 
     // Formulario Movimiento
@@ -88,7 +89,9 @@ const Caja = () => {
             setMovimientos(data.movimientos || []);
             setTotalPages(data.total_pages || 1);
             setTotalItems(data.total || 0);
+            setTotalItems(data.total || 0);
             setSaldoActual(data.saldo_actual || 0);
+            setSaldoFiltrado(data.saldo_filtrado !== undefined ? data.saldo_filtrado : (data.saldo_actual || 0));
         } catch (error) {
             console.error("Error cargando caja:", error);
             Swal.fire('Error', 'No se pudieron cargar los movimientos', 'error');
@@ -279,17 +282,21 @@ const Caja = () => {
                     {/* Compact Balance Display */}
                     <div className="px-4 py-2 rounded-4 shadow-sm border-0 d-flex align-items-center gap-3"
                         style={{
-                            background: saldoActual >= 0
-                                ? 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)'
-                                : 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%)',
+                            background: ((filters.tipo || filters.busqueda || filters.fecha_desde || filters.fecha_hasta) ? saldoFiltrado : saldoActual) >= 0
+                                ? 'linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)' // Soft Pastel Green
+                                : 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)', // Soft Pastel Red
                             minWidth: '220px'
                         }}>
                         <div className="bg-white bg-opacity-25 p-2 rounded-circle">
                             <Wallet size={24} className="text-dark" />
                         </div>
                         <div>
-                            <div className="small text-dark text-opacity-75 fw-bold text-uppercase" style={{ fontSize: '0.7rem', letterSpacing: '1px' }}>Saldo en Caja</div>
-                            <div className="h3 mb-0 fw-bold text-dark">{formatCurrency(saldoActual)}</div>
+                            <div className="small text-dark text-opacity-75 fw-bold text-uppercase" style={{ fontSize: '0.7rem', letterSpacing: '1px' }}>
+                                {(filters.tipo || filters.busqueda || filters.fecha_desde || filters.fecha_hasta) ? 'Balance Filtrado' : 'Saldo en Caja'}
+                            </div>
+                            <div className="h3 mb-0 fw-bold text-dark">
+                                {formatCurrency((filters.tipo || filters.busqueda || filters.fecha_desde || filters.fecha_hasta) ? saldoFiltrado : saldoActual)}
+                            </div>
                         </div>
                     </div>
 

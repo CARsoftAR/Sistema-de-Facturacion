@@ -514,10 +514,15 @@ def api_caja_movimientos_lista(request):
                 'usuario': m.usuario.username if m.usuario else 'Sistema',
             })
         
-        # Saldo actual histórico (mejorable para optimizar)
-        ingresos = MovimientoCaja.objects.filter(tipo='Ingreso').aggregate(total=Sum('monto'))['total'] or 0
-        egresos = MovimientoCaja.objects.filter(tipo='Egreso').aggregate(total=Sum('monto'))['total'] or 0
-        saldo_actual = float(ingresos) - float(egresos)
+        # Saldo Global (Cash on Hand)
+        global_ingresos = MovimientoCaja.objects.filter(tipo='Ingreso').aggregate(total=Sum('monto'))['total'] or 0
+        global_egresos = MovimientoCaja.objects.filter(tipo='Egreso').aggregate(total=Sum('monto'))['total'] or 0
+        saldo_global = float(global_ingresos) - float(global_egresos)
+
+        # Saldo Filtrado (Current View)
+        filt_ingresos = movimientos.filter(tipo='Ingreso').aggregate(total=Sum('monto'))['total'] or 0
+        filt_egresos = movimientos.filter(tipo='Egreso').aggregate(total=Sum('monto'))['total'] or 0
+        saldo_filtrado = float(filt_ingresos) - float(filt_egresos)
         
         return JsonResponse({
             'movimientos': data,
@@ -525,7 +530,8 @@ def api_caja_movimientos_lista(request):
             'page': page,
             'per_page': per_page,
             'total_pages': (total + per_page - 1) // per_page,
-            'saldo_actual': saldo_actual,
+            'saldo_actual': saldo_global, # Keep original key for compatibility
+            'saldo_filtrado': saldo_filtrado, # New key
         })
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
