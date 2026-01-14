@@ -107,7 +107,7 @@ const Presupuestos = () => {
                         Gestión de Presupuestos y Cotizaciones
                     </p>
                 </div>
-                <BtnAdd onClick={() => navigate('/presupuestos/nuevo')} label="Nuevo Presupuesto" />
+                <BtnAdd onClick={() => navigate('/presupuestos/nuevo')} label="Nuevo Presupuesto" icon={FileText} className="btn-lg shadow-sm" />
             </div>
 
             {/* Filtros */}

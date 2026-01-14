@@ -147,7 +147,7 @@ const Clientes = () => {
                         Administra tu cartera de clientes y cuentas corrientes.
                     </p>
                 </div>
-                <BtnAdd label="Nuevo Cliente" onClick={handleCreate} className="btn-lg shadow-sm" />
+                <BtnAdd label="Nuevo Cliente" icon={Users} onClick={handleCreate} className="btn-lg shadow-sm" />
             </div>
 
             {/* Filtros */}

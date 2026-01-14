@@ -1,7 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar } from 'lucide-react';
+import { Calendar, Trash2, Edit2, CheckCircle, XCircle } from 'lucide-react';
+import { BtnAdd } from '../components/CommonButtons';
+import { CalendarCheck } from 'lucide-react';
 import { showDeleteAlert } from '../utils/alerts';
 
 const Ejercicios = () => {
@@ -165,11 +167,7 @@ const Ejercicios = () => {
                     </h1>
                     <p className="text-muted mb-0">Administra los períodos fiscales de la empresa.</p>
                 </div>
-                <div>
-                    <button className="btn btn-primary shadow-sm px-4 rounded-pill fw-bold" onClick={openNew}>
-                        <i className="bi bi-plus-lg me-2"></i>Nuevo Ejercicio
-                    </button>
-                </div>
+                <BtnAdd label="Nuevo Ejercicio" icon={CalendarCheck} onClick={openNew} className="btn-lg shadow-sm" />
             </div>
 
             {/* CONTENIDO PRINCIPAL - ESTÁNDAR */}
@@ -263,96 +261,98 @@ const Ejercicios = () => {
             </div>
 
             {/* MODAL */}
-            {modalOpen && (
-                <>
-                    <div className="modal-backdrop fade show" style={{ backgroundColor: 'rgba(255, 255, 255, 0.8)', backdropFilter: 'blur(5px)' }}></div>
-                    <div className="modal fade show d-block" tabIndex="-1">
-                        <div className="modal-dialog modal-dialog-centered">
-                            <div className="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
-                                <div className="modal-header bg-white border-0 px-4 pt-4 pb-0">
-                                    <div>
-                                        <h5 className="modal-title fw-bold fs-4 text-dark mb-0">
-                                            {formData.id ? 'Editar Ejercicio' : 'Nuevo Ejercicio'}
-                                        </h5>
-                                        <p className="text-muted small mb-0">Información del período fiscal.</p>
+            {
+                modalOpen && (
+                    <>
+                        <div className="modal-backdrop fade show" style={{ backgroundColor: 'rgba(255, 255, 255, 0.8)', backdropFilter: 'blur(5px)' }}></div>
+                        <div className="modal fade show d-block" tabIndex="-1">
+                            <div className="modal-dialog modal-dialog-centered">
+                                <div className="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                                    <div className="modal-header bg-white border-0 px-4 pt-4 pb-0">
+                                        <div>
+                                            <h5 className="modal-title fw-bold fs-4 text-dark mb-0">
+                                                {formData.id ? 'Editar Ejercicio' : 'Nuevo Ejercicio'}
+                                            </h5>
+                                            <p className="text-muted small mb-0">Información del período fiscal.</p>
+                                        </div>
+                                        <button type="button" className="btn-close" onClick={() => setModalOpen(false)}></button>
                                     </div>
-                                    <button type="button" className="btn-close" onClick={() => setModalOpen(false)}></button>
-                                </div>
-                                <div className="modal-body p-4">
-                                    <form onSubmit={handleSave}>
-                                        <div className="mb-3">
-                                            <label className="form-label small fw-bold text-secondary text-uppercase">Descripción</label>
-                                            <input
-                                                type="text"
-                                                className="form-control bg-light border-0 fw-bold"
-                                                required
-                                                value={formData.descripcion}
-                                                onChange={e => setFormData({ ...formData, descripcion: e.target.value })}
-                                                placeholder="Ej: Ejercicio 2026"
-                                            />
-                                        </div>
-                                        <div className="row g-3 mb-3">
-                                            <div className="col-6">
-                                                <label className="form-label small fw-bold text-secondary text-uppercase">Inicio</label>
+                                    <div className="modal-body p-4">
+                                        <form onSubmit={handleSave}>
+                                            <div className="mb-3">
+                                                <label className="form-label small fw-bold text-secondary text-uppercase">Descripción</label>
                                                 <input
-                                                    type="date"
-                                                    className="form-control bg-light border-0"
+                                                    type="text"
+                                                    className="form-control bg-light border-0 fw-bold"
                                                     required
-                                                    value={formData.fecha_inicio}
-                                                    onChange={e => setFormData({ ...formData, fecha_inicio: e.target.value })}
+                                                    value={formData.descripcion}
+                                                    onChange={e => setFormData({ ...formData, descripcion: e.target.value })}
+                                                    placeholder="Ej: Ejercicio 2026"
                                                 />
                                             </div>
-                                            <div className="col-6">
-                                                <label className="form-label small fw-bold text-secondary text-uppercase">Fin</label>
-                                                <input
-                                                    type="date"
-                                                    className="form-control bg-light border-0"
-                                                    required
-                                                    value={formData.fecha_fin}
-                                                    onChange={e => setFormData({ ...formData, fecha_fin: e.target.value })}
-                                                />
-                                            </div>
-                                        </div>
-
-                                        {formData.id && (
-                                            <div className="mb-4">
-                                                <div
-                                                    className={`d-flex align-items-center p-3 rounded-3 border cursor-pointer hover-shadow transition-all ${formData.cerrado ? 'bg-danger bg-opacity-10 border-danger border-opacity-25' : 'bg-success bg-opacity-10 border-success border-opacity-25'}`}
-                                                    onClick={() => setFormData({ ...formData, cerrado: !formData.cerrado })}
-                                                >
-                                                    <div className="flex-grow-1">
-                                                        <div className={`fw-bold ${formData.cerrado ? 'text-danger' : 'text-success'}`}>
-                                                            {formData.cerrado ? 'Ejercicio Cerrado' : 'Ejercicio Abierto'}
-                                                        </div>
-                                                        <div className="small text-muted">
-                                                            {formData.cerrado ? 'No se permiten nuevos asientos.' : 'Se permiten registros contables.'}
-                                                        </div>
-                                                    </div>
-                                                    <div className="form-check form-switch ms-3">
-                                                        <input
-                                                            className="form-check-input fs-4"
-                                                            type="checkbox"
-                                                            checked={formData.cerrado}
-                                                            readOnly
-                                                            style={{ cursor: 'pointer' }}
-                                                        />
-                                                    </div>
+                                            <div className="row g-3 mb-3">
+                                                <div className="col-6">
+                                                    <label className="form-label small fw-bold text-secondary text-uppercase">Inicio</label>
+                                                    <input
+                                                        type="date"
+                                                        className="form-control bg-light border-0"
+                                                        required
+                                                        value={formData.fecha_inicio}
+                                                        onChange={e => setFormData({ ...formData, fecha_inicio: e.target.value })}
+                                                    />
+                                                </div>
+                                                <div className="col-6">
+                                                    <label className="form-label small fw-bold text-secondary text-uppercase">Fin</label>
+                                                    <input
+                                                        type="date"
+                                                        className="form-control bg-light border-0"
+                                                        required
+                                                        value={formData.fecha_fin}
+                                                        onChange={e => setFormData({ ...formData, fecha_fin: e.target.value })}
+                                                    />
                                                 </div>
                                             </div>
-                                        )}
 
-                                        <div className="d-flex justify-content-end gap-2 mt-4 pt-2 border-top">
-                                            <button type="button" className="btn btn-light text-muted px-4 rounded-pill fw-bold" onClick={() => setModalOpen(false)}>Cancelar</button>
-                                            <button type="submit" className="btn btn-primary px-5 rounded-pill fw-bold shadow-sm">Guardar</button>
-                                        </div>
-                                    </form>
+                                            {formData.id && (
+                                                <div className="mb-4">
+                                                    <div
+                                                        className={`d-flex align-items-center p-3 rounded-3 border cursor-pointer hover-shadow transition-all ${formData.cerrado ? 'bg-danger bg-opacity-10 border-danger border-opacity-25' : 'bg-success bg-opacity-10 border-success border-opacity-25'}`}
+                                                        onClick={() => setFormData({ ...formData, cerrado: !formData.cerrado })}
+                                                    >
+                                                        <div className="flex-grow-1">
+                                                            <div className={`fw-bold ${formData.cerrado ? 'text-danger' : 'text-success'}`}>
+                                                                {formData.cerrado ? 'Ejercicio Cerrado' : 'Ejercicio Abierto'}
+                                                            </div>
+                                                            <div className="small text-muted">
+                                                                {formData.cerrado ? 'No se permiten nuevos asientos.' : 'Se permiten registros contables.'}
+                                                            </div>
+                                                        </div>
+                                                        <div className="form-check form-switch ms-3">
+                                                            <input
+                                                                className="form-check-input fs-4"
+                                                                type="checkbox"
+                                                                checked={formData.cerrado}
+                                                                readOnly
+                                                                style={{ cursor: 'pointer' }}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            <div className="d-flex justify-content-end gap-2 mt-4 pt-2 border-top">
+                                                <button type="button" className="btn btn-light text-muted px-4 rounded-pill fw-bold" onClick={() => setModalOpen(false)}>Cancelar</button>
+                                                <button type="submit" className="btn btn-primary px-5 rounded-pill fw-bold shadow-sm">Guardar</button>
+                                            </div>
+                                        </form>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </>
-            )}
-        </div>
+                    </>
+                )
+            }
+        </div >
     );
 };
 

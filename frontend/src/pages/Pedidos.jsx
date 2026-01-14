@@ -182,6 +182,7 @@ const Pedidos = () => {
                 </div>
                 <BtnAdd
                     label="Nuevo Pedido"
+                    icon={ShoppingCart}
                     className="btn-lg shadow-sm"
                     onClick={() => navigate('/pedidos/nuevo')}
                 />

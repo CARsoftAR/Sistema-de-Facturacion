@@ -125,7 +125,7 @@ const Usuarios = () => {
                         Administra los accesos y permisos del personal al sistema.
                     </p>
                 </div>
-                <BtnAdd label="Nuevo Usuario" onClick={handleCreate} className="btn-lg shadow-sm" />
+                <BtnAdd label="Nuevo Usuario" icon={ShieldCheck} onClick={handleCreate} className="btn-lg shadow-sm" />
             </div>
 
             {/* Filtros - Matching Ventas.jsx style */}

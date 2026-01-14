@@ -184,6 +184,7 @@ const Ventas = () => {
                 </div>
                 <BtnAdd
                     label="Nueva Venta"
+                    icon={ShoppingCart}
                     className="btn-lg shadow-sm"
                     onClick={() => navigate('/ventas/nuevo')}
                 />

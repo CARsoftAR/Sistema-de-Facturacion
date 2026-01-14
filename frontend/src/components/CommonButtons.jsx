@@ -54,9 +54,9 @@ export const BtnIcon = ({ icon: Icon, onClick, color = "primary", className = ""
 // CRUD BUTTONS
 // ============================================================================
 
-export const BtnAdd = ({ label = "Agregar", onClick, className = "", ...rest }) => (
+export const BtnAdd = ({ label = "Agregar", onClick, className = "", icon: Icon = Plus, ...rest }) => (
     <button type="button" className={`${BASE_BTN_CLASS} btn-primary text-white ${className}`} onClick={onClick} {...rest}>
-        <Plus size={18} />
+        <Icon size={20} />
         {label}
     </button>
 );

@@ -104,9 +104,12 @@ const Cheques = () => {
                         Control de cartera de cheques propios y de terceros
                     </p>
                 </div>
-                <button className="btn btn-primary fw-bold px-3 d-flex align-items-center gap-2 shadow-sm rounded-3">
-                    <span className="fs-5">+</span> Nuevo Cheque
-                </button>
+                <BtnAdd
+                    label="Nuevo Cheque"
+                    icon={Banknote}
+                    className="btn-lg shadow-sm"
+                    onClick={() => Swal.fire('Info', 'Funcionalidad de crear pendiente', 'info')}
+                />
             </div>
 
             {/* KPI Cards */}

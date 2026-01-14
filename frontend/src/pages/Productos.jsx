@@ -175,7 +175,7 @@ const Productos = () => {
                         Gestiona el catálogo completo de productos y servicios.
                     </p>
                 </div>
-                <BtnAdd label="Nuevo Producto" onClick={handleCreate} className="btn-lg shadow-sm" />
+                <BtnAdd label="Nuevo Producto" icon={Package} onClick={handleCreate} className="btn-lg shadow-sm" />
             </div>
 
             {/* FILTROS */}

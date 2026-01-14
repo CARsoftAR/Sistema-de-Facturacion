@@ -4,6 +4,7 @@ import {
     FileText, Plus, Search, Trash2, Save, X, Calendar, DollarSign, Filter, RefreshCw
 } from 'lucide-react';
 import { showDeleteAlert } from '../utils/alerts';
+import { BtnAdd } from '../components/CommonButtons';
 
 // Helper recursivo para aplanar el plan de cuentas
 const flattenCuentas = (nodes, result = []) => {
@@ -256,12 +257,13 @@ const Asientos = () => {
                     </h1>
                     <p className="text-slate-500 mt-1 font-medium">Registro manual de operaciones y ajustes.</p>
                 </div>
-                <button
+                <BtnAdd
+                    label="Nuevo Asiento"
+                    icon={FileText}
                     onClick={openNew}
-                    className="bg-blue-600 text-white px-5 py-3 rounded-xl font-bold shadow-lg shadow-blue-500/30 hover:bg-blue-700 transition-all flex items-center gap-2"
-                >
-                    <Plus size={20} /> Nuevo Asiento
-                </button>
+                    className="btn-lg shadow-sm text-white border-0"
+                    style={{ background: '#2563eb' }}
+                />
             </div>
 
             {/* List - ESTÁNDAR */}

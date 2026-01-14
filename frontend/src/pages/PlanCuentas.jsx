@@ -399,7 +399,7 @@ const PlanCuentas = () => {
                     <p className="text-muted mb-0">Gestión integral de la estructura contable.</p>
                 </div>
                 <div className="d-flex gap-2">
-                    <BtnAdd label="Nueva Raíz" onClick={() => openNew(null)} className="px-4" />
+                    <BtnAdd label="Nueva Raíz" icon={BookOpen} onClick={() => openNew(null)} className="px-4" />
                 </div>
             </div>
 
