@@ -189,7 +189,10 @@ const TopNavbar = () => {
                                     <p className="mb-0 text-muted small" style={{ fontSize: '0.75rem' }}>{user?.email || ''}</p>
                                 </li>
                                 <li>
-                                    <button className="dropdown-item rounded-2 py-2 d-flex align-items-center gap-2 px-3 transition-all hover-bg-primary-subtle border-0 bg-transparent text-start w-100 small">
+                                    <button
+                                        className="dropdown-item rounded-2 py-2 d-flex align-items-center gap-2 px-3 transition-all hover-bg-primary-subtle border-0 bg-transparent text-start w-100 small"
+                                        onClick={() => { setIsDropdownOpen(false); navigate('/perfil'); }}
+                                    >
                                         <User size={16} /> Perfil
                                     </button>
                                 </li>
