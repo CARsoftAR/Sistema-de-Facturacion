@@ -96,11 +96,13 @@ const Cheques = () => {
             {/* Header */}
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <div>
-                    <h2 className="text-primary fw-bold mb-0 d-flex align-items-center gap-2">
-                        <Banknote size={28} />
+                    <h2 className="text-primary fw-bold mb-0" style={{ fontSize: '2rem' }}>
+                        <Banknote className="me-2 inline-block" size={32} />
                         Gestión de Cheques
                     </h2>
-                    <p className="text-muted mb-0 small">Control de cartera de cheques propios y de terceros</p>
+                    <p className="text-muted mb-0 ps-1" style={{ fontSize: '1rem' }}>
+                        Control de cartera de cheques propios y de terceros
+                    </p>
                 </div>
                 <button className="btn btn-primary fw-bold px-3 d-flex align-items-center gap-2 shadow-sm rounded-3">
                     <span className="fs-5">+</span> Nuevo Cheque
