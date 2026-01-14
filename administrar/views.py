@@ -8118,6 +8118,83 @@ def bancos(request):
     return render(request, 'administrar/bancos.html')
 
 @login_required
+def api_cheques_listar(request):
+    from .models import Cheque
+    from django.db.models import Sum, Q
+    from datetime import datetime, date
+
+    try:
+        # Params
+        page = int(request.GET.get('page', 1))
+        per_page = int(request.GET.get('per_page', 10))
+        busqueda = request.GET.get('busqueda', '').strip()
+        tipo = request.GET.get('tipo', '').strip()
+        estado = request.GET.get('estado', '').strip()
+        
+        # Base Query
+        cheques = Cheque.objects.all().order_by('-fecha_pago')
+
+        # Filters
+        if busqueda:
+            cheques = cheques.filter(Q(numero__icontains=busqueda) | Q(banco__icontains=busqueda) | Q(cliente__nombre__icontains=busqueda) | Q(firmante__icontains=busqueda))
+        
+        if tipo and tipo != 'TODOS':
+            cheques = cheques.filter(tipo=tipo)
+            
+        if estado and estado != 'TODOS':
+            cheques = cheques.filter(estado=estado)
+
+        # KPIs
+        kpi_cartera_terceros_qs = Cheque.objects.filter(estado='CARTERA', tipo='TERCERO')
+        kpi_cartera_terceros_total = kpi_cartera_terceros_qs.aggregate(t=Sum('monto'))['t'] or 0
+        kpi_cartera_terceros_count = kpi_cartera_terceros_qs.count()
+
+        kpi_propios_qs = Cheque.objects.filter(tipo='PROPIO', estado__in=['CARTERA', 'ENTREGADO']) 
+        kpi_propios_total = kpi_propios_qs.aggregate(t=Sum('monto'))['t'] or 0
+        
+        today = date.today()
+        # Filtramos depositados en el mes actual (aprox)
+        kpi_depositados_qs = Cheque.objects.filter(estado='DEPOSITADO', fecha_modificacion__month=today.month, fecha_modificacion__year=today.year)
+        kpi_depositados_total = kpi_depositados_qs.aggregate(t=Sum('monto'))['t'] or 0
+
+        kpi_rechazados_qs = Cheque.objects.filter(estado='RECHAZADO')
+        kpi_rechazados_total = kpi_rechazados_qs.aggregate(t=Sum('monto'))['t'] or 0
+
+        # Pagination
+        total = cheques.count()
+        cheques_page = cheques[(page - 1) * per_page : page * per_page]
+
+        data = []
+        for c in cheques_page:
+            data.append({
+                'id': c.id,
+                'fecha_pago': c.fecha_pago.strftime('%d/%m/%Y'),
+                'banco': c.banco,
+                'numero': c.numero,
+                'origen_destino': c.cliente.nombre if c.cliente else (c.destinatario or c.firmante or '-'),
+                'monto': float(c.monto),
+                'tipo': c.tipo,
+                'estado': c.estado,
+            })
+
+        return JsonResponse({
+            'ok': True,
+            'data': data,
+            'total': total,
+            'page': page,
+            'total_pages': (total + per_page - 1) // per_page,
+            'kpis': {
+                'cartera_terceros': {'total': float(kpi_cartera_terceros_total), 'count': kpi_cartera_terceros_count},
+                'apagar_propios': {'total': float(kpi_propios_total)},
+                'depositados_mes': {'total': float(kpi_depositados_total)},
+                'rechazados': {'total': float(kpi_rechazados_total)},
+            }
+        })
+
+    except Exception as e:
+        return JsonResponse({'ok': False, 'error': str(e)})
+
+@login_required
 def api_bancos_listar(request):
     from .models import CuentaBancaria
     cuentas = CuentaBancaria.objects.filter(activo=True)

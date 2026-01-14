@@ -399,5 +399,8 @@ urlpatterns = [
     path("api/bancos/movimientos/", views.api_bancos_movimientos, name="api_bancos_movimientos"),
     path("api/bancos/movimiento/crear/", views.api_bancos_movimiento_crear, name="api_bancos_movimiento_crear"),
     path("api/bancos/conciliar/", views.api_bancos_conciliar, name="api_bancos_conciliar"),
+    
+    # CHEQUES
+    path("api/cheques/listar/", views.api_cheques_listar, name="api_cheques_listar"),
 
 ]
