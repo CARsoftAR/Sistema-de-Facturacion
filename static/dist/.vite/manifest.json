@@ -1,6 +1,6 @@
 {
   "index.html": {
-    "file": "assets/main-BVTDyyNo.js",
+    "file": "assets/main-C7E2QCqI.js",
     "name": "main",
     "src": "index.html",
     "isEntry": true,
@@ -8,11 +8,11 @@
       "src/pages/CuentasCorrientesClientes.jsx"
     ],
     "css": [
-      "assets/main-C_KhgZUr.css"
+      "assets/main-D03ULDl5.css"
     ]
   },
   "src/pages/CuentasCorrientesClientes.jsx": {
-    "file": "assets/CuentasCorrientesClientes-BKFLfoIm.js",
+    "file": "assets/CuentasCorrientesClientes-0B8FozOZ.js",
     "name": "CuentasCorrientesClientes",
     "src": "src/pages/CuentasCorrientesClientes.jsx",
     "isDynamicEntry": true,

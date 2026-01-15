@@ -147,6 +147,7 @@ class Empresa(models.Model):
 
     # ConfiguraciÃ³n
     habilita_remitos = models.BooleanField(default=True, verbose_name="Habilitar Remitos")
+    actualizar_precios_compra = models.BooleanField(default=False, verbose_name="Actualizar Precios en Compra")
 
     # ConfiguraciÃ³n de Correo
     smtp_server = models.CharField(max_length=100, blank=True)

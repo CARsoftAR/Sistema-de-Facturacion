@@ -2024,7 +2024,7 @@ def api_orden_compra_guardar(request):
 
             # Si se solicita la recepción inmediata
             if recepcionar:
-                recepcionar_orden_interna(orden, medio_pago, datos_cheque)
+                recepcionar_orden_interna(orden, medio_pago, datos_cheque, request.user)
 
             return JsonResponse({"ok": True, "orden_id": orden.id})
 
@@ -2032,12 +2032,13 @@ def api_orden_compra_guardar(request):
         return JsonResponse({"ok": False, "error": str(e)}, status=500)
 
 
-def recepcionar_orden_interna(oc, medio_pago, datos_cheque=None):
+def recepcionar_orden_interna(oc, medio_pago, datos_cheque=None, user=None):
     """Lógica interna para recepcionar una OC (Stock, Asientos, Pagos)"""
     # 1. Crear Compra
     compra = Compra.objects.create(
         proveedor=oc.proveedor,
         orden_compra=oc,
+        nro_comprobante=oc.nro_orden or f"OC-{oc.id}",
         total=oc.total_estimado,
         estado="REGISTRADA",
         observaciones=f"Recepción automática de OC {oc.id}",
@@ -2054,7 +2055,23 @@ def recepcionar_orden_interna(oc, medio_pago, datos_cheque=None):
         )
 
         prod = det.producto
+        old_costo = prod.costo
+        new_costo = det.precio
+        
         prod.stock += det.cantidad
+        prod.costo = new_costo # Actualizar costo con el precio de esta compra
+        
+        # Lógica de actualización automática de precios de venta
+        empresa = Empresa.objects.first()
+        if empresa and empresa.actualizar_precios_compra and old_costo > 0 and new_costo != old_costo:
+            diferencia = new_costo - old_costo
+            # Actualizamos todos los precios sumando la diferencia (mantiene margen absoluto)
+            prod.precio_efectivo = max(0, prod.precio_efectivo + diferencia)
+            prod.precio_tarjeta = max(0, prod.precio_tarjeta + diferencia)
+            prod.precio_ctacte = max(0, prod.precio_ctacte + diferencia)
+            if prod.precio_lista4:
+                prod.precio_lista4 = max(0, prod.precio_lista4 + diferencia)
+                
         prod.save()
 
         MovimientoStock.objects.create(
@@ -2121,6 +2138,7 @@ def recepcionar_orden_interna(oc, medio_pago, datos_cheque=None):
             tipo="Egreso",
             descripcion=f"Compra #{compra.id} - {oc.proveedor.nombre}",
             monto=oc.total_estimado,
+            usuario=user
         )
 
     # 5. Generar Asiento Contable
@@ -2155,11 +2173,13 @@ def api_orden_compra_recibir(request, id):
         try:
             data = json.loads(request.body.decode('utf-8'))
             medio_pago = data.get('medio_pago', 'CONTADO')
+            datos_cheque = data.get('datos_cheque', None)
         except:
             medio_pago = 'CONTADO'
+            datos_cheque = None
 
         with transaction.atomic():
-            recepcionar_orden_interna(oc, medio_pago, None) # TODO: Soportar cheque en recepción manual diferida? Por ahora no.
+            recepcionar_orden_interna(oc, medio_pago, datos_cheque, request.user)
 
         return JsonResponse({"ok": True})
 
@@ -8696,6 +8716,7 @@ def api_empresa_config(request):
             'moneda_predeterminada': empresa.moneda_predeterminada,
             'items_por_pagina': empresa.items_por_pagina,
             'habilita_remitos': empresa.habilita_remitos,
+            'actualizar_precios_compra': empresa.actualizar_precios_compra,
             'logo': empresa.logo.url if empresa.logo else None,
         })
     except Exception as e:
@@ -8724,6 +8745,10 @@ def api_empresa_config_guardar(request):
             # En multipart los booleanos llegan como strings
             val = data['habilita_remitos']
             empresa.habilita_remitos = str(val).lower() == 'true' if isinstance(val, str) else bool(val)
+        
+        if 'actualizar_precios_compra' in data:
+            val = data['actualizar_precios_compra']
+            empresa.actualizar_precios_compra = str(val).lower() == 'true' if isinstance(val, str) else bool(val)
 
         # Datos Empresa
         empresa.nombre = data.get('nombre', empresa.nombre)

@@ -16,6 +16,7 @@ const ConfiguracionEmpresa = () => {
         iibb: '',
         inicio_actividades: '',
         moneda_predeterminada: 'ARS',
+        actualizar_precios_compra: false,
         logo: null
     });
     const [logoPreview, setLogoPreview] = useState(null);
@@ -320,7 +321,7 @@ const ConfiguracionEmpresa = () => {
                                                 Configuración de Moneda
                                             </h5>
 
-                                            <div className="row g-3">
+                                            <div className="row g-3 mb-4">
                                                 <div className="col-12">
                                                     <div className="form-floating">
                                                         <select
@@ -335,6 +336,30 @@ const ConfiguracionEmpresa = () => {
                                                         </select>
                                                         <label htmlFor="moneda">Moneda Predeterminada</label>
                                                     </div>
+                                                </div>
+                                            </div>
+                                            <h5 className="fw-bold text-dark mb-4 mt-5 d-flex align-items-center gap-2">
+                                                <Settings size={20} className="text-primary" />
+                                                Preferencias de Compra
+                                            </h5>
+
+                                            <div className="card bg-light border-0 rounded-3 p-3 mb-4 shadow-sm">
+                                                <div className="form-check form-switch pt-1">
+                                                    <input
+                                                        className="form-check-input custom-switch"
+                                                        type="checkbox"
+                                                        id="actualizar_precios_compra"
+                                                        name="actualizar_precios_compra"
+                                                        checked={config.actualizar_precios_compra}
+                                                        onChange={(e) => setConfig(prev => ({ ...prev, actualizar_precios_compra: e.target.checked }))}
+                                                        style={{ cursor: 'pointer', transform: 'scale(1.2)' }}
+                                                    />
+                                                    <label className="form-check-label fw-bold text-dark ms-2 cur-pointer" htmlFor="actualizar_precios_compra" style={{ cursor: 'pointer' }}>
+                                                        Actualizar precios de venta automáticamente
+                                                    </label>
+                                                    <p className="text-muted small mb-0 ms-2 mt-1">
+                                                        Si se activa, al recibir una compra con un costo nuevo, se ajustarán los precios de venta manteniendo el mismo margen absoluto.
+                                                    </p>
                                                 </div>
                                             </div>
 
