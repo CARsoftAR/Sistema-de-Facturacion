@@ -2196,39 +2196,74 @@ def get_lista_precio_display(self):
 
 @login_required
 def api_clientes_buscar(request):
-    """API para buscar/listar clientes (usado por Clientes y Ventas)"""
-    q = request.GET.get("q", "").strip()
+    """API para buscar/listar clientes (usado por Clientes, Ventas y Cta Cte)"""
+    import json
+    from django.core.paginator import Paginator
 
-    if not q:
-        # Si no hay búsqueda, devolver todos los clientes (para módulo Clientes)
-        qs = Cliente.objects.all()[:50]
-    else:
-        # Con búsqueda (para autocomplete en Ventas)
-        qs = Cliente.objects.filter(
+    # Parametros
+    q = request.GET.get("q", "").strip() or request.GET.get("busqueda", "").strip()
+    page_number = request.GET.get("page", 1)
+    per_page = request.GET.get("per_page", 10)
+    estado_deuda = request.GET.get("estado_deuda", "todos")
+    
+    # QueryBase
+    qs = Cliente.objects.all().order_by('nombre')
+
+    # Filtros de Texto
+    if q:
+        qs = qs.filter(
             Q(nombre__icontains=q) |
+            Q(dni__icontains=q) | # Add DNI search
             Q(cuit__icontains=q) |
             Q(telefono__icontains=q)
-        )[:20]
+        )
+    
+    # Filtro de Estado de Deuda (Cta Cte)
+    if estado_deuda == "con_deuda":
+        qs = qs.filter(saldo_actual__gt=0)
+    elif estado_deuda == "al_dia":
+        qs = qs.filter(saldo_actual=0)
+    elif estado_deuda == "saldo_favor":
+        qs = qs.filter(saldo_actual__lt=0)
+
+    # Paginacion
+    paginator = Paginator(qs, per_page)
+    try:
+        page_obj = paginator.page(page_number)
+    except:
+        page_obj = paginator.page(1)
 
     datos = []
-    for c in qs:
+    for c in page_obj:
         datos.append({
             "id": c.id,
             "nombre": c.nombre,
+            "apellido": c.apellido if hasattr(c, 'apellido') else "",
             "cuit": c.cuit or "",
-            "condicion_fiscal": c.condicion_fiscal,  # Código (CF, RI, etc.)
-            "condicion_fiscal_display": c.get_condicion_fiscal_display(),  # Nombre completo
+            "dni": c.dni if hasattr(c, 'dni') else "",
+            "condicion_fiscal": c.condicion_fiscal,
+            "condicion_fiscal_display": c.get_condicion_fiscal_display(),
             "lista_precio": c.lista_precio or "EFECTIVO",
             "telefono": c.telefono or "",
+            "direccion": c.domicilio or "", # Unify address
             "activo": c.activo,
+            "saldo_actual": c.saldo_actual, # Frontend expects this for CtaCte
+            "saldo": c.saldo_actual, # Legacy support
         })
 
-    # Si es una búsqueda corta (autocomplete), devolver en formato {data: [...]}
-    if q and len(q) >= 2:
-        return JsonResponse({"data": datos})
-    
-    # Si no hay búsqueda, devolver lista directa (para módulo Clientes)
-    return JsonResponse(datos, safe=False)
+    # Respuesta
+    # Si viene con 'q' corto y sin paginacion explícita, mantener formato legacy {data: []} para autocompletes viejos
+    is_autocomplete = request.GET.get("page") is None and q and len(q) >= 2
+    if is_autocomplete:
+         return JsonResponse({"data": datos})
+
+    # Respuesta Estándar Paginada
+    return JsonResponse({
+        "clientes": datos,
+        "total": paginator.count,
+        "total_pages": paginator.num_pages,
+        "current_page": page_obj.number
+    })
 
 
 def es_cuit_valido(cuit: str) -> bool:
@@ -6683,11 +6718,10 @@ def cheques_lista(request):
 @require_http_methods(["POST"])
 @login_required
 def api_cheques_crear(request):
-    import json
-    from .models import Cheque, Cliente, CuentaBancaria, MovimientoBanco
-    from .services import AccountingService
-
     try:
+        import json
+        from .models import Cheque, Cliente, CuentaBancaria, MovimientoBanco
+        from .services import AccountingService
         data = json.loads(request.body)
         
         cliente = None
@@ -6741,11 +6775,10 @@ def api_cheques_crear(request):
 @require_http_methods(["POST"])
 @login_required
 def api_cheques_editar(request, id):
-    import json
-    from .models import Cheque, Cliente, CuentaBancaria, MovimientoBanco
-    from .services import AccountingService
-
     try:
+        import json
+        from .models import Cheque, Cliente, CuentaBancaria, MovimientoBanco
+        from .services import AccountingService
         data = json.loads(request.body)
         c = Cheque.objects.get(id=id)
         

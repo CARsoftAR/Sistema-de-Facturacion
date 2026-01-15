@@ -3,6 +3,9 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { FileText, Plus, Search, Calendar, RefreshCw, Check, AlertCircle, ShoppingCart, Trash2, CheckCircle2, Clock, Eye, Briefcase } from 'lucide-react';
 import { BtnAdd, BtnDelete, BtnAction, BtnClear, BtnView, BtnPrint, BtnTableAction } from '../components/CommonButtons';
 import EmptyState from '../components/EmptyState';
+import TablePagination from '../components/common/TablePagination';
+
+const STORAGE_KEY = 'table_prefs_presupuestos_items';
 
 const Presupuestos = () => {
     const navigate = useNavigate();
@@ -12,15 +15,24 @@ const Presupuestos = () => {
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
-    const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [itemsPerPage, setItemsPerPage] = useState(() => {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        return saved ? parseInt(saved, 10) : 10;
+    });
 
     useEffect(() => {
-        fetch('/api/config/obtener/')
-            .then(res => res.json())
-            .then(data => {
-                if (data.items_por_pagina) setItemsPerPage(data.items_por_pagina);
-            })
-            .catch(console.error);
+        // Fallback to API config if not in local storage? 
+        // Or just prioritize local storage. For consistency, we rely on local storage or default 10.
+        // If we want to fetch default from API only if NOT in local storage:
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (!saved) {
+            fetch('/api/config/obtener/')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.items_por_pagina) setItemsPerPage(data.items_por_pagina);
+                })
+                .catch(console.error);
+        }
     }, []);
 
     // Filtros
@@ -154,13 +166,13 @@ const Presupuestos = () => {
                         <table className="table align-middle mb-0">
                             <thead className="table-dark" style={{ backgroundColor: '#212529', color: '#fff' }}>
                                 <tr>
-                                    <th className="ps-4 py-3 fw-bold"># ID</th>
+                                    <th className="ps-4 py-3 fw-bold">#</th>
                                     <th className="py-3 fw-bold">Fecha</th>
                                     <th className="py-3 fw-bold">Cliente</th>
                                     <th className="py-3 fw-bold">Vencimiento</th>
                                     <th className="py-3 fw-bold text-end">Total</th>
                                     <th className="py-3 fw-bold text-center">Estado</th>
-                                    <th className="pe-4 py-3 fw-bold text-end">Acciones</th>
+                                    <th className="text-end pe-4 py-3 fw-bold">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -185,7 +197,7 @@ const Presupuestos = () => {
                                             <td className="ps-4 fw-bold text-primary py-3">#{p.id}</td>
                                             <td className="py-3"><span className="text-dark fw-medium">{p.fecha}</span></td>
                                             <td className="fw-medium py-3">{p.cliente}</td>
-                                            <td className="py-3">{p.vencimiento}</td>
+                                            <td className="py-3 fw-medium text-muted">{p.vencimiento}</td>
                                             <td className="text-end fw-bold text-success py-3">$ {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(p.total)}</td>
                                             <td className="text-center py-3">{getEstadoBadge(p.estado)}</td>
                                             <td className="text-end pe-4 py-3">
@@ -212,50 +224,19 @@ const Presupuestos = () => {
                     </div>
 
                     {/* Paginación */}
-                    {!loading && (
-                        <div className="d-flex justify-content-between align-items-center p-3 border-top bg-light">
-                            <div className="d-flex align-items-center gap-2">
-                                <span className="text-muted small">Mostrando {presupuestos.length} de {totalItems} registros</span>
-                            </div>
-
-                            <nav>
-                                <ul className="pagination mb-0 align-items-center gap-2">
-                                    <li className={`page-item ${page === 1 ? 'disabled' : ''}`}>
-                                        <button
-                                            className="page-link border-0 text-secondary bg-transparent p-0"
-                                            onClick={() => setPage(page - 1)}
-                                            style={{ width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                        >
-                                            &lt;
-                                        </button>
-                                    </li>
-                                    {[...Array(totalPages)].map((_, i) => {
-                                        if (totalPages > 10 && Math.abs(page - (i + 1)) > 2 && i !== 0 && i !== totalPages - 1) return null;
-                                        return (
-                                            <li key={i} className="page-item">
-                                                <button
-                                                    className={`page-link border-0 rounded-circle fw-bold ${page === i + 1 ? 'bg-primary text-white shadow-sm' : 'bg-transparent text-secondary'}`}
-                                                    onClick={() => setPage(i + 1)}
-                                                    style={{ width: '35px', height: '35px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                                >
-                                                    {i + 1}
-                                                </button>
-                                            </li>
-                                        );
-                                    })}
-                                    <li className={`page-item ${page === totalPages ? 'disabled' : ''}`}>
-                                        <button
-                                            className="page-link border-0 text-secondary bg-transparent p-0"
-                                            onClick={() => setPage(page + 1)}
-                                            style={{ width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                        >
-                                            &gt;
-                                        </button>
-                                    </li>
-                                </ul>
-                            </nav>
-                        </div>
-                    )}
+                    {/* Paginación */}
+                    <TablePagination
+                        currentPage={page}
+                        totalPages={totalPages}
+                        totalItems={totalItems}
+                        itemsPerPage={itemsPerPage}
+                        onPageChange={setPage}
+                        onItemsPerPageChange={(newVal) => {
+                            setItemsPerPage(newVal);
+                            setPage(1);
+                            localStorage.setItem(STORAGE_KEY, newVal);
+                        }}
+                    />
                 </div>
             </div>
         </div>

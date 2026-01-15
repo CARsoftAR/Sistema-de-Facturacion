@@ -257,19 +257,9 @@ class AccountingService:
 
     @classmethod
     def _registrar_rechazo(cls, cheque):
-        """
-        Rechazo de cheque. Vuelve la deuda al cliente y sale del banco (gastos aparte).
-        Debe: Deudores por Ventas (o Cheques Rechazados)
-            ItemAsiento.objects.create(asiento=asiento, cuenta=cuenta_deudores, debe=cheque.monto, haber=0)
-            ItemAsiento.objects.create(asiento=asiento, cuenta=cuenta_banco, debe=0, haber=cheque.monto)
-
+        pass
     @classmethod
     def registrar_pago_compra_contado(cls, compra):
-        """
-        Registra el pago de una compra al contado (Efectivo).
-        Debe: Proveedores (Cancelación de deuda)
-        Haber: Caja (Salida de dinero)
-        """
         fecha = getattr(compra, 'fecha', date.today())
         if hasattr(fecha, 'date'): fecha = fecha.date()
 
@@ -306,11 +296,6 @@ class AccountingService:
 
     @classmethod
     def registrar_pago_compra_cheque_propio(cls, compra, cheque):
-        """
-        Genera asiento de pago con cheque propio.
-        Debe: Proveedores
-        Haber: Banco (si al dia) o Cheques Diferidos a Pagar
-        """
         fecha = getattr(compra, 'fecha', date.today())
         if hasattr(fecha, 'date'): fecha = fecha.date()
 
@@ -357,16 +342,6 @@ class AccountingService:
 
     @classmethod
     def registrar_venta(cls, venta):
-        """
-        Genera asiento de venta con IVA y Costo (CMV).
-        1. Venta:
-           Debe: Deudores por Ventas (Total)
-           Haber: Ventas (Neto)
-           Haber: IVA Débito Fiscal
-        2. Costo (CMV):
-           Debe: Costo de Ventas
-           Haber: Mercaderías
-        """
         ejercicio = cls._obtener_ejercicio_vigente(venta.fecha.date())
         if not ejercicio:
             print(f"No hay ejercicio vigente para venta {venta.id}")
@@ -435,12 +410,6 @@ class AccountingService:
 
     @classmethod
     def registrar_compra(cls, compra):
-        """
-        Genera asiento de compra.
-        Debe: Mercaderías (Neto)
-        Debe: IVA Crédito Fiscal
-        Haber: Proveedores (Total)
-        """
         # Asumimos que 'compra' tiene fecha, total, y proveedor
         fecha = getattr(compra, 'fecha', date.today())
         if hasattr(fecha, 'date'): fecha = fecha.date() # Si es datetime
@@ -492,11 +461,6 @@ class AccountingService:
 
     @classmethod
     def registrar_cobro_venta_contado(cls, venta):
-        """
-        Genera asiento de cobro inmediato (Caja vs Deudores) para venta contado.
-        Debe: Caja
-        Haber: Deudores por Ventas
-        """
         ejercicio = cls._obtener_ejercicio_vigente(venta.fecha.date())
         if not ejercicio: return
 
@@ -529,17 +493,6 @@ class AccountingService:
 
     @classmethod
     def registrar_cobro_venta_tarjeta(cls, venta, comision_porcentaje=Decimal("0.03")):
-        """
-        Genera asiento de cobro con tarjeta.
-        La tarjeta genera un crédito a cobrar de la procesadora, menos comisión.
-        
-        Contablemente:
-        - Debe: Tarjetas a Cobrar (monto neto que recibiremos)
-        - Debe: Comisiones Tarjeta (gasto por la comisión, si aplica)
-        - Haber: Deudores por Ventas (cancelamos la deuda del cliente)
-        
-        NOTA: Si no existe cuenta de comisiones, se registra el total sin desglose.
-        """
         ejercicio = cls._obtener_ejercicio_vigente(venta.fecha.date())
         if not ejercicio: return
 
@@ -587,16 +540,6 @@ class AccountingService:
 
     @classmethod
     def registrar_cobro_venta_cheque(cls, venta, cheque):
-        """
-        Genera asiento de cobro con cheque de tercero.
-        Cuando un cliente paga con cheque, el cheque entra a cartera.
-        
-        Contablemente:
-        - Debe: Valores a Depositar (cheque en cartera)
-        - Haber: Deudores por Ventas (cancelamos la deuda del cliente)
-        
-        NOTA: El cheque debe ser creado previamente como objeto Cheque.
-        """
         ejercicio = cls._obtener_ejercicio_vigente(venta.fecha.date())
         if not ejercicio: return
 
@@ -630,10 +573,6 @@ class AccountingService:
 
     @classmethod
     def registrar_recibo(cls, recibo):
-        """
-        Genera un asiento contable único para un recibo de cobro o pago, 
-        consolidando todas sus formas de pago.
-        """
         fecha = recibo.fecha
         ejercicio = cls._obtener_ejercicio_vigente(fecha)
         if not ejercicio: return
@@ -709,11 +648,6 @@ class AccountingService:
 
     @classmethod
     def registrar_nota_credito(cls, nc):
-        """
-        Genera asiento de Nota de Crédito (Anulación de venta).
-        Debe: Ventas (Neto), IVA Débito (reversión)
-        Haber: Deudores por Ventas (Total)
-        """
         fecha = nc.fecha.date() if hasattr(nc.fecha, 'date') else nc.fecha
         ejercicio = cls._obtener_ejercicio_vigente(fecha)
         if not ejercicio: return
@@ -751,105 +685,10 @@ class AccountingService:
             ItemAsiento.objects.create(asiento=asiento, cuenta=cuenta_deudores, debe=0, haber=total)
 
             print(f"DEBUG: Asiento NC {nuevo_numero} generado para {nc.id}")
-        """
-        Genera asiento para retención impositiva.
-        
-        CASO 1: Pago a Proveedor (Somos Agentes de Retención)
-        - Disminuye deuda con Proveedor (Debe) -> Ya lo hace el recibo globalmente, 
-          pero contablemente debemos reflejar que NO sale caja sino que nace un pasivo fiscal.
-          El recibo global hara: Proveedores (D) vs [Caja, Cheque, Retencion...] (H)
-          Aqui solo necesitamos asegurar que la contrapartida sea la cuenta de Retencion (Pasivo).
-          
-          Espera... el flujo actual de recibos NO genera un asiento único multipropósito.
-          Parece que genera asientos por partes (cheque, caja).
-          Entonces, necesitamos generar aqui:
-          Debe: Proveedores (Cancelacion de deuda por el monto retenido)
-          Haber: Retenciones a Depositar (Pasivo Fiscal)
 
-        CASO 2: Cobro a Cliente (Cliente nos retiene)
-        - Disminuye deuda del Cliente (Haber) -> Ya lo hace el recibo global.
-        - Entra un "papelito" que vale dinero fiscal (Activo).
-          Debe: Retenciones Sufridas (Activo)
-          Haber: Deudores por Ventas
-        """
-        ejercicio = cls._obtener_ejercicio_vigente(recibo.fecha)
-        if not ejercicio: return
-
-        if recibo.tipo == 'PROVEEDOR':
-            # Pago a Proveedor: Retenemos -> Pasivo
-            cuenta_proveedores = cls._obtener_cuenta(cls.CUENTA_PROVEEDORES)
-            cuenta_retencion = cls._obtener_cuenta(cls.CUENTA_RETENCIONES_A_DEPOSITAR) 
-            # Ojo: Podriamos buscar cuentas mas especificas segun el tipo (IIBB, Ganancias)
-            
-            # Intento de cuenta especifica
-            if item_retencion.retencion_tipo:
-                cuenta_especifica = cls._obtener_cuenta(f"Retenciones {item_retencion.retencion_tipo} a Depositar")
-                if cuenta_especifica: cuenta_retencion = cuenta_especifica
-
-            if not cuenta_proveedores or not cuenta_retencion:
-                print(f"Faltan cuentas para retencion proveedor: {cls.CUENTA_PROVEEDORES} o {cls.CUENTA_RETENCIONES_A_DEPOSITAR}")
-                return
-
-            descripcion = f"Retención {item_retencion.retencion_tipo} #{item_retencion.retencion_numero} - Pago {recibo.proveedor.nombre}"
-            
-            with transaction.atomic():
-                # Crear asiento
-                ultimo_numero = Asiento.objects.filter(ejercicio=ejercicio).order_by('-numero').first()
-                nuevo_numero = (ultimo_numero.numero + 1) if ultimo_numero else 1
-
-                asiento = Asiento.objects.create(
-                    numero=nuevo_numero,
-                    fecha=recibo.fecha,
-                    descripcion=descripcion,
-                    ejercicio=ejercicio,
-                    origen='PAGOS',
-                    usuario='Sistema'
-                )
-
-                # Debe: Proveedores (Bajamos deuda)
-                ItemAsiento.objects.create(asiento=asiento, cuenta=cuenta_proveedores, debe=item_retencion.monto, haber=0)
-                # Haber: Retenciones a Depositar (Aumentamos Pasivo)
-                ItemAsiento.objects.create(asiento=asiento, cuenta=cuenta_retencion, debe=0, haber=item_retencion.monto)
-
-        elif recibo.tipo == 'CLIENTE':
-            # Cobro a Cliente: Nos retienen -> Activo
-            cuenta_deudores = cls._obtener_cuenta(cls.CUENTA_DEUDORES_POR_VENTAS)
-            cuenta_retencion = cls._obtener_cuenta(cls.CUENTA_RETENCIONES_SUFRIDAS)
-
-             # Intento de cuenta especifica
-            if item_retencion.retencion_tipo:
-                cuenta_especifica = cls._obtener_cuenta(f"Retenciones {item_retencion.retencion_tipo} Sufridas")
-                if cuenta_especifica: cuenta_retencion = cuenta_especifica
-            
-            if not cuenta_deudores or not cuenta_retencion:
-                print("Faltan cuentas para retencion cliente")
-                return
-
-            descripcion = f"Retención {item_retencion.retencion_tipo} #{item_retencion.retencion_numero} - Cobro {recibo.cliente.nombre}"
-
-            with transaction.atomic():
-                ultimo_numero = Asiento.objects.filter(ejercicio=ejercicio).order_by('-numero').first()
-                nuevo_numero = (ultimo_numero.numero + 1) if ultimo_numero else 1
-
-                asiento = Asiento.objects.create(
-                    numero=nuevo_numero,
-                    fecha=recibo.fecha,
-                    descripcion=descripcion,
-                    ejercicio=ejercicio,
-                    origen='COBROS',
-                    usuario='Sistema'
-                )
-
-                # Debe: Retenciones Sufridas (Entra Activo)
-                ItemAsiento.objects.create(asiento=asiento, cuenta=cuenta_retencion, debe=item_retencion.monto, haber=0)
-                # Haber: Deudores (Baja deuda cliente)
-                ItemAsiento.objects.create(asiento=asiento, cuenta=cuenta_deudores, debe=0, haber=item_retencion.monto)
 
     @classmethod
     def registrar_movimiento_caja(cls, movimiento):
-        """
-        Genera asiento para movimientos manuales de caja (Ingreso/Egreso).
-        """
         fecha_asiento = movimiento.fecha
         ejercicio = cls._obtener_ejercicio_vigente(fecha_asiento)
         
@@ -916,9 +755,6 @@ class AccountingService:
 
     @classmethod
     def registrar_arqueo_caja(cls, movimiento, diferencia):
-        """
-        Genera asiento para diferencia de arqueo (Faltante/Sobrante).
-        """
         fecha_asiento = movimiento.fecha
         ejercicio = cls._obtener_ejercicio_vigente(fecha_asiento)
         
@@ -969,52 +805,45 @@ class AccountingService:
                 ItemAsiento.objects.create(asiento=asiento, cuenta=cuenta_contrapartida, debe=0, haber=monto_abs)
 
             print(f"DEBUG: Asiento Arqueo {nuevo_numero} generado. Dif: {diferencia}")
- 
-         @ c l a s s m e t h o d  
-         d e f   r e g i s t r a r _ n o t a _ d e b i t o ( c l s ,   n d ) :  
-                 " " "  
-                 G e n e r a   a s i e n t o   d e   N o t a   d e   D � � b i t o   ( C a r g o   e x t r a   a   c l i e n t e ) .  
-                 D e b e :   D e u d o r e s   p o r   V e n t a s   ( T o t a l )   -   A u m e n t a   d e u d a  
-                 H a b e r :   V e n t a s / I n g r e s o s   ( N e t o )  
-                 H a b e r :   I V A   D � � b i t o   F i s c a l  
-                 " " "  
-                 f e c h a   =   n d . f e c h a . d a t e ( )   i f   h a s a t t r ( n d . f e c h a ,   ' d a t e ' )   e l s e   n d . f e c h a  
-                 e j e r c i c i o   =   c l s . _ o b t e n e r _ e j e r c i c i o _ v i g e n t e ( f e c h a )  
-                 i f   n o t   e j e r c i c i o :   r e t u r n  
-  
-                 c u e n t a _ d e u d o r e s   =   c l s . _ o b t e n e r _ c u e n t a ( c l s . C U E N T A _ D E U D O R E S _ P O R _ V E N T A S )  
-                 c u e n t a _ v e n t a s   =   c l s . _ o b t e n e r _ c u e n t a ( c l s . C U E N T A _ V E N T A S )  
-                 c u e n t a _ i v a   =   c l s . _ o b t e n e r _ c u e n t a ( c l s . C U E N T A _ I V A _ D E B I T O )  
-  
-                 i f   n o t   a l l ( [ c u e n t a _ d e u d o r e s ,   c u e n t a _ v e n t a s ,   c u e n t a _ i v a ] ) :  
-                         p r i n t ( " F a l t a n   c u e n t a s   p a r a   N o t a   d e   D � � b i t o " )  
-                         r e t u r n  
-  
-                 t o t a l   =   n d . t o t a l  
-                 n e t o   =   t o t a l   /   D e c i m a l ( " 1 . 2 1 " )  
-                 i v a   =   t o t a l   -   n e t o  
-  
-                 w i t h   t r a n s a c t i o n . a t o m i c ( ) :  
-                         u l t i m o _ n u m e r o   =   A s i e n t o . o b j e c t s . f i l t e r ( e j e r c i c i o = e j e r c i c i o ) . o r d e r _ b y ( ' - n u m e r o ' ) . f i r s t ( )  
-                         n u e v o _ n u m e r o   =   ( u l t i m o _ n u m e r o . n u m e r o   +   1 )   i f   u l t i m o _ n u m e r o   e l s e   1  
-  
-                         a s i e n t o   =   A s i e n t o . o b j e c t s . c r e a t e (  
-                                 n u m e r o = n u e v o _ n u m e r o ,  
-                                 f e c h a = n d . f e c h a ,  
-                                 d e s c r i p c i o n = f " N D   { n d . n u m e r o _ f o r m a t e a d o ( ) }   -   { n d . c l i e n t e . n o m b r e } " ,  
-                                 e j e r c i c i o = e j e r c i c i o ,  
-                                 o r i g e n = ' V E N T A S ' ,  
-                                 u s u a r i o = ' S i s t e m a '  
-                         )  
-  
-                         #   D e b e :   D e u d o r e s   p o r   V e n t a s   ( A u m e n t a   c r � � d i t o   a   c o b r a r )  
-                         I t e m A s i e n t o . o b j e c t s . c r e a t e ( a s i e n t o = a s i e n t o ,   c u e n t a = c u e n t a _ d e u d o r e s ,   d e b e = t o t a l ,   h a b e r = 0 )  
-                          
-                         #   H a b e r :   V e n t a s   ( I n g r e s o )  
-                         I t e m A s i e n t o . o b j e c t s . c r e a t e ( a s i e n t o = a s i e n t o ,   c u e n t a = c u e n t a _ v e n t a s ,   d e b e = 0 ,   h a b e r = n e t o )  
-                          
-                         #   H a b e r :   I V A   D � � b i t o   ( D e u d a   f i s c a l )  
-                         I t e m A s i e n t o . o b j e c t s . c r e a t e ( a s i e n t o = a s i e n t o ,   c u e n t a = c u e n t a _ i v a ,   d e b e = 0 ,   h a b e r = i v a )  
-  
-                         p r i n t ( f " D E B U G :   A s i e n t o   N D   { n u e v o _ n u m e r o }   g e n e r a d o   p a r a   { n d . i d } " )  
- 
+
+
+    @classmethod
+    def registrar_nota_debito(cls, nd):
+        fecha = nd.fecha.date() if hasattr(nd.fecha, 'date') else nd.fecha
+        ejercicio = cls._obtener_ejercicio_vigente(fecha)
+        if not ejercicio: return
+
+        cuenta_deudores = cls._obtener_cuenta(cls.CUENTA_DEUDORES_POR_VENTAS)
+        cuenta_ventas = cls._obtener_cuenta(cls.CUENTA_VENTAS)
+        cuenta_iva = cls._obtener_cuenta(cls.CUENTA_IVA_DEBITO)
+
+        if not all([cuenta_deudores, cuenta_ventas, cuenta_iva]):
+            print("Faltan cuentas para Nota de Débito")
+            return
+
+        total = nd.total
+        neto = total / Decimal("1.21")
+        iva = total - neto
+
+        with transaction.atomic():
+            ultimo_numero = Asiento.objects.filter(ejercicio=ejercicio).order_by('-numero').first()
+            nuevo_numero = (ultimo_numero.numero + 1) if ultimo_numero else 1
+
+            asiento = Asiento.objects.create(
+                numero=nuevo_numero,
+                fecha=nd.fecha,
+                descripcion=f"ND {nd.numero_formateado()} - {nd.cliente.nombre}",
+                ejercicio=ejercicio,
+                origen='VENTAS',
+                usuario='Sistema'
+            )
+
+            # Debe: Deudores por Ventas
+            ItemAsiento.objects.create(asiento=asiento, cuenta=cuenta_deudores, debe=total, haber=0)
+            # Haber: Ventas
+            ItemAsiento.objects.create(asiento=asiento, cuenta=cuenta_ventas, debe=0, haber=neto)
+            # Haber: IVA Débito
+            ItemAsiento.objects.create(asiento=asiento, cuenta=cuenta_iva, debe=0, haber=iva)
+
+            print(f"DEBUG: Asiento ND {nuevo_numero} generado para {nd.id}")
+

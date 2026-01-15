@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronDown, X } from 'lucide-react';
+import { ChevronDown, X, Check } from 'lucide-react';
 
 const SearchableSelect = ({ options = [], value, onChange, placeholder = "Seleccionar...", name, disabled = false }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -126,7 +126,10 @@ const SearchableSelect = ({ options = [], value, onChange, placeholder = "Selecc
                             onClick={() => handleSelect(opt)}
                             onMouseEnter={() => setHighlightedIndex(index)}
                         >
-                            {opt.nombre || opt.label}
+                            <div className="flex items-center justify-between">
+                                <span>{opt.nombre || opt.label}</span>
+                                {(String(opt.id) === String(value)) && <Check size={16} className="text-blue-600" />}
+                            </div>
                         </li>
                     ))}
                 </ul>

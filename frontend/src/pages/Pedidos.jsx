@@ -5,6 +5,7 @@ import { ShoppingCart, Plus, Search, Calendar, RefreshCw, Check, AlertCircle, Fi
 import { BtnAdd, BtnDelete, BtnAction, BtnClear, BtnView, BtnPrint, BtnTableAction } from '../components/CommonButtons';
 import { showDeleteAlert } from '../utils/alerts';
 import EmptyState from '../components/EmptyState';
+import TablePagination from '../components/common/TablePagination';
 
 const Pedidos = () => {
     const navigate = useNavigate();
@@ -14,15 +15,26 @@ const Pedidos = () => {
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
-    const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [itemsPerPage, setItemsPerPage] = useState(0);
+
+    const STORAGE_KEY = 'table_prefs_pedidos_items';
 
     useEffect(() => {
-        fetch('/api/config/obtener/')
-            .then(res => res.json())
-            .then(data => {
-                if (data.items_por_pagina) setItemsPerPage(data.items_por_pagina);
-            })
-            .catch(console.error);
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            setItemsPerPage(Number(saved));
+        } else {
+            fetch('/api/config/obtener/')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.items_por_pagina) setItemsPerPage(data.items_por_pagina);
+                    else setItemsPerPage(10);
+                })
+                .catch(err => {
+                    console.error(err);
+                    setItemsPerPage(10); // Fallback
+                });
+        }
     }, []);
 
     // Filtros - Inicializar con valores de la URL si existen
@@ -285,10 +297,14 @@ const Pedidos = () => {
                                     pedidos.map(p => (
                                         <tr key={p.id} className="border-bottom-0">
                                             <td className="ps-4 fw-bold text-primary py-3">#{p.id}</td>
-                                            <td className="py-3">{p.fecha}</td>
-                                            <td className="fw-medium py-3">{p.cliente_nombre}</td>
-                                            <td className="py-3"><span className="badge bg-light text-dark border">{p.num_items} items</span></td>
-                                            <td className="fw-bold text-success py-3">{formatCurrency(p.total)}</td>
+                                            <td className="py-3 fw-medium text-dark">{p.fecha}</td>
+                                            <td className="py-3 fw-medium">{p.cliente_nombre}</td>
+                                            <td className="py-3">
+                                                <span className="badge bg-light text-dark border fw-medium">{p.num_items} items</span>
+                                            </td>
+                                            <td className="fw-bold text-success py-3">
+                                                $ {parseFloat(p.total).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                                            </td>
                                             <td className="text-center py-3">
                                                 {getEstadoBadge(p.estado)}
                                             </td>
@@ -315,50 +331,20 @@ const Pedidos = () => {
                     </div>
 
                     {/* PAGINACIÓN */}
-                    {!loading && (
-                        <div className="d-flex justify-content-between align-items-center p-3 border-top bg-light">
-                            <div className="d-flex align-items-center gap-2">
-                                <span className="text-muted small">Mostrando {pedidos.length} de {totalItems} registros</span>
-                            </div>
-
-                            <nav>
-                                <ul className="pagination mb-0 align-items-center gap-2">
-                                    <li className={`page-item ${page === 1 ? 'disabled' : ''}`}>
-                                        <button
-                                            className="page-link border-0 text-secondary bg-transparent p-0"
-                                            onClick={() => setPage(page - 1)}
-                                            style={{ width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                        >
-                                            &lt;
-                                        </button>
-                                    </li>
-                                    {[...Array(totalPages)].map((_, i) => {
-                                        if (totalPages > 10 && Math.abs(page - (i + 1)) > 2 && i !== 0 && i !== totalPages - 1) return null;
-                                        return (
-                                            <li key={i} className="page-item">
-                                                <button
-                                                    className={`page-link border-0 rounded-circle fw-bold ${page === i + 1 ? 'bg-primary text-white shadow-sm' : 'bg-transparent text-secondary'}`}
-                                                    onClick={() => setPage(i + 1)}
-                                                    style={{ width: '35px', height: '35px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                                >
-                                                    {i + 1}
-                                                </button>
-                                            </li>
-                                        );
-                                    })}
-                                    <li className={`page-item ${page === totalPages ? 'disabled' : ''}`}>
-                                        <button
-                                            className="page-link border-0 text-secondary bg-transparent p-0"
-                                            onClick={() => setPage(page + 1)}
-                                            style={{ width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                        >
-                                            &gt;
-                                        </button>
-                                    </li>
-                                </ul>
-                            </nav>
-                        </div>
-                    )}
+                    {/* PAGINACIÓN */}
+                    {/* PAGINACIÓN */}
+                    <TablePagination
+                        currentPage={page}
+                        totalPages={totalPages}
+                        totalItems={totalItems}
+                        itemsPerPage={itemsPerPage}
+                        onPageChange={setPage}
+                        onItemsPerPageChange={(newVal) => {
+                            setItemsPerPage(newVal);
+                            setPage(1);
+                            localStorage.setItem(STORAGE_KEY, newVal);
+                        }}
+                    />
                 </div>
             </div>
             {/* Modal Custom de Facturación */}

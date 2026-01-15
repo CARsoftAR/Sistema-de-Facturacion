@@ -7,6 +7,9 @@ import {
 } from 'lucide-react';
 import { BtnView, BtnPrint, BtnClear } from '../components/CommonButtons';
 import EmptyState from '../components/EmptyState';
+import TablePagination from '../components/common/TablePagination';
+
+const STORAGE_KEY = 'table_prefs_remitos_items';
 
 const Remitos = () => {
     const navigate = useNavigate();
@@ -15,19 +18,25 @@ const Remitos = () => {
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
-    const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [itemsPerPage, setItemsPerPage] = useState(() => {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        return saved ? parseInt(saved, 10) : 10;
+    });
     const [filters, setFilters] = useState({
         busqueda: '',
         fecha: ''
     });
 
     useEffect(() => {
-        fetch('/api/config/obtener/')
-            .then(res => res.json())
-            .then(data => {
-                if (data.items_por_pagina) setItemsPerPage(data.items_por_pagina);
-            })
-            .catch(console.error);
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (!saved) {
+            fetch('/api/config/obtener/')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.items_por_pagina) setItemsPerPage(data.items_por_pagina);
+                })
+                .catch(console.error);
+        }
     }, []);
 
     const fetchRemitos = React.useCallback(async () => {
@@ -167,12 +176,12 @@ const Remitos = () => {
                                 ) : (
                                     remitos.map((remito) => (
                                         <tr key={remito.id} className="border-bottom-0">
-                                            <td className="ps-4 fw-bold text-secondary small py-3">{remito.fecha}</td>
+                                            <td className="ps-4 fw-medium text-dark py-3">{remito.fecha}</td>
                                             <td className="text-primary fw-bold font-monospace py-3">{remito.numero}</td>
                                             <td className="fw-medium text-dark py-3">{remito.cliente}</td>
                                             <td className="py-3">
                                                 {remito.venta_id ? (
-                                                    <span className="badge bg-light text-dark border">
+                                                    <span className="badge bg-light text-dark border fw-medium">
                                                         FC: {remito.venta_str}
                                                     </span>
                                                 ) : (
@@ -180,7 +189,7 @@ const Remitos = () => {
                                                 )}
                                             </td>
                                             <td className="py-3">
-                                                <span className={`badge rounded-pill px-3 py-2 ${remito.estado === 'ENTREGADO' ? 'bg-success-subtle text-success border border-success' :
+                                                <span className={`badge rounded-pill px-3 py-2 fw-medium ${remito.estado === 'ENTREGADO' ? 'bg-success-subtle text-success border border-success' :
                                                     remito.estado === 'ANULADO' ? 'bg-danger-subtle text-danger border border-danger' :
                                                         'bg-warning-subtle text-warning-emphasis border border-warning'
                                                     }`}>
@@ -201,31 +210,19 @@ const Remitos = () => {
                     </div>
 
                     {/* Pagination */}
-                    {!loading && (
-                        <div className="d-flex justify-content-between align-items-center p-3 border-top bg-light">
-                            <div className="d-flex align-items-center gap-2">
-                                <span className="text-muted small">Mostrando {remitos.length} de {totalItems} registros</span>
-                            </div>
-                            <nav>
-                                <ul className="pagination mb-0 align-items-center gap-2">
-                                    <li className={`page-item ${page === 1 ? 'disabled' : ''}`}>
-                                        <button className="page-link border-0 text-secondary bg-transparent p-0" onClick={() => setPage(page - 1)} style={{ width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>&lt;</button>
-                                    </li>
-                                    {[...Array(totalPages)].map((_, i) => {
-                                        if (totalPages > 10 && Math.abs(page - (i + 1)) > 2 && i !== 0 && i !== totalPages - 1) return null;
-                                        return (
-                                            <li key={i} className="page-item">
-                                                <button className={`page-link border-0 rounded-circle fw-bold ${page === i + 1 ? 'bg-primary text-white shadow-sm' : 'bg-transparent text-secondary'}`} onClick={() => setPage(i + 1)} style={{ width: '35px', height: '35px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{i + 1}</button>
-                                            </li>
-                                        );
-                                    })}
-                                    <li className={`page-item ${page === totalPages ? 'disabled' : ''}`}>
-                                        <button className="page-link border-0 text-secondary bg-transparent p-0" onClick={() => setPage(page + 1)} style={{ width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>&gt;</button>
-                                    </li>
-                                </ul>
-                            </nav>
-                        </div>
-                    )}
+                    {/* Pagination */}
+                    <TablePagination
+                        currentPage={page}
+                        totalPages={totalPages}
+                        totalItems={totalItems}
+                        itemsPerPage={itemsPerPage}
+                        onPageChange={setPage}
+                        onItemsPerPageChange={(newVal) => {
+                            setItemsPerPage(newVal);
+                            setPage(1);
+                            localStorage.setItem(STORAGE_KEY, newVal);
+                        }}
+                    />
                 </div>
             </div>
         </div>

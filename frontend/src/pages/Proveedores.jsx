@@ -2,8 +2,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Truck, Plus, Search, Trash2, Phone, Mail, MapPin, X, Save, Building2, CreditCard, RotateCcw, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { BtnAdd, BtnEdit, BtnDelete, BtnAction, BtnClear } from '../components/CommonButtons';
+import { BtnAdd, BtnEdit, BtnDelete, BtnAction, BtnClear, BtnSave, BtnCancel } from '../components/CommonButtons';
 import { showDeleteAlert } from '../utils/alerts';
+import TablePagination from '../components/common/TablePagination';
+import EmptyState from '../components/EmptyState';
 
 const Proveedores = () => {
     const [proveedores, setProveedores] = useState([]);
@@ -11,15 +13,24 @@ const Proveedores = () => {
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
-    const [itemsPerPage, setItemsPerPage] = useState(10);
+    const STORAGE_KEY = 'table_prefs_proveedores_items';
+    const [itemsPerPage, setItemsPerPage] = useState(() => {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        const parsed = parseInt(saved, 10);
+        return (parsed && parsed > 0) ? parsed : 10;
+    });
 
     useEffect(() => {
-        fetch('/api/config/obtener/')
-            .then(res => res.json())
-            .then(data => {
-                if (data.items_por_pagina) setItemsPerPage(data.items_por_pagina);
-            })
-            .catch(console.error);
+        if (!localStorage.getItem(STORAGE_KEY)) {
+            fetch('/api/config/obtener/')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.items_por_pagina) {
+                        setItemsPerPage(data.items_por_pagina);
+                    }
+                })
+                .catch(console.error);
+        }
     }, []);
     const [busqueda, setBusqueda] = useState('');
 
@@ -219,27 +230,31 @@ const Proveedores = () => {
                 <div className="card-body p-0 d-flex flex-column overflow-hidden">
                     <div className="table-responsive flex-grow-1 overflow-auto">
                         <table className="table align-middle mb-0">
-                            <thead className="bg-white border-bottom">
+                            <thead className="table-dark" style={{ backgroundColor: '#212529', color: '#fff' }}>
                                 <tr>
-                                    <th className="ps-4 py-3 text-dark fw-bold">Proveedor</th>
-                                    <th className="py-3 text-dark fw-bold">CUIT</th>
-                                    <th className="py-3 text-dark fw-bold">Contacto</th>
-                                    <th className="py-3 text-dark fw-bold">Email</th>
-                                    <th className="text-end pe-4 py-3 text-dark fw-bold">Acciones</th>
+                                    <th className="ps-4 py-3 fw-bold">Proveedor</th>
+                                    <th className="py-3 fw-bold">Identificación</th>
+                                    <th className="py-3 fw-bold">Contacto</th>
+                                    <th className="text-end pe-4 py-3 fw-bold">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {loading ? (
                                     <tr>
-                                        <td colSpan="5" className="text-center py-5">
+                                        <td colSpan="4" className="text-center py-5">
                                             <div className="spinner-border text-primary" role="status"></div>
                                         </td>
                                     </tr>
                                 ) : proveedores.length === 0 ? (
                                     <tr>
-                                        <td colSpan="5" className="text-center py-5 text-muted small">
-                                            <div className="mb-3 opacity-50"><Truck size={40} /></div>
-                                            No se encontraron proveedores.
+                                        <td colSpan="4" className="py-5">
+                                            <EmptyState
+                                                icon={Truck}
+                                                title="No hay proveedores"
+                                                description="Agrega nuevos proveedores para gestionar tus compras."
+                                                iconColor="text-blue-500"
+                                                bgIconColor="bg-blue-50"
+                                            />
                                         </td>
                                     </tr>
                                 ) : (
@@ -247,18 +262,24 @@ const Proveedores = () => {
                                         <tr key={p.id} className="border-bottom-0">
                                             <td className="ps-4 py-3">
                                                 <div className="fw-bold text-dark">{p.nombre}</div>
-                                                {p.direccion && <div className="text-muted small"><MapPin size={12} className="inline me-1" />{p.direccion}</div>}
-                                            </td>
-                                            <td className="font-monospace py-3">{p.cuit || '-'}</td>
-                                            <td className="py-3">
-                                                {p.telefono ? (
-                                                    <div className="text-muted"><Phone size={14} className="inline me-1" />{p.telefono}</div>
-                                                ) : '-'}
+                                                <div className="text-muted small fw-medium">
+                                                    {p.direccion ? (
+                                                        <><MapPin size={12} className="inline me-1" />{p.direccion}</>
+                                                    ) : 'Sin dirección'}
+                                                </div>
                                             </td>
                                             <td className="py-3">
-                                                {p.email ? (
-                                                    <div className="text-muted"><Mail size={14} className="inline me-1" />{p.email}</div>
-                                                ) : '-'}
+                                                {p.cuit ? (
+                                                    <span className="badge bg-light text-dark border shadow-sm fw-medium">{p.cuit}</span>
+                                                ) : (
+                                                    <span className="text-muted small">-</span>
+                                                )}
+                                                <div className="small text-muted mt-1 fw-medium">{p.condicion_fiscal || 'CF'}</div>
+                                            </td>
+                                            <td className="small text-muted py-3 fw-medium">
+                                                {p.telefono && <div className="d-flex align-items-center gap-1"><Phone size={12} className="opacity-75" /> {p.telefono}</div>}
+                                                {p.email && <div className="d-flex align-items-center gap-1"><Mail size={12} className="opacity-75" /> {p.email}</div>}
+                                                {!p.telefono && !p.email && '-'}
                                             </td>
                                             <td className="text-end pe-4 py-3">
                                                 <div className="d-flex justify-content-end gap-2">
@@ -274,31 +295,20 @@ const Proveedores = () => {
                     </div>
 
                     {/* Paginación */}
-                    {!loading && (
-                        <div className="d-flex justify-content-between align-items-center p-3 border-top bg-light">
-                            <div className="d-flex align-items-center gap-2">
-                                <span className="text-muted small">Mostrando {proveedores.length} de {totalItems} registros</span>
-                            </div>
-                            <nav>
-                                <ul className="pagination mb-0 align-items-center gap-2">
-                                    <li className={`page-item ${page === 1 ? 'disabled' : ''}`}>
-                                        <button className="page-link border-0 text-secondary bg-transparent p-0" onClick={() => setPage(page - 1)} style={{ width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>&lt;</button>
-                                    </li>
-                                    {[...Array(totalPages)].map((_, i) => {
-                                        if (totalPages > 10 && Math.abs(page - (i + 1)) > 2 && i !== 0 && i !== totalPages - 1) return null;
-                                        return (
-                                            <li key={i} className="page-item">
-                                                <button className={`page-link border-0 rounded-circle fw-bold ${page === i + 1 ? 'bg-primary text-white shadow-sm' : 'bg-transparent text-secondary'}`} onClick={() => setPage(i + 1)} style={{ width: '35px', height: '35px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{i + 1}</button>
-                                            </li>
-                                        );
-                                    })}
-                                    <li className={`page-item ${page === totalPages ? 'disabled' : ''}`}>
-                                        <button className="page-link border-0 text-secondary bg-transparent p-0" onClick={() => setPage(page + 1)} style={{ width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>&gt;</button>
-                                    </li>
-                                </ul>
-                            </nav>
-                        </div>
-                    )}
+                    {/* Paginación */}
+                    {/* Paginación */}
+                    <TablePagination
+                        currentPage={page}
+                        totalPages={totalPages}
+                        totalItems={totalItems}
+                        itemsPerPage={itemsPerPage}
+                        onPageChange={setPage}
+                        onItemsPerPageChange={(newVal) => {
+                            setItemsPerPage(newVal);
+                            setPage(1);
+                            localStorage.setItem(STORAGE_KEY, newVal);
+                        }}
+                    />
                 </div>
             </div>
 

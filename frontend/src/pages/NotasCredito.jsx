@@ -6,6 +6,9 @@ import {
 } from 'lucide-react';
 import { BtnView, BtnPrint, BtnClear, BtnDelete } from '../components/CommonButtons';
 import EmptyState from '../components/EmptyState';
+import TablePagination from '../components/common/TablePagination';
+
+const STORAGE_KEY = 'table_prefs_notascredito_items';
 
 const NotasCredito = () => {
     const navigate = useNavigate();
@@ -14,19 +17,26 @@ const NotasCredito = () => {
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
-    const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [itemsPerPage, setItemsPerPage] = useState(() => {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        const parsed = parseInt(saved, 10);
+        return (parsed && parsed > 0) ? parsed : 10;
+    });
     const [filters, setFilters] = useState({
         busqueda: '',
         fecha: ''
     });
 
     useEffect(() => {
-        fetch('/api/config/obtener/')
-            .then(res => res.json())
-            .then(data => {
-                if (data.items_por_pagina) setItemsPerPage(data.items_por_pagina);
-            })
-            .catch(console.error);
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (!saved) {
+            fetch('/api/config/obtener/')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.items_por_pagina) setItemsPerPage(data.items_por_pagina);
+                })
+                .catch(console.error);
+        }
     }, []);
 
     const fetchNotas = React.useCallback(async () => {
@@ -139,7 +149,7 @@ const NotasCredito = () => {
                                     <th className="ps-4 py-3 fw-bold">Fecha</th>
                                     <th className="py-3 fw-bold">Número</th>
                                     <th className="py-3 fw-bold">Cliente</th>
-                                    <th className="py-3 fw-bold">Venta Orig.</th>
+                                    <th className="py-3 fw-bold">Venta Asoc.</th>
                                     <th className="py-3 fw-bold">Total</th>
                                     <th className="py-3 fw-bold">Estado</th>
                                     <th className="pe-4 py-3 text-end fw-bold">Acciones</th>
@@ -156,23 +166,20 @@ const NotasCredito = () => {
                                     <tr>
                                         <td colSpan="7" className="py-5">
                                             <EmptyState
-                                                icon={ArrowDownCircle}
                                                 title="No hay notas de crédito"
-                                                description="Las devoluciones y anulaciones aparecerán aquí."
-                                                iconColor="text-blue-500"
-                                                bgIconColor="bg-blue-50"
+                                                description="Las notas de crédito generadas aparecerán aquí."
                                             />
                                         </td>
                                     </tr>
                                 ) : (
                                     notas.map((nota) => (
                                         <tr key={nota.id} className="border-bottom-0">
-                                            <td className="ps-4 fw-bold text-secondary small py-3">{nota.fecha}</td>
+                                            <td className="ps-4 fw-medium text-dark py-3">{nota.fecha}</td>
                                             <td className="text-primary fw-bold font-monospace py-3">{nota.numero}</td>
                                             <td className="fw-medium text-dark py-3">{nota.cliente}</td>
                                             <td className="py-3">
                                                 {nota.venta_id ? (
-                                                    <span className="badge bg-light text-dark border">
+                                                    <span className="badge bg-light text-dark border fw-medium">
                                                         FC: {nota.venta_str}
                                                     </span>
                                                 ) : (
@@ -183,7 +190,7 @@ const NotasCredito = () => {
                                                 $ {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(nota.total)}
                                             </td>
                                             <td className="py-3">
-                                                <span className={`badge rounded-pill px-3 py-2 ${nota.estado === 'EMITIDA' ? 'bg-success-subtle text-success border border-success' :
+                                                <span className={`badge rounded-pill px-3 py-2 fw-medium ${nota.estado === 'EMITIDA' ? 'bg-success-subtle text-success border border-success' :
                                                     nota.estado === 'ANULADA' ? 'bg-danger-subtle text-danger border border-danger' :
                                                         'bg-warning-subtle text-warning-emphasis border border-warning'
                                                     }`}>
@@ -205,31 +212,19 @@ const NotasCredito = () => {
                     </div>
 
                     {/* Pagination */}
-                    {!loading && (
-                        <div className="d-flex justify-content-between align-items-center p-3 border-top bg-light">
-                            <div className="d-flex align-items-center gap-2">
-                                <span className="text-muted small">Mostrando {notas.length} de {totalItems} registros</span>
-                            </div>
-                            <nav>
-                                <ul className="pagination mb-0 align-items-center gap-2">
-                                    <li className={`page-item ${page === 1 ? 'disabled' : ''}`}>
-                                        <button className="page-link border-0 text-secondary bg-transparent p-0" onClick={() => setPage(page - 1)} style={{ width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>&lt;</button>
-                                    </li>
-                                    {[...Array(totalPages)].map((_, i) => {
-                                        if (totalPages > 10 && Math.abs(page - (i + 1)) > 2 && i !== 0 && i !== totalPages - 1) return null;
-                                        return (
-                                            <li key={i} className="page-item">
-                                                <button className={`page-link border-0 rounded-circle fw-bold ${page === i + 1 ? 'bg-primary text-white shadow-sm' : 'bg-transparent text-secondary'}`} onClick={() => setPage(i + 1)} style={{ width: '35px', height: '35px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{i + 1}</button>
-                                            </li>
-                                        );
-                                    })}
-                                    <li className={`page-item ${page === totalPages ? 'disabled' : ''}`}>
-                                        <button className="page-link border-0 text-secondary bg-transparent p-0" onClick={() => setPage(page + 1)} style={{ width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>&gt;</button>
-                                    </li>
-                                </ul>
-                            </nav>
-                        </div>
-                    )}
+                    {/* Pagination */}
+                    <TablePagination
+                        currentPage={page}
+                        totalPages={totalPages}
+                        totalItems={totalItems}
+                        itemsPerPage={itemsPerPage}
+                        onPageChange={setPage}
+                        onItemsPerPageChange={(newVal) => {
+                            setItemsPerPage(newVal);
+                            setPage(1);
+                            localStorage.setItem(STORAGE_KEY, newVal);
+                        }}
+                    />
                 </div>
             </div>
         </div>

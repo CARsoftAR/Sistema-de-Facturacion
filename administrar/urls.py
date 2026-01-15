@@ -192,6 +192,8 @@ urlpatterns = [
     # ==========================
     # path("cheques/", views.cheques_lista, name="cheques"), # LEGACY
     path("cheques/", login_required(TemplateView.as_view(template_name="react_app.html")), name="cheques"),
+    path("ctas-corrientes/clientes/", login_required(TemplateView.as_view(template_name="react_app.html")), name="ctacte_clientes"),
+    path("ctas-corrientes/proveedores/", login_required(TemplateView.as_view(template_name="react_app.html")), name="ctacte_proveedores"),
     path("api/cheques/listar/", views.api_cheques_listar, name="api_cheques_listar"),
     path("api/cheques/crear/", views.api_cheques_crear, name="api_cheques_crear"),
     path("api/cheques/<int:id>/editar/", views.api_cheques_editar, name="api_cheques_editar"),
@@ -403,6 +405,9 @@ urlpatterns = [
     
     # CHEQUES
     path("api/cheques/listar/", views.api_cheques_listar, name="api_cheques_listar"),
+    path("api/cheques/crear/", views.api_cheques_crear, name="api_cheques_crear"),
+    path("api/cheques/<int:id>/editar/", views.api_cheques_editar, name="api_cheques_editar"),
+    path("api/cheques/<int:id>/eliminar/", views.api_cheques_eliminar, name="api_cheques_eliminar"),
     path("api/cheques/<int:id>/cambiar-estado/", views.api_cheque_cambiar_estado, name="api_cheque_cambiar_estado"),
 
 ]

@@ -4,6 +4,8 @@ import { Plus, Search, User, ArrowRightLeft, CreditCard, RotateCcw, Users, Penci
 import ClienteForm from '../components/clientes/ClienteForm';
 import { BtnAdd, BtnEdit, BtnDelete, BtnAction, BtnClear, BtnVertical } from '../components/CommonButtons';
 import { showDeleteAlert } from '../utils/alerts';
+import TablePagination from '../components/common/TablePagination';
+import EmptyState from '../components/EmptyState';
 
 const Clientes = () => {
     const [clientes, setClientes] = useState([]);
@@ -11,18 +13,22 @@ const Clientes = () => {
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
-    const [itemsPerPage, setItemsPerPage] = useState(0);
+    const STORAGE_KEY = 'table_prefs_clientes_items';
+    const [itemsPerPage, setItemsPerPage] = useState(() => {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        const parsed = parseInt(saved, 10);
+        return (parsed && parsed > 0) ? parsed : 10;
+    });
 
     useEffect(() => {
-        fetch('/api/config/obtener/')
-            .then(res => res.json())
-            .then(data => {
-                setItemsPerPage(data.items_por_pagina || 10);
-            })
-            .catch(err => {
-                console.error(err);
-                setItemsPerPage(10); // Fallback
-            });
+        if (!localStorage.getItem(STORAGE_KEY)) {
+            fetch('/api/config/obtener/')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.items_por_pagina) setItemsPerPage(data.items_por_pagina);
+                })
+                .catch(console.error);
+        }
     }, []);
 
     // Filtros
@@ -39,22 +45,40 @@ const Clientes = () => {
         if (itemsPerPage === 0) return;
         setLoading(true);
         try {
+            // Use 'buscar' endpoint with large per_page for client-side pagination
             const params = new URLSearchParams({
                 q: filters.busqueda,
-                page: page,
-                items_per_page: itemsPerPage
+                per_page: 10000
             });
 
             const response = await fetch(`/api/clientes/buscar/?${params}`, { signal });
             const data = await response.json();
 
-            // The provided snippet for fetchClientes had a different structure (data.ok, data.data)
-            // Reverting to original structure but incorporating signal and itemsPerPage check
-            let allClientes = Array.isArray(data) ? data : (data.results || []);
+            // Normalize data: Dictionary keys from api_clientes_buscar are 'clientes', 'total', etc.
+            let allClientes = [];
+            if (Array.isArray(data)) {
+                allClientes = data;
+            } else if (data.clientes) {
+                allClientes = data.clientes;
+            } else if (data.data) {
+                allClientes = data.data;
+            } else if (data.results) {
+                allClientes = data.results;
+            }
 
-            // Client-side filtering for fiscal condition if API doesn't support it fully
+            // Client-side filtering
+            if (filters.busqueda) {
+                const q = filters.busqueda.toLowerCase();
+                allClientes = allClientes.filter(c =>
+                    c.nombre.toLowerCase().includes(q) ||
+                    (c.cuit && c.cuit.includes(q)) ||
+                    (c.email && c.email.toLowerCase().includes(q))
+                );
+            }
+
+            // Client-side filtering for fiscal condition
             if (filters.condicion_fiscal) {
-                // Assuming backend might not filter this yet
+                allClientes = allClientes.filter(c => c.condicion_fiscal === filters.condicion_fiscal);
             }
 
             setTotalItems(allClientes.length);
@@ -74,11 +98,12 @@ const Clientes = () => {
     }, [page, filters, itemsPerPage]);
 
     useEffect(() => {
-        if (itemsPerPage === 0) return; // Only fetch if itemsPerPage is initialized
+        // Debounce effect removed for 'lista' fetch, but kept for consistency if restoring search
+        if (itemsPerPage === 0) return;
         const controller = new AbortController();
         fetchClientes(controller.signal);
         return () => controller.abort();
-    }, [fetchClientes, itemsPerPage]); // Added itemsPerPage to dependencies
+    }, [fetchClientes]);
 
     const handleFilterChange = (e) => {
         const { name, value } = e.target;
@@ -189,13 +214,13 @@ const Clientes = () => {
                 <div className="card-body p-0 d-flex flex-column overflow-hidden">
                     <div className="table-responsive flex-grow-1 table-container-fixed">
                         <table className="table align-middle mb-0">
-                            <thead className="bg-white border-bottom">
+                            <thead className="table-dark" style={{ backgroundColor: '#212529', color: '#fff' }}>
                                 <tr>
-                                    <th className="ps-4 py-3 text-dark fw-bold">Cliente</th>
-                                    <th className="py-3 text-dark fw-bold">Identificación</th>
-                                    <th className="py-3 text-dark fw-bold">Teléfono / Email</th>
-                                    <th className="py-3 text-dark fw-bold">Cta. Cte.</th>
-                                    <th className="text-end pe-4 py-3 text-dark fw-bold">Acciones</th>
+                                    <th className="ps-4 py-3 fw-bold">Cliente</th>
+                                    <th className="py-3 fw-bold">Identificación</th>
+                                    <th className="py-3 fw-bold">Teléfono / Email</th>
+                                    <th className="py-3 fw-bold">Cta. Cte.</th>
+                                    <th className="text-end pe-4 py-3 fw-bold">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -207,9 +232,14 @@ const Clientes = () => {
                                     </tr>
                                 ) : clientes.length === 0 ? (
                                     <tr>
-                                        <td colSpan="5" className="text-center py-5 text-muted">
-                                            <div className="mb-3 opacity-50"><Users size={40} /></div>
-                                            No se encontraron clientes registradas.
+                                        <td colSpan="5" className="py-5">
+                                            <EmptyState
+                                                icon={Users}
+                                                title="No hay clientes registrados"
+                                                description="Las clientes que agregues aparecerán aquí."
+                                                iconColor="text-blue-500"
+                                                bgIconColor="bg-blue-50"
+                                            />
                                         </td>
                                     </tr>
                                 ) : (
@@ -246,28 +276,20 @@ const Clientes = () => {
                     </div>
 
                     {/* PAGINACIÓN */}
-                    {!loading && (
-                        <div className="d-flex justify-content-between align-items-center p-3 border-top bg-light">
-                            <div className="d-flex align-items-center gap-2">
-                                <span className="text-muted small">Mostrando {clientes.length} de {totalItems} registros</span>
-                            </div>
-                            <nav>
-                                <ul className="pagination mb-0 align-items-center gap-2">
-                                    <li className={`page-item ${page === 1 ? 'disabled' : ''}`}>
-                                        <button className="page-link border-0 text-secondary bg-transparent p-0" onClick={() => setPage(page - 1)}>&lt;</button>
-                                    </li>
-                                    {[...Array(totalPages)].map((_, i) => (
-                                        <li key={i} className="page-item">
-                                            <button className={`page-link border-0 rounded-circle fw-bold ${page === i + 1 ? 'bg-primary text-white shadow-sm' : 'bg-transparent text-secondary'}`} onClick={() => setPage(i + 1)} style={{ width: '35px', height: '35px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{i + 1}</button>
-                                        </li>
-                                    ))}
-                                    <li className={`page-item ${page === totalPages ? 'disabled' : ''}`}>
-                                        <button className="page-link border-0 text-secondary bg-transparent p-0" onClick={() => setPage(page + 1)}>&gt;</button>
-                                    </li>
-                                </ul>
-                            </nav>
-                        </div>
-                    )}
+                    {/* PAGINACIÓN */}
+                    {/* PAGINACIÓN */}
+                    <TablePagination
+                        currentPage={page}
+                        totalPages={totalPages}
+                        totalItems={totalItems}
+                        itemsPerPage={itemsPerPage}
+                        onPageChange={setPage}
+                        onItemsPerPageChange={(newVal) => {
+                            setItemsPerPage(newVal);
+                            setPage(1);
+                            localStorage.setItem(STORAGE_KEY, newVal);
+                        }}
+                    />
                 </div>
             </div>
 

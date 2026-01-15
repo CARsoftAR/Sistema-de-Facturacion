@@ -5,6 +5,7 @@ import Swal from 'sweetalert2';
 import { showDeleteAlert } from '../utils/alerts';
 import { BtnAdd, BtnDelete, BtnAction, BtnClear, BtnView, BtnPrint, BtnTableAction } from '../components/CommonButtons';
 import EmptyState from '../components/EmptyState';
+import TablePagination from '../components/common/TablePagination';
 
 const Ventas = () => {
     const navigate = useNavigate();
@@ -16,17 +17,23 @@ const Ventas = () => {
     const [itemsPerPage, setItemsPerPage] = useState(0); // 0 means not yet loaded
     const [busqueda, setBusqueda] = useState('');
 
+    const STORAGE_KEY = 'table_prefs_ventas_items';
+
     useEffect(() => {
-        // Cargar configuración global de paginación
-        fetch('/api/config/obtener/')
-            .then(res => res.json())
-            .then(data => {
-                setItemsPerPage(data.items_por_pagina || 10);
-            })
-            .catch(err => {
-                console.error("Error loading config:", err);
-                setItemsPerPage(10); // Fallback
-            });
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            setItemsPerPage(Number(saved));
+        } else {
+            fetch('/api/config/obtener/')
+                .then(res => res.json())
+                .then(data => {
+                    setItemsPerPage(data.items_por_pagina || 10);
+                })
+                .catch(err => {
+                    console.error("Error loading config:", err);
+                    setItemsPerPage(10); // Fallback
+                });
+        }
     }, []);
 
     const fetchVentas = useCallback(async (signal) => {
@@ -295,50 +302,20 @@ const Ventas = () => {
                     </div>
 
                     {/* Paginación */}
-                    {!loading && (
-                        <div className="d-flex justify-content-between align-items-center p-3 border-top bg-light">
-                            <div className="d-flex align-items-center gap-2">
-                                <span className="text-muted small">Mostrando {ventas.length} de {totalItems} registros</span>
-                            </div>
-
-                            <nav>
-                                <ul className="pagination mb-0 align-items-center gap-2">
-                                    <li className={`page-item ${page === 1 ? 'disabled' : ''}`}>
-                                        <button
-                                            className="page-link border-0 text-secondary bg-transparent p-0"
-                                            onClick={() => setPage(page - 1)}
-                                            style={{ width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                        >
-                                            &lt;
-                                        </button>
-                                    </li>
-                                    {[...Array(totalPages)].map((_, i) => {
-                                        if (totalPages > 10 && Math.abs(page - (i + 1)) > 2 && i !== 0 && i !== totalPages - 1) return null;
-                                        return (
-                                            <li key={i} className="page-item">
-                                                <button
-                                                    className={`page-link border-0 rounded-circle fw-bold ${page === i + 1 ? 'bg-primary text-white shadow-sm' : 'bg-transparent text-secondary'}`}
-                                                    onClick={() => setPage(i + 1)}
-                                                    style={{ width: '35px', height: '35px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                                >
-                                                    {i + 1}
-                                                </button>
-                                            </li>
-                                        );
-                                    })}
-                                    <li className={`page-item ${page === totalPages ? 'disabled' : ''}`}>
-                                        <button
-                                            className="page-link border-0 text-secondary bg-transparent p-0"
-                                            onClick={() => setPage(page + 1)}
-                                            style={{ width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                        >
-                                            &gt;
-                                        </button>
-                                    </li>
-                                </ul>
-                            </nav>
-                        </div>
-                    )}
+                    {/* Paginación */}
+                    {/* Paginación */}
+                    <TablePagination
+                        currentPage={page}
+                        totalPages={totalPages}
+                        totalItems={totalItems}
+                        itemsPerPage={itemsPerPage}
+                        onPageChange={setPage}
+                        onItemsPerPageChange={(newVal) => {
+                            setItemsPerPage(newVal);
+                            setPage(1);
+                            localStorage.setItem(STORAGE_KEY, newVal);
+                        }}
+                    />
                 </div>
             </div>
         </div>

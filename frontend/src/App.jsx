@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
+import React from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import Sidebar from './components/Sidebar'
 import TopNavbar from './components/TopNavbar'
@@ -38,6 +39,9 @@ import Usuarios from './pages/Usuarios'
 import Cheques from './pages/Cheques'
 import { useAuth } from './context/AuthContext'
 
+// Lazy load component to safely handle build errors
+const CuentasCorrientesClientes = React.lazy(() => import('./pages/CuentasCorrientesClientes'));
+
 const ProtectedRoute = ({ children, permission, isHome }) => {
   const { user, loading, hasPermission } = useAuth();
 
@@ -52,7 +56,6 @@ const ProtectedRoute = ({ children, permission, isHome }) => {
   }
 
   if (!user) {
-    // This shouldn't happen if Django is handling auth, but just in case
     window.location.href = '/login/';
     return null;
   }
@@ -156,6 +159,16 @@ function App() {
               <Route path="/caja" element={<ProtectedRoute permission="caja"><Caja /></ProtectedRoute>} />
               <Route path="/caja/" element={<ProtectedRoute permission="caja"><Caja /></ProtectedRoute>} />
               <Route path="/cheques" element={<ProtectedRoute permission="bancos"><Cheques /></ProtectedRoute>} />
+
+              <Route path="/ctas-corrientes/clientes" element={
+                <Suspense fallback={<div className="p-5 text-center text-muted"><h2>Cargando Módulo...</h2></div>}>
+                  <ProtectedRoute permission="ctacte"><CuentasCorrientesClientes /></ProtectedRoute>
+                </Suspense>
+              } />
+              <Route path="/ctas-corrientes/proveedores" element={<div className="p-5 text-center"><h1>Próximamente: Proveedores</h1></div>} />
+
+              <Route path="*" element={<div className="p-5" style={{ zIndex: 9999, position: 'relative' }}><h1>REACT 404</h1><p>Pathname: {window.location.pathname}</p></div>} />
+
               <Route path="/usuarios" element={<ProtectedRoute permission="usuarios"><Usuarios /></ProtectedRoute>} />
             </Routes>
           </div>
@@ -165,5 +178,5 @@ function App() {
   );
 }
 
-// Build trigger v3
+// Build trigger v21 - FULL RESTORE
 export default App

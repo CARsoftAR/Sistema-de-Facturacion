@@ -14,6 +14,7 @@ import {
 import Swal from 'sweetalert2';
 import { BtnEdit, BtnDelete, BtnAdd } from '../components/CommonButtons';
 import { showConfirmationAlert } from '../utils/alerts';
+import ChequeForm from '../components/cheques/ChequeForm';
 
 const Cheques = () => {
     // Cache bust
@@ -262,6 +263,23 @@ const Cheques = () => {
         }
     };
 
+    const [showForm, setShowForm] = useState(false);
+    const [editingCheque, setEditingCheque] = useState(null);
+
+    const handleCreate = () => {
+        setEditingCheque(null);
+        setShowForm(true);
+    };
+
+    const handleEdit = (cheque) => {
+        setEditingCheque(cheque);
+        setShowForm(true);
+    };
+
+    const handleSave = () => {
+        fetchCheques();
+    };
+
     return (
         <div className="container-fluid px-4 pt-4 pb-0 h-100 d-flex flex-column bg-light fade-in">
             <CloseBackdrop />
@@ -280,22 +298,7 @@ const Cheques = () => {
                     label="Nuevo Cheque"
                     icon={Banknote}
                     className="btn-lg shadow-sm"
-                    onClick={() => {
-                        const InfoIcon = (
-                            <div
-                                className='d-inline-flex justify-content-center align-items-center rounded-circle mb-3'
-                                style={{
-                                    width: '80px',
-                                    height: '80px',
-                                    backgroundColor: 'rgba(13, 110, 253, 0.1)',
-                                    color: '#0d6efd'
-                                }}
-                            >
-                                <div className="fw-bold fs-1">i</div>
-                            </div>
-                        );
-                        showConfirmationAlert('Info', 'Funcionalidad de crear pendiente', 'Entendido', 'primary', { iconComponent: InfoIcon });
-                    }}
+                    onClick={handleCreate}
                 />
             </div>
 
@@ -500,14 +503,7 @@ const Cheques = () => {
                                                                 <li><button className="dropdown-item d-flex align-items-center py-2 px-3 text-primary" onClick={() => handleEstadoChange(c, 'CARTERA')}><RotateCcw size={16} className="me-2" />Recuperar (Cartera)</button></li>
                                                             )}
 
-                                                            <li><button className="dropdown-item d-flex align-items-center py-2 px-3" onClick={() => {
-                                                                const EditIcon = (
-                                                                    <div className='d-inline-flex justify-content-center align-items-center rounded-circle mb-3' style={{ width: '80px', height: '80px', backgroundColor: 'rgba(13, 110, 253, 0.1)', color: '#0d6efd' }}>
-                                                                        <div className="fw-bold fs-3"><Banknote size={32} /></div>
-                                                                    </div>
-                                                                );
-                                                                showConfirmationAlert('Editar', 'Funcionalidad de editar pendiente', 'Entendido', 'primary', { iconComponent: EditIcon });
-                                                            }}>Editar</button></li>
+                                                            <li><button className="dropdown-item d-flex align-items-center py-2 px-3" onClick={() => handleEdit(c)}>Editar</button></li>
                                                             <li><button className="dropdown-item d-flex align-items-center py-2 px-3 text-danger" onClick={() => {
                                                                 const DeleteIcon = (
                                                                     <div className='d-inline-flex justify-content-center align-items-center rounded-circle mb-3' style={{ width: '80px', height: '80px', backgroundColor: 'rgba(220, 53, 69, 0.1)', color: '#dc3545' }}>
@@ -554,6 +550,14 @@ const Cheques = () => {
                     </div>
                 </div>
             </div>
+            {/* Modal Form Overlay */}
+            {showForm && (
+                <ChequeForm
+                    cheque={editingCheque}
+                    onClose={() => setShowForm(false)}
+                    onSave={handleSave}
+                />
+            )}
         </div>
     );
 };

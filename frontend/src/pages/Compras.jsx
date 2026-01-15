@@ -19,6 +19,7 @@ import { useNavigate } from 'react-router-dom';
 import { BtnAdd, BtnDelete, BtnAction, BtnClear, BtnView } from '../components/CommonButtons';
 import { showDeleteAlert } from '../utils/alerts';
 import EmptyState from '../components/EmptyState';
+import TablePagination from '../components/common/TablePagination';
 
 const Compras = () => {
     const navigate = useNavigate();
@@ -34,16 +35,27 @@ const Compras = () => {
     const [datosCheque, setDatosCheque] = useState({ banco: '', numero: '', fechaVto: '' });
 
     // Estado para paginación
-    const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [itemsPerPage, setItemsPerPage] = useState(0);
     const [page, setPage] = useState(1);
 
+    const STORAGE_KEY = 'table_prefs_compras_items';
+
     useEffect(() => {
-        fetch('/api/config/obtener/')
-            .then(res => res.json())
-            .then(data => {
-                if (data.items_por_pagina) setItemsPerPage(data.items_por_pagina);
-            })
-            .catch(console.error);
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            setItemsPerPage(Number(saved));
+        } else {
+            fetch('/api/config/obtener/')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.items_por_pagina) setItemsPerPage(data.items_por_pagina);
+                    else setItemsPerPage(10);
+                })
+                .catch(err => {
+                    console.error(err);
+                    setItemsPerPage(10); // Fallback
+                });
+        }
     }, []);
 
 
@@ -252,7 +264,7 @@ const Compras = () => {
                                         <tr key={orden.id} className="border-bottom-0">
                                             <td className="ps-4 fw-bold text-primary py-3">#{orden.id}</td>
                                             <td className="fw-medium py-3">{orden.proveedor}</td>
-                                            <td className="py-3">{orden.fecha}</td>
+                                            <td className="py-3 fw-medium text-dark">{orden.fecha}</td>
                                             <td className="text-center py-3">{getEstadoBadge(orden.estado)}</td>
                                             <td className="text-end pe-4 fw-bold text-success py-3">
                                                 $ {parseFloat(orden.total_estimado).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
@@ -286,32 +298,20 @@ const Compras = () => {
                     </div>
 
                     {/* Paginación */}
-                    {!loading && (
-                        <div className="d-flex justify-content-between align-items-center p-3 border-top bg-light">
-                            <div className="d-flex align-items-center gap-2">
-                                <span className="text-muted small">Mostrando {itemsToShow.length} de {totalItems} registros</span>
-                            </div>
-                            <nav>
-                                <ul className="pagination mb-0 align-items-center gap-2">
-                                    <li className={`page-item ${page === 1 ? 'disabled' : ''}`}>
-                                        <button className="page-link border-0 text-secondary bg-transparent p-0" onClick={() => setPage(page - 1)}>&lt;</button>
-                                    </li>
-                                    {[...Array(totalPages)].map((_, i) => (
-                                        <li key={i} className="page-item">
-                                            <button
-                                                className={`page-link border-0 rounded-circle fw-bold ${page === i + 1 ? 'bg-primary text-white shadow-sm' : 'bg-transparent text-secondary'}`}
-                                                onClick={() => setPage(i + 1)}
-                                                style={{ width: '35px', height: '35px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                            >{i + 1}</button>
-                                        </li>
-                                    ))}
-                                    <li className={`page-item ${page === totalPages ? 'disabled' : ''}`}>
-                                        <button className="page-link border-0 text-secondary bg-transparent p-0" onClick={() => setPage(page + 1)}>&gt;</button>
-                                    </li>
-                                </ul>
-                            </nav>
-                        </div>
-                    )}
+                    {/* Paginación */}
+                    {/* Paginación */}
+                    <TablePagination
+                        currentPage={page}
+                        totalPages={totalPages}
+                        totalItems={totalItems}
+                        itemsPerPage={itemsPerPage}
+                        onPageChange={setPage}
+                        onItemsPerPageChange={(newVal) => {
+                            setItemsPerPage(newVal);
+                            setPage(1);
+                            localStorage.setItem(STORAGE_KEY, newVal);
+                        }}
+                    />
                 </div>
             </div>
 
