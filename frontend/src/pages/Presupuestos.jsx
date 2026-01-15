@@ -3,7 +3,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { FileText, Plus, Search, Calendar, RefreshCw, Check, AlertCircle, ShoppingCart, Trash2, CheckCircle2, Clock, Eye, Briefcase } from 'lucide-react';
 import { BtnAdd, BtnDelete, BtnAction, BtnClear, BtnView, BtnPrint, BtnTableAction } from '../components/CommonButtons';
 import EmptyState from '../components/EmptyState';
-import TablePagination from '../components/common/TablePagination';
+import { showDeleteAlert } from '../utils/alerts';
+import Swal from 'sweetalert2'; // Assuming we might want nicely styled alerts for success/conversion too, or just use alert() for now.
 
 const STORAGE_KEY = 'table_prefs_presupuestos_items';
 
@@ -89,6 +90,79 @@ const Presupuestos = () => {
     const handleClear = () => {
         setFilters({ busqueda: '', estado: '' });
         setSearchParams({});
+    };
+
+    const handleConvertToPedido = async (presupuesto) => {
+        const result = await Swal.fire({
+            title: '¿Convertir a Pedido?',
+            text: `Se generará un nuevo pedido a partir del presupuesto #${presupuesto.id}`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Sí, convertir',
+            cancelButtonText: 'Cancelar'
+        });
+
+        if (!result.isConfirmed) return;
+
+        try {
+            const response = await fetch(`/api/presupuesto/convertir-pedido/${presupuesto.id}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.cookie.split('; ').find(row => row.startsWith('csrftoken='))?.split('=')[1]
+                }
+            });
+            const data = await response.json();
+
+            if (data.ok) {
+                Swal.fire(
+                    '¡Convertido!',
+                    `El presupuesto se convirtió en el pedido #${data.pedido_id}.`,
+                    'success'
+                ).then(() => {
+                    navigate(`/pedidos/${data.pedido_id}`);
+                });
+            } else {
+                Swal.fire('Error', data.error || 'No se pudo convertir el presupuesto.', 'error');
+            }
+        } catch (error) {
+            console.error("Error converting:", error);
+            Swal.fire('Error', 'Error de conexión al convertir el presupuesto.', 'error');
+        }
+    };
+
+    const handlePrint = (id) => {
+        window.open(`/presupuesto/pdf/${id}/`, '_blank');
+    };
+
+    const handleDelete = async (id) => {
+        const result = await showDeleteAlert(
+            "¿Eliminar presupuesto?",
+            "Esta acción cancelará el presupuesto.",
+            'Eliminar'
+        );
+        if (!result.isConfirmed) return;
+
+        try {
+            const response = await fetch(`/api/presupuesto/cancelar/${id}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.cookie.split('; ').find(row => row.startsWith('csrftoken='))?.split('=')[1]
+                }
+            });
+            const data = await response.json();
+
+            if (data.ok) {
+                fetchPresupuestos();
+            } else {
+                Swal.fire('Error', data.error || 'No se pudo cancelar el presupuesto.', 'error');
+            }
+        } catch (e) {
+            console.error(e);
+            Swal.fire('Error', 'Error al intentar cancelar.', 'error');
+        }
     };
 
     const getEstadoBadge = (estado) => {

@@ -13,9 +13,14 @@ import {
     RotateCcw,
     CheckCircle2,
     Clock,
-    X
+    X,
+    Check,
+    DollarSign,
+    FileText,
+    Banknote
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import Swal from 'sweetalert2';
 import { BtnAdd, BtnDelete, BtnAction, BtnClear, BtnView } from '../components/CommonButtons';
 import { showDeleteAlert } from '../utils/alerts';
 import EmptyState from '../components/EmptyState';
@@ -35,8 +40,17 @@ const Compras = () => {
     const [datosCheque, setDatosCheque] = useState({ banco: '', numero: '', fechaVto: '' });
 
     // Estado para paginación
-    const [itemsPerPage, setItemsPerPage] = useState(0);
     const [page, setPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(0);
+
+    // Modal de Éxito Manual (Estándar Premium)
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [successOrderData, setSuccessOrderData] = useState(null);
+
+    // Modal de Cancelación Manual (Estándar Premium)
+    const [showCancelConfirmModal, setShowCancelConfirmModal] = useState(false);
+    const [orderToCancel, setOrderToCancel] = useState(null);
+    const [cancelando, setCancelando] = useState(false);
 
     const STORAGE_KEY = 'table_prefs_compras_items';
 
@@ -67,7 +81,7 @@ const Compras = () => {
     const fetchCompras = async () => {
         try {
             setLoading(true);
-            const response = await fetch('/api/compras/listar/');
+            const response = await fetch(`/api/compras/listar/?_=${new Date().getTime()}`);
             const data = await response.json();
             if (data.ordenes) {
                 setOrdenes(data.ordenes);
@@ -91,7 +105,10 @@ const Compras = () => {
         try {
             const response = await fetch(`/api/compras/orden/${ordenARecibir.id}/recibir/`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.cookie.split('; ').find(row => row.startsWith('csrftoken='))?.split('=')[1]
+                },
                 body: JSON.stringify({
                     medio_pago: medioPago,
                     datos_cheque: medioPago === 'CHEQUE' ? datosCheque : null
@@ -99,52 +116,76 @@ const Compras = () => {
             });
             const data = await response.json();
             if (data.ok) {
-                alert('Orden recibida y procesada contablemente.');
                 setShowModalRecibir(false);
                 setOrdenARecibir(null);
                 fetchCompras();
+                setSuccessOrderData({ orden_id: ordenARecibir.id });
+                setShowSuccessModal(true);
             } else {
-                alert(`Error: ${data.error}`);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: data.error || 'Error desconocido'
+                });
             }
         } catch (error) {
             console.error(error);
-            alert('Error al recibir la orden');
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Error al recibir la orden'
+            });
         }
     };
 
-    const handleEliminar = async (id) => {
-        const result = await showDeleteAlert(
-            '¿Cancelar Orden?',
-            'Esta acción cancelará la orden de compra. Si ya fue recibida, no podrá cancelarse.',
-            'Sí, cancelar',
-            {
-                iconComponent: (
-                    <div className="rounded-circle d-flex align-items-center justify-content-center bg-danger-subtle text-danger mx-auto" style={{ width: '80px', height: '80px' }}>
-                        <ShoppingBag size={40} strokeWidth={1.5} />
-                    </div>
-                )
-            }
-        );
-        if (!result.isConfirmed) return;
+    const handleEliminar = (orden) => {
+        setOrderToCancel(orden);
+        setShowCancelConfirmModal(true);
+    };
+
+    const confirmCancelar = async () => {
+        if (!orderToCancel) return;
+        setCancelando(true);
         try {
-            const response = await fetch(`/api/compras/orden/${id}/cancelar/`, { method: 'POST' });
+            const response = await fetch(`/api/compras/orden/${orderToCancel.id}/cancelar/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.cookie.split('; ').find(row => row.startsWith('csrftoken='))?.split('=')[1]
+                }
+            });
             const data = await response.json();
             if (data.ok) {
+                setShowCancelConfirmModal(false);
                 fetchCompras();
+                setSuccessOrderData({ orden_id: orderToCancel.id, msg: 'La orden ha sido cancelada correctamente.' });
+                setShowSuccessModal(true);
+                setOrderToCancel(null);
             } else {
-                alert(data.error || 'Error al cancelar');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: data.error || 'Error desconocido'
+                });
             }
         } catch (error) {
             console.error(error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Error al cancelar la orden'
+            });
+        } finally {
+            setCancelando(false);
         }
     };
-
-
 
     // Filtros
     const ordenesFiltradas = ordenes.filter(orden => {
+        if (!searchTerm && filterEstado === 'TODOS') return true;
+
+        const provName = orden.proveedor || '';
         const matchesSearch =
-            orden.proveedor.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            provName.toLowerCase().includes(searchTerm.toLowerCase()) ||
             orden.id.toString().includes(searchTerm);
         const matchesEstado = filterEstado === 'TODOS' || orden.estado === filterEstado;
         return matchesSearch && matchesEstado;
@@ -283,9 +324,8 @@ const Compras = () => {
                                                     <BtnView onClick={() => navigate(`/compras/${orden.id}`)} />
                                                     {orden.estado === 'PENDIENTE' && (
                                                         <BtnDelete
-                                                            label="Cancelar"
-                                                            onClick={() => handleEliminar(orden.id)}
-                                                            title="Cancelar Compra"
+                                                            onClick={() => handleEliminar(orden)}
+                                                            disabled={orden.estado === 'RECIBIDA' || orden.estado === 'CANCELADA'}
                                                         />
                                                     )}
                                                 </div>
@@ -329,20 +369,62 @@ const Compras = () => {
                         </div>
                         <div className="p-6 space-y-5">
                             <p className="text-muted small">Se actualizará el stock y se registrará la deuda/pago.</p>
+
                             <div>
-                                <label className="block text-xs font-bold text-slate-500 mb-2 uppercase">Medio de Pago</label>
-                                <select className="form-select" value={medioPago} onChange={(e) => setMedioPago(e.target.value)}>
-                                    <option value="CONTADO">Contado (Caja)</option>
-                                    <option value="CTACTE">Cuenta Corriente (Deuda)</option>
-                                    <option value="CHEQUE">Cheque Propio</option>
-                                </select>
+                                <label className="block text-xs font-bold text-slate-500 mb-3 uppercase tracking-wider">Medio de Pago</label>
+                                <div className="grid grid-cols-3 gap-2">
+                                    {[
+                                        { value: 'CONTADO', label: 'Efectivo', icon: DollarSign, color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-200' },
+                                        { value: 'CTACTE', label: 'Cta. Cte.', icon: FileText, color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-200' },
+                                        { value: 'CHEQUE', label: 'Cheque', icon: Banknote, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200' },
+                                    ].map(({ value, label, icon: Icon, color, bg, border }) => {
+                                        const active = medioPago === value;
+                                        return (
+                                            <button
+                                                key={value}
+                                                onClick={() => setMedioPago(value)}
+                                                className={`relative flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border-2 transition-all duration-200 ${active
+                                                        ? `${border} ${bg} shadow-sm ring-1 ring-inset ${border}`
+                                                        : 'border-slate-100 hover:border-slate-200 hover:bg-slate-50'
+                                                    }`}
+                                            >
+                                                <Icon size={20} className={active ? color : 'text-slate-400'} />
+                                                <span className={`font-bold text-[11px] uppercase tracking-tight ${active ? 'text-slate-900' : 'text-slate-500'}`}>{label}</span>
+                                                {active && (
+                                                    <div className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-slate-800"></div>
+                                                )}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
                             </div>
                             {medioPago === 'CHEQUE' && (
-                                <div className="p-3 bg-slate-50 rounded-xl space-y-3 border">
-                                    <input type="text" className="form-control" placeholder="Banco" value={datosCheque.banco} onChange={(e) => setDatosCheque({ ...datosCheque, banco: e.target.value })} />
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <input type="text" className="form-control" placeholder="N° Cheque" value={datosCheque.numero} onChange={(e) => setDatosCheque({ ...datosCheque, numero: e.target.value })} />
-                                        <input type="date" className="form-control" value={datosCheque.fechaVto} onChange={(e) => setDatosCheque({ ...datosCheque, fechaVto: e.target.value })} />
+                                <div className="p-4 bg-blue-50/50 rounded-2xl space-y-3 border border-blue-100 animate-in slide-in-from-top-2 duration-300">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <Banknote size={14} className="text-blue-600" />
+                                        <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Datos del Cheque Propio</span>
+                                    </div>
+                                    <input
+                                        type="text"
+                                        className="w-full px-3 py-2 border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-sm outline-none"
+                                        placeholder="Nombre del Banco"
+                                        value={datosCheque.banco}
+                                        onChange={(e) => setDatosCheque({ ...datosCheque, banco: e.target.value })}
+                                    />
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <input
+                                            type="text"
+                                            className="w-full px-3 py-2 border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-sm outline-none"
+                                            placeholder="N° Cheque"
+                                            value={datosCheque.numero}
+                                            onChange={(e) => setDatosCheque({ ...datosCheque, numero: e.target.value })}
+                                        />
+                                        <input
+                                            type="date"
+                                            className="w-full px-3 py-2 border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-sm outline-none"
+                                            value={datosCheque.fechaVto}
+                                            onChange={(e) => setDatosCheque({ ...datosCheque, fechaVto: e.target.value })}
+                                        />
                                     </div>
                                 </div>
                             )}
@@ -356,6 +438,69 @@ const Compras = () => {
             )}
 
 
+            {/* ==================== MODAL EXITO (MANUAL) ==================== */}
+            {
+                showSuccessModal && (
+                    <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+                        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden text-center p-6 border border-slate-200">
+                            <div className="mx-auto bg-green-50 w-16 h-16 rounded-full flex items-center justify-center mb-4 text-green-600">
+                                <Check size={32} strokeWidth={2} />
+                            </div>
+                            <h4 className="text-xl font-bold text-slate-800 mb-2">
+                                {successOrderData?.msg ? '¡Completado!' : '¡Orden Recibida!'}
+                            </h4>
+                            <p className="text-slate-500 text-sm mb-6">
+                                {successOrderData?.msg || `La orden #${successOrderData?.orden_id} fue recibida y procesada contablemente con éxito.`}
+                            </p>
+                            <div className="flex gap-3">
+                                <button
+                                    className="w-full py-2.5 bg-blue-600 text-white font-bold rounded-xl shadow-lg hover:bg-blue-700 transition-colors outline-none"
+                                    onClick={() => setShowSuccessModal(false)}
+                                >
+                                    Aceptar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+
+            {/* ==================== MODAL CONFIRMAR CANCELACION (MANUAL) ==================== */}
+            {
+                showCancelConfirmModal && (
+                    <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+                        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden text-center p-6 border border-slate-200">
+                            <div className="mx-auto bg-red-50 w-24 h-24 rounded-full flex items-center justify-center mb-6 text-red-500">
+                                <ShoppingBag size={48} strokeWidth={1.5} />
+                            </div>
+                            <h4 className="text-xl font-bold text-slate-800 mb-2">¿Cancelar Orden?</h4>
+                            <p className="text-slate-500 text-sm mb-8 px-2">
+                                Esta acción cancelará la orden de compra. Si ya fue recibida, no podrá cancelarse.
+                            </p>
+                            <div className="flex gap-3">
+                                <button
+                                    className="flex-1 py-2.5 bg-slate-100 text-slate-500 font-bold rounded-xl hover:bg-slate-200 transition-colors outline-none"
+                                    onClick={() => setShowCancelConfirmModal(false)}
+                                    disabled={cancelando}
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    className="flex-1 py-2.5 bg-red-500 text-white font-bold rounded-xl shadow-lg hover:bg-red-600 transition-colors outline-none flex items-center justify-center"
+                                    onClick={confirmCancelar}
+                                    disabled={cancelando}
+                                >
+                                    {cancelando ? (
+                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    ) : (
+                                        'Sí, cancelar'
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
         </div>
     );
 };

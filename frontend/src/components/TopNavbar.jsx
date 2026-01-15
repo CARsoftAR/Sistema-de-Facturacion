@@ -38,25 +38,8 @@ const TopNavbar = () => {
         };
         document.addEventListener('fullscreenchange', handleFullscreenChange);
 
-        // Auto-Fullscreen on first interaction (Browser restriction workaround)
-        const attemptAutoFullscreen = () => {
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen().catch(() => {
-                    // Silent fail if browser blocks it
-                });
-            }
-            // Remove listener after first interaction to avoid repeated attempts
-            document.removeEventListener('click', attemptAutoFullscreen);
-            document.removeEventListener('keydown', attemptAutoFullscreen);
-        };
-
-        document.addEventListener('click', attemptAutoFullscreen);
-        document.addEventListener('keydown', attemptAutoFullscreen);
-
         return () => {
             document.removeEventListener('fullscreenchange', handleFullscreenChange);
-            document.removeEventListener('click', attemptAutoFullscreen);
-            document.removeEventListener('keydown', attemptAutoFullscreen);
         };
     }, []);
 

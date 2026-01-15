@@ -1,9 +1,11 @@
 
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
+import Swal from 'sweetalert2';
 import { Search, Plus, Trash2, User, ShoppingCart, Check, X, ClipboardList, PenTool, FileText } from 'lucide-react';
 
 import { useNavigate } from 'react-router-dom';
 import { BtnSave, BtnCancel } from '../components/CommonButtons';
+import { showSuccessAlert } from '../utils/alerts';
 import { useProductSearch } from '../hooks/useProductSearch';
 
 // Componente helper para inputs con autofocus (mismo que NuevaVenta)
@@ -148,6 +150,10 @@ const NuevaCompra = () => {
     const [guardando, setGuardando] = useState(false);
     const [mensaje, setMensaje] = useState(null);
 
+    // Dialogo Exito Manual (para estilo Premium exacto)
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [successOrderData, setSuccessOrderData] = useState(null);
+
     // Refs
     const codigoRef = useRef(null);
     // productoRef (from hook)
@@ -195,6 +201,31 @@ const NuevaCompra = () => {
     }, [busquedaProveedor]);
 
     // ==================== SELECCIONAR PROVEEDOR ====================
+    const handleProveedorKeyDown = (e) => {
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (!mostrarSugerenciasProveedor) {
+                if (busquedaProveedor.length > 0) buscarProveedores(busquedaProveedor);
+                return;
+            }
+            const newIndex = Math.min(sugerenciaProveedorActiva + 1, proveedoresSugeridos.length - 1);
+            setSugerenciaProveedorActiva(newIndex);
+            proveedorListRef.current?.children[newIndex]?.scrollIntoView({ block: 'nearest' });
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            const newIndex = Math.max(sugerenciaProveedorActiva - 1, 0);
+            setSugerenciaProveedorActiva(newIndex);
+            proveedorListRef.current?.children[newIndex]?.scrollIntoView({ block: 'nearest' });
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (mostrarSugerenciasProveedor && proveedoresSugeridos.length > 0) {
+                seleccionarProveedor(proveedoresSugeridos[sugerenciaProveedorActiva]);
+            }
+        } else if (e.key === 'Escape') {
+            setMostrarSugerenciasProveedor(false);
+        }
+    };
+
     const seleccionarProveedor = (p) => {
         setProveedor(p);
         setBusquedaProveedor('');
@@ -275,7 +306,6 @@ const NuevaCompra = () => {
     };
 
     // ==================== STATE PAGO ====================
-    // ==================== STATE PAGO (MOVIDO AL INICIO) ====================
     // Ya declarados arriba
     const [montoPago, setMontoPago] = useState('');
 
@@ -311,6 +341,7 @@ const NuevaCompra = () => {
     };
 
     // ==================== GUARDAR COMPRA (FINAL) ====================
+
     const guardarCompra = async () => {
         setGuardando(true);
         setMensaje(null);
@@ -326,16 +357,16 @@ const NuevaCompra = () => {
                 proveedor: proveedor.id,
                 items: itemsPayload,
                 observaciones: observaciones,
-                recepcionar: true,
-                medio_pago: medioPago,
-                datos_cheque: medioPago === 'CHEQUE' ? datosCheque : null,
+                recepcionar: false, // Guardar como PENDIENTE (flujo 2 pasos)
+                medio_pago: 'CONTADO', // Valor dummy, no se procesa
+                datos_cheque: null,
             };
 
             const res = await fetch('/api/compras/orden/guardar/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken') // Token necesario para Django
+                    'X-CSRFToken': getCookie('csrftoken')
                 },
                 body: JSON.stringify(payload)
             });
@@ -343,14 +374,24 @@ const NuevaCompra = () => {
 
             if (data.ok) {
                 // Éxito total
-                navigate('/compras');
-            } else {
-                setMensaje({ tipo: 'error', texto: `Error: ${data.error}` });
                 setMostrarModalPago(false);
+                setSuccessOrderData(data);
+                setShowSuccessModal(true);
+            } else {
+                setMostrarModalPago(false);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error al Guardar',
+                    text: data.error || 'Ocurrió un error desconocido.',
+                });
             }
         } catch (error) {
-            setMensaje({ tipo: 'error', texto: 'Error de conexión al guardar.' });
             setMostrarModalPago(false);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error de Conexión',
+                text: 'No se pudo contactar con el servidor. Intente nuevamente.',
+            });
         } finally {
             setGuardando(false);
         }
@@ -627,8 +668,8 @@ const NuevaCompra = () => {
                                     </div>
                                 </div>
                                 <BtnSave
-                                    label="Finalizar Compra"
-                                    onClick={abrirModalPago}
+                                    label="Guardar Orden"
+                                    onClick={abrirModalPago} // Abrir modal de confirmación
                                     disabled={items.length === 0 || !proveedor}
                                     className="px-8 py-4 rounded-xl font-bold text-lg"
                                 />
@@ -663,125 +704,62 @@ const NuevaCompra = () => {
                                 <p className="text-5xl font-black text-slate-800 tracking-tight">${totalGeneral.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</p>
                             </div>
 
-                            {/* Selección Medio de Pago */}
-                            <div className="grid grid-cols-3 gap-2 mb-6 bg-slate-100 p-1.5 rounded-2xl">
-                                {['EFECTIVO', 'CTACTE', 'CHEQUE'].map(m => (
-                                    <button
-                                        key={m}
-                                        onClick={() => setMedioPago(m)}
-                                        className={`py-3 rounded-xl text-sm font-bold transition-all ${medioPago === m ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                                    >
-                                        {m === 'CTACTE' ? 'CTA. CTE.' : m}
-                                    </button>
-                                ))}
-                            </div>
-
-                            {/* Campos según medio de pago */}
-                            <div className="space-y-6 min-h-[100px]">
-                                {medioPago === 'EFECTIVO' && (
-                                    <div className="animate-in fade-in slide-in-from-bottom-2 bg-blue-50 border border-blue-100 p-4 rounded-xl">
-                                        <p className="text-blue-800 font-medium text-center">
-                                            Se registrará un <strong>EGRESO</strong> de la Caja Principal por el monto total.
-                                        </p>
-                                    </div>
-                                )}
-
-                                {medioPago === 'CTACTE' && (
-                                    <div className="animate-in fade-in slide-in-from-bottom-2 bg-amber-50 border border-amber-100 p-4 rounded-xl">
-                                        <p className="text-amber-800 font-medium text-center">
-                                            Se registrará una <strong>DEUDA</strong> en la cuenta corriente del proveedor <strong>{proveedor?.nombre}</strong>.
-                                        </p>
-                                        <p className="text-amber-700 text-xs text-center mt-2">Saldo actual: ${(proveedor?.saldo_actual || 0).toLocaleString('es-AR')}</p>
-                                    </div>
-                                )}
-
-                                {medioPago === 'CHEQUE' && (
-                                    <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2">
-                                        <div className="relative">
-                                            <AutoFocusInput
-                                                type="text"
-                                                placeholder="Banco"
-                                                value={datosCheque.banco}
-                                                onChange={(e) => {
-                                                    const val = e.target.value;
-                                                    setDatosCheque({ ...datosCheque, banco: val });
-                                                    if (val.length >= 1) {
-                                                        setBancosSugeridos(filtrarBancos(val));
-                                                        setMostrarSugerenciasBanco(true);
-                                                        setSugerenciaBancoActiva(0);
-                                                    } else {
-                                                        setMostrarSugerenciasBanco(false);
-                                                    }
-                                                }}
-                                                onKeyDown={handleBancoKeyDown}
-                                                // Removed onFocus to avoid showing list on empty input
-                                                onFocus={() => {
-                                                    if (datosCheque.banco.length >= 1) {
-                                                        setBancosSugeridos(filtrarBancos(datosCheque.banco));
-                                                        setMostrarSugerenciasBanco(true);
-                                                    }
-                                                }}
-                                                onBlur={() => setTimeout(() => setMostrarSugerenciasBanco(false), 200)}
-                                                className="w-full px-4 py-3 border border-slate-200 rounded-lg outline-none focus:border-blue-500"
-                                            />
-                                            {mostrarSugerenciasBanco && bancosSugeridos.length > 0 && (
-                                                <div ref={bancoListRef} className="absolute z-50 left-0 top-full mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto ring-1 ring-black/5">
-                                                    {bancosSugeridos.map((b, idx) => (
-                                                        <div
-                                                            key={b.id}
-                                                            onClick={() => seleccionarBanco(b)}
-                                                            className={`px-4 py-3 cursor-pointer border-b border-slate-50 last:border-b-0 flex justify-between items-center ${idx === sugerenciaBancoActiva ? 'bg-blue-50' : 'hover:bg-slate-50'}`}
-                                                        >
-                                                            <span className="font-bold text-slate-700 text-sm">{b.banco}</span>
-                                                            <span className="text-xs text-slate-400 font-mono">{b.alias}</span>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <input
-                                                ref={chequeNumeroRef}
-                                                type="text"
-                                                placeholder="Nº Cheque"
-                                                value={datosCheque.numero}
-                                                onChange={(e) => setDatosCheque({ ...datosCheque, numero: e.target.value })}
-                                                onKeyDown={handleChequeNumeroKeyDown}
-                                                className="w-full px-4 py-3 border border-slate-200 rounded-lg outline-none focus:border-blue-500"
-                                            />
-                                            <input
-                                                ref={chequeFechaRef}
-                                                type="date"
-                                                value={datosCheque.fechaVto}
-                                                onChange={(e) => setDatosCheque({ ...datosCheque, fechaVto: e.target.value })}
-                                                className="w-full px-4 py-3 border border-slate-200 rounded-lg outline-none focus:border-blue-500"
-                                            />
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
+                            <p className="text-slate-500 text-sm text-center mb-8">
+                                Se generará una **Orden de Compra Pendiente**. Podrás elegir el medio de pago y recepcionar el stock desde la pantalla de Órdenes de Compra.
+                            </p>
 
                             {/* Botones */}
-                            <div className="mt-8 flex gap-3">
-                                <BtnCancel
+                            <div className="flex gap-3 mt-4">
+                                <button
                                     onClick={() => setMostrarModalPago(false)}
-                                    className="flex-1"
-                                />
-                                <BtnSave
-                                    label={guardando ? 'Procesando...' : 'Confirmar'}
+                                    className="flex-1 py-3 border border-slate-200 rounded-xl font-bold text-slate-500 hover:bg-slate-50 transition-all"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
                                     onClick={guardarCompra}
                                     disabled={guardando}
-                                    loading={guardando}
-                                    className="flex-1 justify-center"
-                                />
+                                    className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-500/30 hover:bg-blue-700 transition-all flex items-center justify-center gap-2"
+                                >
+                                    {guardando ? (
+                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                    ) : (
+                                        <>
+                                            <Check size={20} strokeWidth={3} />
+                                            Confirmar
+                                        </>
+                                    )}
+                                </button>
                             </div>
                         </div>
                     </div>
                 </div>
             )}
-        </div>
+
+
+            {/* ==================== MODAL EXITO (MANUAL) ==================== */}
+            {
+                showSuccessModal && successOrderData && (
+                    <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+                        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden text-center p-6 border border-slate-200">
+                            <div className="mx-auto bg-green-50 w-16 h-16 rounded-full flex items-center justify-center mb-4 text-green-600">
+                                <Check size={32} strokeWidth={2} />
+                            </div>
+                            <h4 className="text-xl font-bold text-slate-800 mb-2">¡Orden Generada!</h4>
+                            <p className="text-slate-500 text-sm mb-6">
+                                La orden <strong>#{successOrderData.orden_id}</strong> se guardó correctamente. Recuerda recibirla cuando llegue la mercadería.
+                            </p>
+                            <div className="flex gap-3">
+                                <button className="w-full py-2.5 bg-blue-600 text-white font-bold rounded-xl shadow-lg hover:bg-blue-700 transition-colors outline-none" onClick={() => navigate('/compras')}>
+                                    Aceptar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+        </div >
     );
 };
 
 export default NuevaCompra;
-
