@@ -6676,55 +6676,7 @@ def api_eliminar_backup(request, id):
 def cheques_lista(request):
     return render(request, 'administrar/cheques/cheques.html')
 
-@require_http_methods(["GET"])
-@login_required
-def api_cheques_listar(request):
-    from django.db.models import Q, Sum
-    from .models import Cheque
 
-    q = request.GET.get('q', '')
-    tipo = request.GET.get('tipo', '')
-    estado = request.GET.get('estado', '')
-
-    cheques = Cheque.objects.select_related('cliente').order_by('fecha_pago')
-
-    if q:
-        cheques = cheques.filter(Q(numero__icontains=q) | Q(banco__icontains=q) | Q(cliente__nombre__icontains=q) | Q(firmante__icontains=q))
-    if tipo:
-        cheques = cheques.filter(tipo=tipo)
-    if estado:
-        cheques = cheques.filter(estado=estado)
-
-    # KPI Calculation
-    kpi_qs = Cheque.objects.all()
-    resumen = {
-        'total_cartera': kpi_qs.filter(estado='CARTERA', tipo='TERCERO').aggregate(Sum('monto'))['monto__sum'] or 0,
-        'cant_cartera': kpi_qs.filter(estado='CARTERA', tipo='TERCERO').count(),
-        'total_propios': kpi_qs.filter(estado='CARTERA', tipo='PROPIO').aggregate(Sum('monto'))['monto__sum'] or 0, 
-        'total_depositados': kpi_qs.filter(estado='DEPOSITADO').aggregate(Sum('monto'))['monto__sum'] or 0,
-        'total_rechazados': kpi_qs.filter(estado='RECHAZADO').aggregate(Sum('monto'))['monto__sum'] or 0,
-    }
-
-    data = []
-    for c in cheques:
-        data.append({
-            'id': c.id,
-            'numero': c.numero,
-            'banco': c.banco,
-            'fecha_emision': c.fecha_emision.strftime('%Y-%m-%d'),
-            'fecha_pago': c.fecha_pago.strftime('%Y-%m-%d'),
-            'monto': float(c.monto),
-            'tipo': c.tipo,
-            'estado': c.estado,
-            'cliente_id': c.cliente_id,
-            'cliente_nombre': c.cliente.nombre if c.cliente else None,
-            'firmante': c.firmante,
-            'cuit_firmante': c.cuit_firmante,
-            'destinatario': c.destinatario,
-            'observaciones': c.observaciones,
-        })
-    
-    return JsonResponse({'ok': True, 'cheques': data, 'resumen': resumen})
 
 
 @csrf_exempt
@@ -8204,7 +8156,8 @@ def api_cheques_listar(request):
 
 @login_required
 def api_cheque_cambiar_estado(request, id):
-    from .models import Cheque
+    from .models import Cheque, CuentaBancaria
+    from .services import AccountingService
     import json
     
     if request.method != 'POST':
@@ -8214,17 +8167,34 @@ def api_cheque_cambiar_estado(request, id):
         cheque = Cheque.objects.get(id=id)
         data = json.loads(request.body)
         nuevo_estado = data.get('estado')
+        cuenta_destino_id = data.get('cuenta_destino_id') # Optional, for deposits
         
         valid_states = ['CARTERA', 'DEPOSITADO', 'COBRADO', 'ENTREGADO', 'RECHAZADO', 'ANULADO']
         
         if nuevo_estado not in valid_states:
             return JsonResponse({'ok': False, 'error': 'Estado inválido'}, status=400)
             
-        # Basic validation of transitions could be added here
-        # For now, we allow flexibility as requested by user
+        estado_anterior = cheque.estado
         
+        # Validation for Deposit
+        cuenta_destino = None
+        if nuevo_estado == 'DEPOSITADO' and estado_anterior == 'CARTERA':
+            if not cuenta_destino_id:
+                return JsonResponse({'ok': False, 'error': 'Debe seleccionar una cuenta bancaria para depositar'}, status=400)
+            try:
+                cuenta_destino = CuentaBancaria.objects.get(id=cuenta_destino_id)
+            except CuentaBancaria.DoesNotExist:
+                return JsonResponse({'ok': False, 'error': 'Cuenta bancaria no encontrada'}, status=404)
+
         cheque.estado = nuevo_estado
         cheque.save()
+        
+        # Generate Accounting Entry
+        try:
+            AccountingService.registrar_cambio_estado(cheque, estado_anterior, cuenta_destino)
+        except Exception as e:
+            print(f"Error generando asiento contable para cheque {cheque.id}: {e}")
+            # Non-blocking error, but worth logging/notifying
         
         return JsonResponse({'ok': True, 'message': f'Estado actualizado a {nuevo_estado}'})
         

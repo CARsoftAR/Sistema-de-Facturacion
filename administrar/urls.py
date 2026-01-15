@@ -190,7 +190,8 @@ urlpatterns = [
     # ==========================
     # GESTIÓN DE CHEQUES
     # ==========================
-    path("cheques/", views.cheques_lista, name="cheques"),
+    # path("cheques/", views.cheques_lista, name="cheques"), # LEGACY
+    path("cheques/", login_required(TemplateView.as_view(template_name="react_app.html")), name="cheques"),
     path("api/cheques/listar/", views.api_cheques_listar, name="api_cheques_listar"),
     path("api/cheques/crear/", views.api_cheques_crear, name="api_cheques_crear"),
     path("api/cheques/<int:id>/editar/", views.api_cheques_editar, name="api_cheques_editar"),

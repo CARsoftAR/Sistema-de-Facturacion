@@ -13,8 +13,13 @@ import {
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { BtnEdit, BtnDelete, BtnAdd } from '../components/CommonButtons';
+import { showConfirmationAlert } from '../utils/alerts';
 
 const Cheques = () => {
+    // Cache bust
+    console.log("Cheques Component V4 Loaded");
+
+    // Cache bust: Force update styles v2
     const [loading, setLoading] = useState(true);
     const [cheques, setCheques] = useState([]);
     const [kpis, setKpis] = useState({
@@ -54,11 +59,21 @@ const Cheques = () => {
                 setTotalItems(data.total || 0);
                 if (data.kpis) setKpis(data.kpis);
             } else {
-                Swal.fire('Error', data.error || 'No se pudieron cargar los cheques', 'error');
+                const ErrorIcon = (
+                    <div className='d-inline-flex justify-content-center align-items-center rounded-circle mb-3' style={{ width: '80px', height: '80px', backgroundColor: 'rgba(220, 53, 69, 0.1)', color: '#dc3545' }}>
+                        <div className="fw-bold fs-1">×</div>
+                    </div>
+                );
+                showConfirmationAlert('Error', data.error || 'No se pudieron cargar los cheques', 'Entendido', 'danger', { iconComponent: ErrorIcon });
             }
         } catch (error) {
             console.error("Error cargando cheques:", error);
-            Swal.fire('Error', 'Error de conexión', 'error');
+            const ErrorIcon = (
+                <div className='d-inline-flex justify-content-center align-items-center rounded-circle mb-3' style={{ width: '80px', height: '80px', backgroundColor: 'rgba(220, 53, 69, 0.1)', color: '#dc3545' }}>
+                    <div className="fw-bold fs-1">×</div>
+                </div>
+            );
+            showConfirmationAlert('Error', 'Error de conexión', 'Entendido', 'danger', { iconComponent: ErrorIcon });
         } finally {
             setLoading(false);
         }
@@ -116,36 +131,134 @@ const Cheques = () => {
 
     const handleEstadoChange = async (cheque, nuevoEstado) => {
         setOpenDropdownId(null); // Close dropdown
-        const result = await Swal.fire({
-            title: '¿Confirmar cambio de estado?',
-            text: `El cheque ${cheque.numero} pasará a estado ${nuevoEstado}`,
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonText: 'Sí, cambiar',
-            cancelButtonText: 'Cancelar'
-        });
 
-        if (result.isConfirmed) {
+        let cuentaDestinoId = null;
+
+        // Special handling for Deposit: Select Bank
+        if (nuevoEstado === 'DEPOSITADO') {
             try {
-                const response = await fetch(`/api/cheques/${cheque.id}/cambiar-estado/`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ estado: nuevoEstado })
-                });
-                const data = await response.json();
+                // Fetch banks first
+                const respBancos = await fetch('/api/bancos/listar/');
+                const dataBancos = await respBancos.json();
 
-                if (data.ok) {
-                    Swal.fire('Actualizado', `El estado se actualizó a ${nuevoEstado}`, 'success');
-                    fetchCheques();
-                } else {
-                    Swal.fire('Error', data.error || 'No se pudo actualizar el estado', 'error');
+                if (!dataBancos.ok || !dataBancos.cuentas || dataBancos.cuentas.length === 0) {
+                    const ErrorIcon = (
+                        <div className='d-inline-flex justify-content-center align-items-center rounded-circle mb-3' style={{ width: '80px', height: '80px', backgroundColor: 'rgba(220, 53, 69, 0.1)', color: '#dc3545' }}>
+                            <div className="fw-bold fs-1">×</div>
+                        </div>
+                    );
+                    showConfirmationAlert('Error', 'No hay cuentas bancarias activas para depositar', 'Entendido', 'danger', { iconComponent: ErrorIcon });
+                    return;
                 }
+
+                const options = {};
+                dataBancos.cuentas.forEach(c => {
+                    options[c.id] = `${c.banco} (${c.moneda})`;
+                });
+
+                const DepositIcon = (
+                    <div
+                        className='d-inline-flex justify-content-center align-items-center rounded-circle mb-3'
+                        style={{
+                            width: '80px',
+                            height: '80px',
+                            backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                            color: '#0d6efd'
+                        }}
+                    >
+                        <Banknote size={40} strokeWidth={1.5} />
+                    </div>
+                );
+
+                const { value: selectedBankId } = await showConfirmationAlert(
+                    'Seleccione Cuenta',
+                    `¿Dónde depositar el cheque ${cheque.numero}?`,
+                    'Depositar',
+                    'primary',
+                    {
+                        iconComponent: DepositIcon,
+                        input: 'select',
+                        inputOptions: options,
+                        inputPlaceholder: 'Seleccione un banco',
+                        inputValidator: (value) => {
+                            return !value && 'Debe seleccionar una cuenta';
+                        }
+                    }
+                );
+
+                if (!selectedBankId) return; // User cancelled
+                cuentaDestinoId = selectedBankId;
+
             } catch (error) {
                 console.error(error);
-                Swal.fire('Error', 'Error de conexión', 'error');
+                const ErrorIcon = (
+                    <div className='d-inline-flex justify-content-center align-items-center rounded-circle mb-3' style={{ width: '80px', height: '80px', backgroundColor: 'rgba(220, 53, 69, 0.1)', color: '#dc3545' }}>
+                        <div className="fw-bold fs-1">×</div>
+                    </div>
+                );
+                showConfirmationAlert('Error', 'Error cargando bancos', 'Entendido', 'danger', { iconComponent: ErrorIcon });
+                return;
             }
+        } else {
+            // Standard confirmation for other states with aligned Premium style
+            const MyIcon = (
+                <div
+                    className='d-inline-flex justify-content-center align-items-center rounded-circle mb-3'
+                    style={{
+                        width: '80px',
+                        height: '80px',
+                        backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                        color: '#0d6efd'
+                    }}
+                >
+                    <RotateCcw size={40} strokeWidth={1.5} />
+                </div>
+            );
+
+            const result = await showConfirmationAlert(
+                '¿Confirmar cambio?',
+                `El cheque ${cheque.numero} pasará a estado ${nuevoEstado}`,
+                'Sí, cambiar',
+                'primary',
+                { iconComponent: MyIcon }
+            );
+
+            if (!result.isConfirmed) return;
+        }
+
+        // Proceed with update
+        try {
+            const body = { estado: nuevoEstado };
+            if (cuentaDestinoId) body.cuenta_destino_id = cuentaDestinoId;
+
+            const response = await fetch(`/api/cheques/${cheque.id}/cambiar-estado/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(body)
+            });
+            const data = await response.json();
+
+            if (data.ok) {
+                Swal.fire('Actualizado', `El estado se actualizó a ${nuevoEstado}`, 'success');
+                fetchCheques();
+            } else {
+                const ErrorIcon = (
+                    <div className='d-inline-flex justify-content-center align-items-center rounded-circle mb-3' style={{ width: '80px', height: '80px', backgroundColor: 'rgba(220, 53, 69, 0.1)', color: '#dc3545' }}>
+                        <div className="fw-bold fs-1">×</div>
+                    </div>
+                );
+                showConfirmationAlert('Error', data.error || 'No se pudo actualizar el estado', 'Entendido', 'danger', { iconComponent: ErrorIcon });
+            }
+        } catch (error) {
+            console.error(error);
+            const ErrorIcon = (
+                <div className='d-inline-flex justify-content-center align-items-center rounded-circle mb-3' style={{ width: '80px', height: '80px', backgroundColor: 'rgba(220, 53, 69, 0.1)', color: '#dc3545' }}>
+                    <div className="fw-bold fs-1">×</div>
+                </div>
+            );
+            showConfirmationAlert('Error', 'Error de conexión', 'Entendido', 'danger', { iconComponent: ErrorIcon });
         }
     };
 
@@ -157,7 +270,7 @@ const Cheques = () => {
                 <div>
                     <h2 className="text-primary fw-bold mb-0" style={{ fontSize: '2rem' }}>
                         <Banknote className="me-2 inline-block" size={32} />
-                        Gestión de Cheques
+                        Gestión de Cheques V4
                     </h2>
                     <p className="text-muted mb-0 ps-1" style={{ fontSize: '1rem' }}>
                         Control de cartera de cheques propios y de terceros
@@ -167,7 +280,22 @@ const Cheques = () => {
                     label="Nuevo Cheque"
                     icon={Banknote}
                     className="btn-lg shadow-sm"
-                    onClick={() => Swal.fire('Info', 'Funcionalidad de crear pendiente', 'info')}
+                    onClick={() => {
+                        const InfoIcon = (
+                            <div
+                                className='d-inline-flex justify-content-center align-items-center rounded-circle mb-3'
+                                style={{
+                                    width: '80px',
+                                    height: '80px',
+                                    backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                                    color: '#0d6efd'
+                                }}
+                            >
+                                <div className="fw-bold fs-1">i</div>
+                            </div>
+                        );
+                        showConfirmationAlert('Info', 'Funcionalidad de crear pendiente', 'Entendido', 'primary', { iconComponent: InfoIcon });
+                    }}
                 />
             </div>
 
@@ -181,8 +309,8 @@ const Cheques = () => {
                                 <div className="text-muted xsmall fw-bold" style={{ fontSize: '0.7rem' }}>EN CARTERA (TERCEROS)</div>
                                 <div className="p-2 bg-primary bg-opacity-10 rounded text-primary"><ArrowDownLeft size={18} /></div>
                             </div>
-                            <h3 className="mb-0 fw-bold text-primary">{formatCurrency(kpis.cartera_terceros.total)}</h3>
-                            <div className="text-muted mt-1" style={{ fontSize: '0.8rem' }}>{kpis.cartera_terceros.count} cheques</div>
+                            <h3 className="mb-0 fw-bold text-primary">{formatCurrency(kpis?.cartera_terceros?.total || 0)}</h3>
+                            <div className="text-muted mt-1" style={{ fontSize: '0.8rem' }}>{kpis?.cartera_terceros?.count || 0} cheques</div>
                         </div>
                     </div>
                 </div>
@@ -195,7 +323,7 @@ const Cheques = () => {
                                 <div className="text-muted xsmall fw-bold" style={{ fontSize: '0.7rem' }}>A PAGAR (PROPIOS)</div>
                                 <div className="p-2 bg-warning bg-opacity-10 rounded text-warning"><ArrowUpRight size={18} /></div>
                             </div>
-                            <h3 className="mb-0 fw-bold text-warning" style={{ color: '#d97706' }}>{formatCurrency(kpis.apagar_propios.total)}</h3>
+                            <h3 className="mb-0 fw-bold text-warning" style={{ color: '#d97706' }}>{formatCurrency(kpis?.apagar_propios?.total || 0)}</h3>
                             <div className="text-muted mt-1" style={{ fontSize: '0.8rem' }}>Pendientes de cobro</div>
                         </div>
                     </div>
@@ -209,7 +337,7 @@ const Cheques = () => {
                                 <div className="text-muted xsmall fw-bold" style={{ fontSize: '0.7rem' }}>DEPOSITADOS (MES)</div>
                                 <div className="p-2 bg-success bg-opacity-10 rounded text-success"><CheckCircle2 size={18} /></div>
                             </div>
-                            <h3 className="mb-0 fw-bold text-success">{formatCurrency(kpis.depositados_mes.total)}</h3>
+                            <h3 className="mb-0 fw-bold text-success">{formatCurrency(kpis?.depositados_mes?.total || 0)}</h3>
                             <div className="text-muted mt-1" style={{ fontSize: '0.8rem' }}>Este mes</div>
                         </div>
                     </div>
@@ -223,7 +351,7 @@ const Cheques = () => {
                                 <div className="text-muted xsmall fw-bold" style={{ fontSize: '0.7rem' }}>RECHAZADOS</div>
                                 <div className="p-2 bg-danger bg-opacity-10 rounded text-danger"><AlertCircle size={18} /></div>
                             </div>
-                            <h3 className="mb-0 fw-bold text-danger">{formatCurrency(kpis.rechazados.total)}</h3>
+                            <h3 className="mb-0 fw-bold text-danger">{formatCurrency(kpis?.rechazados?.total || 0)}</h3>
                             <div className="text-muted mt-1" style={{ fontSize: '0.8rem' }}>Total histórico</div>
                         </div>
                     </div>
@@ -372,8 +500,22 @@ const Cheques = () => {
                                                                 <li><button className="dropdown-item d-flex align-items-center py-2 px-3 text-primary" onClick={() => handleEstadoChange(c, 'CARTERA')}><RotateCcw size={16} className="me-2" />Recuperar (Cartera)</button></li>
                                                             )}
 
-                                                            <li><button className="dropdown-item d-flex align-items-center py-2 px-3" onClick={() => Swal.fire('Info', 'Editar pendiente', 'info')}>Editar</button></li>
-                                                            <li><button className="dropdown-item d-flex align-items-center py-2 px-3 text-danger" onClick={() => Swal.fire('Info', 'Eliminar pendiente', 'info')}>Eliminar</button></li>
+                                                            <li><button className="dropdown-item d-flex align-items-center py-2 px-3" onClick={() => {
+                                                                const EditIcon = (
+                                                                    <div className='d-inline-flex justify-content-center align-items-center rounded-circle mb-3' style={{ width: '80px', height: '80px', backgroundColor: 'rgba(13, 110, 253, 0.1)', color: '#0d6efd' }}>
+                                                                        <div className="fw-bold fs-3"><Banknote size={32} /></div>
+                                                                    </div>
+                                                                );
+                                                                showConfirmationAlert('Editar', 'Funcionalidad de editar pendiente', 'Entendido', 'primary', { iconComponent: EditIcon });
+                                                            }}>Editar</button></li>
+                                                            <li><button className="dropdown-item d-flex align-items-center py-2 px-3 text-danger" onClick={() => {
+                                                                const DeleteIcon = (
+                                                                    <div className='d-inline-flex justify-content-center align-items-center rounded-circle mb-3' style={{ width: '80px', height: '80px', backgroundColor: 'rgba(220, 53, 69, 0.1)', color: '#dc3545' }}>
+                                                                        <div className="fw-bold fs-3">×</div>
+                                                                    </div>
+                                                                );
+                                                                showConfirmationAlert('Eliminar', 'Funcionalidad de eliminar pendiente', 'Eliminar', 'danger', { iconComponent: DeleteIcon });
+                                                            }}>Eliminar</button></li>
                                                         </ul>
                                                     </div>
                                                 )}
