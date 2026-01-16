@@ -8804,6 +8804,7 @@ def api_empresa_config(request):
             'margen_ganancia_defecto': float(empresa.margen_ganancia_defecto),
             'metodo_ganancia': empresa.metodo_ganancia,
             'papel_impresion': empresa.papel_impresion,
+            'ocultar_barra_scroll': empresa.ocultar_barra_scroll,
             'pie_factura': empresa.pie_factura,
             'auto_foco_codigo_barras': empresa.auto_foco_codigo_barras,
             'discriminar_iva_compras': empresa.discriminar_iva_compras,
@@ -8873,6 +8874,10 @@ def api_empresa_config_guardar(request):
         if 'discriminar_iva_ventas' in data:
             val = data['discriminar_iva_ventas']
             empresa.discriminar_iva_ventas = str(val).lower() == 'true' if isinstance(val, str) else bool(val)
+
+        if 'ocultar_barra_scroll' in data:
+            val = data['ocultar_barra_scroll']
+            empresa.ocultar_barra_scroll = str(val).lower() == 'true' if isinstance(val, str) else bool(val)
 
         if 'redondeo_precios' in data:
             try:

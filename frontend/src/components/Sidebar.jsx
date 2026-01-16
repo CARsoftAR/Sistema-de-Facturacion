@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import {
     LayoutDashboard,
     ShoppingCart,
@@ -129,6 +130,43 @@ const Sidebar = ({ standalone = false }) => {
     const { hasPermission } = useAuth();
     const [openSection, setOpenSection] = useState(null);
     const [mobileOpen, setMobileOpen] = useState(false);
+    const [hideScroll, setHideScroll] = useState(true);
+
+    useEffect(() => {
+        const fetchConfig = async () => {
+            try {
+                const response = await axios.get('/api/config/obtener/');
+                if (response.data) {
+                    // Default to true if undefined, otherwise use the actual boolean value
+                    const scrollValue = response.data.ocultar_barra_scroll ?? true;
+                    console.log('Sidebar: Configuración cargada desde servidor - ocultar_barra_scroll:', scrollValue);
+                    setHideScroll(scrollValue);
+                }
+            } catch (error) {
+                console.error("Error loading sidebar config:", error);
+            }
+        };
+
+        fetchConfig();
+
+        const handleConfigUpdate = (event) => {
+            // If event has detail (instant preview), use it directly
+            if (event.detail && 'ocultar_barra_scroll' in event.detail) {
+                const newValue = event.detail.ocultar_barra_scroll ?? true;
+                console.log('Sidebar: Preview instantáneo - ocultar_barra_scroll:', newValue);
+                setHideScroll(newValue);
+            } else {
+                // Otherwise fetch from server (after save)
+                console.log('Sidebar: Recargando configuración desde servidor');
+                fetchConfig();
+            }
+        };
+        window.addEventListener('configUpdated', handleConfigUpdate);
+
+        return () => {
+            window.removeEventListener('configUpdated', handleConfigUpdate);
+        };
+    }, []);
 
     const toggleSection = (section) => {
         setOpenSection(openSection === section ? null : section);
@@ -164,7 +202,7 @@ const Sidebar = ({ standalone = false }) => {
                 </div>
 
                 {/* Scrollable Menu Area */}
-                <div className="flex-grow-1 overflow-auto custom-scrollbar" style={{ scrollbarWidth: 'thin', scrollbarColor: '#475569 #000000' }}>
+                <div className={`flex-grow-1 overflow-auto custom-scrollbar ${hideScroll ? 'hide-scrollbar' : ''}`}>
 
                     {(hasPermission('reportes') || hasPermission('ventas') || hasPermission('compras') || hasPermission('productos') || hasPermission('clientes') || hasPermission('proveedores')) && (
                         <div className="mb-2 px-2 small fw-bold text-uppercase text-light text-opacity-50" style={{ fontSize: '0.75rem', letterSpacing: '0.05em' }}>
@@ -348,9 +386,32 @@ const Sidebar = ({ standalone = false }) => {
                     .d-flex.flex-column.position-fixed {
                         transform: translateX(-100%);
                     }
-                    .d-flex.flex-column.position-fixed.translate-x-0 {
-                        transform: translateX(0) !important;
-                    }
+                }
+                
+                /* Base Scrollbar (Visible by default if not hidden) */
+                .custom-scrollbar {
+                    scrollbar-width: thin;
+                    scrollbar-color: #475569 #000000;
+                }
+                .custom-scrollbar::-webkit-scrollbar {
+                    width: 8px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-track {
+                    background: #000000;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb {
+                    background-color: #475569;
+                    border-radius: 4px;
+                    border: 2px solid #000000;
+                }
+
+                /* Hidden variant */
+                .hide-scrollbar::-webkit-scrollbar {
+                    display: none;
+                }
+                .hide-scrollbar {
+                    -ms-overflow-style: none;  /* IE and Edge */
+                    scrollbar-width: none !important;  /* Firefox */
                 }
             `}</style>
         </>

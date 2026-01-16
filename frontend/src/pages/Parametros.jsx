@@ -41,6 +41,7 @@ const Parametros = () => {
     // Nuevos estados
     const [papelImpresion, setPapelImpresion] = useState('A4'); // 'A4', 'T80', 'T58'
     const [pieFactura, setPieFactura] = useState('');
+    const [ocultarBarraScroll, setOcultarBarraScroll] = useState(true);
     const [autoFocoCodigoBarras, setAutoFocoCodigoBarras] = useState(false);
     const [discriminarIvaCompras, setDiscriminarIvaCompras] = useState(false);
     const [discriminarIvaVentas, setDiscriminarIvaVentas] = useState(false);
@@ -64,6 +65,7 @@ const Parametros = () => {
                 // Nuevos campos
                 setPapelImpresion(response.data.papel_impresion || 'A4');
                 setPieFactura(response.data.pie_factura || '');
+                setOcultarBarraScroll(response.data.ocultar_barra_scroll ?? true); // Default True
                 setAutoFocoCodigoBarras(response.data.auto_foco_codigo_barras || false);
                 setDiscriminarIvaCompras(response.data.discriminar_iva_compras || false);
                 setDiscriminarIvaVentas(response.data.discriminar_iva_ventas || false);
@@ -88,6 +90,7 @@ const Parametros = () => {
                 metodo_ganancia: metodoGanancia,
                 papel_impresion: papelImpresion,
                 pie_factura: pieFactura,
+                ocultar_barra_scroll: ocultarBarraScroll,
                 auto_foco_codigo_barras: autoFocoCodigoBarras,
                 discriminar_iva_compras: discriminarIvaCompras,
                 discriminar_iva_ventas: discriminarIvaVentas,
@@ -159,6 +162,40 @@ const Parametros = () => {
                                 type="checkbox"
                                 checked={autoUpdatePrices}
                                 onChange={() => setAutoUpdatePrices(!autoUpdatePrices)}
+                                style={{ width: '40px', height: '20px', cursor: 'pointer' }}
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                {/* NUEVA SECCIÓN: AJUSTES DE INTERFAZ */}
+                <div style={{ ...s.sectionTitle, marginTop: '48px' }}>
+                    <Laptop size={20} /> Ajustes de Interfaz
+                </div>
+
+                {/* OCULTAR SCROLLBAR */}
+                <div style={s.fieldGroup}>
+                    <label style={s.label}>APARIENCIA DEL MENÚ</label>
+                    <div style={s.switchContainer}>
+                        <div style={{ paddingRight: '16px' }}>
+                            <div style={{ fontWeight: '600', fontSize: '14px', color: '#1e293b' }}>Ocultar Barra de Desplazamiento</div>
+                            <div style={s.subtitle}>Oculta la barra de scroll lateral para una apariencia más limpia (requiere mouse con rueda o trackpad).</div>
+                        </div>
+                        <div className="form-check form-switch pt-0 mb-0">
+                            <input
+                                className="form-check-input"
+                                type="checkbox"
+                                checked={ocultarBarraScroll}
+                                onChange={() => {
+                                    const newValue = !ocultarBarraScroll;
+                                    console.log('Parametros: Toggle cambiado a:', newValue);
+                                    setOcultarBarraScroll(newValue);
+                                    // Dispatch event immediately for instant preview
+                                    console.log('Parametros: Disparando evento configUpdated con detail:', { ocultar_barra_scroll: newValue });
+                                    window.dispatchEvent(new CustomEvent('configUpdated', {
+                                        detail: { ocultar_barra_scroll: newValue }
+                                    }));
+                                }}
                                 style={{ width: '40px', height: '20px', cursor: 'pointer' }}
                             />
                         </div>

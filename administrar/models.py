@@ -178,6 +178,9 @@ class Empresa(models.Model):
 
     # Configuracion de Impresion
     papel_impresion = models.CharField(max_length=20, choices=[('A4', 'A4'), ('T80', 'Ticket 80mm'), ('T58', 'Ticket 58mm')], default='A4')
+    
+    # UI
+    ocultar_barra_scroll = models.BooleanField(default=True, verbose_name="Ocultar Barra de Scroll en Menú")
     pie_factura = models.CharField(max_length=200, blank=True)
     
     # Configuracion UI
