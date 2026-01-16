@@ -42,10 +42,10 @@ urlpatterns = [
     path("dashboard/", login_required(TemplateView.as_view(template_name="react_app.html")), name="dashboard"),
     path("api/dashboard/stats/", views.api_dashboard_stats, name="api_dashboard_stats"),
     path("estado/", views.estado_sistema, name="estado"),
-    path("parametros/", views.parametros, name="parametros"),
+    path("parametros/", login_required(TemplateView.as_view(template_name="react_app.html")), name="parametros"),
     path("api/config/obtener/", views.api_empresa_config, name="api_empresa_config"),
     path("api/config/guardar/", views.api_empresa_config_guardar, name="api_empresa_config_guardar"),
-    path("configuracion/empresa/", login_required(TemplateView.as_view(template_name="react_app.html")), name="configuracion_empresa_react"),
+
 
     # ==========================
     # MÓDULOS COMERCIALES

@@ -145,9 +145,29 @@ class Empresa(models.Model):
     localidad = models.CharField(max_length=100, blank=True)
     provincia = models.CharField(max_length=100, blank=True)
 
+    # Identidad
+    nombre_fantasia = models.CharField(max_length=100, blank=True, verbose_name="Nombre de Fantasía")
+
     # ConfiguraciÃ³n
     habilita_remitos = models.BooleanField(default=True, verbose_name="Habilitar Remitos")
     actualizar_precios_compra = models.BooleanField(default=False, verbose_name="Actualizar Precios en Compra")
+    permitir_stock_negativo = models.BooleanField(default=False, verbose_name="Permitir Stock Negativo")
+    alerta_stock_minimo = models.BooleanField(default=True, verbose_name="Alerta de Stock Mínimo")
+    auto_foco_codigo_barras = models.BooleanField(default=False, verbose_name="Auto-Foco Código de Barras")
+    margen_ganancia_defecto = models.DecimalField(max_digits=5, decimal_places=2, default=0.0, verbose_name="Margen de Ganancia por Defecto (%)")
+    metodo_ganancia = models.CharField(
+        max_length=10, 
+        choices=[('MARKUP', 'Markup (Sobre Costo)'), ('MARGIN', 'Margen Real (Sobre Venta)')], 
+        default='MARKUP',
+        verbose_name="Método de Cálculo de Ganancia"
+    )
+    discriminar_iva_compras = models.BooleanField(default=False, verbose_name="Discriminar IVA en Compras")
+    discriminar_iva_ventas = models.BooleanField(default=False, verbose_name="Discriminar IVA en Ventas")
+    redondeo_precios = models.IntegerField(
+        choices=[(1, 'Sin Redondeo'), (10, 'Múltiplos de 10'), (50, 'Múltiplos de 50'), (100, 'Múltiplos de 100')],
+        default=1,
+        verbose_name="Redondeo de Precios"
+    )
 
     # ConfiguraciÃ³n de Correo
     smtp_server = models.CharField(max_length=100, blank=True)
@@ -212,6 +232,7 @@ class Producto(models.Model):
 
     # â¤ NUEVOS CAMPOS
     tipo_bulto = models.CharField(max_length=5, default="UN")
+    iva_alicuota = models.DecimalField(max_digits=5, decimal_places=2, default=21.0, verbose_name="Alícuota IVA (%)")
     stock_inicial = models.IntegerField(default=0)
 
     stock = models.IntegerField(default=0)            # Stock actual
@@ -236,6 +257,8 @@ class Venta(models.Model):
     cliente = models.ForeignKey(Cliente, on_delete=models.PROTECT)
     fecha = models.DateTimeField(auto_now_add=True)
     tipo_comprobante = models.CharField(max_length=2, choices=[('A','Factura A'), ('B','Factura B'), ('C','Factura C')])
+    neto = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    iva_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     total = models.DecimalField(max_digits=12, decimal_places=2)
     cae = models.CharField(max_length=20, blank=True, null=True)
     estado = models.CharField(max_length=20, default="Emitida")
@@ -268,6 +291,8 @@ class DetalleVenta(models.Model):
     producto = models.ForeignKey(Producto, on_delete=models.PROTECT)
     cantidad = models.DecimalField(max_digits=10, decimal_places=2)
     precio_unitario = models.DecimalField(max_digits=10, decimal_places=2)
+    neto = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    iva_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     subtotal = models.DecimalField(max_digits=12, decimal_places=2)
 
     def __str__(self):
@@ -339,6 +364,8 @@ class OrdenCompra(models.Model):
     nro_orden = models.CharField(max_length=30, blank=True)
     estado = models.CharField(max_length=10, choices=ESTADO_OC, default="PENDIENTE")
     observaciones = models.TextField(blank=True)
+    neto_estimado = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    iva_estimado = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     total_estimado = models.DecimalField(max_digits=12, decimal_places=2, default=0)
 
     def __str__(self):
@@ -371,6 +398,8 @@ class Compra(models.Model):
     orden_compra = models.ForeignKey(OrdenCompra, on_delete=models.SET_NULL, null=True, blank=True)
     nro_comprobante = models.CharField(max_length=50, blank=True)
     tipo_comprobante = models.CharField(max_length=2, blank=True)  # FA/FB/FC, etc.
+    neto = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    iva = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     estado = models.CharField(max_length=10, choices=ESTADO_COMPRA, default="REGISTRADA")
     observaciones = models.TextField(blank=True)

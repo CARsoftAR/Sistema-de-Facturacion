@@ -22,13 +22,19 @@ const Productos = () => {
         const parsed = parseInt(saved, 10);
         return (parsed && parsed > 0) ? parsed : 10;
     });
+    const [alertaStockMinimo, setAlertaStockMinimo] = useState(true);
 
     useEffect(() => {
-        if (!localStorage.getItem(STORAGE_KEY)) {
+        if (true) { // Siempre cargamos para obtener otras config como alertaStockMinimo
             fetch('/api/config/obtener/')
                 .then(res => res.json())
                 .then(data => {
-                    if (data.items_por_pagina) setItemsPerPage(data.items_por_pagina);
+                    if (data.items_por_pagina && !localStorage.getItem(STORAGE_KEY)) {
+                        setItemsPerPage(data.items_por_pagina);
+                    }
+                    if (data.alerta_stock_minimo !== undefined) {
+                        setAlertaStockMinimo(data.alerta_stock_minimo);
+                    }
                 })
                 .catch(console.error);
         }
@@ -280,7 +286,7 @@ const Productos = () => {
                                                 $ {parseFloat(p.precio_venta).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
                                             </td>
                                             <td className="text-center py-3">
-                                                <span className={`badge rounded-pill fw-medium px-3 py-2 ${p.stock_actual > p.stock_minimo ? 'bg-success-subtle text-success border border-success' : 'bg-danger-subtle text-danger border border-danger'}`}>
+                                                <span className={`badge rounded-pill fw-medium px-3 py-2 ${(!alertaStockMinimo || p.stock_actual > p.stock_minimo) ? 'bg-success-subtle text-success border border-success' : 'bg-danger-subtle text-danger border border-danger'}`}>
                                                     {p.stock_actual}
                                                 </span>
                                             </td>

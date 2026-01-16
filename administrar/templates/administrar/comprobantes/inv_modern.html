@@ -364,20 +364,27 @@
             <!-- TOTALS -->
             <div class="totals-container">
                 <table class="totals-table">
+                    {% if venta.tipo_comprobante == 'A' %}
+                    <!-- Discriminación de IVA para Factura A -->
+                    <tr>
+                        <td class="label">Subtotal (Neto)</td>
+                        <td>$ {{ venta.subtotal|floatformat:2 }}</td>
+                    </tr>
+                    <tr>
+                        <td class="label">IVA (21%)</td>
+                        <td>$ {{ venta.iva_amount|default:"0.00"|floatformat:2 }}</td>
+                    </tr>
+                    {% else %}
+                    <!-- Total no discriminado para B y C -->
                     <tr>
                         <td class="label">Subtotal</td>
-                        <td>{{ venta.subtotal|floatformat:2 }}</td>
-                    </tr>
-                    <!-- Adding IVA logic placeholder if needed -->
-                    {% if venta.iva_amount %}
-                    <tr>
-                        <td class="label">IVA 21%</td>
-                        <td>{{ venta.iva_amount|floatformat:2 }}</td>
+                        <td>$ {{ venta.subtotal|floatformat:2 }}</td>
                     </tr>
                     {% endif %}
+
                     <tr>
-                        <td class="label total-final">Total Factura</td>
-                        <td class="total-final">{{ venta.total|floatformat:2 }}</td>
+                        <td class="label total-final">Total</td>
+                        <td class="total-final">$ {{ venta.total|floatformat:2 }}</td>
                     </tr>
                 </table>
             </div>
@@ -391,6 +398,12 @@
 
             <!-- FOOTER INFO -->
             <div class="footer-info">
+                {% if empresa.pie_factura %}
+                <h4>Información Adicional</h4>
+                <p>{{ empresa.pie_factura }}</p>
+                <br>
+                {% endif %}
+
                 <h4>Condiciones de pago</h4>
                 <p>El pago se debe realizar dentro de los plazos acordados.</p>
                 <br>

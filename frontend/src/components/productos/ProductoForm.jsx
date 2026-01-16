@@ -13,6 +13,9 @@ const ProductoForm = ({ producto, onClose, onSave }) => {
 
     // Watch fields for dynamic calculations or UI updates if needed
     const precioEfectivo = watch('precio_efectivo');
+    const costo = watch('costo');
+    const [margenDefecto, setMargenDefecto] = useState(0);
+    const [metodoGanancia, setMetodoGanancia] = useState('MARKUP');
 
     useEffect(() => {
         const fetchData = async () => {
@@ -30,6 +33,16 @@ const ProductoForm = ({ producto, onClose, onSave }) => {
                 setMarcas(dataMarcas.data || []);
                 setRubros(dataRubros.length ? dataRubros : []);
                 setProveedores(dataProveedores || []);
+
+                // Cargar margen por defecto
+                const resConfig = await fetch('/api/config/obtener/');
+                const dataConfig = await resConfig.json();
+                if (dataConfig.margen_ganancia_defecto !== undefined) {
+                    setMargenDefecto(dataConfig.margen_ganancia_defecto);
+                }
+                if (dataConfig.metodo_ganancia) {
+                    setMetodoGanancia(dataConfig.metodo_ganancia);
+                }
             } catch (error) {
                 console.error("Error cargando datos auxiliares:", error);
             }
@@ -70,6 +83,20 @@ const ProductoForm = ({ producto, onClose, onSave }) => {
             });
         }
     }, [producto, reset]);
+
+    // Cálculo automático del margen sugerido
+    useEffect(() => {
+        if (!producto && costo > 0 && precioEfectivo === 0 && margenDefecto > 0) {
+            let sugerido;
+            if (metodoGanancia === 'MARKUP') {
+                sugerido = parseFloat(costo) * (1 + (margenDefecto / 100));
+            } else {
+                // Margen Real: Costo / (1 - Margen)
+                sugerido = parseFloat(costo) / (1 - (margenDefecto / 100));
+            }
+            reset({ ...watch(), precio_efectivo: sugerido.toFixed(2) });
+        }
+    }, [costo, margenDefecto, metodoGanancia, producto, reset, watch, precioEfectivo]);
 
     const onSubmit = async (data) => {
         setServerError(null);

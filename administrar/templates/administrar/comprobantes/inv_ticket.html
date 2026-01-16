@@ -1,0 +1,205 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Ticket #{{ venta.id }}</title>
+    <style>
+        @page {
+            margin: 0;
+        }
+
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 12px;
+            margin: 0;
+            padding: 10px;
+
+            width: {
+                    {
+                    empresa.papel_impresion|default: "T80" |cut:"T"
+                }
+            }
+
+            mm;
+            color: #000;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .bold {
+            font-weight: bold;
+        }
+
+        .divider {
+            border-top: 1px dashed #000;
+            margin: 10px 0;
+        }
+
+        .header h1 {
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            margin: 2px 0;
+            font-size: 11px;
+        }
+
+        .info {
+            margin: 10px 0;
+            font-size: 11px;
+        }
+
+        .info p {
+            margin: 2px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+
+        th {
+            text-align: left;
+            border-bottom: 1px solid #000;
+            padding: 5px 0;
+            font-size: 11px;
+        }
+
+        td {
+            padding: 5px 0;
+            font-size: 11px;
+            vertical-align: top;
+        }
+
+        .totals {
+            margin-top: 10px;
+        }
+
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 2px 0;
+        }
+
+        .total-final {
+            font-size: 16px;
+            margin-top: 5px;
+            border-top: 1px solid #000;
+            padding-top: 5px;
+        }
+
+        .footer {
+            margin-top: 20px;
+            font-size: 10px;
+        }
+
+        @media print {
+            .no-print {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header text-center">
+        <h1>{{ empresa.nombre }}</h1>
+        <p>{{ empresa.direccion }}</p>
+        <p>CUIT: {{ empresa.cuit|default:"---" }}</p>
+        <p>Tel: {{ empresa.telefono }}</p>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="info">
+        <p><span class="bold">FECHA:</span> {{ venta.fecha|date:"d/m/Y H:i" }}</p>
+        <p><span class="bold">COMP:</span> {{ venta.tipo_comprobante }} - {{
+            venta.numero_factura_formateado|default:venta.id }}</p>
+        <p><span class="bold">CLIENTE:</span> {{ cliente.nombre }}</p>
+        {% if cliente.cuit %}<p><span class="bold">CUIT:</span> {{ cliente.cuit }}</p>{% endif %}
+    </div>
+
+    <div class="divider"></div>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 15%;">Cant</th>
+                <th style="width: 55%;">Desc</th>
+                <th style="width: 30%;" class="text-right">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in detalles %}
+            <tr>
+                <td>{{ item.cantidad|floatformat:0 }}</td>
+                <td>{{ item.producto.descripcion }}</td>
+                <td class="text-right">{{ item.subtotal|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="divider"></div>
+
+    <div class="totals text-right">
+        {% if venta.tipo_comprobante == 'A' %}
+        <div class="total-row">
+            <span>NETO:</span>
+            <span class="bold">$ {{ venta.subtotal|floatformat:2 }}</span>
+        </div>
+        <div class="total-row">
+            <span>IVA (21%):</span>
+            <span class="bold">$ {{ venta.iva_amount|default:"0.00"|floatformat:2 }}</span>
+        </div>
+        {% else %}
+        <div class="total-row">
+            <span>SUBTOTAL:</span>
+            <span class="bold">$ {{ venta.subtotal|floatformat:2 }}</span>
+        </div>
+        {% endif %}
+
+        <div class="total-row total-final">
+            <span class="bold">TOTAL:</span>
+            <span class="bold">$ {{ venta.total|floatformat:2 }}</span>
+        </div>
+    </div>
+
+    <div class="info">
+        <p><span class="bold">MÉTODO PAGO:</span> {{ venta.medio_pago }}</p>
+    </div>
+
+    {% if empresa.pie_factura %}
+    <div class="footer text-center">
+        <p>{{ empresa.pie_factura }}</p>
+    </div>
+    {% endif %}
+
+    <div class="footer text-center">
+        <p>¡Gracias por su compra!</p>
+    </div>
+
+    <div class="no-print text-center" style="margin-top: 20px;">
+        <button onclick="window.print()">Imprimir Ticket</button>
+    </div>
+
+    <script>
+        window.onload = function () {
+            if (!window.location.search.includes('preview')) {
+                // window.print();
+            }
+        }
+    </script>
+</body>
+
+</html>

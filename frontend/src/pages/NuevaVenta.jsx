@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
-import { Search, Plus, Trash2, User, ShoppingCart, CreditCard, DollarSign, FileText, X, Check, Banknote } from 'lucide-react';
-import { BtnSave, BtnCancel } from '../components/CommonButtons';
+import React, { useState, useEffect, useRef } from 'react';
+import { Search, Plus, Trash2, User, ShoppingCart, CreditCard, DollarSign, FileText, Check, X } from 'lucide-react';
+import { BtnSave } from '../components/CommonButtons';
 import { useProductSearch } from '../hooks/useProductSearch';
+import Swal from 'sweetalert2';
 
 // Obtener CSRF Token
 function getCookie(name) {
@@ -21,62 +22,59 @@ function getCookie(name) {
 
 // Lista de bancos argentinos
 const BANCOS_ARGENTINOS = [
-    "Banco de la Nación Argentina",
-    "Banco de la Provincia de Buenos Aires",
-    "Banco Ciudad de Buenos Aires",
-    "Banco Santander Argentina",
-    "Banco Galicia",
-    "Banco BBVA Argentina",
-    "Banco Macro",
-    "Banco HSBC Argentina",
-    "Banco Credicoop",
-    "Banco Patagonia",
-    "Banco ICBC Argentina",
-    "Banco Supervielle",
-    "Banco Comafi",
-    "Banco Hipotecario",
-    "Banco Itaú Argentina",
-    "Banco Columbia",
-    "Banco del Sol",
-    "Banco Piano",
-    "Banco CMF",
-    "Banco Mariva",
-    "Banco Voii",
-    "Banco de Valores",
-    "Banco Municipal de Rosario",
-    "Nuevo Banco de Santa Fe",
-    "Nuevo Banco de Entre Ríos",
-    "Banco de Córdoba",
-    "Banco de San Juan",
-    "Banco de La Pampa",
-    "Banco de Corrientes",
-    "Banco del Chubut",
-    "Banco de Formosa",
-    "Banco de Santa Cruz",
-    "Banco de Tierra del Fuego",
+    "Banco de la Nación Argentina", "Banco de la Provincia de Buenos Aires", "Banco Ciudad de Buenos Aires",
+    "Banco Santander Argentina", "Banco Galicia", "Banco BBVA Argentina", "Banco Macro", "Banco HSBC Argentina",
+    "Banco Credicoop", "Banco Patagonia", "Banco ICBC Argentina", "Banco Supervielle", "Banco Comafi",
+    "Banco Hipotecario", "Banco Itaú Argentina", "Banco Columbia", "Banco del Sol", "Banco Piano",
+    "Banco CMF", "Banco Mariva", "Banco Voii", "Banco de Valores", "Banco Municipal de Rosario",
+    "Nuevo Banco de Santa Fe", "Nuevo Banco de Entre Ríos", "Banco de Córdoba", "Banco de San Juan",
+    "Banco de La Pampa", "Banco de Corrientes", "Banco del Chubut", "Banco de Formosa", "Banco de Santa Cruz",
+    "Banco de Tierra del Fuego"
 ];
 
-const AutoFocusInput = ({ onKeyDownNext, ...props }) => {
-    const inputRef = useRef(null);
-    useLayoutEffect(() => {
-        if (inputRef.current) {
-            inputRef.current.focus();
-            requestAnimationFrame(() => inputRef.current?.focus());
-            setTimeout(() => inputRef.current?.focus(), 200);
-        }
-    }, []);
-    return <input ref={inputRef} {...props} />;
-};
-
 const NuevaVenta = () => {
-    // ==================== STATE ====================
+    // ==================== STATE & REFS ====================
+    // 1. REFS FIRST
+    const codigoRef = useRef(null);
+    const clienteInputRef = useRef(null);
+    const clienteListRef = useRef(null);
+    const cantidadRef = useRef(null);
+    const bancoListRef = useRef(null);
+
+    // 2. STATE NEXT
     const [cliente, setCliente] = useState(null);
     const [busquedaCliente, setBusquedaCliente] = useState('');
     const [clientesSugeridos, setClientesSugeridos] = useState([]);
     const [mostrarSugerenciasCliente, setMostrarSugerenciasCliente] = useState(false);
     const [sugerenciaClienteActiva, setSugerenciaClienteActiva] = useState(0);
 
-    // Campos de entrada de producto
+    const [inputCantidad, setInputCantidad] = useState('1');
+    const [inputPrecio, setInputPrecio] = useState('');
+    const [productoSeleccionado, setProductoSeleccionado] = useState(null);
+
+    const [items, setItems] = useState([]);
+    const [medioPago, setMedioPago] = useState('EFECTIVO');
+    const [generarRemito, setGenerarRemito] = useState(false);
+    const [discriminarIVA, setDiscriminarIVA] = useState(false);
+    const [guardando, setGuardando] = useState(false);
+    const [mensaje, setMensaje] = useState(null);
+
+    // Modal de pago state
+    const [mostrarModalPago, setMostrarModalPago] = useState(false);
+    const [montoPago, setMontoPago] = useState('');
+    const [datosTarjeta, setDatosTarjeta] = useState({ ultimos4: '', cuotas: '1' });
+    const [datosCheque, setDatosCheque] = useState({ banco: '', numero: '', fechaVto: '' });
+
+    // Alertas y Sugerencias
+    const [alertaStock, setAlertaStock] = useState(null);
+    const [bancosSugeridos, setBancosSugeridos] = useState([]);
+    const [mostrarSugerenciasBanco, setMostrarSugerenciasBanco] = useState(false);
+    const [sugerenciaBancoActiva, setSugerenciaBancoActiva] = useState(0);
+
+    // Configuración
+    const [cargandoConfig, setCargandoConfig] = useState(true);
+    const [config, setConfig] = useState({ auto_foco_codigo_barras: false, discriminar_iva_ventas: false });
+
     // ==================== PRODUCT SEARCH HOOK ====================
     const {
         inputCodigo, setInputCodigo,
@@ -84,8 +82,9 @@ const NuevaVenta = () => {
         codigosSugeridos, productosSugeridos,
         mostrarSugerenciasCodigo, mostrarSugerenciasProducto,
         sugerenciaCodigoActiva, sugerenciaActiva,
-        codigoListRef, productoListRef,
-        nextInputRef: productoRef, // Aliasing to match existing usage or replace it
+        codigoListRef,
+        productoListRef,
+        nextInputRef: productoRef,
         handleCodigoKeyDown, handleProductoKeyDown,
         handleCodigoBlur, handleProductoBlur,
         seleccionar: seleccionarProducto,
@@ -95,46 +94,44 @@ const NuevaVenta = () => {
             const precio = medioPago === 'TARJETA' ? producto.precio_tarjeta : producto.precio_efectivo;
             setProductoSeleccionado(producto);
             setInputPrecio(precio.toString());
-            // Focus quantity
+            // Focus quantity safe check
             setTimeout(() => cantidadRef.current?.select(), 50);
         }
     });
 
-    const [inputCantidad, setInputCantidad] = useState('1');
-    const [inputPrecio, setInputPrecio] = useState('');
-    const [productoSeleccionado, setProductoSeleccionado] = useState(null);
+    // ==================== EFFECTS ====================
+    useEffect(() => {
+        const fetchConfig = async () => {
+            try {
+                const response = await fetch('/api/config/obtener/');
+                const data = await response.json();
+                setConfig({
+                    auto_foco_codigo_barras: data.auto_foco_codigo_barras || false,
+                    discriminar_iva_ventas: data.discriminar_iva_ventas || false,
+                    habilita_remitos: data.habilita_remitos || false
+                });
+            } catch (error) {
+                console.error("Error fetching config:", error);
+            } finally {
+                setCargandoConfig(false);
+            }
+        };
+        fetchConfig();
+    }, []);
 
-    const [items, setItems] = useState([]);
-    const [medioPago, setMedioPago] = useState('EFECTIVO');
-    const [generarRemito, setGenerarRemito] = useState(false);
-    const [guardando, setGuardando] = useState(false);
-    const [mensaje, setMensaje] = useState(null);
+    useEffect(() => {
+        if (!cargandoConfig) {
+            setDiscriminarIVA(config.discriminar_iva_ventas);
+            setGenerarRemito(config.habilita_remitos);
+            if (config.auto_foco_codigo_barras) {
+                setTimeout(() => codigoRef.current?.focus(), 100);
+            } else {
+                setTimeout(() => clienteInputRef.current?.focus(), 100);
+            }
+        }
+    }, [cargandoConfig, config]);
 
-    // Modal de pago
-    const [mostrarModalPago, setMostrarModalPago] = useState(false);
-    const [montoPago, setMontoPago] = useState('');
-    const [datosTarjeta, setDatosTarjeta] = useState({ ultimos4: '', cuotas: '1' });
-    const [datosCheque, setDatosCheque] = useState({ banco: '', numero: '', fechaVto: '' });
-
-    // Alerta de Stock
-    const [alertaStock, setAlertaStock] = useState(null);
-
-    // Autocompletado de bancos
-    const [bancosSugeridos, setBancosSugeridos] = useState([]);
-    const [mostrarSugerenciasBanco, setMostrarSugerenciasBanco] = useState(false);
-    const [sugerenciaBancoActiva, setSugerenciaBancoActiva] = useState(0);
-    const bancoListRef = useRef(null);
-
-    // Referencias
-    const codigoRef = useRef(null);
-    // productoRef is now from hook
-    const cantidadRef = useRef(null);
-    const clienteInputRef = useRef(null);
-
-    // Referencias para scroll automático en listas (Hooks refs used for product/code)
-    const clienteListRef = useRef(null);
-
-    // ==================== BUSCAR BANCO ====================
+    // Buscar Bancos
     useEffect(() => {
         const busqueda = datosCheque.banco;
         if (!busqueda || busqueda.length < 2) {
@@ -150,7 +147,7 @@ const NuevaVenta = () => {
         setSugerenciaBancoActiva(0);
     }, [datosCheque.banco]);
 
-    // ==================== BUSCAR CLIENTE ====================
+    // Buscar Clientes
     useEffect(() => {
         if (!busquedaCliente || busquedaCliente.length < 2) {
             setClientesSugeridos([]);
@@ -175,7 +172,7 @@ const NuevaVenta = () => {
         return () => clearTimeout(timer);
     }, [busquedaCliente]);
 
-    // ==================== OBTENER INICIALES ====================
+    // ==================== HELPERS & HANDLERS ====================
     const getInitials = (nombre) => {
         if (!nombre) return '?';
         const palabras = nombre.trim().split(/\s+/);
@@ -185,7 +182,6 @@ const NuevaVenta = () => {
         return nombre.substring(0, 2).toUpperCase();
     };
 
-    // ==================== SELECCIONAR CLIENTE ====================
     const seleccionarCliente = (c) => {
         setCliente(c);
         setBusquedaCliente('');
@@ -194,21 +190,17 @@ const NuevaVenta = () => {
         setTimeout(() => codigoRef.current?.focus(), 100);
     };
 
-    // ==================== MANEJO DE TECLAS - CLIENTE ====================
     const handleClienteKeyDown = (e) => {
         if (e.key === 'ArrowDown') {
             e.preventDefault();
             const newIndex = Math.min(sugerenciaClienteActiva + 1, clientesSugeridos.length - 1);
             setSugerenciaClienteActiva(newIndex);
-            // Scroll al item
-            const item = clienteListRef.current?.children[newIndex];
-            item?.scrollIntoView({ block: 'nearest' });
+            clienteListRef.current?.children[newIndex]?.scrollIntoView({ block: 'nearest' });
         } else if (e.key === 'ArrowUp') {
             e.preventDefault();
             const newIndex = Math.max(sugerenciaClienteActiva - 1, 0);
             setSugerenciaClienteActiva(newIndex);
-            const item = clienteListRef.current?.children[newIndex];
-            item?.scrollIntoView({ block: 'nearest' });
+            clienteListRef.current?.children[newIndex]?.scrollIntoView({ block: 'nearest' });
         } else if (e.key === 'Enter') {
             e.preventDefault();
             if (clientesSugeridos.length > 0) {
@@ -219,14 +211,12 @@ const NuevaVenta = () => {
         }
     };
 
-    // ==================== CERRAR ALERTA STOCK ====================
     const cerrarAlertaStock = () => {
         setAlertaStock(null);
         limpiarCamposEntrada();
         codigoRef.current?.focus();
     };
 
-    // ==================== AGREGAR PRODUCTO A LA LISTA ====================
     const agregarProductoALista = () => {
         if (!productoSeleccionado) return;
 
@@ -234,7 +224,7 @@ const NuevaVenta = () => {
         if (productoSeleccionado.stock <= 0) {
             setAlertaStock({
                 titulo: 'Producto sin Stock',
-                mensaje: `El producto "${productoSeleccionado.descripcion}" no tiene stock disponible para la venta.`
+                mensaje: `El producto "${productoSeleccionado.descripcion}" no tiene stock disponible.`
             });
             return;
         }
@@ -242,7 +232,7 @@ const NuevaVenta = () => {
         const cantidad = parseFloat(inputCantidad) || 1;
         const precio = parseFloat(inputPrecio) || productoSeleccionado.precio_efectivo;
 
-        // Calcular cantidad total (si ya existe en el carrito)
+        // Validar cantidad
         const existe = items.find(i => i.id === productoSeleccionado.id);
         const cantidadTotal = existe ? existe.cantidad + cantidad : cantidad;
 
@@ -268,11 +258,12 @@ const NuevaVenta = () => {
                 precio: precio,
                 cantidad: cantidad,
                 subtotal: cantidad * precio,
-                stock: productoSeleccionado.stock
+                stock: productoSeleccionado.stock,
+                iva_alicuota: productoSeleccionado.iva_alicuota || 21.0
             }]);
         }
 
-        setMensaje(null); // Limpiar mensaje si fue exitoso
+        setMensaje(null);
         limpiarCamposEntrada();
         codigoRef.current?.focus();
     };
@@ -291,9 +282,9 @@ const NuevaVenta = () => {
         }
     };
 
-    // ==================== MODIFICAR CANTIDAD EN LISTA ====================
     const cambiarCantidad = (id, nuevaCantidad) => {
         if (nuevaCantidad < 1) return;
+        // Check stock limit logic could go here too
         setItems(items.map(i =>
             i.id === id
                 ? { ...i, cantidad: nuevaCantidad, subtotal: nuevaCantidad * i.precio }
@@ -308,34 +299,20 @@ const NuevaVenta = () => {
     const totalGeneral = items.reduce((acc, i) => acc + i.subtotal, 0);
     const vuelto = parseFloat(montoPago || 0) - totalGeneral;
 
-    // ==================== ABRIR MODAL DE PAGO ====================
-    // ==================== ABRIR MODAL DE PAGO ====================
     const abrirModalPago = () => {
         if (items.length === 0) {
             setMensaje({ tipo: 'error', texto: 'Debe agregar al menos un producto.' });
             return;
         }
-        setMontoPago('');
+        setMontoPago(''); // Reset or set to total
         setDatosTarjeta({ ultimos4: '', cuotas: '1' });
         setDatosCheque({ banco: '', numero: '', fechaVto: '' });
         setMostrarModalPago(true);
     };
 
-    // Callback ref eliminado en favor de AutoFocusInput
-
-
-    const handleTarjetaKeyDown = (e) => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            document.getElementById('input-tarjeta-cuotas')?.focus();
-        }
-    };
-
     const seleccionarBanco = (banco) => {
         setDatosCheque({ ...datosCheque, banco: banco });
         setMostrarSugerenciasBanco(false);
-        // document.getElementById('input-cheque-numero')?.focus(); // Idealmente, pero usaremos ref o ID simple
-        // Pequeño timeout para asegurar que el input exista/esté visible tras render
         setTimeout(() => {
             const el = document.querySelector('input[placeholder="Nº Cheque"]');
             if (el) el.focus();
@@ -347,29 +324,22 @@ const NuevaVenta = () => {
             e.preventDefault();
             const newIndex = Math.min(sugerenciaBancoActiva + 1, bancosSugeridos.length - 1);
             setSugerenciaBancoActiva(newIndex);
-            const item = bancoListRef.current?.children[newIndex];
-            item?.scrollIntoView({ block: 'nearest' });
+            bancoListRef.current?.children[newIndex]?.scrollIntoView({ block: 'nearest' });
         } else if (e.key === 'ArrowUp') {
             e.preventDefault();
             const newIndex = Math.max(sugerenciaBancoActiva - 1, 0);
             setSugerenciaBancoActiva(newIndex);
-            const item = bancoListRef.current?.children[newIndex];
-            item?.scrollIntoView({ block: 'nearest' });
+            bancoListRef.current?.children[newIndex]?.scrollIntoView({ block: 'nearest' });
         } else if (e.key === 'Enter') {
             e.preventDefault();
             if (mostrarSugerenciasBanco && bancosSugeridos.length > 0) {
                 seleccionarBanco(bancosSugeridos[sugerenciaBancoActiva]);
-            } else {
-                // Si dio enter sin seleccionar de la lista, pasa al siguiente
-                const el = document.querySelector('input[placeholder="Nº Cheque"]');
-                if (el) el.focus();
             }
         } else if (e.key === 'Escape') {
             setMostrarSugerenciasBanco(false);
         }
     };
 
-    // ==================== GUARDAR VENTA ====================
     const guardarVenta = async () => {
         setGuardando(true);
         setMensaje(null);
@@ -387,7 +357,10 @@ const NuevaVenta = () => {
                         id: i.id,
                         cantidad: i.cantidad,
                         precio: i.precio,
-                        subtotal: i.subtotal
+                        subtotal: i.subtotal,
+                        neto: discriminarIVA ? (i.subtotal / (1 + (i.iva_alicuota || 21) / 100)) : i.subtotal,
+                        iva_amount: discriminarIVA ? (i.subtotal - (i.subtotal / (1 + (i.iva_alicuota || 21) / 100))) : 0,
+                        discriminado: discriminarIVA
                     })),
                     total_general: totalGeneral,
                     medio_pago: medioPago,
@@ -397,7 +370,9 @@ const NuevaVenta = () => {
                         vuelto: medioPago === 'EFECTIVO' ? Math.max(0, vuelto) : 0,
                         tarjeta: datosTarjeta,
                         cheque: datosCheque
-                    }
+                    },
+                    discriminar_iva: discriminarIVA,
+                    tipo_comprobante: discriminarIVA && cliente?.condicion_fiscal === 'RI' ? 'A' : 'B'
                 })
             });
 
@@ -408,7 +383,6 @@ const NuevaVenta = () => {
                 setMensaje({ tipo: 'success', texto: `Venta #${data.venta_id} registrada correctamente.` });
                 setCliente(null);
                 setItems([]);
-                setGenerarRemito(false);
                 setGenerarRemito(false);
                 limpiarCamposEntrada();
                 setTimeout(() => clienteInputRef.current?.focus(), 100);
@@ -422,7 +396,8 @@ const NuevaVenta = () => {
         }
     };
 
-    // ==================== RENDER ====================
+    // ==================== UI PARTS ====================
+
     return (
         <div className="p-6 max-w-7xl mx-auto h-[calc(100vh-2rem)] flex flex-col fade-in">
             {/* Header */}
@@ -438,38 +413,23 @@ const NuevaVenta = () => {
 
             {/* Mensaje */}
             {mensaje && (
-                <div className={`mb-4 p-4 rounded-xl flex-shrink-0 shadow-sm border-l-4 ${mensaje.tipo === 'success'
-                    ? 'bg-white border-green-500 text-green-800'
-                    : 'bg-white border-red-500 text-red-800'
-                    }`}>
+                <div className={`mb-4 p-4 rounded-xl flex-shrink-0 shadow-sm border-l-4 ${mensaje.tipo === 'success' ? 'bg-white border-green-500 text-green-800' : 'bg-white border-red-500 text-red-800'}`}>
                     <div className="flex items-center gap-3">
                         {mensaje.tipo === 'success' ? <Check size={20} className="text-green-500" /> : <X size={20} className="text-red-500" />}
                         <span className="font-medium">{mensaje.texto}</span>
                     </div>
                 </div>
-            )
-            }
+            )}
 
             {/* Layout principal */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-0">
 
-                {/* =============== COLUMNA IZQUIERDA (4 cols) =============== */}
-                <div
-                    className="lg:col-span-4 flex flex-col gap-6 overflow-y-auto pr-1"
-                    style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-                >
-                    <style>
-                        {`
-                            .lg\\:col-span-4::-webkit-scrollbar {
-                                display: none;
-                            }
-                        `}
-                    </style>
-
+                {/* CLOUMNA IZQUIERDA (CLIENTE / PROVEEDOR / INFO) */}
+                <div className="lg:col-span-4 flex flex-col gap-6 overflow-y-auto pr-1">
                     {/* Cliente Card */}
-                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow p-5 flex-shrink-0 group">
+                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 flex-shrink-0">
                         <div className="flex items-center gap-2 mb-4">
-                            <div className="p-2 bg-blue-50 text-blue-600 rounded-lg group-hover:bg-blue-100 transition-colors">
+                            <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
                                 <User size={20} />
                             </div>
                             <h2 className="font-bold text-slate-700 text-lg">Cliente</h2>
@@ -489,18 +449,18 @@ const NuevaVenta = () => {
                                 className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 bg-slate-50 transition-all font-medium"
                             />
                             {mostrarSugerenciasCliente && clientesSugeridos.length > 0 && (
-                                <div ref={clienteListRef} className="absolute z-10 w-full mt-2 bg-white border border-slate-100 rounded-xl shadow-xl max-h-60 overflow-y-auto overflow-hidden ring-1 ring-black/5">
+                                <div ref={clienteListRef} className="absolute z-10 w-full mt-2 bg-white border border-slate-100 rounded-xl shadow-xl max-h-60 overflow-y-auto ring-1 ring-black/5">
                                     {clientesSugeridos.map((c, idx) => (
                                         <div
                                             key={c.id}
                                             onClick={() => seleccionarCliente(c)}
-                                            className={`px-4 py-3 cursor-pointer border-b border-slate-50 last:border-b-0 flex items-center justify-between ${idx === sugerenciaClienteActiva ? 'bg-blue-50' : 'hover:bg-slate-50'}`}
+                                            className={`px-4 py-3 cursor-pointer border-b border-slate-50 flex items-center justify-between ${idx === sugerenciaClienteActiva ? 'bg-blue-50' : 'hover:bg-slate-50'}`}
                                         >
                                             <div>
                                                 <div className="font-bold text-slate-800">{c.nombre}</div>
                                                 <div className="text-xs text-slate-500 font-mono mt-0.5">{c.cuit || 'Sin CUIT'}</div>
                                             </div>
-                                            {idx === sugerenciaClienteActiva && <div className="text-blue-500"><Check size={16} /></div>}
+                                            {idx === sugerenciaClienteActiva && <Check size={16} className="text-blue-500" />}
                                         </div>
                                     ))}
                                 </div>
@@ -523,8 +483,6 @@ const NuevaVenta = () => {
                                 <button onClick={() => setCliente(null)} className="text-slate-400 hover:text-red-500 hover:bg-white p-2 rounded-full transition-all relative z-10">
                                     <Trash2 size={16} />
                                 </button>
-                                {/* Decoration */}
-                                <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl"></div>
                             </div>
                         ) : (
                             <div className="mt-3 flex items-center gap-2 text-slate-400 px-2">
@@ -534,25 +492,24 @@ const NuevaVenta = () => {
                         )}
                     </div>
 
-                    {/* Medio de Pago Card */}
-                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow p-5 flex-shrink-0 group">
+                    {/* Botones de Método de Pago y Opciones */}
+                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 flex-shrink-0">
                         <div className="flex items-center gap-2 mb-4">
-                            <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg group-hover:bg-emerald-100 transition-colors">
+                            <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
                                 <CreditCard size={20} />
                             </div>
                             <h2 className="font-bold text-slate-700 text-lg">Método de Pago</h2>
                         </div>
-
                         <div className="grid grid-cols-2 gap-3">
                             {[
                                 { value: 'EFECTIVO', label: 'Efectivo', icon: DollarSign, color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-200' },
                                 { value: 'TARJETA', label: 'Tarjeta', icon: CreditCard, color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-200' },
                                 { value: 'CTACTE', label: 'Cta. Cte.', icon: FileText, color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-200' },
-                                { value: 'CHEQUE', label: 'Cheque', icon: Banknote, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200' },
+                                { value: 'CHEQUE', label: 'Cheque', icon: DollarSign, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200' },
                             ].map(({ value, label, icon: Icon, color, bg, border }) => {
                                 const active = medioPago === value;
                                 return (
-                                    <label key={value} className={`relative flex flex-col items-center justify-center gap-2 p-3 rounded-xl cursor-pointer border-2 transition-all duration-200 ${active ? `${border} ${bg}` : 'border-slate-100 hover:border-slate-300 hover:bg-slate-50'}`}>
+                                    <label key={value} className={`relative flex flex-col items-center justify-center gap-2 p-3 rounded-xl cursor-pointer border-2 transition-all ${active ? `${border} ${bg}` : 'border-slate-100 hover:border-slate-300 hover:bg-slate-50'}`}>
                                         <input type="radio" name="medioPago" value={value} checked={active} onChange={(e) => setMedioPago(e.target.value)} className="hidden" />
                                         <Icon size={24} className={active ? color : 'text-slate-400'} />
                                         <span className={`font-semibold text-sm ${active ? 'text-slate-800' : 'text-slate-500'}`}>{label}</span>
@@ -562,23 +519,14 @@ const NuevaVenta = () => {
                             })}
                         </div>
 
-                        <label className="flex items-center justify-between mt-4 p-3 border border-slate-100 rounded-xl bg-slate-50 cursor-pointer hover:bg-slate-100 transition-colors">
-                            <span className="text-slate-700 font-medium text-sm flex items-center gap-2">
-                                <FileText size={16} className="text-slate-400" /> Generar Remito
-                            </span>
-                            <div className={`w-11 h-6 flex items-center bg-gray-300 rounded-full p-1 duration-300 ease-in-out ${generarRemito ? 'bg-blue-600' : ''}`}>
-                                <div className={`bg-white w-4 h-4 rounded-full shadow-md transform duration-300 ease-in-out ${generarRemito ? 'translate-x-5' : ''}`}></div>
-                            </div>
-                            <input type="checkbox" checked={generarRemito} onChange={(e) => setGenerarRemito(e.target.checked)} className="hidden" />
-                        </label>
+                        {/* Opciones ocultas controladas por Parametros */}
                     </div>
                 </div>
 
-                {/* =============== COLUMNA DERECHA (8 cols) - PRODUCTOS =============== */}
+                {/* COLUMNA DERECHA (CARRITO) */}
                 <div className="lg:col-span-8 flex flex-col min-h-0">
                     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col flex-1 min-h-0 overflow-hidden relative">
-
-                        {/* Header + Tooltip */}
+                        {/* Header carrito */}
                         <div className="p-4 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between flex-shrink-0">
                             <div className="flex items-center gap-2">
                                 <div className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg">
@@ -607,7 +555,6 @@ const NuevaVenta = () => {
                                         placeholder="XXX"
                                         className="w-full px-3 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-slate-50 font-mono text-sm uppercase text-center font-bold tracking-wide"
                                     />
-                                    {/* Dropdown Código */}
                                     {mostrarSugerenciasCodigo && codigosSugeridos.length > 0 && (
                                         <div ref={codigoListRef} className="absolute left-0 top-full mt-1 w-72 bg-white border border-slate-200 rounded-xl shadow-2xl max-h-64 overflow-y-auto z-50">
                                             {codigosSugeridos.map((p, idx) => (
@@ -640,7 +587,6 @@ const NuevaVenta = () => {
                                         placeholder="Buscar producto por nombre..."
                                         className="w-full px-3 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-slate-50 text-sm font-medium"
                                     />
-                                    {/* Dropdown Producto */}
                                     {mostrarSugerenciasProducto && productosSugeridos.length > 0 && (
                                         <div ref={productoListRef} className="absolute left-0 top-full mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-2xl max-h-64 overflow-y-auto z-50">
                                             {productosSugeridos.map((p, idx) => (
@@ -683,34 +629,67 @@ const NuevaVenta = () => {
                                             <th className="px-6 py-3 text-left w-24">Código</th>
                                             <th className="px-6 py-3 text-left">Producto</th>
                                             <th className="px-6 py-3 text-center w-32">Cantidad</th>
-                                            <th className="px-6 py-3 text-right w-32">Precio</th>
-                                            <th className="px-6 py-3 text-right w-32">Subtotal</th>
+                                            {discriminarIVA ? (
+                                                <>
+                                                    <th className="px-6 py-3 text-right">Neto Unit.</th>
+                                                    <th className="px-6 py-3 text-center w-20">IVA</th>
+                                                    <th className="px-6 py-3 text-right">Total</th>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <th className="px-6 py-3 text-right w-32">Precio</th>
+                                                    <th className="px-6 py-3 text-right w-32">Subtotal</th>
+                                                </>
+                                            )}
                                             <th className="px-6 py-3 w-16"></th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100 bg-white">
-                                        {items.map((item) => (
-                                            <tr key={item.id} className="hover:bg-blue-50/30 transition-colors group">
-                                                <td className="px-6 py-4 font-mono text-xs font-bold text-slate-500">{item.codigo}</td>
-                                                <td className="px-6 py-4">
-                                                    <p className="font-semibold text-slate-800">{item.descripcion}</p>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <div className="flex items-center justify-center bg-slate-100 rounded-lg p-1 w-fit mx-auto">
-                                                        <button onClick={() => cambiarCantidad(item.id, item.cantidad - 1)} className="w-6 h-6 rounded flex items-center justify-center text-slate-500 hover:bg-white hover:text-red-500 transition-colors disabled:opacity-50">-</button>
-                                                        <span className="w-8 text-center font-bold text-slate-700 text-xs">{item.cantidad}</span>
-                                                        <button onClick={() => cambiarCantidad(item.id, item.cantidad + 1)} className="w-6 h-6 rounded flex items-center justify-center text-slate-500 hover:bg-white hover:text-green-600 transition-colors">+</button>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 text-right text-slate-600 font-medium">${item.precio.toLocaleString('es-AR')}</td>
-                                                <td className="px-6 py-4 text-right font-bold text-slate-800">${item.subtotal.toLocaleString('es-AR')}</td>
-                                                <td className="px-6 py-4 text-center">
-                                                    <button onClick={() => eliminarItem(item.id)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
-                                                        <Trash2 size={18} />
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))}
+                                        {items.map((item) => {
+                                            const alicuota = item.iva_alicuota || 21.0;
+                                            const netoUnitario = item.precio / (1 + alicuota / 100);
+
+                                            return (
+                                                <tr key={item.id} className="hover:bg-blue-50/30 transition-colors group">
+                                                    <td className="px-6 py-4 font-mono text-xs font-bold text-slate-500">{item.codigo}</td>
+                                                    <td className="px-6 py-4">
+                                                        <p className="font-semibold text-slate-800">{item.descripcion}</p>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center justify-center bg-slate-100 rounded-lg p-1 w-fit mx-auto">
+                                                            <button onClick={() => cambiarCantidad(item.id, item.cantidad - 1)} className="w-6 h-6 rounded flex items-center justify-center text-slate-500 hover:bg-white hover:text-red-500 transition-colors disabled:opacity-50">-</button>
+                                                            <span className="w-8 text-center font-bold text-slate-700 text-xs">{item.cantidad}</span>
+                                                            <button onClick={() => cambiarCantidad(item.id, item.cantidad + 1)} className="w-6 h-6 rounded flex items-center justify-center text-slate-500 hover:bg-white hover:text-green-600 transition-colors">+</button>
+                                                        </div>
+                                                    </td>
+
+                                                    {discriminarIVA ? (
+                                                        <>
+                                                            <td className="px-6 py-4 text-right text-slate-600 font-medium">
+                                                                ${netoUnitario.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                            </td>
+                                                            <td className="px-6 py-4 text-center">
+                                                                <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-xs font-bold">{alicuota}%</span>
+                                                            </td>
+                                                            <td className="px-6 py-4 text-right font-bold text-slate-800">
+                                                                ${item.subtotal.toLocaleString('es-AR')}
+                                                            </td>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <td className="px-6 py-4 text-right text-slate-600 font-medium">${item.precio.toLocaleString('es-AR')}</td>
+                                                            <td className="px-6 py-4 text-right font-bold text-slate-800">${item.subtotal.toLocaleString('es-AR')}</td>
+                                                        </>
+                                                    )}
+
+                                                    <td className="px-6 py-4 text-center">
+                                                        <button onClick={() => eliminarItem(item.id)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
+                                                            <Trash2 size={18} />
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
                                     </tbody>
                                 </table>
                             ) : (
@@ -724,16 +703,37 @@ const NuevaVenta = () => {
                             )}
                         </div>
 
-                        {/* Footer Total - DARK STYLE */}
+                        {/* Footer Total */}
                         <div className="p-5 bg-slate-900 text-white flex-shrink-0 mt-auto rounded-b-xl shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
                             <div className="flex justify-between items-center">
-                                <div className="space-y-1">
-                                    <p className="text-slate-400 text-sm font-medium uppercase tracking-wider">Total a Pagar</p>
-                                    <div className="flex items-baseline gap-2">
-                                        <span className="text-4xl font-black tracking-tight">${totalGeneral.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
-                                        <span className="text-slate-400 font-light">ARS</span>
+                                {discriminarIVA ? (
+                                    <div className="flex items-center gap-8">
+                                        <div className="space-y-0.5">
+                                            <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">Subtotal Neto</p>
+                                            <p className="text-xl font-bold text-slate-200">${(totalGeneral / 1.21).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</p>
+                                        </div>
+                                        <div className="space-y-0.5 relative">
+                                            <div className="absolute -left-4 top-1/2 -translate-y-1/2 w-px h-8 bg-slate-700"></div>
+                                            <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">IVA (21%)</p>
+                                            <p className="text-xl font-bold text-slate-200">${(totalGeneral - (totalGeneral / 1.21)).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</p>
+                                            <div className="absolute -right-4 top-1/2 -translate-y-1/2 w-px h-8 bg-slate-700"></div>
+                                        </div>
+                                        <div className="space-y-0.5">
+                                            <p className="text-emerald-400 text-sm font-black uppercase tracking-wider">Total Final</p>
+                                            <div className="flex items-baseline gap-1">
+                                                <span className="text-3xl font-black tracking-tight text-emerald-400">${totalGeneral.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
+                                ) : (
+                                    <div className="space-y-1">
+                                        <p className="text-slate-400 text-sm font-medium uppercase tracking-wider">Total a Cobrar</p>
+                                        <div className="flex items-baseline gap-2">
+                                            <span className="text-4xl font-black tracking-tight">${totalGeneral.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+                                            <span className="text-slate-400 font-light">ARS</span>
+                                        </div>
+                                    </div>
+                                )}
                                 <BtnSave
                                     label="Confirmar Venta"
                                     onClick={abrirModalPago}
@@ -742,233 +742,193 @@ const NuevaVenta = () => {
                                 />
                             </div>
                         </div>
+
                     </div>
                 </div>
+
             </div>
 
-            {/* ==================== MODAL DE PAGO (Mejorado) ==================== */}
-            {
-                mostrarModalPago && (
-                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50">
-                        <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md mx-4 overflow-hidden animate-in fade-in zoom-in duration-200">
-                            {/* Header */}
-                            <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white px-8 py-6 relative overflow-hidden">
-                                <div className="relative z-10 flex justify-between items-center">
-                                    <div>
-                                        <h3 className="font-bold text-xl">Finalizar Venta</h3>
-                                        <p className="text-blue-100 text-sm mt-1">Registrando pago con {medioPago}</p>
-                                    </div>
-                                    <button onClick={() => setMostrarModalPago(false)} className="bg-white/10 hover:bg-white/20 rounded-full p-2 transition-colors">
-                                        <X size={24} />
-                                    </button>
+            {/* ==================== SCREEN OVERLAY ALERT STOCK ==================== */}
+            {alertaStock && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden text-center p-6 border border-slate-200">
+                        <div className="mx-auto bg-red-50 w-12 h-12 rounded-full flex items-center justify-center mb-4 text-red-600">
+                            <X size={24} />
+                        </div>
+                        <h3 className="text-lg font-bold text-slate-800 mb-2">{alertaStock.titulo}</h3>
+                        <p className="text-slate-600 mb-6">{alertaStock.mensaje}</p>
+                        <button
+                            onClick={cerrarAlertaStock}
+                            className="w-full py-2.5 bg-slate-800 text-white font-bold rounded-xl hover:bg-slate-900 transition-colors"
+                        >
+                            Entendido
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* ==================== MODAL DE PAGO ==================== */}
+            {mostrarModalPago && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md mx-4 overflow-visible animate-in fade-in zoom-in duration-200">
+                        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white px-8 py-6 relative overflow-hidden rounded-t-3xl">
+                            <div className="relative z-10 flex justify-between items-center">
+                                <div>
+                                    <h3 className="font-bold text-xl">Completar Pago</h3>
+                                    <p className="text-blue-100 text-sm mt-1">{medioPago}</p>
                                 </div>
-                                <div className="absolute -right-6 -top-6 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
-                            </div>
-
-                            <div className="p-8">
-                                {/* Total Center */}
-                                <div className="text-center mb-8">
-                                    <p className="text-slate-500 font-medium mb-1 uppercase tracking-wider text-xs">Monto Total</p>
-                                    <p className="text-5xl font-black text-slate-800 tracking-tight">${totalGeneral.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</p>
-                                </div>
-
-                                {/* Campos según medio de pago */}
-                                <div className="space-y-6">
-                                    {medioPago === 'EFECTIVO' && (
-                                        <div className="animate-in fade-in slide-in-from-bottom-2">
-                                            <label className="block text-sm font-bold text-slate-700 mb-2">DINERO RECIBIDO</label>
-                                            <div className="relative">
-                                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xl">$</span>
-                                                {/* AutoFocusInput definition moved here as per instruction */}
-                                                {/* Note: In a real-world scenario, AutoFocusInput would typically be defined outside the component or imported. */}
-                                                {/* Defining it inside will cause it to be re-declared on every render, which is generally not ideal for performance. */}
-                                                {/* However, following the instruction faithfully. */}
-                                                <AutoFocusInput
-                                                    key={medioPago}
-                                                    id="input-monto-pago"
-                                                    type="number"
-                                                    value={montoPago}
-                                                    onChange={(e) => setMontoPago(e.target.value)}
-                                                    placeholder="0.00"
-                                                    className="w-full pl-10 pr-4 py-4 border-2 border-slate-200 rounded-xl text-2xl font-bold focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none"
-                                                />
-                                            </div>
-
-                                            {montoPago && parseFloat(montoPago) >= totalGeneral && (
-                                                <div className="mt-6 bg-green-50 border border-green-200 rounded-xl p-5 text-center transform transition-all">
-                                                    <p className="text-green-700 font-semibold mb-1">Vuelto a entregar</p>
-                                                    <p className="text-4xl font-bold text-green-600">${vuelto.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</p>
-                                                </div>
-                                            )}
-                                            {montoPago && parseFloat(montoPago) < totalGeneral && (
-                                                <div className="mt-6 bg-red-50 border border-red-200 rounded-xl p-5 flex items-center gap-3">
-                                                    <div className="bg-red-100 p-2 rounded-full text-red-600"><X size={20} /></div>
-                                                    <div>
-                                                        <p className="text-red-700 font-bold">Pago insuficiente</p>
-                                                        <p className="text-red-600 text-sm">Faltan: ${Math.abs(vuelto).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</p>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-
-                                    {medioPago === 'TARJETA' && (
-                                        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
-                                            <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
-                                                <div className="flex gap-4">
-                                                    <div className="flex-1">
-                                                        <label className="block text-xs font-bold text-slate-500 mb-1">ÚLTIMOS 4</label>
-                                                        <AutoFocusInput
-                                                            key="input-tarjeta-ultimos4-input"
-                                                            type="text"
-                                                            maxLength={4}
-                                                            value={datosTarjeta.ultimos4}
-                                                            onChange={(e) => setDatosTarjeta({ ...datosTarjeta, ultimos4: e.target.value })}
-                                                            placeholder="****"
-                                                            className="w-full px-4 py-3 border border-slate-200 rounded-lg text-lg font-mono text-center focus:border-blue-500 outline-none"
-                                                            id="input-tarjeta-ultimos4"
-                                                            onKeyDown={handleTarjetaKeyDown}
-                                                        />
-                                                    </div>
-                                                    <div className="flex-1">
-                                                        <label className="block text-xs font-bold text-slate-500 mb-1">CUOTAS</label>
-                                                        <select
-                                                            id="input-tarjeta-cuotas"
-                                                            value={datosTarjeta.cuotas}
-                                                            onChange={(e) => setDatosTarjeta({ ...datosTarjeta, cuotas: e.target.value })}
-                                                            className="w-full px-4 py-3 border border-slate-200 rounded-lg text-lg text-center outline-none focus:border-blue-500 bg-white"
-                                                        >
-                                                            {[1, 3, 6, 12, 18].map(c => <option key={c} value={c}>{c}</option>)}
-                                                        </select>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {medioPago === 'CHEQUE' && (
-                                        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
-                                            <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-4">
-                                                <div className="relative">
-                                                    <label className="block text-xs font-bold text-slate-500 mb-1">BANCO</label>
-                                                    <AutoFocusInput
-                                                        key="input-banco" // Clave única para re-mount y autofocus
-                                                        type="text"
-                                                        value={datosCheque.banco}
-                                                        onChange={(e) => setDatosCheque({ ...datosCheque, banco: e.target.value })}
-                                                        onKeyDown={handleBancoKeyDown}
-                                                        onBlur={() => setTimeout(() => setMostrarSugerenciasBanco(false), 200)}
-                                                        placeholder="Nombre del banco..."
-                                                        className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:border-blue-500 outline-none bg-white"
-                                                    />
-                                                    {/* Dropdown Bancos */}
-                                                    {mostrarSugerenciasBanco && bancosSugeridos.length > 0 && (
-                                                        <div ref={bancoListRef} className="absolute left-0 top-full mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-2xl max-h-48 overflow-y-auto z-50">
-                                                            {bancosSugeridos.map((b, idx) => (
-                                                                <div
-                                                                    key={idx}
-                                                                    onClick={() => seleccionarBanco(b)}
-                                                                    className={`px-4 py-3 cursor-pointer border-b border-slate-50 last:border-b-0 ${idx === sugerenciaBancoActiva ? 'bg-blue-50 text-blue-800 font-bold' : 'hover:bg-slate-50 text-slate-700'}`}
-                                                                >
-                                                                    {b}
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                <div className="grid grid-cols-2 gap-4">
-                                                    <div>
-                                                        <label className="block text-xs font-bold text-slate-500 mb-1">NÚMERO</label>
-                                                        <input
-                                                            type="text"
-                                                            value={datosCheque.numero}
-                                                            onChange={(e) => {
-                                                                const val = e.target.value.replace(/\D/g, ''); // Solo números
-                                                                setDatosCheque({ ...datosCheque, numero: val });
-                                                            }}
-                                                            maxLength={20}
-                                                            onKeyDown={(e) => {
-                                                                if (e.key === 'Enter') {
-                                                                    e.preventDefault();
-                                                                    document.getElementById('input-cheque-vencimiento')?.focus();
-                                                                    document.getElementById('input-cheque-vencimiento')?.showPicker(); // Opcional: abrir calendario
-                                                                }
-                                                            }}
-                                                            placeholder="Nº Cheque"
-                                                            className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:border-blue-500 outline-none bg-white"
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <label className="block text-xs font-bold text-slate-500 mb-1">VENCIMIENTO</label>
-                                                        <input
-                                                            id="input-cheque-vencimiento"
-                                                            type="date"
-                                                            value={datosCheque.fechaVto}
-                                                            onChange={(e) => setDatosCheque({ ...datosCheque, fechaVto: e.target.value })}
-                                                            className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:border-blue-500 outline-none bg-white"
-                                                        />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {medioPago === 'CTACTE' && (
-                                        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                                            <p className="text-amber-800">
-                                                Se cargará a la cuenta corriente del cliente: <strong>{cliente?.nombre || 'Consumidor Final'}</strong>
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Botones */}
-                                <div className="px-6 py-4 bg-slate-50 flex gap-3">
-                                    <BtnCancel
-                                        onClick={() => setMostrarModalPago(false)}
-                                        className="flex-1"
-                                    />
-                                    <BtnSave
-                                        label={guardando ? 'Guardando...' : 'Confirmar'}
-                                        onClick={guardarVenta}
-                                        disabled={guardando || (medioPago === 'EFECTIVO' && (!montoPago || parseFloat(montoPago) < totalGeneral))}
-                                        loading={guardando}
-                                        className="flex-1 justify-center"
-                                    />
-                                </div>
+                                <button onClick={() => setMostrarModalPago(false)} className="bg-white/10 hover:bg-white/20 rounded-full p-2 transition-colors">
+                                    <X size={24} />
+                                </button>
                             </div>
                         </div>
-                    </div>
-                )
-            }
 
-            {/* ==================== MODAL DE ALERTA STOCK ==================== */}
-            {
-                alertaStock && (
-                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[60]">
-                        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden animate-in zoom-in-95 duration-200">
-                            <div className="p-6 text-center">
-                                <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-6">
-                                    <X className="h-8 w-8 text-red-600" />
+                        <div className="p-8">
+                            <div className="text-center mb-8">
+                                <p className="text-slate-500 font-medium mb-1 uppercase tracking-wider text-xs">Total a Pagar</p>
+                                <p className="text-5xl font-black text-slate-800 tracking-tight">${totalGeneral.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</p>
+                            </div>
+
+                            {/* EFECTIVO */}
+                            {medioPago === 'EFECTIVO' && (
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 mb-2">Monto Recibido</label>
+                                        <div className="relative">
+                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
+                                            <input
+                                                type="number"
+                                                autoFocus
+                                                className="w-full pl-8 pr-4 py-3 text-lg font-bold border border-slate-300 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 text-slate-800"
+                                                placeholder={totalGeneral.toString()}
+                                                value={montoPago}
+                                                onChange={(e) => setMontoPago(e.target.value)}
+                                                onKeyDown={(e) => e.key === 'Enter' && guardarVenta()}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {parseFloat(montoPago) > totalGeneral && (
+                                        <div className="bg-green-50 p-4 rounded-xl border border-green-100 flex justify-between items-center">
+                                            <span className="text-green-700 font-bold">Vuelto:</span>
+                                            <span className="text-xl font-black text-green-700">${(parseFloat(montoPago) - totalGeneral).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+                                        </div>
+                                    )}
                                 </div>
-                                <h3 className="text-xl font-bold text-slate-900 mb-2">{alertaStock.titulo}</h3>
-                                <p className="text-slate-500 mb-6">
-                                    {alertaStock.mensaje}
-                                </p>
+                            )}
+
+                            {/* TARJETA */}
+                            {medioPago === 'TARJETA' && (
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 mb-2">Últimos 4 dígitos</label>
+                                        <input
+                                            type="text"
+                                            maxLength="4"
+                                            className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500"
+                                            placeholder="XXXX"
+                                            value={datosTarjeta.ultimos4}
+                                            onChange={(e) => {
+                                                const val = e.target.value.replace(/\D/g, '');
+                                                setDatosTarjeta({ ...datosTarjeta, ultimos4: val });
+                                            }}
+                                            onKeyDown={(e) => e.key === 'Enter' && guardarVenta()}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 mb-2">Cuotas</label>
+                                        <select
+                                            className="w-full px-4 py-3 border border-slate-300 rounded-xl bg-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500"
+                                            value={datosTarjeta.cuotas}
+                                            onChange={(e) => setDatosTarjeta({ ...datosTarjeta, cuotas: e.target.value })}
+                                        >
+                                            <option value="1">1 Cuota</option>
+                                            <option value="3">3 Cuotas</option>
+                                            <option value="6">6 Cuotas</option>
+                                            <option value="12">12 Cuotas</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* CHEQUE */}
+                            {medioPago === 'CHEQUE' && (
+                                <div className="space-y-4">
+                                    <div className="relative">
+                                        <label className="block text-sm font-bold text-slate-700 mb-2">Banco</label>
+                                        <input
+                                            type="text"
+                                            className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500"
+                                            placeholder="Buscar banco..."
+                                            value={datosCheque.banco}
+                                            onChange={(e) => setDatosCheque({ ...datosCheque, banco: e.target.value })}
+                                            onFocus={() => setMostrarSugerenciasBanco(true)}
+                                            onKeyDown={handleBancoKeyDown}
+                                        />
+                                        {mostrarSugerenciasBanco && bancosSugeridos.length > 0 && (
+                                            <div ref={bancoListRef} className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                                                {bancosSugeridos.map((b, idx) => (
+                                                    <div
+                                                        key={b}
+                                                        className={`px-4 py-2 cursor-pointer ${idx === sugerenciaBancoActiva ? 'bg-blue-50 text-blue-700' : 'hover:bg-slate-50'}`}
+                                                        onClick={() => seleccionarBanco(b)}
+                                                    >
+                                                        {b}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 mb-2">Número de Cheque</label>
+                                        <input
+                                            type="text"
+                                            className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500"
+                                            placeholder="Nº Cheque"
+                                            value={datosCheque.numero}
+                                            onChange={(e) => setDatosCheque({ ...datosCheque, numero: e.target.value })}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 mb-2">Fecha de Cobro</label>
+                                        <input
+                                            type="date"
+                                            className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500"
+                                            value={datosCheque.fechaVto}
+                                            onChange={(e) => setDatosCheque({ ...datosCheque, fechaVto: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="flex gap-3 mt-8">
                                 <button
-                                    onClick={cerrarAlertaStock}
-                                    className="w-full inline-flex justify-center rounded-xl border border-transparent shadow-sm px-4 py-3 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:text-sm"
+                                    onClick={() => setMostrarModalPago(false)}
+                                    className="flex-1 py-3 border border-slate-200 rounded-xl font-bold text-slate-500 hover:bg-slate-50 transition-all"
                                 >
-                                    Aceptar
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={guardarVenta}
+                                    disabled={guardando}
+                                    className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-500/30 hover:bg-blue-700 transition-all flex items-center justify-center gap-2"
+                                >
+                                    {guardando ? (
+                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                    ) : (
+                                        <>
+                                            <Check size={20} strokeWidth={3} />
+                                            Confirmar
+                                        </>
+                                    )}
                                 </button>
                             </div>
                         </div>
                     </div>
-                )
-            }
-        </div >
+                </div>
+            )}
+        </div>
     );
 };
 
 export default NuevaVenta;
-

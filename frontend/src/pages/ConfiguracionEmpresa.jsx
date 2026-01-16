@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Building, MapPin, FileText, DollarSign, CheckCircle, AlertCircle, Settings } from 'lucide-react';
+import { Building, MapPin, FileText, DollarSign, CheckCircle, AlertCircle, Settings, Printer } from 'lucide-react';
 import { BtnSave } from '../components/CommonButtons';
 
 const ConfiguracionEmpresa = () => {
@@ -15,6 +15,11 @@ const ConfiguracionEmpresa = () => {
         condicion_fiscal: 'RI',
         iibb: '',
         inicio_actividades: '',
+        telefono: '',
+        email: '',
+        nombre_fantasia: '',
+        punto_venta: '0001',
+        papel_impresion: 'A4',
         moneda_predeterminada: 'ARS',
         actualizar_precios_compra: false,
         logo: null
@@ -149,10 +154,7 @@ const ConfiguracionEmpresa = () => {
                                     <div className="row g-5">
                                         {/* Columna Izquierda: Información General */}
                                         <div className="col-12 col-xl-6 border-end-xl">
-                                            <h5 className="fw-bold text-dark mb-4 d-flex align-items-center gap-2">
-                                                <Building size={20} className="text-primary" />
-                                                Información General
-                                            </h5>
+                                            {/* Header Eliminado por reduncancia */}
 
                                             <div className="row g-3 mb-4">
                                                 <div className="col-12 col-md-4">
@@ -201,13 +203,13 @@ const ConfiguracionEmpresa = () => {
                                                         <input
                                                             type="text"
                                                             className="form-control"
-                                                            id="cuit"
-                                                            name="cuit"
-                                                            placeholder="00-00000000-0"
-                                                            value={config.cuit}
+                                                            id="nombre_fantasia"
+                                                            name="nombre_fantasia"
+                                                            placeholder="Nombre de Fantasía"
+                                                            value={config.nombre_fantasia}
                                                             onChange={handleChange}
                                                         />
-                                                        <label htmlFor="cuit">CUIT</label>
+                                                        <label htmlFor="nombre_fantasia">Nombre de Fantasía (Opcional)</label>
                                                     </div>
                                                 </div>
                                             </div>
@@ -260,6 +262,36 @@ const ConfiguracionEmpresa = () => {
                                                     </div>
                                                 </div>
                                             </div>
+                                            <div className="row g-3 mt-1">
+                                                <div className="col-md-6">
+                                                    <div className="form-floating">
+                                                        <input
+                                                            type="text"
+                                                            className="form-control"
+                                                            id="telefono"
+                                                            name="telefono"
+                                                            placeholder="Teléfono"
+                                                            value={config.telefono}
+                                                            onChange={handleChange}
+                                                        />
+                                                        <label htmlFor="telefono">Teléfono</label>
+                                                    </div>
+                                                </div>
+                                                <div className="col-md-6">
+                                                    <div className="form-floating">
+                                                        <input
+                                                            type="email"
+                                                            className="form-control"
+                                                            id="email"
+                                                            name="email"
+                                                            placeholder="Email"
+                                                            value={config.email}
+                                                            onChange={handleChange}
+                                                        />
+                                                        <label htmlFor="email">Email</label>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
 
                                         {/* Columna Derecha: Datos Fiscales y Moneda */}
@@ -270,6 +302,20 @@ const ConfiguracionEmpresa = () => {
                                             </h5>
 
                                             <div className="row g-3 mb-5">
+                                                <div className="col-12">
+                                                    <div className="form-floating">
+                                                        <input
+                                                            type="text"
+                                                            className="form-control"
+                                                            id="cuit"
+                                                            name="cuit"
+                                                            placeholder="00-00000000-0"
+                                                            value={config.cuit}
+                                                            onChange={handleChange}
+                                                        />
+                                                        <label htmlFor="cuit">CUIT</label>
+                                                    </div>
+                                                </div>
                                                 <div className="col-12">
                                                     <div className="form-floating">
                                                         <select
@@ -316,52 +362,47 @@ const ConfiguracionEmpresa = () => {
                                                 </div>
                                             </div>
 
-                                            <h5 className="fw-bold text-dark mb-4 d-flex align-items-center gap-2">
-                                                <DollarSign size={20} className="text-primary" />
-                                                Configuración de Moneda
-                                            </h5>
-
-                                            <div className="row g-3 mb-4">
+                                            <div className="row g-3">
                                                 <div className="col-12">
                                                     <div className="form-floating">
-                                                        <select
-                                                            className="form-select"
-                                                            id="moneda"
-                                                            name="moneda_predeterminada"
-                                                            value={config.moneda_predeterminada}
+                                                        <input
+                                                            type="text"
+                                                            className="form-control"
+                                                            id="punto_venta"
+                                                            name="punto_venta"
+                                                            placeholder="0001"
+                                                            value={config.punto_venta}
                                                             onChange={handleChange}
-                                                        >
-                                                            <option value="ARS">Peso Argentino (ARS)</option>
-                                                            <option value="USD">Dólar Estadounidense (USD)</option>
-                                                        </select>
-                                                        <label htmlFor="moneda">Moneda Predeterminada</label>
+                                                            maxLength={5}
+                                                        />
+                                                        <label htmlFor="punto_venta">Punto de Venta (ej: 0001)</label>
                                                     </div>
                                                 </div>
                                             </div>
-                                            <h5 className="fw-bold text-dark mb-4 mt-5 d-flex align-items-center gap-2">
-                                                <Settings size={20} className="text-primary" />
-                                                Preferencias de Compra
-                                            </h5>
 
-                                            <div className="card bg-light border-0 rounded-3 p-3 mb-4 shadow-sm">
-                                                <div className="form-check form-switch pt-1">
-                                                    <input
-                                                        className="form-check-input custom-switch"
-                                                        type="checkbox"
-                                                        id="actualizar_precios_compra"
-                                                        name="actualizar_precios_compra"
-                                                        checked={config.actualizar_precios_compra}
-                                                        onChange={(e) => setConfig(prev => ({ ...prev, actualizar_precios_compra: e.target.checked }))}
-                                                        style={{ cursor: 'pointer', transform: 'scale(1.2)' }}
-                                                    />
-                                                    <label className="form-check-label fw-bold text-dark ms-2 cur-pointer" htmlFor="actualizar_precios_compra" style={{ cursor: 'pointer' }}>
-                                                        Actualizar precios de venta automáticamente
-                                                    </label>
-                                                    <p className="text-muted small mb-0 ms-2 mt-1">
-                                                        Si se activa, al recibir una compra con un costo nuevo, se ajustarán los precios de venta manteniendo el mismo margen absoluto.
-                                                    </p>
+                                            <div className="mt-5">
+                                                <h5 className="fw-bold text-dark mb-4 d-flex align-items-center gap-2">
+                                                    <Printer size={20} className="text-primary" />
+                                                    Preferencias de Impresión
+                                                </h5>
+                                                <div className="form-floating">
+                                                    <select
+                                                        className="form-select"
+                                                        id="papel_impresion"
+                                                        name="papel_impresion"
+                                                        value={config.papel_impresion}
+                                                        onChange={handleChange}
+                                                    >
+                                                        <option value="A4">A4 (Estándar)</option>
+                                                        <option value="T80">Ticket 80mm</option>
+                                                        <option value="T58">Ticket 58mm</option>
+                                                    </select>
+                                                    <label htmlFor="papel_impresion">Formato de Impresión</label>
                                                 </div>
                                             </div>
+
+
+
 
                                             <div className="d-flex justify-content-end align-items-center mt-5 pt-3 border-top">
                                                 <p className="text-muted small mb-0 me-3 d-none d-xl-block">
@@ -382,8 +423,8 @@ const ConfiguracionEmpresa = () => {
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 };
 

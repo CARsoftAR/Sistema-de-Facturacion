@@ -126,7 +126,7 @@ const Ventas = () => {
     };
 
     const handlePrint = (id) => {
-        window.open(`/invoice/print/${id}/?model=modern`, '_blank');
+        window.open(`/invoice/print/${id}/`, '_blank');
     };
 
     const handleNotaDebito = async (id) => {

@@ -51,7 +51,7 @@ const DetalleVenta = () => {
     }, [id]);
 
     const handlePrint = () => {
-        window.open(`/ventas/imprimir/${id}/?model=modern`, '_blank');
+        window.open(`/invoice/print/${id}/`, '_blank');
     };
 
     const getEstadoBadge = (estado) => {
@@ -204,15 +204,41 @@ const DetalleVenta = () => {
                                     <tr style={{ height: '100%' }}><td colSpan="4"></td></tr>
                                 </tbody>
                                 <tfoot className="bg-gray-900 border-t border-gray-700 sticky bottom-0 z-10 shadow-[0_-2px_4px_rgba(0,0,0,0.2)]">
-                                    <tr>
-                                        <td colSpan="3" className="px-6 py-4 text-right text-gray-400 font-bold uppercase tracking-wider">Total</td>
-                                        <td className="px-6 py-4 text-right">
-                                            <div className="text-2xl font-black text-white flex items-baseline justify-end gap-1">
-                                                <span>$</span>
-                                                {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(venta.total)}
-                                            </div>
-                                        </td>
-                                    </tr>
+                                    {(venta.tipo_comprobante === 'A' || parseFloat(venta.iva_amount) > 0) ? (
+                                        <>
+                                            <tr>
+                                                <td colSpan="3" className="px-6 pt-4 pb-1 text-right text-gray-400 font-medium">Subtotal Neto</td>
+                                                <td className="px-6 pt-4 pb-1 text-right text-gray-300 font-bold">
+                                                    $ {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(venta.neto)}
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td colSpan="3" className="px-6 py-1 text-right text-gray-400 font-medium">IVA (21%)</td>
+                                                <td className="px-6 py-1 text-right text-gray-300 font-bold">
+                                                    $ {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(venta.iva_amount)}
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td colSpan="3" className="px-6 py-4 text-right text-white font-bold uppercase tracking-wider text-lg border-t border-gray-700">Total Final</td>
+                                                <td className="px-6 py-4 text-right border-t border-gray-700">
+                                                    <div className="text-2xl font-black text-white flex items-baseline justify-end gap-1">
+                                                        <span>$</span>
+                                                        {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(venta.total)}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </>
+                                    ) : (
+                                        <tr>
+                                            <td colSpan="3" className="px-6 py-4 text-right text-gray-400 font-bold uppercase tracking-wider">Total</td>
+                                            <td className="px-6 py-4 text-right">
+                                                <div className="text-2xl font-black text-white flex items-baseline justify-end gap-1">
+                                                    <span>$</span>
+                                                    {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(venta.total)}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )}
                                 </tfoot>
                             </table>
                         </div>

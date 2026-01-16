@@ -1995,8 +1995,8 @@ def api_orden_compra_guardar(request):
                 total_estimado=0
             )
 
-            total = 0
-            # Crear los detalles
+            # Crear los detalles y calcular totales
+            neto_total = 0
             for item in items:
                 producto_id = item.get("producto_id")
                 cantidad = item.get("cantidad", 0)
@@ -2008,7 +2008,7 @@ def api_orden_compra_guardar(request):
                      raise Exception(f"Producto {producto_id} no encontrado")
 
                 subtotal = cantidad * precio
-                total += subtotal
+                neto_total += subtotal
 
                 DetalleOrdenCompra.objects.create(
                     orden=orden,
@@ -2018,8 +2018,21 @@ def api_orden_compra_guardar(request):
                     subtotal=subtotal
                 )
 
-            # Actualizar el total
-            orden.total_estimado = total
+            # Usar los importes enviados si existen, sino usar el calculado
+            iva_enviado = data.get('iva_estimado')
+            neto_enviado = data.get('neto_estimado')
+
+            if neto_enviado is not None:
+                orden.neto_estimado = neto_enviado
+            else:
+                orden.neto_estimado = neto_total
+
+            if iva_enviado is not None:
+                orden.iva_estimado = iva_enviado
+            else:
+                orden.iva_estimado = 0
+            
+            orden.total_estimado = orden.neto_estimado + orden.iva_estimado
             orden.save()
 
             # Si se solicita la recepción inmediata
@@ -2039,6 +2052,8 @@ def recepcionar_orden_interna(oc, medio_pago, datos_cheque=None, user=None):
         proveedor=oc.proveedor,
         orden_compra=oc,
         nro_comprobante=oc.nro_orden or f"OC-{oc.id}",
+        neto=oc.neto_estimado,
+        iva=oc.iva_estimado,
         total=oc.total_estimado,
         estado="REGISTRADA",
         observaciones=f"Recepción automática de OC {oc.id}",
@@ -2071,6 +2086,15 @@ def recepcionar_orden_interna(oc, medio_pago, datos_cheque=None, user=None):
             prod.precio_ctacte = max(0, prod.precio_ctacte + diferencia)
             if prod.precio_lista4:
                 prod.precio_lista4 = max(0, prod.precio_lista4 + diferencia)
+                
+            # Aplicar redondeo si está configurado
+            if empresa.redondeo_precios and empresa.redondeo_precios > 1:
+                r = empresa.redondeo_precios
+                prod.precio_efectivo = round(prod.precio_efectivo / r) * r
+                prod.precio_tarjeta = round(prod.precio_tarjeta / r) * r
+                prod.precio_ctacte = round(prod.precio_ctacte / r) * r
+                if prod.precio_lista4:
+                    prod.precio_lista4 = round(prod.precio_lista4 / r) * r
                 
         prod.save()
 
@@ -2233,7 +2257,6 @@ def api_clientes_buscar(request):
     if q:
         qs = qs.filter(
             Q(nombre__icontains=q) |
-            Q(dni__icontains=q) | # Add DNI search
             Q(cuit__icontains=q) |
             Q(telefono__icontains=q)
         )
@@ -3060,6 +3083,8 @@ def api_venta_detalle(request, id):
             'cliente_email': venta.cliente.email,
             'tipo_comprobante': venta.tipo_comprobante,
             'total': float(venta.total),
+            'neto': float(venta.neto) if venta.neto else 0,
+            'iva_amount': float(venta.iva_amount) if venta.iva_amount else 0,
             'estado': venta.estado,
             'medio_pago': venta.medio_pago,
             'cae': venta.cae,
@@ -3111,25 +3136,58 @@ def api_venta_guardar(request):
                     condicion_fiscal="CF",
                 )
 
+        # Determinar Tipo de Comprobante
+        tipo_comprobante = "B"
+        if cliente.condicion_fiscal == 'RI':
+             tipo_comprobante = "A"
+        
+        # Override si viene del frontend (opcional)
+        if data.get("tipo_comprobante"):
+            tipo_comprobante = data.get("tipo_comprobante")
+
         with transaction.atomic():
             venta = Venta.objects.create(
                 cliente=cliente,
-                tipo_comprobante="B",
+                tipo_comprobante=tipo_comprobante,
                 total=total_general,
                 estado="Emitida",
                 medio_pago=medio_pago
             )
+
+            total_neto_acumulado = Decimal('0')
+            total_iva_acumulado = Decimal('0')
 
             for item in items:
                 producto = Producto.objects.get(id=item["id"])
                 cantidad = Decimal(str(item["cantidad"]))
                 
                 # VALIDACIÓN DE STOCK
-                if producto.stock < cantidad:
-                    raise ValueError(f"Stock insuficiente para {producto.descripcion}. Stock actual: {producto.stock}")
+                empresa_config = Empresa.objects.first()
+                if not (empresa_config and empresa_config.permitir_stock_negativo):
+                    if producto.stock < cantidad:
+                        raise ValueError(f"Stock insuficiente para {producto.descripcion}. Stock actual: {producto.stock}")
 
                 precio = Decimal(str(item["precio"]))
                 subtotal = Decimal(str(item["subtotal"]))
+                
+                # Obtener neto e iva si vienen del frontend
+                # Si no vienen, asumimos que subtotal es todo neto (o iva incluido sin discriminar)
+                # para mantener compatibilidad, si no se discrimina, neto=subtotal (o base) y iva=0
+                # Pero si guardamos para libro de IVA, deberíamos calcularlo siempre si es factura fiscal.
+                # Por ahora confiaremos en lo que mande el front.
+                
+                item_neto = Decimal(str(item.get("neto", subtotal))) # Default to subtotal if undefined
+                item_iva = Decimal(str(item.get("iva_amount", 0)))
+                
+                # Si el frontend mandó discriminado:
+                if item.get("discriminado", False):
+                     # Confiar en los valores
+                     pass
+                else: 
+                     # Lógica legacy o simple: si es A, calculamos la inversa? 
+                     # Mejor NO, dejemos que el frontend decida.
+                     # Si no mandaron IVA, es 0.
+                     pass
 
                 DetalleVenta.objects.create(
                     venta=venta,
@@ -3137,10 +3195,20 @@ def api_venta_guardar(request):
                     cantidad=cantidad,
                     precio_unitario=precio,
                     subtotal=subtotal,
+                    neto=item_neto,
+                    iva_amount=item_iva
                 )
+                
+                total_neto_acumulado += item_neto
+                total_iva_acumulado += item_iva
 
                 producto.stock -= cantidad
                 producto.save()
+            
+            # Actualizar totales en cabecera
+            venta.neto = total_neto_acumulado
+            venta.iva_amount = total_iva_acumulado
+            venta.save()
 
             # Registrar movimiento segun medio de pago
             cheque_creado = None  # Para uso posterior en contabilidad
@@ -3291,6 +3359,7 @@ def api_productos_buscar(request):
             "precio_tarjeta": float(p.precio_tarjeta),
             "costo": float(p.costo) if p.costo else 0,
             "stock": p.stock,
+            "iva_alicuota": float(p.iva_alicuota),
         })
     
     return JsonResponse({"data": data})
@@ -3854,9 +3923,21 @@ def invoice_print(request, venta_id):
     venta = get_object_or_404(Venta, pk=venta_id)
     
     # Obtener el modelo solicitado
-    model = request.GET.get('model', 'modern')
-    # Lista de modelos válidos (catálogo de 10)
-    modelos_validos = ['modern', 'minimal', 'classic', 'elegant', 'tech', 'industrial', 'eco', 'compact', 'luxury', 'bold']
+    model_param = request.GET.get('model')
+    
+    empresa = Empresa.objects.first()
+    
+    # Si no se especifica modelo, usar el configurado en la empresa
+    if not model_param:
+        if empresa and empresa.papel_impresion in ['T80', 'T58']:
+            model = 'ticket'
+        else:
+            model = 'modern'
+    else:
+        model = model_param
+
+    # Lista de modelos válidos (catálogo de 10 + ticket)
+    modelos_validos = ['modern', 'minimal', 'classic', 'elegant', 'tech', 'industrial', 'eco', 'compact', 'luxury', 'bold', 'ticket']
     if model not in modelos_validos:
         model = 'modern'
         
@@ -3874,8 +3955,9 @@ def invoice_print(request, venta_id):
         'cliente': venta.cliente,
         'detalles': venta.detalles.all(),
         'template': template_config,
-        'empresa': Empresa.objects.first(),
+        'empresa': empresa,
         'fecha_actual': venta.fecha,
+        'is_preview': request.GET.get('preview') == 'true'
     }
     
     try:
@@ -8717,6 +8799,16 @@ def api_empresa_config(request):
             'items_por_pagina': empresa.items_por_pagina,
             'habilita_remitos': empresa.habilita_remitos,
             'actualizar_precios_compra': empresa.actualizar_precios_compra,
+            'permitir_stock_negativo': empresa.permitir_stock_negativo,
+            'alerta_stock_minimo': empresa.alerta_stock_minimo,
+            'margen_ganancia_defecto': float(empresa.margen_ganancia_defecto),
+            'metodo_ganancia': empresa.metodo_ganancia,
+            'papel_impresion': empresa.papel_impresion,
+            'pie_factura': empresa.pie_factura,
+            'auto_foco_codigo_barras': empresa.auto_foco_codigo_barras,
+            'discriminar_iva_compras': empresa.discriminar_iva_compras,
+            'discriminar_iva_ventas': empresa.discriminar_iva_ventas,
+            'redondeo_precios': empresa.redondeo_precios,
             'logo': empresa.logo.url if empresa.logo else None,
         })
     except Exception as e:
@@ -8749,6 +8841,44 @@ def api_empresa_config_guardar(request):
         if 'actualizar_precios_compra' in data:
             val = data['actualizar_precios_compra']
             empresa.actualizar_precios_compra = str(val).lower() == 'true' if isinstance(val, str) else bool(val)
+
+        if 'permitir_stock_negativo' in data:
+            val = data['permitir_stock_negativo']
+            empresa.permitir_stock_negativo = str(val).lower() == 'true' if isinstance(val, str) else bool(val)
+
+        if 'alerta_stock_minimo' in data:
+            val = data['alerta_stock_minimo']
+            empresa.alerta_stock_minimo = str(val).lower() == 'true' if isinstance(val, str) else bool(val)
+
+        if 'margen_ganancia_defecto' in data:
+            try:
+                empresa.margen_ganancia_defecto = float(data['margen_ganancia_defecto'])
+            except (TypeError, ValueError):
+                pass
+
+        if 'metodo_ganancia' in data:
+            empresa.metodo_ganancia = data['metodo_ganancia']
+        if 'papel_impresion' in data:
+            empresa.papel_impresion = data['papel_impresion']
+        if 'pie_factura' in data:
+            empresa.pie_factura = data['pie_factura']
+        if 'auto_foco_codigo_barras' in data:
+            val = data['auto_foco_codigo_barras']
+            empresa.auto_foco_codigo_barras = str(val).lower() == 'true' if isinstance(val, str) else bool(val)
+
+        if 'discriminar_iva_compras' in data:
+            val = data['discriminar_iva_compras']
+            empresa.discriminar_iva_compras = str(val).lower() == 'true' if isinstance(val, str) else bool(val)
+
+        if 'discriminar_iva_ventas' in data:
+            val = data['discriminar_iva_ventas']
+            empresa.discriminar_iva_ventas = str(val).lower() == 'true' if isinstance(val, str) else bool(val)
+
+        if 'redondeo_precios' in data:
+            try:
+                empresa.redondeo_precios = int(data['redondeo_precios'])
+            except (TypeError, ValueError):
+                pass
 
         # Datos Empresa
         empresa.nombre = data.get('nombre', empresa.nombre)
