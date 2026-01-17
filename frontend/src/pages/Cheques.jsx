@@ -15,6 +15,8 @@ import Swal from 'sweetalert2';
 import { BtnEdit, BtnDelete, BtnAdd } from '../components/CommonButtons';
 import { showConfirmationAlert } from '../utils/alerts';
 import ChequeForm from '../components/cheques/ChequeForm';
+import EmptyState from '../components/EmptyState';
+import TablePagination from '../components/common/TablePagination';
 
 const Cheques = () => {
     // Cache bust
@@ -29,6 +31,16 @@ const Cheques = () => {
         depositados_mes: { total: 0 },
         rechazados: { total: 0 }
     });
+
+    // Toggle Stats State (Persisted)
+    const [showStats, setShowStats] = useState(() => {
+        const saved = localStorage.getItem('cheques_show_stats');
+        return saved !== null ? JSON.parse(saved) : true;
+    });
+
+    useEffect(() => {
+        localStorage.setItem('cheques_show_stats', JSON.stringify(showStats));
+    }, [showStats]);
 
     // Pagination
     const [page, setPage] = useState(1);
@@ -294,72 +306,83 @@ const Cheques = () => {
                         Control de cartera de cheques propios y de terceros
                     </p>
                 </div>
-                <BtnAdd
-                    label="Nuevo Cheque"
-                    icon={Banknote}
-                    className="btn-lg shadow-sm"
-                    onClick={handleCreate}
-                />
-            </div>
-
-            {/* KPI Cards */}
-            <div className="row g-3 mb-4">
-                {/* En Cartera (Terceros) - Blue (Primary) */}
-                <div className="col-12 col-md-6 col-xl-3">
-                    <div className="card shadow-sm h-100 border-0" style={{ background: 'linear-gradient(145deg, #dbeafe 0%, #ffffff 100%)' }}>
-                        <div className="card-body p-3 d-flex flex-column justify-content-between">
-                            <div className="d-flex justify-content-between align-items-center mb-2">
-                                <div className="text-muted xsmall fw-bold" style={{ fontSize: '0.7rem' }}>EN CARTERA (TERCEROS)</div>
-                                <div className="p-2 bg-primary bg-opacity-10 rounded text-primary"><ArrowDownLeft size={18} /></div>
-                            </div>
-                            <h3 className="mb-0 fw-bold text-primary">{formatCurrency(kpis?.cartera_terceros?.total || 0)}</h3>
-                            <div className="text-muted mt-1" style={{ fontSize: '0.8rem' }}>{kpis?.cartera_terceros?.count || 0} cheques</div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* A Pagar (Propios) - Yellow (Warning) */}
-                <div className="col-12 col-md-6 col-xl-3">
-                    <div className="card shadow-sm h-100 border-0" style={{ background: 'linear-gradient(145deg, #fef9c3 0%, #ffffff 100%)' }}>
-                        <div className="card-body p-3 d-flex flex-column justify-content-between">
-                            <div className="d-flex justify-content-between align-items-center mb-2">
-                                <div className="text-muted xsmall fw-bold" style={{ fontSize: '0.7rem' }}>A PAGAR (PROPIOS)</div>
-                                <div className="p-2 bg-warning bg-opacity-10 rounded text-warning"><ArrowUpRight size={18} /></div>
-                            </div>
-                            <h3 className="mb-0 fw-bold text-warning" style={{ color: '#d97706' }}>{formatCurrency(kpis?.apagar_propios?.total || 0)}</h3>
-                            <div className="text-muted mt-1" style={{ fontSize: '0.8rem' }}>Pendientes de cobro</div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Depositados (Mes) - Green (Success) */}
-                <div className="col-12 col-md-6 col-xl-3">
-                    <div className="card shadow-sm h-100 border-0" style={{ background: 'linear-gradient(145deg, #dcfce7 0%, #ffffff 100%)' }}>
-                        <div className="card-body p-3 d-flex flex-column justify-content-between">
-                            <div className="d-flex justify-content-between align-items-center mb-2">
-                                <div className="text-muted xsmall fw-bold" style={{ fontSize: '0.7rem' }}>DEPOSITADOS (MES)</div>
-                                <div className="p-2 bg-success bg-opacity-10 rounded text-success"><CheckCircle2 size={18} /></div>
-                            </div>
-                            <h3 className="mb-0 fw-bold text-success">{formatCurrency(kpis?.depositados_mes?.total || 0)}</h3>
-                            <div className="text-muted mt-1" style={{ fontSize: '0.8rem' }}>Este mes</div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Rechazados - Red (Danger) */}
-                <div className="col-12 col-md-6 col-xl-3">
-                    <div className="card shadow-sm h-100 border-0" style={{ background: 'linear-gradient(145deg, #fee2e2 0%, #ffffff 100%)' }}>
-                        <div className="card-body p-3 d-flex flex-column justify-content-between">
-                            <div className="d-flex justify-content-between align-items-center mb-2">
-                                <div className="text-muted xsmall fw-bold" style={{ fontSize: '0.7rem' }}>RECHAZADOS</div>
-                                <div className="p-2 bg-danger bg-opacity-10 rounded text-danger"><AlertCircle size={18} /></div>
-                            </div>
-                            <h3 className="mb-0 fw-bold text-danger">{formatCurrency(kpis?.rechazados?.total || 0)}</h3>
-                            <div className="text-muted mt-1" style={{ fontSize: '0.8rem' }}>Total histórico</div>
-                        </div>
-                    </div>
+                <div className="d-flex gap-2">
+                    <button
+                        className={`btn d-flex align-items-center gap-2 border shadow-sm ${showStats ? 'btn-white text-muted' : 'btn-primary text-white'}`}
+                        onClick={() => setShowStats(!showStats)}
+                        title={showStats ? "Ocultar Estadísticas" : "Mostrar Estadísticas"}
+                    >
+                        {showStats ? <div className="d-flex align-items-center gap-2"><Filter size={18} className="text-primary" /> Ocultar Resumen</div> : <div className="d-flex align-items-center gap-2"><Filter size={18} /> Ver Resumen</div>}
+                    </button>
+                    <BtnAdd
+                        label="Nuevo Cheque"
+                        icon={Banknote}
+                        className="btn-lg shadow-sm"
+                        onClick={handleCreate}
+                    />
                 </div>
             </div>
+
+            {/* KPI Cards (Collapsible) */}
+            {showStats && (
+                <div className="row g-3 mb-4 animate-in slide-in-from-top-4 fade-in duration-300">
+                    {/* En Cartera (Terceros) - Blue (Primary) */}
+                    <div className="col-12 col-md-6 col-xl-3">
+                        <div className="card shadow-sm h-100 border-0" style={{ background: 'linear-gradient(145deg, #dbeafe 0%, #ffffff 100%)' }}>
+                            <div className="card-body p-3 d-flex flex-column justify-content-between">
+                                <div className="d-flex justify-content-between align-items-center mb-2">
+                                    <div className="text-muted xsmall fw-bold" style={{ fontSize: '0.7rem' }}>EN CARTERA (TERCEROS)</div>
+                                    <div className="p-2 bg-primary bg-opacity-10 rounded text-primary"><ArrowDownLeft size={18} /></div>
+                                </div>
+                                <h3 className="mb-0 fw-bold text-primary">{formatCurrency(kpis?.cartera_terceros?.total || 0)}</h3>
+                                <div className="text-muted mt-1" style={{ fontSize: '0.8rem' }}>{kpis?.cartera_terceros?.count || 0} cheques</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* A Pagar (Propios) - Yellow (Warning) */}
+                    <div className="col-12 col-md-6 col-xl-3">
+                        <div className="card shadow-sm h-100 border-0" style={{ background: 'linear-gradient(145deg, #fef9c3 0%, #ffffff 100%)' }}>
+                            <div className="card-body p-3 d-flex flex-column justify-content-between">
+                                <div className="d-flex justify-content-between align-items-center mb-2">
+                                    <div className="text-muted xsmall fw-bold" style={{ fontSize: '0.7rem' }}>A PAGAR (PROPIOS)</div>
+                                    <div className="p-2 bg-warning bg-opacity-10 rounded text-warning"><ArrowUpRight size={18} /></div>
+                                </div>
+                                <h3 className="mb-0 fw-bold text-warning" style={{ color: '#d97706' }}>{formatCurrency(kpis?.apagar_propios?.total || 0)}</h3>
+                                <div className="text-muted mt-1" style={{ fontSize: '0.8rem' }}>Pendientes de cobro</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Depositados (Mes) - Green (Success) */}
+                    <div className="col-12 col-md-6 col-xl-3">
+                        <div className="card shadow-sm h-100 border-0" style={{ background: 'linear-gradient(145deg, #dcfce7 0%, #ffffff 100%)' }}>
+                            <div className="card-body p-3 d-flex flex-column justify-content-between">
+                                <div className="d-flex justify-content-between align-items-center mb-2">
+                                    <div className="text-muted xsmall fw-bold" style={{ fontSize: '0.7rem' }}>DEPOSITADOS (MES)</div>
+                                    <div className="p-2 bg-success bg-opacity-10 rounded text-success"><CheckCircle2 size={18} /></div>
+                                </div>
+                                <h3 className="mb-0 fw-bold text-success">{formatCurrency(kpis?.depositados_mes?.total || 0)}</h3>
+                                <div className="text-muted mt-1" style={{ fontSize: '0.8rem' }}>Este mes</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Rechazados - Red (Danger) */}
+                    <div className="col-12 col-md-6 col-xl-3">
+                        <div className="card shadow-sm h-100 border-0" style={{ background: 'linear-gradient(145deg, #fee2e2 0%, #ffffff 100%)' }}>
+                            <div className="card-body p-3 d-flex flex-column justify-content-between">
+                                <div className="d-flex justify-content-between align-items-center mb-2">
+                                    <div className="text-muted xsmall fw-bold" style={{ fontSize: '0.7rem' }}>RECHAZADOS</div>
+                                    <div className="p-2 bg-danger bg-opacity-10 rounded text-danger"><AlertCircle size={18} /></div>
+                                </div>
+                                <h3 className="mb-0 fw-bold text-danger">{formatCurrency(kpis?.rechazados?.total || 0)}</h3>
+                                <div className="text-muted mt-1" style={{ fontSize: '0.8rem' }}>Total histórico</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Filters */}
             <div className="card border-0 shadow-sm rounded-3 mb-3">
@@ -413,141 +436,133 @@ const Cheques = () => {
             </div>
 
             {/* Table */}
-            <div className="card border-0 shadow-sm rounded-4 overflow-hidden flex-grow-1 d-flex flex-column">
-                <div className="card-body p-0 flex-grow-1 overflow-auto">
-                    <table className="table table-hover align-middle mb-0 w-100" style={{ minWidth: '1000px' }}>
-                        <thead className="bg-light sticky-top">
-                            <tr>
-                                <th className="border-0 py-3 ps-4 text-secondary small fw-bold text-uppercase" style={{ width: '15%' }}>Fecha Pago</th>
-                                <th className="border-0 py-3 text-secondary small fw-bold text-uppercase" style={{ width: '15%' }}>Banco</th>
-                                <th className="border-0 py-3 text-secondary small fw-bold text-uppercase" style={{ width: '12%' }}>N° Cheque</th>
-                                <th className="border-0 py-3 text-secondary small fw-bold text-uppercase" style={{ width: '20%' }}>Origen/Destino</th>
-                                <th className="border-0 py-3 text-end text-secondary small fw-bold text-uppercase" style={{ width: '15%' }}>Importe</th>
-                                <th className="border-0 py-3 text-center text-secondary small fw-bold text-uppercase" style={{ width: '8%' }}>Tipo</th>
-                                <th className="border-0 py-3 text-center text-secondary small fw-bold text-uppercase" style={{ width: '10%' }}>Estado</th>
-                                <th className="border-0 py-3 pe-4 text-end text-secondary small fw-bold text-uppercase" style={{ width: '5%' }}>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {loading ? (
+            <div className="card border-0 shadow mb-0 flex-grow-1 overflow-hidden d-flex flex-column">
+                <div className="card-body p-0 d-flex flex-column overflow-hidden">
+                    <div className="table-responsive flex-grow-1 table-container-fixed">
+                        <table className="table align-middle mb-0">
+                            <thead className="table-dark" style={{ backgroundColor: '#212529', color: '#fff' }}>
                                 <tr>
-                                    <td colSpan="8" className="text-center py-5">
-                                        <div className="spinner-border text-primary" role="status">
-                                            <span className="visually-hidden">Cargando...</span>
-                                        </div>
-                                    </td>
+                                    <th className="ps-4 py-3 fw-bold">Fecha Pago</th>
+                                    <th className="py-3 fw-bold">Banco</th>
+                                    <th className="py-3 fw-bold">N° Cheque</th>
+                                    <th className="py-3 fw-bold">Origen/Destino</th>
+                                    <th className="text-end py-3 fw-bold">Importe</th>
+                                    <th className="text-center py-3 fw-bold">Tipo</th>
+                                    <th className="text-center py-3 fw-bold">Estado</th>
+                                    <th className="text-end pe-4 py-3 fw-bold">Acciones</th>
                                 </tr>
-                            ) : cheques.length === 0 ? (
-                                <tr>
-                                    <td colSpan="8" className="text-center py-5 text-muted">
-                                        No se encontraron cheques registrados.
-                                    </td>
-                                </tr>
-                            ) : (
-                                cheques.map((c) => (
-                                    <tr key={c.id}>
-                                        <td className="ps-4 fw-medium text-dark-emphasis">
-                                            {c.fecha_pago}
-                                        </td>
-                                        <td>
-                                            <span className="fw-medium text-dark">{c.banco}</span>
-                                        </td>
-                                        <td>
-                                            <span className="font-monospace text-primary fw-bold" style={{ fontSize: '0.9rem' }}>{c.numero}</span>
-                                        </td>
-                                        <td>
-                                            <span className="small text-muted fw-medium">{c.origen_destino}</span>
-                                        </td>
-                                        <td className="text-end fw-bold text-dark">
-                                            {formatCurrency(c.monto)}
-                                        </td>
-                                        <td className="text-center">
-                                            {getTipoBadge(c.tipo)}
-                                        </td>
-                                        <td className="text-center">
-                                            {getEstadoBadge(c.estado)}
-                                        </td>
-                                        <td className="text-end pe-4">
-                                            <div className="position-relative d-inline-block">
-                                                <button
-                                                    className={`btn btn-sm border shadow-sm d-flex align-items-center gap-1 ${openDropdownId === c.id ? 'btn-primary text-white' : 'btn-light'}`}
-                                                    onClick={(e) => { e.stopPropagation(); toggleDropdown(c.id); }}
-                                                >
-                                                    Acciones <ChevronDown size={14} />
-                                                </button>
-
-                                                {openDropdownId === c.id && (
-                                                    <div
-                                                        className="position-absolute end-0 mt-1 bg-white border shadow rounded-3 py-2 fade-in"
-                                                        style={{ zIndex: 1000, minWidth: '180px' }}
-                                                    >
-                                                        <ul className="list-unstyled mb-0">
-                                                            {c.estado === 'CARTERA' && (
-                                                                <>
-                                                                    <li><button className="dropdown-item d-flex align-items-center py-2 px-3 text-success" onClick={() => handleEstadoChange(c, 'DEPOSITADO')}><CheckCircle2 size={16} className="me-2" />Depositar</button></li>
-                                                                    <li><button className="dropdown-item d-flex align-items-center py-2 px-3 text-primary" onClick={() => handleEstadoChange(c, 'COBRADO')}><CheckCircle2 size={16} className="me-2" />Cobrar</button></li>
-                                                                    <li><button className="dropdown-item d-flex align-items-center py-2 px-3 text-secondary" onClick={() => handleEstadoChange(c, 'ENTREGADO')}><ArrowUpRight size={16} className="me-2" />Entregar</button></li>
-                                                                    <li><hr className="dropdown-divider mx-2" /></li>
-                                                                </>
-                                                            )}
-                                                            {(c.estado === 'DEPOSITADO' || c.estado === 'ENTREGADO' || c.estado === 'COBRADO') && (
-                                                                <>
-                                                                    <li><button className="dropdown-item d-flex align-items-center py-2 px-3 text-warning" onClick={() => handleEstadoChange(c, 'CARTERA')}><ArrowDownLeft size={16} className="me-2" />Volver a Cartera</button></li>
-                                                                    {c.estado === 'DEPOSITADO' && (
-                                                                        <li><button className="dropdown-item d-flex align-items-center py-2 px-3 text-danger" onClick={() => handleEstadoChange(c, 'RECHAZADO')}><AlertCircle size={16} className="me-2" />Marcar Rechazado</button></li>
-                                                                    )}
-                                                                    <li><hr className="dropdown-divider mx-2" /></li>
-                                                                </>
-                                                            )}
-                                                            {c.estado === 'RECHAZADO' && (
-                                                                <li><button className="dropdown-item d-flex align-items-center py-2 px-3 text-primary" onClick={() => handleEstadoChange(c, 'CARTERA')}><RotateCcw size={16} className="me-2" />Recuperar (Cartera)</button></li>
-                                                            )}
-
-                                                            <li><button className="dropdown-item d-flex align-items-center py-2 px-3" onClick={() => handleEdit(c)}>Editar</button></li>
-                                                            <li><button className="dropdown-item d-flex align-items-center py-2 px-3 text-danger" onClick={() => {
-                                                                const DeleteIcon = (
-                                                                    <div className='d-inline-flex justify-content-center align-items-center rounded-circle mb-3' style={{ width: '80px', height: '80px', backgroundColor: 'rgba(220, 53, 69, 0.1)', color: '#dc3545' }}>
-                                                                        <div className="fw-bold fs-3">×</div>
-                                                                    </div>
-                                                                );
-                                                                showConfirmationAlert('Eliminar', 'Funcionalidad de eliminar pendiente', 'Eliminar', 'danger', { iconComponent: DeleteIcon });
-                                                            }}>Eliminar</button></li>
-                                                        </ul>
-                                                    </div>
-                                                )}
+                            </thead>
+                            <tbody>
+                                {loading ? (
+                                    <tr>
+                                        <td colSpan="8" className="text-center py-5">
+                                            <div className="spinner-border text-primary" role="status">
+                                                <span className="visually-hidden">Cargando...</span>
                                             </div>
                                         </td>
                                     </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
+                                ) : cheques.length === 0 ? (
+                                    <tr>
+                                        <td colSpan="8" className="text-center py-5">
+                                            <EmptyState
+                                                title="No hay cheques registrados"
+                                                description="Los cheques aparecerán aquí."
+                                            />
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    cheques.map((c) => (
+                                        <tr key={c.id}>
+                                            <td className="ps-4 fw-medium text-dark-emphasis">
+                                                {c.fecha_pago}
+                                            </td>
+                                            <td>
+                                                <span className="fw-medium text-dark">{c.banco}</span>
+                                            </td>
+                                            <td>
+                                                <span className="font-monospace text-primary fw-bold" style={{ fontSize: '0.9rem' }}>{c.numero}</span>
+                                            </td>
+                                            <td>
+                                                <span className="small text-muted fw-medium">{c.origen_destino}</span>
+                                            </td>
+                                            <td className="text-end fw-bold text-dark">
+                                                {formatCurrency(c.monto)}
+                                            </td>
+                                            <td className="text-center">
+                                                {getTipoBadge(c.tipo)}
+                                            </td>
+                                            <td className="text-center">
+                                                {getEstadoBadge(c.estado)}
+                                            </td>
+                                            <td className="text-end pe-4">
+                                                <div className="position-relative d-inline-block">
+                                                    <button
+                                                        className={`btn btn-sm border shadow-sm d-flex align-items-center gap-1 ${openDropdownId === c.id ? 'btn-primary text-white' : 'btn-light'}`}
+                                                        onClick={(e) => { e.stopPropagation(); toggleDropdown(c.id); }}
+                                                    >
+                                                        Acciones <ChevronDown size={14} />
+                                                    </button>
 
-                {/* Pagination */}
-                <div className="border-top p-3 bg-white d-flex justify-content-between align-items-center">
-                    <small className="text-muted">
-                        Mostrando {cheques.length} de {totalItems} registros
-                    </small>
-                    <div className="d-flex gap-2">
-                        <button
-                            className="btn btn-sm btn-outline-light text-dark border shadow-sm"
-                            disabled={page === 1}
-                            onClick={() => setPage(page - 1)}
-                        >
-                            Anterior
-                        </button>
-                        <span className="d-flex align-items-center px-2 text-muted small">
-                            Página {page} de {totalPages}
-                        </span>
-                        <button
-                            className="btn btn-sm btn-outline-light text-dark border shadow-sm"
-                            disabled={page === totalPages}
-                            onClick={() => setPage(page + 1)}
-                        >
-                            Siguiente
-                        </button>
+                                                    {openDropdownId === c.id && (
+                                                        <div
+                                                            className="position-absolute end-0 mt-1 bg-white border shadow rounded-3 py-2 fade-in"
+                                                            style={{ zIndex: 1000, minWidth: '180px' }}
+                                                        >
+                                                            <ul className="list-unstyled mb-0">
+                                                                {c.estado === 'CARTERA' && (
+                                                                    <>
+                                                                        <li><button className="dropdown-item d-flex align-items-center py-2 px-3 text-success" onClick={() => handleEstadoChange(c, 'DEPOSITADO')}><CheckCircle2 size={16} className="me-2" />Depositar</button></li>
+                                                                        <li><button className="dropdown-item d-flex align-items-center py-2 px-3 text-primary" onClick={() => handleEstadoChange(c, 'COBRADO')}><CheckCircle2 size={16} className="me-2" />Cobrar</button></li>
+                                                                        <li><button className="dropdown-item d-flex align-items-center py-2 px-3 text-secondary" onClick={() => handleEstadoChange(c, 'ENTREGADO')}><ArrowUpRight size={16} className="me-2" />Entregar</button></li>
+                                                                        <li><hr className="dropdown-divider mx-2" /></li>
+                                                                    </>
+                                                                )}
+                                                                {(c.estado === 'DEPOSITADO' || c.estado === 'ENTREGADO' || c.estado === 'COBRADO') && (
+                                                                    <>
+                                                                        <li><button className="dropdown-item d-flex align-items-center py-2 px-3 text-warning" onClick={() => handleEstadoChange(c, 'CARTERA')}><ArrowDownLeft size={16} className="me-2" />Volver a Cartera</button></li>
+                                                                        {c.estado === 'DEPOSITADO' && (
+                                                                            <li><button className="dropdown-item d-flex align-items-center py-2 px-3 text-danger" onClick={() => handleEstadoChange(c, 'RECHAZADO')}><AlertCircle size={16} className="me-2" />Marcar Rechazado</button></li>
+                                                                        )}
+                                                                        <li><hr className="dropdown-divider mx-2" /></li>
+                                                                    </>
+                                                                )}
+                                                                {c.estado === 'RECHAZADO' && (
+                                                                    <li><button className="dropdown-item d-flex align-items-center py-2 px-3 text-primary" onClick={() => handleEstadoChange(c, 'CARTERA')}><RotateCcw size={16} className="me-2" />Recuperar (Cartera)</button></li>
+                                                                )}
+
+                                                                <li><button className="dropdown-item d-flex align-items-center py-2 px-3" onClick={() => handleEdit(c)}>Editar</button></li>
+                                                                <li><button className="dropdown-item d-flex align-items-center py-2 px-3 text-danger" onClick={() => {
+                                                                    const DeleteIcon = (
+                                                                        <div className='d-inline-flex justify-content-center align-items-center rounded-circle mb-3' style={{ width: '80px', height: '80px', backgroundColor: 'rgba(220, 53, 69, 0.1)', color: '#dc3545' }}>
+                                                                            <div className="fw-bold fs-3">×</div>
+                                                                        </div>
+                                                                    );
+                                                                    showConfirmationAlert('Eliminar', 'Funcionalidad de eliminar pendiente', 'Eliminar', 'danger', { iconComponent: DeleteIcon });
+                                                                }}>Eliminar</button></li>
+                                                            </ul>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
                     </div>
+
+                    {/* Pagination */}
+                    <TablePagination
+                        currentPage={page}
+                        totalPages={totalPages}
+                        totalItems={totalItems}
+                        itemsPerPage={itemsPerPage}
+                        onPageChange={setPage}
+                        onItemsPerPageChange={(newVal) => {
+                            setItemsPerPage(newVal);
+                            setPage(1);
+                        }}
+                    />
                 </div>
             </div>
             {/* Modal Form Overlay */}

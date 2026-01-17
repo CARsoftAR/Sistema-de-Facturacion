@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, Search, User, ArrowRightLeft, CreditCard, RotateCcw, Users, Pencil, Trash2 } from 'lucide-react';
 import ClienteForm from '../components/clientes/ClienteForm';
-import { BtnAdd, BtnEdit, BtnDelete, BtnAction, BtnClear, BtnVertical } from '../components/CommonButtons';
+import { BtnAdd, BtnEditar, BtnEliminar, BtnAction, BtnClear, BtnVertical } from '../components/CommonButtons';
 import { showDeleteAlert } from '../utils/alerts';
 import TablePagination from '../components/common/TablePagination';
 import EmptyState from '../components/EmptyState';
@@ -263,8 +263,8 @@ const Clientes = () => {
                                             <td className="text-end pe-4 py-3">
                                                 <div className="d-flex justify-content-end gap-2">
                                                     <div className="d-flex justify-content-end gap-2">
-                                                        <BtnEdit onClick={() => handleEdit(c)} />
-                                                        <BtnDelete onClick={() => handleDelete(c.id)} />
+                                                        <BtnEditar onClick={() => handleEdit(c)} />
+                                                        <BtnEliminar onClick={() => handleDelete(c.id)} />
                                                     </div>
                                                 </div>
                                             </td>

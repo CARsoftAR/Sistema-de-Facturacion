@@ -1,20 +1,30 @@
 {
   "index.html": {
-    "file": "assets/main-B42prlY4.js",
+    "file": "assets/main-CjejkB2u.js",
     "name": "main",
     "src": "index.html",
     "isEntry": true,
     "dynamicImports": [
-      "src/pages/CuentasCorrientesClientes.jsx"
+      "src/pages/CuentasCorrientesClientes.jsx",
+      "src/pages/DetalleCuentaCorriente.jsx"
     ],
     "css": [
-      "assets/main-B1Puc_TC.css"
+      "assets/main-DVNkFK3N.css"
     ]
   },
   "src/pages/CuentasCorrientesClientes.jsx": {
-    "file": "assets/CuentasCorrientesClientes-BuvCQlll.js",
+    "file": "assets/CuentasCorrientesClientes-ungW6UJf.js",
     "name": "CuentasCorrientesClientes",
     "src": "src/pages/CuentasCorrientesClientes.jsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "index.html"
+    ]
+  },
+  "src/pages/DetalleCuentaCorriente.jsx": {
+    "file": "assets/DetalleCuentaCorriente-BmJdTsB_.js",
+    "name": "DetalleCuentaCorriente",
+    "src": "src/pages/DetalleCuentaCorriente.jsx",
     "isDynamicEntry": true,
     "imports": [
       "index.html"

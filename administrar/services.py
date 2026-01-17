@@ -1,8 +1,8 @@
 from django.db import transaction
 from django.core.exceptions import ObjectDoesNotExist
 from decimal import Decimal
-from datetime import date
-from .models import Cheque, Asiento, ItemAsiento, PlanCuenta, EjercicioContable, Cliente
+from datetime import date, datetime
+from .models import Cheque, Asiento, ItemAsiento, PlanCuenta, EjercicioContable, Cliente, MovimientoCaja
 
 class AccountingService:
     """
@@ -139,6 +139,10 @@ class AccountingService:
             # Generalmente "Depositado" ya implica que está en el banco. "Cobrado" podría no requerir asiento extra
             # o confirmar la acreditación. Por ahora no hacemos nada.
             pass
+        elif estado_anterior == 'CARTERA' and nuevo_estado == 'COBRADO':
+             cls._registrar_cobro_por_ventanilla(cheque)
+        elif estado_anterior == 'CARTERA' and nuevo_estado == 'ENTREGADO':
+             cls._registrar_entrega_tercero(cheque)
 
     @classmethod
     def _obtener_cuenta_banco(cls, cuenta_bancaria):
@@ -199,7 +203,92 @@ class AccountingService:
 
             ItemAsiento.objects.create(asiento=asiento, cuenta=cuenta_banco, debe=cheque.monto, haber=0)
             ItemAsiento.objects.create(asiento=asiento, cuenta=cuenta_valores, debe=0, haber=cheque.monto)
-            print(f"DEBUG: Asiento {nuevo_numero} creado para deposito cheque {cheque.numero}")
+    @classmethod
+    def _registrar_cobro_por_ventanilla(cls, cheque):
+        """
+        Cobro de cheque por ventanilla (Efectivo).
+        1. Genera Movimiento de Caja (Ingreso).
+        2. Genera Asiento (Debe Caja, Haber Valores a Depositar).
+        """
+        fecha_asiento = date.today()
+        ejercicio = cls._obtener_ejercicio_vigente(fecha_asiento)
+        
+        if not ejercicio: return
+
+        cuenta_caja = cls._obtener_cuenta(cls.CUENTA_CAJA)
+        cuenta_valores = cls._obtener_cuenta(cls.CUENTA_VALORES_A_DEPOSITAR)
+
+        if not cuenta_caja or not cuenta_valores:
+            print("Faltan cuentas para cobro cheque ventanilla")
+            return
+
+        with transaction.atomic():
+            # 1. Movimiento de Caja
+            MovimientoCaja.objects.create(
+                fecha=fecha_asiento,
+                tipo='Ingreso',
+                monto=cheque.monto,
+                descripcion=f"Cobro Cheque #{cheque.numero} por Ventanilla",
+                usuario='Sistema' # Idealmente request.user
+            )
+
+            # 2. Asiento Contable
+            ultimo_numero = Asiento.objects.filter(ejercicio=ejercicio).order_by('-numero').first()
+            nuevo_numero = (ultimo_numero.numero + 1) if ultimo_numero else 1
+            
+            asiento = Asiento.objects.create(
+                numero=nuevo_numero,
+                fecha=fecha_asiento,
+                descripcion=f"Cobro Cheque #{cheque.numero} (Efectivo)",
+                ejercicio=ejercicio,
+                origen='COBROS', 
+                usuario='Sistema'
+            )
+
+            # Debe Caja
+            ItemAsiento.objects.create(asiento=asiento, cuenta=cuenta_caja, debe=cheque.monto, haber=0)
+            # Haber Valores a Depositar
+            ItemAsiento.objects.create(asiento=asiento, cuenta=cuenta_valores, debe=0, haber=cheque.monto)
+            
+            print(f"DEBUG: Cobro Ventanilla Cheque {cheque.numero} registrado.")
+
+    @classmethod
+    def _registrar_entrega_tercero(cls, cheque):
+        """
+        Entrega de cheque de tercero a proveedor (Endoso).
+        Debe: Proveedores (Baja Deuda)
+        Haber: Valores a Depositar (Baja Activo)
+        """
+        fecha_asiento = date.today()
+        ejercicio = cls._obtener_ejercicio_vigente(fecha_asiento)
+        
+        if not ejercicio: return
+
+        cuenta_proveedores = cls._obtener_cuenta(cls.CUENTA_PROVEEDORES)
+        cuenta_valores = cls._obtener_cuenta(cls.CUENTA_VALORES_A_DEPOSITAR)  
+
+        if not cuenta_proveedores or not cuenta_valores:
+             return
+
+        with transaction.atomic():
+            ultimo_numero = Asiento.objects.filter(ejercicio=ejercicio).order_by('-numero').first()
+            nuevo_numero = (ultimo_numero.numero + 1) if ultimo_numero else 1
+            
+            asiento = Asiento.objects.create(
+                numero=nuevo_numero,
+                fecha=fecha_asiento,
+                descripcion=f"Pago a Proveedor con Cheque #{cheque.numero} (Endoso)",
+                ejercicio=ejercicio,
+                origen='PAGOS', 
+                usuario='Sistema'
+            )
+
+            # Debe Proveedores
+            ItemAsiento.objects.create(asiento=asiento, cuenta=cuenta_proveedores, debe=cheque.monto, haber=0)
+            # Haber Valores a Depositar
+            ItemAsiento.objects.create(asiento=asiento, cuenta=cuenta_valores, debe=0, haber=cheque.monto)
+            
+            print(f"DEBUG: Entrega Cheque {cheque.numero} registrada.")
 
     @classmethod
     def registrar_movimiento_banco(cls, movimiento):
@@ -626,6 +715,11 @@ class AccountingService:
                         cuenta_item = cls._obtener_cuenta(cls.CUENTA_RETENCIONES_SUFRIDAS)
                     else:
                         cuenta_item = cls._obtener_cuenta(cls.CUENTA_RETENCIONES_A_DEPOSITAR)
+                elif item.forma_pago in ['DEBITO', 'CREDITO', 'TARJETA']:
+                    cuenta_item = cls._obtener_cuenta(cls.CUENTA_TARJETAS_A_COBRAR)
+                    if not cuenta_item:
+                         # Fallback a Valores o Caja si no existe cuenta especifica de Tarjetas
+                         cuenta_item = cls._obtener_cuenta(cls.CUENTA_VALORES_A_DEPOSITAR) or cls._obtener_cuenta(cls.CUENTA_CAJA)
                 
                 if not cuenta_item: 
                     cuenta_item = cls._obtener_cuenta("Cuentas de Orden") # Fallback

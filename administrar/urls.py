@@ -193,6 +193,7 @@ urlpatterns = [
     # path("cheques/", views.cheques_lista, name="cheques"), # LEGACY
     path("cheques/", login_required(TemplateView.as_view(template_name="react_app.html")), name="cheques"),
     path("ctas-corrientes/clientes/", login_required(TemplateView.as_view(template_name="react_app.html")), name="ctacte_clientes"),
+    path("ctas-corrientes/clientes/<int:id>/", login_required(TemplateView.as_view(template_name="react_app.html")), name="ctacte_cliente_detalle"),
     path("ctas-corrientes/proveedores/", login_required(TemplateView.as_view(template_name="react_app.html")), name="ctacte_proveedores"),
     path("api/cheques/listar/", views.api_cheques_listar, name="api_cheques_listar"),
     path("api/cheques/crear/", views.api_cheques_crear, name="api_cheques_crear"),
@@ -380,6 +381,10 @@ urlpatterns = [
     path("api/ctacte/clientes/listar/", views.api_cc_clientes_listar, name="api_cc_clientes_listar"),
     path("api/ctacte/clientes/<int:id>/movimientos/", views.api_cc_cliente_movimientos, name="api_cc_cliente_movimientos"),
     path("api/ctacte/clientes/nuevo/", views.api_cc_cliente_nuevo_movimiento, name="api_cc_cliente_nuevo_movimiento"),
+    path("api/ctacte/clientes/<int:id>/registrar-pago/", views.api_cc_cliente_registrar_pago, name="api_cc_cliente_registrar_pago"),
+    path("ctacte/clientes/<int:id>/imprimir/", views.cc_cliente_imprimir, name="cc_cliente_imprimir"),
+    path("api/ctacte/clientes/<int:id>/exportar/excel/", views.api_cc_cliente_exportar_excel, name="api_cc_cliente_exportar_excel"),
+    path("api/ctacte/clientes/<int:id>/exportar/pdf/", views.api_cc_cliente_exportar_pdf, name="api_cc_cliente_exportar_pdf"),
     
     # API Proveedores
     path("api/ctacte/proveedores/listar/", views.api_cc_proveedores_listar, name="api_cc_proveedores_listar"),

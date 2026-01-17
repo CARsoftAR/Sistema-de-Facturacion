@@ -123,6 +123,11 @@ const Dashboard = () => {
                     {/* X Axis Labels */}
                     {labels.map((label, index) => {
                         const x = padding + (index / (labels.length - 1)) * effectiveWidth;
+
+                        // Smart Label Skipping: Ensure max ~8 labels
+                        const skip = Math.ceil(labels.length / 8);
+                        if (index % skip !== 0 && index !== labels.length - 1) return null;
+
                         return (
                             <text key={index} x={x} y={height - 15} textAnchor="middle" fontSize="11" fill="#6c757d">{label}</text>
                         );
@@ -430,11 +435,16 @@ const Dashboard = () => {
                 {/* Main Content: Chart */}
                 <div className="col-12 col-xl-8">
                     <div className="card border-0 shadow-sm h-100">
-                        <div className="card-header bg-white py-2 border-0">
-                            <h6 className="card-title fw-bold mb-0">Evolución (7 días)</h6>
+                        <div className="card-header bg-white py-2 border-0 d-flex justify-content-between align-items-center">
+                            <h6 className="card-title fw-bold mb-0">Proyección Financiera (30 días)</h6>
+                            <span className="badge bg-light text-muted fw-normal">Cashflow</span>
                         </div>
                         <div className="card-body pt-0">
-                            <Chart labels={chart.labels} datasets={chart.datasets} />
+                            {/* Use 'proyeccion' if available, otherwise fallback to 'chart' (sales) */}
+                            <Chart
+                                labels={stats.proyeccion ? stats.proyeccion.labels : chart.labels}
+                                datasets={stats.proyeccion ? stats.proyeccion.datasets : chart.datasets}
+                            />
                         </div>
                     </div>
                 </div>

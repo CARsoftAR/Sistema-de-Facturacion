@@ -41,6 +41,7 @@ import { useAuth } from './context/AuthContext'
 
 // Lazy load component to safely handle build errors
 const CuentasCorrientesClientes = React.lazy(() => import('./pages/CuentasCorrientesClientes'));
+const DetalleCuentaCorriente = React.lazy(() => import('./pages/DetalleCuentaCorriente'));
 
 const ProtectedRoute = ({ children, permission, isHome }) => {
   const { user, loading, hasPermission } = useAuth();
@@ -163,6 +164,11 @@ function App() {
               <Route path="/ctas-corrientes/clientes" element={
                 <Suspense fallback={<div className="p-5 text-center text-muted"><h2>Cargando Módulo...</h2></div>}>
                   <ProtectedRoute permission="ctacte"><CuentasCorrientesClientes /></ProtectedRoute>
+                </Suspense>
+              } />
+              <Route path="/ctas-corrientes/clientes/:id" element={
+                <Suspense fallback={<div className="p-5 text-center text-muted"><h2>Cargando...</h2></div>}>
+                  <ProtectedRoute permission="ctacte"><DetalleCuentaCorriente /></ProtectedRoute>
                 </Suspense>
               } />
               <Route path="/ctas-corrientes/proveedores" element={<div className="p-5 text-center"><h1>Próximamente: Proveedores</h1></div>} />

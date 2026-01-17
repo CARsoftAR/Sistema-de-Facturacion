@@ -252,3 +252,137 @@ export const BtnVertical = ({ icon: Icon, label, onClick, color = "primary", cla
         </button>
     );
 };
+
+// ============================================================================
+// SOLID MODERN BUTTONS (NEW STANDARD FOR FORMS)
+// ============================================================================
+
+/**
+ * Solid Download Button - Blue
+ */
+export const BtnDownload = ({ label = "Descargar", onClick, className = "", loading = false, ...rest }) => (
+    <button
+        type="button"
+        className={`btn btn-sm d-inline-flex align-items-center gap-2 fw-bold rounded-2 shadow-sm ${className}`}
+        style={{
+            backgroundColor: '#3b82f6',
+            color: 'white',
+            border: 'none',
+            padding: '0.5rem 1rem'
+        }}
+        onClick={onClick}
+        disabled={loading}
+        {...rest}
+    >
+        <Download size={16} />
+        {label}
+    </button>
+);
+
+/**
+ * Solid Delete Button - Red
+ */
+export const BtnEliminar = ({ label = "Eliminar", onClick, className = "", loading = false, ...rest }) => (
+    <button
+        type="button"
+        className={`btn btn-sm d-inline-flex align-items-center gap-2 fw-bold rounded-2 shadow-sm ${className}`}
+        style={{
+            backgroundColor: '#ef4444',
+            color: 'white',
+            border: 'none',
+            padding: '0.5rem 1rem'
+        }}
+        onClick={onClick}
+        disabled={loading}
+        {...rest}
+    >
+        <Trash2 size={16} />
+        {label}
+    </button>
+);
+
+/**
+ * Solid Save Button - Blue (for forms)
+ */
+export const BtnGuardar = ({ label = "Guardar", onClick, className = "", loading = false, type = "submit", ...rest }) => (
+    <button
+        type={type}
+        className={`btn btn-sm d-inline-flex align-items-center gap-2 fw-bold rounded-2 shadow-sm ${className}`}
+        style={{
+            backgroundColor: '#3b82f6',
+            color: 'white',
+            border: 'none',
+            padding: '0.5rem 1rem'
+        }}
+        onClick={onClick}
+        disabled={loading}
+        {...rest}
+    >
+        {loading ? <span className="spinner-border spinner-border-sm"></span> : <Check size={16} />}
+        {label}
+    </button>
+);
+
+/**
+ * Solid Cancel Button - Red
+ */
+export const BtnCancelar = ({ label = "Cancelar", onClick, className = "", ...rest }) => (
+    <button
+        type="button"
+        className={`btn btn-sm d-inline-flex align-items-center gap-2 fw-bold rounded-2 shadow-sm ${className}`}
+        style={{
+            backgroundColor: '#ef4444',
+            color: 'white',
+            border: 'none',
+            padding: '0.5rem 1rem'
+        }}
+        onClick={onClick}
+        {...rest}
+    >
+        <X size={16} />
+        {label}
+    </button>
+);
+
+/**
+ * Solid Edit Button - Orange/Amber
+ */
+export const BtnEditar = ({ label = "Editar", onClick, className = "", ...rest }) => (
+    <button
+        type="button"
+        className={`btn btn-sm d-inline-flex align-items-center gap-2 fw-bold rounded-2 shadow-sm ${className}`}
+        style={{
+            backgroundColor: '#f59e0b',
+            color: 'white',
+            border: 'none',
+            padding: '0.5rem 1rem'
+        }}
+        onClick={onClick}
+        {...rest}
+    >
+        <Pencil size={16} />
+        {label}
+    </button>
+);
+
+/**
+ * Solid Add Button - Green
+ */
+export const BtnAgregar = ({ label = "Agregar", onClick, className = "", ...rest }) => (
+    <button
+        type="button"
+        className={`btn btn-sm d-inline-flex align-items-center gap-2 fw-bold rounded-2 shadow-sm ${className}`}
+        style={{
+            backgroundColor: '#10b981',
+            color: 'white',
+            border: 'none',
+            padding: '0.5rem 1rem'
+        }}
+        onClick={onClick}
+        {...rest}
+    >
+        <Plus size={16} />
+        {label}
+    </button>
+);
+

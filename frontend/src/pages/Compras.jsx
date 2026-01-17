@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import {
     Plus,
@@ -25,6 +24,7 @@ import { BtnAdd, BtnDelete, BtnAction, BtnClear, BtnView } from '../components/C
 import { showDeleteAlert } from '../utils/alerts';
 import EmptyState from '../components/EmptyState';
 import TablePagination from '../components/common/TablePagination';
+import PaymentModal from '../components/common/PaymentModal';
 
 const Compras = () => {
     const navigate = useNavigate();
@@ -33,11 +33,9 @@ const Compras = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [filterEstado, setFilterEstado] = useState('TODOS');
 
-    // Estado para modal de Recepción
-    const [showModalRecibir, setShowModalRecibir] = useState(false);
+    // Estado para modal de Recepción (Usando PaymentModal)
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [ordenARecibir, setOrdenARecibir] = useState(null);
-    const [medioPago, setMedioPago] = useState('CONTADO');
-    const [datosCheque, setDatosCheque] = useState({ banco: '', numero: '', fechaVto: '' });
 
     // Estado para paginación
     const [page, setPage] = useState(1);
@@ -72,8 +70,6 @@ const Compras = () => {
         }
     }, []);
 
-
-
     useEffect(() => {
         fetchCompras();
     }, []);
@@ -95,13 +91,22 @@ const Compras = () => {
 
     const handleRecibir = (orden) => {
         setOrdenARecibir(orden);
-        setMedioPago('CONTADO'); // Reset default
-        setDatosCheque({ banco: '', numero: '', fechaVto: '' });
-        setShowModalRecibir(true);
+        setShowPaymentModal(true);
     };
 
-    const confirmRecibir = async () => {
+    const handlePaymentConfirm = async (paymentData) => {
         if (!ordenARecibir) return;
+
+        // Map PaymentModal data to Backend expected format
+        // PaymentModal uses 'EFECTIVO' -> Backend expects 'CONTADO'
+        const medioPagoBackend = paymentData.metodo_pago === 'EFECTIVO' ? 'CONTADO' : paymentData.metodo_pago;
+
+        const datosChequeBackend = paymentData.metodo_pago === 'CHEQUE' ? {
+            banco: paymentData.cheque.bank,
+            numero: paymentData.cheque.number,
+            fechaVto: paymentData.cheque.paymentDate
+        } : null;
+
         try {
             const response = await fetch(`/api/compras/orden/${ordenARecibir.id}/recibir/`, {
                 method: 'POST',
@@ -110,13 +115,13 @@ const Compras = () => {
                     'X-CSRFToken': document.cookie.split('; ').find(row => row.startsWith('csrftoken='))?.split('=')[1]
                 },
                 body: JSON.stringify({
-                    medio_pago: medioPago,
-                    datos_cheque: medioPago === 'CHEQUE' ? datosCheque : null
+                    medio_pago: medioPagoBackend,
+                    datos_cheque: datosChequeBackend
                 })
             });
             const data = await response.json();
             if (data.ok) {
-                setShowModalRecibir(false);
+                setShowPaymentModal(false);
                 setOrdenARecibir(null);
                 fetchCompras();
                 setSuccessOrderData({ orden_id: ordenARecibir.id });
@@ -137,6 +142,7 @@ const Compras = () => {
             });
         }
     };
+
 
     const handleEliminar = (orden) => {
         setOrderToCancel(orden);
@@ -337,9 +343,6 @@ const Compras = () => {
                         </table>
                     </div>
 
-                    {/* Paginación */}
-                    {/* Paginación */}
-                    {/* Paginación */}
                     <TablePagination
                         currentPage={page}
                         totalPages={totalPages}
@@ -355,87 +358,17 @@ const Compras = () => {
                 </div>
             </div>
 
-            {/* Modal Recibir */}
-            {showModalRecibir && ordenARecibir && (
-                <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200">
-                        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white">
-                            <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                                <Truck className="text-blue-600" size={22} /> Recibir Orden #{ordenARecibir.id}
-                            </h2>
-                            <button onClick={() => setShowModalRecibir(false)} className="text-slate-400 hover:text-red-500 hover:bg-slate-50 p-2 rounded-full transition-all">
-                                <X size={20} />
-                            </button>
-                        </div>
-                        <div className="p-6 space-y-5">
-                            <p className="text-muted small">Se actualizará el stock y se registrará la deuda/pago.</p>
-
-                            <div>
-                                <label className="block text-xs font-bold text-slate-500 mb-3 uppercase tracking-wider">Medio de Pago</label>
-                                <div className="grid grid-cols-3 gap-2">
-                                    {[
-                                        { value: 'CONTADO', label: 'Efectivo', icon: DollarSign, color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-200' },
-                                        { value: 'CTACTE', label: 'Cta. Cte.', icon: FileText, color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-200' },
-                                        { value: 'CHEQUE', label: 'Cheque', icon: Banknote, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200' },
-                                    ].map(({ value, label, icon: Icon, color, bg, border }) => {
-                                        const active = medioPago === value;
-                                        return (
-                                            <button
-                                                key={value}
-                                                onClick={() => setMedioPago(value)}
-                                                className={`relative flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border-2 transition-all duration-200 ${active
-                                                        ? `${border} ${bg} shadow-sm ring-1 ring-inset ${border}`
-                                                        : 'border-slate-100 hover:border-slate-200 hover:bg-slate-50'
-                                                    }`}
-                                            >
-                                                <Icon size={20} className={active ? color : 'text-slate-400'} />
-                                                <span className={`font-bold text-[11px] uppercase tracking-tight ${active ? 'text-slate-900' : 'text-slate-500'}`}>{label}</span>
-                                                {active && (
-                                                    <div className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-slate-800"></div>
-                                                )}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                            {medioPago === 'CHEQUE' && (
-                                <div className="p-4 bg-blue-50/50 rounded-2xl space-y-3 border border-blue-100 animate-in slide-in-from-top-2 duration-300">
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <Banknote size={14} className="text-blue-600" />
-                                        <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Datos del Cheque Propio</span>
-                                    </div>
-                                    <input
-                                        type="text"
-                                        className="w-full px-3 py-2 border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-sm outline-none"
-                                        placeholder="Nombre del Banco"
-                                        value={datosCheque.banco}
-                                        onChange={(e) => setDatosCheque({ ...datosCheque, banco: e.target.value })}
-                                    />
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <input
-                                            type="text"
-                                            className="w-full px-3 py-2 border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-sm outline-none"
-                                            placeholder="N° Cheque"
-                                            value={datosCheque.numero}
-                                            onChange={(e) => setDatosCheque({ ...datosCheque, numero: e.target.value })}
-                                        />
-                                        <input
-                                            type="date"
-                                            className="w-full px-3 py-2 border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-sm outline-none"
-                                            value={datosCheque.fechaVto}
-                                            onChange={(e) => setDatosCheque({ ...datosCheque, fechaVto: e.target.value })}
-                                        />
-                                    </div>
-                                </div>
-                            )}
-                            <div className="flex gap-2 pt-2">
-                                <button onClick={() => setShowModalRecibir(false)} className="flex-1 py-3 text-slate-600 font-bold hover:bg-slate-100 rounded-xl transition-colors">Cancelar</button>
-                                <button onClick={confirmRecibir} className="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl shadow-lg hover:bg-blue-700 transition-colors">Confirmar</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
+            {/* Modal Payment (Standardized Recibir) */}
+            <PaymentModal
+                isOpen={showPaymentModal}
+                onClose={() => setShowPaymentModal(false)}
+                onConfirm={handlePaymentConfirm}
+                total={ordenARecibir ? parseFloat(ordenARecibir.total_estimado) : 0}
+                mode="purchase"
+                clientName={ordenARecibir ? `Proveedor: ${ordenARecibir.proveedor}` : ''}
+                allowedMethods={['EFECTIVO', 'CTACTE', 'CHEQUE']}
+                initialMethod="EFECTIVO"
+            />
 
 
             {/* ==================== MODAL EXITO (MANUAL) ==================== */}

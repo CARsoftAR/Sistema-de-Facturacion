@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ShoppingCart, Plus, Search, Calendar, RefreshCw, Check, AlertCircle, FileText, Trash2, CheckCircle2, Clock, Eye } from 'lucide-react';
+import { ShoppingCart, Plus, Search, Calendar, RefreshCw, Check, AlertCircle, FileText, Trash2, CheckCircle2, Clock, Eye, X } from 'lucide-react';
 import { BtnAdd, BtnDelete, BtnAction, BtnClear, BtnView, BtnPrint, BtnTableAction } from '../components/CommonButtons';
 import { showDeleteAlert } from '../utils/alerts';
 import EmptyState from '../components/EmptyState';
@@ -351,22 +351,43 @@ const Pedidos = () => {
             {
                 showModalFacturar && (
                     <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-                        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden text-center p-6 border border-slate-200">
-                            <div className="mx-auto bg-blue-50 w-16 h-16 rounded-full flex items-center justify-center mb-4 text-blue-600">
-                                <FileText size={32} />
+                        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden transform transition-all animate-in fade-in zoom-in-95 duration-200 border border-slate-200">
+
+                            {/* Contenido Clean Style */}
+                            <div className="pt-8 px-6 pb-2 text-center relative z-10">
+                                <button
+                                    onClick={closeModal}
+                                    className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-2 rounded-full transition-all"
+                                >
+                                    <X size={24} />
+                                </button>
+
+                                <div className="mx-auto w-20 h-20 rounded-full flex items-center justify-center mb-4 shadow-sm bg-blue-50 text-blue-600 border border-blue-100">
+                                    <FileText size={40} strokeWidth={1.5} />
+                                </div>
+
+                                <h3 className="text-2xl font-black text-slate-800 mb-2">Facturar Pedido</h3>
+
+                                <p className="text-slate-500 font-medium text-sm px-4">
+                                    ¿Confirmas la facturación de este pedido? Se generará una venta y descontará stock.
+                                </p>
                             </div>
-                            <h4 className="text-xl font-bold text-slate-800 mb-2">Facturar Pedido</h4>
-                            <p className="text-muted text-sm mb-6">
-                                ¿Confirma que desea facturar este pedido? <br />
-                                <span className="text-xs">Se generará una venta y se descontará stock.</span>
-                            </p>
-                            <div className="flex gap-3">
-                                <button className="flex-1 py-2.5 text-slate-600 font-bold hover:bg-slate-100 rounded-xl transition-colors" onClick={closeModal}>
-                                    Cancelar
-                                </button>
-                                <button className="flex-1 py-2.5 bg-blue-600 text-white font-bold rounded-xl shadow-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2" onClick={confirmFacturar}>
-                                    <Check size={18} /> Facturar
-                                </button>
+
+                            <div className="p-6">
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={closeModal}
+                                        className="flex-1 py-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-all text-sm uppercase tracking-wide"
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button
+                                        onClick={confirmFacturar}
+                                        className="flex-1 py-3.5 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-500/30 hover:bg-blue-700 hover:translate-y-px transition-all flex items-center justify-center gap-2 text-sm uppercase tracking-wide"
+                                    >
+                                        <Check size={20} strokeWidth={2.5} /> Confirmar
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>

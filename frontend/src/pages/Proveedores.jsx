@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Truck, Plus, Search, Trash2, Phone, Mail, MapPin, X, Save, Building2, CreditCard, RotateCcw, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { BtnAdd, BtnEdit, BtnDelete, BtnAction, BtnClear, BtnSave, BtnCancel } from '../components/CommonButtons';
+import { BtnAdd, BtnEdit, BtnDelete, BtnAction, BtnClear, BtnGuardar, BtnCancelar, BtnEditar, BtnEliminar } from '../components/CommonButtons';
 import { showDeleteAlert } from '../utils/alerts';
 import TablePagination from '../components/common/TablePagination';
 import EmptyState from '../components/EmptyState';
@@ -283,8 +283,8 @@ const Proveedores = () => {
                                             </td>
                                             <td className="text-end pe-4 py-3">
                                                 <div className="d-flex justify-content-end gap-2">
-                                                    <BtnEdit onClick={() => openModal(p)} />
-                                                    <BtnDelete onClick={() => handleEliminar(p.id)} />
+                                                    <BtnEditar onClick={() => openModal(p)} />
+                                                    <BtnEliminar onClick={() => handleEliminar(p.id)} />
                                                 </div>
                                             </td>
                                         </tr>
@@ -487,8 +487,8 @@ const Proveedores = () => {
 
                         {/* Footer */}
                         <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3 flex-shrink-0">
-                            <BtnCancel onClick={() => setShowModal(false)} />
-                            <BtnSave label="Guardar" onClick={() => { }} form="proveedor-form" />
+                            <BtnCancelar onClick={() => setShowModal(false)} />
+                            <BtnGuardar label="Guardar" form="proveedor-form" />
                         </div>
                     </div>
                 </div>

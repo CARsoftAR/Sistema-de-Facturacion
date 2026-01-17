@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Search, Plus, Trash2, User, ShoppingCart, CreditCard, DollarSign, FileText, Check, X } from 'lucide-react';
 import { BtnSave } from '../components/CommonButtons';
 import { useProductSearch } from '../hooks/useProductSearch';
+import PaymentModal from '../components/common/PaymentModal';
 import Swal from 'sweetalert2';
 
 // Obtener CSRF Token
@@ -20,18 +21,6 @@ function getCookie(name) {
     return cookieValue;
 }
 
-// Lista de bancos argentinos
-const BANCOS_ARGENTINOS = [
-    "Banco de la Nación Argentina", "Banco de la Provincia de Buenos Aires", "Banco Ciudad de Buenos Aires",
-    "Banco Santander Argentina", "Banco Galicia", "Banco BBVA Argentina", "Banco Macro", "Banco HSBC Argentina",
-    "Banco Credicoop", "Banco Patagonia", "Banco ICBC Argentina", "Banco Supervielle", "Banco Comafi",
-    "Banco Hipotecario", "Banco Itaú Argentina", "Banco Columbia", "Banco del Sol", "Banco Piano",
-    "Banco CMF", "Banco Mariva", "Banco Voii", "Banco de Valores", "Banco Municipal de Rosario",
-    "Nuevo Banco de Santa Fe", "Nuevo Banco de Entre Ríos", "Banco de Córdoba", "Banco de San Juan",
-    "Banco de La Pampa", "Banco de Corrientes", "Banco del Chubut", "Banco de Formosa", "Banco de Santa Cruz",
-    "Banco de Tierra del Fuego"
-];
-
 const NuevaVenta = () => {
     // ==================== STATE & REFS ====================
     // 1. REFS FIRST
@@ -39,7 +28,6 @@ const NuevaVenta = () => {
     const clienteInputRef = useRef(null);
     const clienteListRef = useRef(null);
     const cantidadRef = useRef(null);
-    const bancoListRef = useRef(null);
 
     // 2. STATE NEXT
     const [cliente, setCliente] = useState(null);
@@ -61,15 +49,9 @@ const NuevaVenta = () => {
 
     // Modal de pago state
     const [mostrarModalPago, setMostrarModalPago] = useState(false);
-    const [montoPago, setMontoPago] = useState('');
-    const [datosTarjeta, setDatosTarjeta] = useState({ ultimos4: '', cuotas: '1' });
-    const [datosCheque, setDatosCheque] = useState({ banco: '', numero: '', fechaVto: '' });
 
-    // Alertas y Sugerencias
+    // Alertas
     const [alertaStock, setAlertaStock] = useState(null);
-    const [bancosSugeridos, setBancosSugeridos] = useState([]);
-    const [mostrarSugerenciasBanco, setMostrarSugerenciasBanco] = useState(false);
-    const [sugerenciaBancoActiva, setSugerenciaBancoActiva] = useState(0);
 
     // Configuración
     const [cargandoConfig, setCargandoConfig] = useState(true);
@@ -123,29 +105,24 @@ const NuevaVenta = () => {
         if (!cargandoConfig) {
             setDiscriminarIVA(config.discriminar_iva_ventas);
             setGenerarRemito(config.habilita_remitos);
-            if (config.auto_foco_codigo_barras) {
-                setTimeout(() => codigoRef.current?.focus(), 100);
-            } else {
-                setTimeout(() => clienteInputRef.current?.focus(), 100);
-            }
+
+            // Focus logic with better timing and fallbacks
+            setTimeout(() => {
+                if (config.auto_foco_codigo_barras) {
+                    if (codigoRef.current) {
+                        codigoRef.current.focus();
+                    } else {
+                        // Fallback if barcode ref is missing for some reason
+                        clienteInputRef.current?.focus();
+                    }
+                } else {
+                    if (clienteInputRef.current) {
+                        clienteInputRef.current.focus();
+                    }
+                }
+            }, 300); // Increased timeout to ensure DOM readiness
         }
     }, [cargandoConfig, config]);
-
-    // Buscar Bancos
-    useEffect(() => {
-        const busqueda = datosCheque.banco;
-        if (!busqueda || busqueda.length < 2) {
-            setBancosSugeridos([]);
-            setMostrarSugerenciasBanco(false);
-            return;
-        }
-        const resultados = BANCOS_ARGENTINOS.filter(b =>
-            b.toLowerCase().includes(busqueda.toLowerCase())
-        );
-        setBancosSugeridos(resultados);
-        setMostrarSugerenciasBanco(resultados.length > 0);
-        setSugerenciaBancoActiva(0);
-    }, [datosCheque.banco]);
 
     // Buscar Clientes
     useEffect(() => {
@@ -297,52 +274,40 @@ const NuevaVenta = () => {
     };
 
     const totalGeneral = items.reduce((acc, i) => acc + i.subtotal, 0);
-    const vuelto = parseFloat(montoPago || 0) - totalGeneral;
 
     const abrirModalPago = () => {
         if (items.length === 0) {
             setMensaje({ tipo: 'error', texto: 'Debe agregar al menos un producto.' });
             return;
         }
-        setMontoPago(''); // Reset or set to total
-        setDatosTarjeta({ ultimos4: '', cuotas: '1' });
-        setDatosCheque({ banco: '', numero: '', fechaVto: '' });
         setMostrarModalPago(true);
     };
 
-    const seleccionarBanco = (banco) => {
-        setDatosCheque({ ...datosCheque, banco: banco });
-        setMostrarSugerenciasBanco(false);
-        setTimeout(() => {
-            const el = document.querySelector('input[placeholder="Nº Cheque"]');
-            if (el) el.focus();
-        }, 50);
+    // Handler for PaymentModal
+    const handleConfirmPayment = (paymentData) => {
+        guardarVenta(paymentData);
     };
 
-    const handleBancoKeyDown = (e) => {
-        if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            const newIndex = Math.min(sugerenciaBancoActiva + 1, bancosSugeridos.length - 1);
-            setSugerenciaBancoActiva(newIndex);
-            bancoListRef.current?.children[newIndex]?.scrollIntoView({ block: 'nearest' });
-        } else if (e.key === 'ArrowUp') {
-            e.preventDefault();
-            const newIndex = Math.max(sugerenciaBancoActiva - 1, 0);
-            setSugerenciaBancoActiva(newIndex);
-            bancoListRef.current?.children[newIndex]?.scrollIntoView({ block: 'nearest' });
-        } else if (e.key === 'Enter') {
-            e.preventDefault();
-            if (mostrarSugerenciasBanco && bancosSugeridos.length > 0) {
-                seleccionarBanco(bancosSugeridos[sugerenciaBancoActiva]);
-            }
-        } else if (e.key === 'Escape') {
-            setMostrarSugerenciasBanco(false);
-        }
-    };
-
-    const guardarVenta = async () => {
+    const guardarVenta = async (paymentData) => {
         setGuardando(true);
         setMensaje(null);
+
+        // Map PaymentModal data to existing backend structure
+        const finalMedioPago = paymentData.metodo_pago;
+
+        const datosPago = {
+            monto_recibido: paymentData.monto,
+            vuelto: paymentData.vuelto,
+            tarjeta: {
+                ultimos4: paymentData.tarjeta?.last4 || '',
+                cuotas: paymentData.tarjeta?.installments || '1'
+            },
+            cheque: {
+                banco: paymentData.cheque?.bank || '',
+                numero: paymentData.cheque?.number || '',
+                fechaVto: paymentData.cheque?.paymentDate || ''
+            }
+        };
 
         try {
             const response = await fetch('/api/ventas/guardar/', {
@@ -363,14 +328,9 @@ const NuevaVenta = () => {
                         discriminado: discriminarIVA
                     })),
                     total_general: totalGeneral,
-                    medio_pago: medioPago,
+                    medio_pago: finalMedioPago,
                     generar_remito: generarRemito,
-                    datos_pago: {
-                        monto_recibido: parseFloat(montoPago) || totalGeneral,
-                        vuelto: medioPago === 'EFECTIVO' ? Math.max(0, vuelto) : 0,
-                        tarjeta: datosTarjeta,
-                        cheque: datosCheque
-                    },
+                    datos_pago: datosPago,
                     discriminar_iva: discriminarIVA,
                     tipo_comprobante: discriminarIVA && cliente?.condicion_fiscal === 'RI' ? 'A' : 'B'
                 })
@@ -498,7 +458,7 @@ const NuevaVenta = () => {
                             <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
                                 <CreditCard size={20} />
                             </div>
-                            <h2 className="font-bold text-slate-700 text-lg">Método de Pago</h2>
+                            <h2 className="font-bold text-slate-700 text-lg">Método de Pago Preferido</h2>
                         </div>
                         <div className="grid grid-cols-2 gap-3">
                             {[
@@ -518,8 +478,6 @@ const NuevaVenta = () => {
                                 );
                             })}
                         </div>
-
-                        {/* Opciones ocultas controladas por Parametros */}
                     </div>
                 </div>
 
@@ -768,165 +726,15 @@ const NuevaVenta = () => {
             )}
 
             {/* ==================== MODAL DE PAGO ==================== */}
-            {mostrarModalPago && (
-                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50">
-                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md mx-4 overflow-visible animate-in fade-in zoom-in duration-200">
-                        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white px-8 py-6 relative overflow-hidden rounded-t-3xl">
-                            <div className="relative z-10 flex justify-between items-center">
-                                <div>
-                                    <h3 className="font-bold text-xl">Completar Pago</h3>
-                                    <p className="text-blue-100 text-sm mt-1">{medioPago}</p>
-                                </div>
-                                <button onClick={() => setMostrarModalPago(false)} className="bg-white/10 hover:bg-white/20 rounded-full p-2 transition-colors">
-                                    <X size={24} />
-                                </button>
-                            </div>
-                        </div>
-
-                        <div className="p-8">
-                            <div className="text-center mb-8">
-                                <p className="text-slate-500 font-medium mb-1 uppercase tracking-wider text-xs">Total a Pagar</p>
-                                <p className="text-5xl font-black text-slate-800 tracking-tight">${totalGeneral.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</p>
-                            </div>
-
-                            {/* EFECTIVO */}
-                            {medioPago === 'EFECTIVO' && (
-                                <div className="space-y-4">
-                                    <div>
-                                        <label className="block text-sm font-bold text-slate-700 mb-2">Monto Recibido</label>
-                                        <div className="relative">
-                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
-                                            <input
-                                                type="number"
-                                                autoFocus
-                                                className="w-full pl-8 pr-4 py-3 text-lg font-bold border border-slate-300 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 text-slate-800"
-                                                placeholder={totalGeneral.toString()}
-                                                value={montoPago}
-                                                onChange={(e) => setMontoPago(e.target.value)}
-                                                onKeyDown={(e) => e.key === 'Enter' && guardarVenta()}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    {parseFloat(montoPago) > totalGeneral && (
-                                        <div className="bg-green-50 p-4 rounded-xl border border-green-100 flex justify-between items-center">
-                                            <span className="text-green-700 font-bold">Vuelto:</span>
-                                            <span className="text-xl font-black text-green-700">${(parseFloat(montoPago) - totalGeneral).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-
-                            {/* TARJETA */}
-                            {medioPago === 'TARJETA' && (
-                                <div className="space-y-4">
-                                    <div>
-                                        <label className="block text-sm font-bold text-slate-700 mb-2">Últimos 4 dígitos</label>
-                                        <input
-                                            type="text"
-                                            maxLength="4"
-                                            className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500"
-                                            placeholder="XXXX"
-                                            value={datosTarjeta.ultimos4}
-                                            onChange={(e) => {
-                                                const val = e.target.value.replace(/\D/g, '');
-                                                setDatosTarjeta({ ...datosTarjeta, ultimos4: val });
-                                            }}
-                                            onKeyDown={(e) => e.key === 'Enter' && guardarVenta()}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-bold text-slate-700 mb-2">Cuotas</label>
-                                        <select
-                                            className="w-full px-4 py-3 border border-slate-300 rounded-xl bg-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500"
-                                            value={datosTarjeta.cuotas}
-                                            onChange={(e) => setDatosTarjeta({ ...datosTarjeta, cuotas: e.target.value })}
-                                        >
-                                            <option value="1">1 Cuota</option>
-                                            <option value="3">3 Cuotas</option>
-                                            <option value="6">6 Cuotas</option>
-                                            <option value="12">12 Cuotas</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* CHEQUE */}
-                            {medioPago === 'CHEQUE' && (
-                                <div className="space-y-4">
-                                    <div className="relative">
-                                        <label className="block text-sm font-bold text-slate-700 mb-2">Banco</label>
-                                        <input
-                                            type="text"
-                                            className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500"
-                                            placeholder="Buscar banco..."
-                                            value={datosCheque.banco}
-                                            onChange={(e) => setDatosCheque({ ...datosCheque, banco: e.target.value })}
-                                            onFocus={() => setMostrarSugerenciasBanco(true)}
-                                            onKeyDown={handleBancoKeyDown}
-                                        />
-                                        {mostrarSugerenciasBanco && bancosSugeridos.length > 0 && (
-                                            <div ref={bancoListRef} className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
-                                                {bancosSugeridos.map((b, idx) => (
-                                                    <div
-                                                        key={b}
-                                                        className={`px-4 py-2 cursor-pointer ${idx === sugerenciaBancoActiva ? 'bg-blue-50 text-blue-700' : 'hover:bg-slate-50'}`}
-                                                        onClick={() => seleccionarBanco(b)}
-                                                    >
-                                                        {b}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-bold text-slate-700 mb-2">Número de Cheque</label>
-                                        <input
-                                            type="text"
-                                            className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500"
-                                            placeholder="Nº Cheque"
-                                            value={datosCheque.numero}
-                                            onChange={(e) => setDatosCheque({ ...datosCheque, numero: e.target.value })}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-bold text-slate-700 mb-2">Fecha de Cobro</label>
-                                        <input
-                                            type="date"
-                                            className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500"
-                                            value={datosCheque.fechaVto}
-                                            onChange={(e) => setDatosCheque({ ...datosCheque, fechaVto: e.target.value })}
-                                        />
-                                    </div>
-                                </div>
-                            )}
-
-                            <div className="flex gap-3 mt-8">
-                                <button
-                                    onClick={() => setMostrarModalPago(false)}
-                                    className="flex-1 py-3 border border-slate-200 rounded-xl font-bold text-slate-500 hover:bg-slate-50 transition-all"
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    onClick={guardarVenta}
-                                    disabled={guardando}
-                                    className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-500/30 hover:bg-blue-700 transition-all flex items-center justify-center gap-2"
-                                >
-                                    {guardando ? (
-                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                    ) : (
-                                        <>
-                                            <Check size={20} strokeWidth={3} />
-                                            Confirmar
-                                        </>
-                                    )}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <PaymentModal
+                isOpen={mostrarModalPago}
+                onClose={() => setMostrarModalPago(false)}
+                onConfirm={handleConfirmPayment}
+                total={totalGeneral}
+                mode="sale"
+                clientName={cliente?.nombre}
+                initialMethod={medioPago}
+            />
         </div>
     );
 };

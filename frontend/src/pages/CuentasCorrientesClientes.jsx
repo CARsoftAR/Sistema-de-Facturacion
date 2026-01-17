@@ -1,12 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useLocation, useSearchParams } from 'react-router-dom';
-import { CreditCard, Search, Eye, AlertCircle, CheckCircle, TrendingUp, TrendingDown, Clock, Users } from 'lucide-react';
-import { BtnAction, BtnClear } from '../components/CommonButtons';
+import { useLocation, useSearchParams, useNavigate } from 'react-router-dom';
+import { CreditCard, Search, Users } from 'lucide-react';
+import { BtnView, BtnClear } from '../components/CommonButtons';
 import { showConfirmationAlert } from '../utils/alerts';
 import TablePagination from '../components/common/TablePagination';
 import EmptyState from '../components/EmptyState';
 
+const STORAGE_KEY = 'table_prefs_ctacte_items';
+
 const CuentasCorrientesClientes = () => {
+    const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const location = useLocation();
     const [clientes, setClientes] = useState([]);
@@ -20,8 +23,6 @@ const CuentasCorrientesClientes = () => {
         return (parsed && parsed > 0) ? parsed : 10;
     });
     const [totales, setTotales] = useState({ total_deuda: 0, cantidad_deudores: 0 });
-
-    const STORAGE_KEY = 'table_prefs_ctacte_items';
 
     useEffect(() => {
         if (!localStorage.getItem(STORAGE_KEY)) {
@@ -93,15 +94,7 @@ const CuentasCorrientesClientes = () => {
     };
 
     const handleVerHistorial = (cliente) => {
-        // Navegar al detalle (Próximo paso)
-        console.log("Ver historial de:", cliente);
-        // navigate(`/ctas-corrientes/clientes/${cliente.id}`);
-        showConfirmationAlert(
-            "Próximamente",
-            `Ver historial de ${cliente.nombre}`,
-            "Entendido",
-            { icon: 'info' }
-        );
+        navigate(`/ctas-corrientes/clientes/${cliente.id}`);
     };
 
     return (
@@ -117,29 +110,6 @@ const CuentasCorrientesClientes = () => {
                     <p className="text-muted mb-0 ps-1" style={{ fontSize: '1rem' }}>
                         Gestión de saldos y movimientos de clientes.
                     </p>
-                </div>
-            </div>
-
-            {/* KPI CARDS (Opcional, para darle toque premium) */}
-            <div className="row g-3 mb-4">
-                <div className="col-md-4">
-                    <div className="card border-0 shadow-sm border-start border-4 border-primary">
-                        <div className="card-body">
-                            <h6 className="text-muted text-uppercase mb-2" style={{ fontSize: '0.8rem', letterSpacing: '1px' }}>Clientes Visualizados</h6>
-                            <h3 className="fw-bold text-dark mb-0">{totalItems}</h3>
-                        </div>
-                    </div>
-                </div>
-                {/* Placeholder para Total Deuda cuando el backend lo soporte */}
-                <div className="col-md-4">
-                    <div className="card border-0 shadow-sm border-start border-4 border-danger">
-                        <div className="card-body">
-                            <h6 className="text-muted text-uppercase mb-2" style={{ fontSize: '0.8rem', letterSpacing: '1px' }}>Estado General</h6>
-                            <h3 className="fw-bold text-dark mb-0 d-flex align-items-center">
-                                <ActivityIndicator />
-                            </h3>
-                        </div>
-                    </div>
                 </div>
             </div>
 
@@ -216,11 +186,11 @@ const CuentasCorrientesClientes = () => {
                                         return (
                                             <tr key={c.id} className="border-bottom-0 hover-bg-light">
                                                 <td className="ps-4 py-3">
-                                                    <div className="fw-bold text-dark">{c.nombre} {c.apellido}</div>
-                                                    <div className="small text-muted fw-medium">{c.direccion || 'Sin dirección'}</div>
+                                                    <div className="fw-medium text-dark">{c.nombre} {c.apellido}</div>
+                                                    <div className="small text-muted">{c.direccion || 'Sin dirección'}</div>
                                                 </td>
-                                                <td className="py-3 font-monospace text-secondary fw-medium">{c.dni || c.cuit || '-'}</td>
-                                                <td className="py-3 text-muted small fw-medium">{c.telefono || '-'}</td>
+                                                <td className="py-3 font-monospace text-secondary">{c.dni || c.cuit || '-'}</td>
+                                                <td className="py-3 text-muted small">{c.telefono || '-'}</td>
 
                                                 <td className={`text-end py-3 fw-bold ${tieneDeuda ? 'text-danger' : saldoAFavor ? 'text-success' : 'text-secondary'}`} style={{ fontSize: '1.1rem' }}>
                                                     {formatCurrency(saldo)}
@@ -229,26 +199,21 @@ const CuentasCorrientesClientes = () => {
                                                 <td className="text-center py-3">
                                                     {tieneDeuda ? (
                                                         <span className="badge bg-danger-subtle text-danger border border-danger px-3 py-2 rounded-pill">
-                                                            <TrendingDown size={14} className="me-1 mb-1" /> Deudor
+                                                            Deudor
                                                         </span>
                                                     ) : saldoAFavor ? (
                                                         <span className="badge bg-success-subtle text-success border border-success px-3 py-2 rounded-pill">
-                                                            <TrendingUp size={14} className="me-1 mb-1" /> A Favor
+                                                            A Favor
                                                         </span>
                                                     ) : (
-                                                        <span className="badge bg-light text-secondary border px-3 py-2 rounded-pill">
-                                                            <CheckCircle size={14} className="me-1 mb-1" /> Al Día
+                                                        <span className="badge bg-success-subtle text-success border border-success px-3 py-2 rounded-pill">
+                                                            Al Día
                                                         </span>
                                                     )}
                                                 </td>
 
                                                 <td className="text-end pe-4 py-3">
-                                                    <BtnAction
-                                                        icon={Eye}
-                                                        onClick={() => handleVerHistorial(c)}
-                                                        className="btn-outline-primary btn-sm"
-                                                        tooltip="Ver Historial"
-                                                    />
+                                                    <BtnView onClick={() => handleVerHistorial(c)} />
                                                 </td>
                                             </tr>
                                         );

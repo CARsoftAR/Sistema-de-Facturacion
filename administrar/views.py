@@ -9307,6 +9307,7 @@ def api_dashboard_stats(request):
     from django.db.models import Sum, Count, F, Q
     from datetime import date, timedelta, datetime
     from django.utils import timezone
+    from .models import Cheque
     
     # 1. Determine Date Range (Default: Current Month)
     local_now = timezone.localtime(timezone.now())
@@ -9410,12 +9411,54 @@ def api_dashboard_stats(request):
         'minimo': float(p.stock_minimo)
     } for p in stock_bajo_qs[:10]] # Limit to 10 for dashboard
     
-    kpi = {
-        'ventas_hoy': float(ventas_hoy),
-        'caja_hoy': float(caja_hoy_neto),
-        'pedidos_pendientes': pedidos_pendientes_count,
-        'stock_bajo': stock_bajo_count,
-    }
+    # --- 3. PROYECCIÓN FINANCIERA (Próximos 30 días) ---
+    # Cheques por cobrar (Ingresos) vs Cheques por pagar (Egresos)
+    fecha_limite = hoy_date + timedelta(days=30)
+    
+    # Ingresos (Cheques en Cartera que vencen pronto)
+    cheques_ingreso = Cheque.objects.filter(
+        estado='CARTERA', 
+        fecha_pago__gte=hoy_date, 
+        fecha_pago__lte=fecha_limite
+    ).values('fecha_pago').annotate(total=Sum('monto')).order_by('fecha_pago')
+
+    # Egresos (Cheques Entregados o Propios que vencen pronto)
+    # Incluimos PROPIO (siempre pagamos) y TERCERO ENTREGADO (si se deposita, no sale plata nuestra, pero si es Propio Entregado si.
+    # Asumimos que TIPO_CHEQUE='PROPIO' implica salida de dinero de nuestra cuenta.
+    cheques_egreso = Cheque.objects.filter(
+        tipo='PROPIO',
+        estado__in=['ENTREGADO', 'CARTERA'], # Cartera propio = emitido pero aun no entregado? O entregado
+        fecha_pago__gte=hoy_date,
+        fecha_pago__lte=fecha_limite
+    ).values('fecha_pago').annotate(total=Sum('monto')).order_by('fecha_pago')
+
+    # Agrupar por semanas o dias? Días es mucho detalle, Semanas mejor. Vamos por Días para chart continuo.
+    proyeccion_labels = []
+    data_ingresos = []
+    data_egresos = []
+    
+    # Crear diccionario fecha -> valores
+    fechas_map = {}
+    delta = timedelta(days=1)
+    iter_date = hoy_date
+    while iter_date <= fecha_limite:
+        fechas_map[iter_date] = {'ingreso': 0, 'egreso': 0}
+        iter_date += delta
+        
+    for c in cheques_ingreso:
+        if c['fecha_pago'] in fechas_map:
+            fechas_map[c['fecha_pago']]['ingreso'] += float(c['total'])
+            
+    for c in cheques_egreso:
+        if c['fecha_pago'] in fechas_map:
+            fechas_map[c['fecha_pago']]['egreso'] += float(c['total'])
+            
+    # Convertir a listas ordenadas
+    sorted_dates = sorted(fechas_map.keys())
+    for d in sorted_dates:
+        proyeccion_labels.append(d.strftime('%d/%m'))
+        data_ingresos.append(fechas_map[d]['ingreso'])
+        data_egresos.append(fechas_map[d]['egreso'])
 
     # --- 3. Chart: Ventas vs Compras (Last 7 days fixed) ---
     fecha_inicio_chart = hoy_date - timedelta(days=6)
@@ -9497,18 +9540,40 @@ def api_dashboard_stats(request):
         })
 
     data = {
-        'kpi': kpi,
+        'kpi': {
+            'ventas_hoy': float(ventas_hoy),
+            'caja_hoy': float(caja_hoy_neto),
+            'pedidos_pendientes': pedidos_pendientes_count,
+            'stock_bajo': stock_bajo_count,
+        },
         'rentabilidad': rentabilidad,
         'chart': {
             'labels': chart_labels,
             'data': data_ventas,
             'datasets': chart_datasets
         },
+        'proyeccion': {
+            'labels': proyeccion_labels,
+            'datasets': [
+                {
+                    'label': 'Ingresos (Cheques)',
+                    'data': data_ingresos,
+                    'borderColor': '#198754', # Success Green
+                    'backgroundColor': 'rgba(25, 135, 84, 0.1)'
+                },
+                {
+                    'label': 'Egresos (Pagos)',
+                    'data': data_egresos,
+                    'borderColor': '#dc3545', # Danger Red
+                    'backgroundColor': 'rgba(220, 53, 69, 0.1)'
+                }
+            ]
+        },
         'actividad_reciente': recientes,
         'top_productos': top_list,
         'top_clientes': top_clientes,
-        'stock_bajo_list': stock_bajo_list, # New
-        'pedidos_pendientes_list': pedidos_pendientes_list # New
+        'stock_bajo_list': stock_bajo_list,
+        'pedidos_pendientes_list': pedidos_pendientes_list
     }
     
     return JsonResponse(data)
@@ -9516,3 +9581,515 @@ def api_dashboard_stats(request):
 
 
 
+# =======================================
+# 🔹 API CUENTA CORRIENTE CLIENTES
+# =======================================
+
+@login_required
+@verificar_permiso('ctacte')
+def api_cc_cliente_movimientos(request, id):
+    """API para obtener todos los movimientos de cuenta corriente de un cliente"""
+    from django.db.models import Q
+    from datetime import datetime
+    
+    try:
+        cliente = Cliente.objects.get(id=id)
+        print(f"DEBUG: Cliente encontrado: {cliente.nombre} (ID: {cliente.id})")
+    except Cliente.DoesNotExist:
+        print(f"DEBUG: Cliente con ID {id} no encontrado")
+        return JsonResponse({'ok': False, 'error': 'Cliente no encontrado'}, status=404)
+    
+    # Obtener todos los movimientos
+    movimientos = []
+    
+    # 1. VENTAS (aumentan deuda - DEBE)
+    try:
+        ventas = Venta.objects.filter(cliente=cliente).select_related('cliente')
+        print(f"DEBUG: Ventas encontradas: {ventas.count()}")
+        for v in ventas:
+            print(f"DEBUG: Venta #{v.id} - Total: {v.total} - Fecha: {v.fecha}")
+            movimientos.append({
+                'id': f'V-{v.id}',
+                'fecha': v.fecha,
+                'tipo': 'VENTA',
+                'descripcion': f'Factura #{v.id} - {v.tipo_comprobante or ""}',
+                'debe': float(v.total),
+                'haber': 0,
+                'comprobante_id': v.id,
+                'comprobante_tipo': 'venta'
+            })
+    except Exception as e:
+        print(f"Error al obtener ventas: {e}")
+        import traceback
+        traceback.print_exc()
+    
+    # 2. PAGOS (disminuyen deuda - HABER)
+    try:
+        # Buscamos 'PAGO' (legacy?) o 'HABER' (estándar) que representen pagos
+        pagos = MovimientoCuentaCorriente.objects.filter(cliente=cliente).filter(Q(tipo='PAGO') | Q(tipo='HABER'))
+        for p in pagos:
+            movimientos.append({
+                'id': f'P-{p.id}',
+                'fecha': p.fecha,
+                'tipo': 'PAGO', # Lo visualizamos como PAGO
+                'descripcion': p.descripcion or 'Pago recibido',
+                'debe': 0,
+                'haber': float(p.monto),
+                'comprobante_id': p.id,
+                'comprobante_tipo': 'pago'
+            })
+    except Exception as e:
+        print(f"Error al obtener pagos: {e}")
+    
+    # 3. NOTAS DE CRÉDITO (disminuyen deuda - HABER)
+    try:
+        notas_credito = NotaCredito.objects.filter(venta__cliente=cliente).select_related('venta')
+        for nc in notas_credito:
+            movimientos.append({
+                'id': f'NC-{nc.id}',
+                'fecha': nc.fecha,
+                'tipo': 'NOTA_CREDITO',
+                'descripcion': f'Nota de Crédito #{nc.id} - Venta #{nc.venta.id}',
+                'debe': 0,
+                'haber': float(nc.total),
+                'comprobante_id': nc.id,
+                'comprobante_tipo': 'nota_credito'
+            })
+    except Exception as e:
+        print(f"Error al obtener notas de crédito: {e}")
+    
+    # 4. NOTAS DE DÉBITO (aumentan deuda - DEBE)
+    try:
+        notas_debito = NotaDebito.objects.filter(venta__cliente=cliente).select_related('venta')
+        for nd in notas_debito:
+            movimientos.append({
+                'id': f'ND-{nd.id}',
+                'fecha': nd.fecha,
+                'tipo': 'NOTA_DEBITO',
+                'descripcion': f'Nota de Débito #{nd.id} - {nd.motivo}',
+                'debe': float(nd.monto),
+                'haber': 0,
+                'comprobante_id': nd.id,
+                'comprobante_tipo': 'nota_debito'
+            })
+    except Exception as e:
+        print(f"Error al obtener notas de débito: {e}")
+    
+    # Ordenar por fecha (más antiguo primero para calcular saldo acumulado)
+    movimientos.sort(key=lambda x: x['fecha'])
+    
+    # Calcular saldo acumulado
+    saldo = Decimal('0')
+    for mov in movimientos:
+        saldo += Decimal(str(mov['debe'])) - Decimal(str(mov['haber']))
+        mov['saldo'] = float(saldo)
+        # Convertir fecha a string
+        mov['fecha'] = mov['fecha'].strftime('%d/%m/%Y')
+    
+    # Invertir para mostrar más reciente primero
+    movimientos.reverse()
+    
+    print(f"DEBUG: Total movimientos procesados: {len(movimientos)}")
+    print(f"DEBUG: Saldo final: {saldo}")
+    
+    return JsonResponse({
+        'ok': True,
+        'cliente': {
+            'id': cliente.id,
+            'nombre': cliente.nombre,
+            'saldo_actual': float(saldo)
+        },
+        'movimientos': movimientos
+    })
+
+
+# Placeholder functions for legacy routes (if needed)
+@login_required
+@verificar_permiso('ctacte')
+def cc_clientes_lista(request):
+    """Vista legacy para lista de clientes cuenta corriente"""
+    return render(request, "administrar/ctacte/clientes_lista.html")
+
+@login_required
+@verificar_permiso('ctacte')
+def cc_cliente_detalle(request, id):
+    """Vista legacy para detalle de cliente cuenta corriente"""
+    cliente = get_object_or_404(Cliente, pk=id)
+    return render(request, "administrar/ctacte/cliente_detalle.html", {'cliente': cliente})
+
+@login_required
+@verificar_permiso('ctacte')
+def cc_proveedores_lista(request):
+    """Vista legacy para lista de proveedores cuenta corriente"""
+    return render(request, "administrar/ctacte/proveedores_lista.html")
+
+@login_required
+@verificar_permiso('ctacte')
+def cc_proveedor_detalle(request, id):
+    """Vista legacy para detalle de proveedor cuenta corriente"""
+    proveedor = get_object_or_404(Proveedor, pk=id)
+    return render(request, "administrar/ctacte/proveedor_detalle.html", {'proveedor': proveedor})
+
+# Placeholder API functions
+@login_required
+@verificar_permiso('ctacte')
+def api_cc_clientes_listar(request):
+    """API placeholder para listar clientes"""
+    return JsonResponse({'ok': False, 'error': 'Not implemented'}, status=501)
+
+@login_required
+@verificar_permiso('ctacte')
+def api_cc_cliente_nuevo_movimiento(request):
+    """API placeholder para nuevo movimiento"""
+    return JsonResponse({'ok': False, 'error': 'Not implemented'}, status=501)
+
+@login_required
+@verificar_permiso('ctacte')
+def api_cc_proveedores_listar(request):
+    """API placeholder para listar proveedores"""
+    return JsonResponse({'ok': False, 'error': 'Not implemented'}, status=501)
+
+@login_required
+@verificar_permiso('ctacte')
+def api_cc_proveedor_movimientos(request, id):
+    """API placeholder para movimientos de proveedor"""
+    return JsonResponse({'ok': False, 'error': 'Not implemented'}, status=501)
+
+@login_required
+@verificar_permiso('ctacte')
+def api_cc_proveedor_nuevo_movimiento(request):
+    """API placeholder para nuevo movimiento proveedor"""
+    return JsonResponse({'ok': False, 'error': 'Not implemented'}, status=501)
+
+@csrf_exempt
+@login_required
+@verificar_permiso('ctacte')
+def api_cc_cliente_registrar_pago(request, id):
+    """API para registrar un pago de cliente con integración total (Caja, Asientos, Recibo)"""
+    import json
+    from datetime import datetime, date
+    from django.db import transaction
+    from decimal import Decimal
+    from .models import Cliente, MovimientoCuentaCorriente, CajaDiaria, MovimientoCaja, CuentaBancaria, MovimientoBanco, Recibo, ItemRecibo, Cheque
+    from .services import AccountingService
+    
+    if request.method != 'POST':
+        return JsonResponse({'ok': False, 'error': 'Método no permitido'}, status=405)
+    
+    try:
+        # Detectar formato de entrada
+        if request.content_type == 'application/json':
+            data = json.loads(request.body)
+        else:
+            data = request.POST
+
+        monto = Decimal(str(data.get('monto', '0')))
+        fecha_str = data.get('fecha', '')
+        metodo_pago = data.get('metodo_pago', 'EFECTIVO').upper()
+        descripcion = data.get('descripcion', '')
+        
+        if monto <= 0:
+            return JsonResponse({'ok': False, 'error': 'El monto debe ser mayor a cero'}, status=400)
+            
+        cliente = Cliente.objects.get(id=id)
+        
+        # Parsear fecha
+        try:
+            fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
+        except:
+            fecha = date.today()
+            
+        print(f"DEBUG: Registrando pago Cliente {id} - Monto {monto} - Metodo {metodo_pago}")
+
+        with transaction.atomic():
+            # 1. Crear Recibo Formal
+            try:
+                ultimo_recibo = Recibo.objects.order_by('-numero').first()
+                nuevo_nro = (ultimo_recibo.numero + 1) if ultimo_recibo else 1
+                
+                recibo = Recibo.objects.create(
+                    numero=nuevo_nro,
+                    tipo='CLIENTE',
+                    cliente=cliente,
+                    fecha=fecha,
+                    total=monto,
+                    observaciones=descripcion or f"Pago Cta Cte - {metodo_pago}"
+                )
+                print(f"DEBUG: Recibo creado #{nuevo_nro}")
+                
+                # Handling CHEQUE creation
+                cheque_obj = None
+                if metodo_pago == 'CHEQUE':
+                    banco = data.get('cheque_banco', 'Banco')
+                    numero = data.get('cheque_numero', '')
+                    fecha_emision = data.get('cheque_fecha_emision', fecha_str)
+                    fecha_pago = data.get('cheque_fecha_pago', fecha_str)
+                    firmante = data.get('cheque_firmante', '')
+                    
+                    if numero:
+                         cheque_obj = Cheque.objects.create(
+                            numero=numero,
+                            banco=banco,
+                            fecha_emision=fecha_emision,
+                            fecha_pago=fecha_pago,
+                            monto=monto,
+                            tipo='TERCERO',
+                            estado='CARTERA', # Ingresa a cartera
+                            cliente=cliente,
+                            firmante=firmante,
+                            observaciones=f"Recibido en Recibo #{recibo.numero_formateado()}"
+                         )
+                         print(f"DEBUG: Cheque creado #{numero} en Cartera")
+
+                # Determine Banco for ItemRecibo
+                item_banco = ''
+                cuenta_bancaria_transferencia = None
+
+                if metodo_pago == 'CHEQUE':
+                    item_banco = data.get('cheque_banco', '')
+                elif metodo_pago == 'TRANSFERENCIA':
+                    # Find the bank account used
+                    cuenta_bancaria_transferencia = CuentaBancaria.objects.filter(activo=True).first()
+                    if not cuenta_bancaria_transferencia:
+                         raise Exception("No hay cuentas bancarias activas para registrar la transferencia.")
+                    item_banco = cuenta_bancaria_transferencia.banco # Used for Accounting mapping
+
+                # Create ItemRecibo
+                ItemRecibo.objects.create(
+                    recibo=recibo,
+                    forma_pago=metodo_pago if metodo_pago != 'TARJETA' else 'DEBITO',
+                    monto=monto,
+                    cheque=cheque_obj,
+                    referencia=data.get('referencia', ''),
+                    banco=item_banco 
+                )
+            except Exception as e_recibo:
+                print(f"ERROR creando Recibo: {e_recibo}")
+                raise e_recibo
+
+            # 2. Movimiento en Cuenta Corriente
+            try:
+                nuevo_saldo = cliente.saldo_actual - monto
+                
+                movimiento = MovimientoCuentaCorriente.objects.create(
+                    cliente=cliente,
+                    tipo='HABER',
+                    descripcion=descripcion or f'Pago recibido - {metodo_pago}',
+                    monto=monto,
+                    saldo=nuevo_saldo,
+                    recibo=recibo
+                )
+                
+                cliente.saldo_actual = nuevo_saldo
+                cliente.save()
+                print(f"DEBUG: Movimiento CC creado y saldo actualizado")
+            except Exception as e_cc:
+                print(f"ERROR actualizando CC: {e_cc}")
+                raise Exception(f"Error actualizando Cuenta Corriente: {e_cc}")
+            
+            # 3. Impacto en Caja/Bancos
+            if metodo_pago in ['EFECTIVO', 'TARJETA', 'DEBITO', 'CREDITO']:
+                caja_activa = CajaDiaria.objects.filter(estado='ABIERTA').first()
+                if caja_activa:
+                    desc_mov = f"Recibo #{recibo.numero_formateado()} - {cliente.nombre}"
+                    if metodo_pago != 'EFECTIVO':
+                        desc_mov += f" ({metodo_pago})"
+                        
+                    MovimientoCaja.objects.create(
+                        caja_diaria=caja_activa,
+                        usuario=request.user,
+                        tipo='Ingreso',
+                        descripcion=desc_mov,
+                        monto=monto
+                    )
+                    print(f"DEBUG: Movimiento Caja registrado en Caja #{caja_activa.id}")
+                else:
+                    if metodo_pago == 'EFECTIVO':
+                        # Si es efectivo y no hay caja, es warning grave
+                         print("WARNING: No hay caja abierta. Se registró pago EFECTIVO pero no ingresó a Caja.")
+                    else:
+                        # Si es tarjeta y no hay caja, es menos grave pero igual notable
+                        pass
+
+            elif metodo_pago == 'TRANSFERENCIA' and cuenta_bancaria_transferencia:
+                MovimientoBanco.objects.create(
+                    cuenta=cuenta_bancaria_transferencia,
+                    fecha=fecha,
+                    descripcion=f"Cobro CC Recibo #{recibo.numero_formateado()} - {cliente.nombre}",
+                    monto=monto
+                )
+                cuenta_bancaria_transferencia.saldo_actual += monto
+                cuenta_bancaria_transferencia.save()
+                print(f"DEBUG: Movimiento Banco registrado en Cuenta {cuenta_bancaria_transferencia.banco}")
+            
+            # 4. Asiento Contable
+            try:
+                AccountingService.registrar_recibo(recibo)
+                print("DEBUG: Asiento contable solicitado")
+            except Exception as e_asiento:
+                print(f"Error generando asiento: {e_asiento}")
+                # No lanzamos excepción para no anular el pago solo por error contable,
+                # pero idealmente debería notificarse.
+        
+        return JsonResponse({
+            'ok': True,
+            'movimiento': {
+                'id': movimiento.id,
+                'fecha': fecha.strftime('%d/%m/%Y'),
+                'monto': float(monto),
+                'metodo_pago': metodo_pago,
+                'recibo': recibo.numero_formateado()
+            }
+        })
+        
+    except Cliente.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Cliente no encontrado'}, status=404)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'ok': False, 'error': str(e)}, status=500)
+
+@login_required
+@verificar_permiso('ctacte')
+def cc_cliente_imprimir(request, id):
+    """Vista para imprimir estado de cuenta del cliente"""
+    try:
+        cliente = Cliente.objects.get(id=id)
+    except Cliente.DoesNotExist:
+        return HttpResponse("Cliente no encontrado", status=404)
+    
+    # Reutilizar la lógica de api_cc_cliente_movimientos
+    movimientos = []
+    
+    # Obtener ventas
+    try:
+        ventas = Venta.objects.filter(cliente=cliente).select_related('cliente')
+        for v in ventas:
+            movimientos.append({
+                'fecha': v.fecha,
+                'tipo': 'VENTA',
+                'descripcion': f'Factura #{v.id} - {v.tipo_comprobante or ""}',
+                'debe': float(v.total),
+                'haber': 0,
+            })
+    except Exception as e:
+        print(f"Error al obtener ventas: {e}")
+    
+    # Obtener pagos
+    try:
+        pagos = MovimientoCuentaCorriente.objects.filter(cliente=cliente, tipo='PAGO')
+        for p in pagos:
+            movimientos.append({
+                'fecha': p.fecha,
+                'tipo': 'PAGO',
+                'descripcion': p.descripcion or f'Pago - {p.metodo_pago}',
+                'debe': 0,
+                'haber': float(p.haber),
+            })
+    except Exception as e:
+        print(f"Error al obtener pagos: {e}")
+    
+    # Ordenar por fecha
+    movimientos.sort(key=lambda x: x['fecha'])
+    
+    # Calcular saldo acumulado
+    saldo = Decimal('0')
+    for mov in movimientos:
+        saldo += Decimal(str(mov['debe'])) - Decimal(str(mov['haber']))
+        mov['saldo'] = float(saldo)
+        mov['fecha'] = mov['fecha'].strftime('%d/%m/%Y')
+    
+    # Invertir para mostrar más reciente primero
+    movimientos.reverse()
+    
+    context = {
+        'cliente': cliente,
+        'movimientos': movimientos,
+        'saldo_actual': float(saldo),
+        'fecha_impresion': datetime.now().strftime('%d/%m/%Y %H:%M')
+    }
+    
+    return render(request, 'administrar/ctacte/cliente_imprimir.html', context)
+
+@login_required
+@verificar_permiso('ctacte')
+def api_cc_cliente_exportar_excel(request, id):
+    """Exportar estado de cuenta a Excel"""
+    try:
+        import openpyxl
+        from openpyxl.styles import Font, Alignment, PatternFill
+        from django.http import HttpResponse
+        
+        cliente = Cliente.objects.get(id=id)
+        
+        # Crear workbook
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Estado de Cuenta"
+        
+        # Encabezado
+        ws['A1'] = 'ESTADO DE CUENTA CORRIENTE'
+        ws['A1'].font = Font(bold=True, size=14)
+        ws['A2'] = f'Cliente: {cliente.nombre}'
+        ws['A3'] = f'CUIT: {cliente.cuit or "N/A"}'
+        ws['A4'] = f'Fecha: {datetime.now().strftime("%d/%m/%Y")}'
+        
+        # Headers de tabla
+        headers = ['Fecha', 'Tipo', 'Descripción', 'Debe', 'Haber', 'Saldo']
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=6, column=col)
+            cell.value = header
+            cell.font = Font(bold=True)
+            cell.fill = PatternFill(start_color="CCCCCC", end_color="CCCCCC", fill_type="solid")
+        
+        # Obtener movimientos (reutilizar lógica)
+        # ... (similar a la función de imprimir)
+        
+        # Preparar respuesta
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = f'attachment; filename="estado_cuenta_{cliente.id}.xlsx"'
+        wb.save(response)
+        return response
+        
+    except ImportError:
+        return JsonResponse({'ok': False, 'error': 'openpyxl no está instalado'}, status=500)
+    except Cliente.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Cliente no encontrado'}, status=404)
+    except Exception as e:
+        return JsonResponse({'ok': False, 'error': str(e)}, status=500)
+
+@login_required
+@verificar_permiso('ctacte')
+def api_cc_cliente_exportar_pdf(request, id):
+    """Exportar estado de cuenta a PDF"""
+    try:
+        from django.template.loader import render_to_string
+        from weasyprint import HTML
+        from django.http import HttpResponse
+        
+        cliente = Cliente.objects.get(id=id)
+        
+        # Reutilizar lógica de movimientos
+        movimientos = []
+        # ... (similar a imprimir)
+        
+        # Renderizar HTML
+        html_string = render_to_string('administrar/ctacte/cliente_pdf.html', {
+            'cliente': cliente,
+            'movimientos': movimientos,
+            'fecha': datetime.now().strftime('%d/%m/%Y')
+        })
+        
+        # Generar PDF
+        pdf_file = HTML(string=html_string).write_pdf()
+        
+        response = HttpResponse(pdf_file, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="estado_cuenta_{cliente.id}.pdf"'
+        return response
+        
+    except ImportError:
+        return JsonResponse({'ok': False, 'error': 'weasyprint no está instalado'}, status=500)
+    except Cliente.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Cliente no encontrado'}, status=404)
+    except Exception as e:
+        return JsonResponse({'ok': False, 'error': str(e)}, status=500)

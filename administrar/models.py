@@ -873,15 +873,8 @@ class DetalleNotaDebito(models.Model):
 
 
 
-class DetalleNotaDebito(models.Model):
-    nota_debito = models.ForeignKey(NotaDebito, on_delete=models.CASCADE, related_name='detalles')
-    producto = models.ForeignKey(Producto, on_delete=models.PROTECT)
-    cantidad = models.DecimalField(max_digits=10, decimal_places=2)
-    precio_unitario = models.DecimalField(max_digits=10, decimal_places=2)
-    subtotal = models.DecimalField(max_digits=12, decimal_places=2)
 
-    def __str__(self):
-        return f"{self.producto.descripcion} x {self.cantidad}"
+# =========================================
 
 
 # =========================================

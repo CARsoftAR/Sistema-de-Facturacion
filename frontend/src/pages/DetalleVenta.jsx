@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
     Printer, ArrowLeft, ShoppingCart, User, Calendar, DollarSign, FileText, CheckCircle2, Clock, AlertCircle, CreditCard, Receipt
 } from 'lucide-react';
@@ -8,6 +8,7 @@ import { BtnPrint, BtnBack } from '../components/CommonButtons';
 const DetalleVenta = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
     const [venta, setVenta] = useState(null);
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -74,7 +75,7 @@ const DetalleVenta = () => {
             {/* Header */}
             <div className="flex justify-between items-start mb-6">
                 <div className="flex items-center gap-4">
-                    <BtnBack onClick={() => navigate('/ventas')} />
+                    <BtnBack onClick={() => navigate(location.state?.from || '/ventas')} />
                     <div>
                         <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
                             Venta <span className="text-blue-600">#{venta.numero_factura_formateado || venta.id}</span>
