@@ -69,7 +69,7 @@ const SidebarItem = ({ icon: Icon, label, href, subItems, isOpen, activeSubItem,
                 >
                     <div className="d-flex align-items-center gap-3">
                         <Icon size={20} />
-                        <span className="fw-medium small">{label}</span>
+                        <span className="fw-medium">{label}</span>
                     </div>
                     {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                 </div>
@@ -81,7 +81,7 @@ const SidebarItem = ({ icon: Icon, label, href, subItems, isOpen, activeSubItem,
                 >
                     <div className="d-flex align-items-center gap-3">
                         <Icon size={20} />
-                        <span className="fw-medium small">{label}</span>
+                        <span className="fw-medium">{label}</span>
                     </div>
                 </a>
             ) : (
@@ -92,7 +92,7 @@ const SidebarItem = ({ icon: Icon, label, href, subItems, isOpen, activeSubItem,
                 >
                     <div className="d-flex align-items-center gap-3">
                         <Icon size={20} />
-                        <span className="fw-medium small">{label}</span>
+                        <span className="fw-medium">{label}</span>
                     </div>
                 </NavLink>
             )}
@@ -106,7 +106,7 @@ const SidebarItem = ({ icon: Icon, label, href, subItems, isOpen, activeSubItem,
                                 <a
                                     key={index}
                                     href={item.href}
-                                    className={`d-block px-2 py-1 small text-decoration-none rounded transition-all text-white text-opacity-75 hover:bg-white hover:bg-opacity-10`}
+                                    className={`d-block px-2 py-1 text-decoration-none rounded transition-all text-white text-opacity-75 hover:bg-white hover:bg-opacity-10`}
                                 >
                                     {item.label}
                                 </a>
@@ -114,7 +114,7 @@ const SidebarItem = ({ icon: Icon, label, href, subItems, isOpen, activeSubItem,
                                 <NavLink
                                     key={index}
                                     to={item.href}
-                                    className={({ isActive }) => `d-block px-2 py-1 small text-decoration-none rounded transition-all ${isActive ? 'text-white fw-bold bg-white bg-opacity-10' : 'text-white text-opacity-75 hover:bg-white hover:bg-opacity-10'}`}
+                                    className={({ isActive }) => `d-block px-2 py-1 text-decoration-none rounded transition-all ${isActive ? 'text-white fw-bold bg-white bg-opacity-10' : 'text-white text-opacity-75 hover:bg-white hover:bg-opacity-10'}`}
                                 >
                                     {item.label}
                                 </NavLink>

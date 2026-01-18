@@ -34,6 +34,8 @@ import DetallePresupuesto from './pages/DetallePresupuesto'
 import NuevoRemito from './pages/NuevoRemito'
 import NuevaNotaCredito from './pages/NuevaNotaCredito'
 import NuevaNotaDebito from './pages/NuevaNotaDebito'
+import NuevoProducto from './pages/NuevoProducto'
+import NuevoCliente from './pages/NuevoCliente'
 
 import Parametros from './pages/Parametros'
 import ConfiguracionEmpresa from './pages/ConfiguracionEmpresa'
@@ -136,8 +138,11 @@ function App() {
               <Route path="/dashboard" element={<ProtectedRoute permission="reportes" isHome={true}><Dashboard /></ProtectedRoute>} />
               <Route path="/clientes/" element={<ProtectedRoute permission="clientes"><Clientes /></ProtectedRoute>} />
               <Route path="/clientes" element={<ProtectedRoute permission="clientes"><Clientes /></ProtectedRoute>} />
+              <Route path="/clientes/nuevo" element={<ProtectedRoute permission="clientes"><NuevoCliente /></ProtectedRoute>} />
+              <Route path="/clientes/editar/:id" element={<ProtectedRoute permission="clientes"><NuevoCliente /></ProtectedRoute>} />
               <Route path="/productos" element={<ProtectedRoute permission="productos"><Productos /></ProtectedRoute>} />
-              <Route path="/productos/nuevo" element={<Navigate to="/productos" replace />} />
+              <Route path="/productos/nuevo" element={<ProtectedRoute permission="productos"><NuevoProducto /></ProtectedRoute>} />
+              <Route path="/productos/editar/:id" element={<ProtectedRoute permission="productos"><NuevoProducto /></ProtectedRoute>} />
               <Route path="/precios/actualizar" element={<ProtectedRoute permission="productos"><ActualizarPrecios /></ProtectedRoute>} />
               <Route path="/precios/actualizar" element={<ProtectedRoute permission="productos"><ActualizarPrecios /></ProtectedRoute>} />
               <Route path="/parametros" element={<ProtectedRoute permission="configuracion"><Parametros /></ProtectedRoute>} />

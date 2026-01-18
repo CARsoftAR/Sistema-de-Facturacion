@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Plus, Trash2, User, ShoppingCart, FileText, X, Check, ClipboardList, Save, AlertTriangle } from 'lucide-react';
-import { BtnSave, BtnCancel } from '../components/CommonButtons';
+import { BtnSave, BtnCancel, BtnBack } from '../components/CommonButtons';
 import { useProductSearch } from '../hooks/useProductSearch';
 
 // Obtener CSRF Token
@@ -313,20 +313,7 @@ const NuevoPedido = () => {
 
     // ==================== RENDER ====================
     return (
-        <div className="p-6 pb-10 max-w-7xl mx-auto min-h-[calc(100vh-120px)] flex flex-col fade-in">
-
-            {/* Mensaje */}
-            {mensaje && (
-                <div className={`mb-4 p-4 rounded-xl flex-shrink-0 shadow-sm border-l-4 ${mensaje.tipo === 'success'
-                    ? 'bg-white border-green-500 text-green-800'
-                    : 'bg-white border-red-500 text-red-800'
-                    }`}>
-                    <div className="flex items-center gap-3">
-                        {mensaje.tipo === 'success' ? <Check size={20} className="text-green-500" /> : <X size={20} className="text-red-500" />}
-                        <span className="font-medium">{mensaje.texto}</span>
-                    </div>
-                </div>
-            )}
+        <div className="p-6 pb-0 max-w-7xl mx-auto min-h-[calc(100vh-120px)] flex flex-col fade-in">
 
             {/* Layout principal */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-0">
@@ -336,8 +323,13 @@ const NuevoPedido = () => {
                     className="lg:col-span-4 flex flex-col gap-6 overflow-y-auto pr-1"
                     style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                 >
+
+                    <div className="flex items-center gap-4">
+                        <BtnBack onClick={() => navigate('/pedidos')} />
+                    </div>
+
                     {/* Header Interno */}
-                    <div className="mb-6 flex-shrink-0">
+                    <div className="flex-shrink-0">
                         <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
                             <ClipboardList className="text-blue-600" size={32} strokeWidth={2.5} />
                             Nuevo Pedido
@@ -439,7 +431,7 @@ const NuevoPedido = () => {
                 </div>
 
                 {/* =============== COLUMNA DERECHA (8 cols) - PRODUCTOS =============== */}
-                <div className="lg:col-span-8 flex flex-col h-[calc(100vh-8rem)] bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden relative">
+                <div className="lg:col-span-8 flex flex-col h-full bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden relative">
 
                     {/* Barra de Entrada de Productos */}
                     <div className="p-5 border-b border-slate-100 bg-slate-50 flex-shrink-0 z-20">

@@ -236,3 +236,84 @@ def api_nota_debito_detalle(request, id):
         return JsonResponse(data)
     except NotaDebito.DoesNotExist:
         return JsonResponse({'ok': False, 'error': 'Nota de Débito no encontrada'}, status=404)
+
+@login_required
+@transaction.atomic
+def api_remito_guardar(request):
+    if request.method == 'POST':
+        try:
+            import json
+            data = json.loads(request.body)
+            
+            venta_id = data.get('venta_id')
+            cliente_id = data.get('cliente_id')
+            direccion_entrega = data.get('direccion_entrega', '')
+            items = data.get('items', [])
+            
+            if not items:
+                return JsonResponse({'ok': False, 'error': 'El remito debe tener al menos un ítem'}, status=400)
+
+            venta = None
+            cliente = None
+
+            if venta_id:
+                venta = get_object_or_404(Venta, pk=venta_id)
+                cliente = venta.cliente
+                # Si hay venta, usamos la dirección del cliente si no se especificó otra
+                if not direccion_entrega:
+                    direccion_entrega = cliente.domicilio
+            elif cliente_id:
+                 # Remito Independiente
+                 from .models import Cliente
+                 cliente = get_object_or_404(Cliente, pk=cliente_id)
+                 if not direccion_entrega:
+                    direccion_entrega = cliente.domicilio
+            else:
+                return JsonResponse({'ok': False, 'error': 'Debe especificar una Venta o un Cliente'}, status=400)
+
+            # Crear el Remito
+            remito = Remito.objects.create(
+                cliente=cliente,
+                venta_asociada=venta, # Puede ser None
+                direccion_entrega=direccion_entrega,
+                estado='GENERADO',
+                observaciones=data.get('observaciones', '')
+            )
+            
+            # Procesar Ítems
+            for item in items:
+                prod_id = item.get('producto_id')
+                cantidad = float(item.get('cantidad', 0))
+                
+                if cantidad <= 0:
+                    continue
+                    
+                producto = get_object_or_404(Producto, pk=prod_id)
+                
+                DetalleRemito.objects.create(
+                    remito=remito,
+                    producto=producto,
+                    cantidad=cantidad
+                )
+                
+                # STOCK LOGIC:
+                # Si NO hay venta asociada, el remito mueve stock (es una entrega directa/"negro"/garantía)
+                if not venta:
+                    producto.stock -= int(cantidad) 
+                    producto.save()
+                    
+                    MovimientoStock.objects.create(
+                        producto=producto,
+                        tipo='OUT',
+                        cantidad=cantidad,
+                        referencia=f"Remito {remito.numero_formateado()}",
+                        observaciones="Entrega por Remito Independiente"
+                    )
+
+            return JsonResponse({'ok': True, 'id': remito.id, 'message': 'Remito generado correctamente'})
+
+        except Exception as e:
+            print(f"Error guardando remito: {e}")
+            return JsonResponse({'ok': False, 'error': str(e)}, status=500)
+            
+    return JsonResponse({'ok': False, 'error': 'Método no permitido'}, status=405)

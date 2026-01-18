@@ -172,6 +172,7 @@ urlpatterns = [
     # ==========================
     path("productos/", login_required(TemplateView.as_view(template_name="react_app.html")), name="productos"),
     path("productos/nuevo/", login_required(TemplateView.as_view(template_name="react_app.html")), name="producto_nuevo"),
+    path("productos/editar/<int:id>/", login_required(TemplateView.as_view(template_name="react_app.html")), name="producto_editar_react"),
 
     # ==========================
     # CRUD PROVEEDORES (REACT)
@@ -223,6 +224,11 @@ urlpatterns = [
     # ==========================
     path("api/clientes/buscar/", views.api_clientes_buscar, name="api_clientes_buscar"),
     path("api/clientes/<int:id>/", views.api_cliente_detalle, name="api_cliente_detalle"),
+    
+    # React Fallbacks for Create/Edit
+    path("clientes/nuevo/", login_required(TemplateView.as_view(template_name="react_app.html")), name="cliente_nuevo_react"),
+    path("clientes/editar/<int:id>/", login_required(TemplateView.as_view(template_name="react_app.html")), name="cliente_editar_react"),
+
     path("api/clientes/nuevo/", views.api_cliente_nuevo, name="api_cliente_nuevo"),
     path("api/clientes/<int:id>/editar/", views.api_cliente_editar, name="api_cliente_editar"),
     path("api/clientes/<int:id>/eliminar/", views.api_cliente_eliminar, name="api_cliente_eliminar"),
@@ -343,7 +349,10 @@ urlpatterns = [
     # COMPROBANTES (NC, ND, REMITOS)
     # ==========================
     path('remitos/', login_required(TemplateView.as_view(template_name="react_app.html")), name='remitos_react'),
+    path('remitos/nuevo/', login_required(TemplateView.as_view(template_name="react_app.html")), name='remito_nuevo_react'),
     path('notas-credito/', login_required(TemplateView.as_view(template_name="react_app.html")), name='notas_credito_react'),
+    path('notas-credito/nuevo/', login_required(TemplateView.as_view(template_name="react_app.html")), name='nota_credito_nueva_react'),
+    path('notas-debito/nuevo/', login_required(TemplateView.as_view(template_name="react_app.html")), name='nota_debito_nueva_react'),
 
     path("comprobantes/nc-nd/", views_comprobantes.lista_nc_nd, name="lista_nc_nd"),
     path("api/notas-credito/listar/", views.api_notas_credito_listar, name="api_notas_credito_listar"),
@@ -351,6 +360,7 @@ urlpatterns = [
     path("api/remitos/listar/", views.api_remitos_listar, name="api_remitos_listar"),
     path("comprobantes/nc/crear/<int:venta_id>/", views_comprobantes.crear_nota_credito, name="crear_nota_credito"),
     path("comprobantes/remito/crear/<int:venta_id>/", views_comprobantes.crear_remito, name="crear_remito"),
+    path("api/remitos/guardar/", views_comprobantes.api_remito_guardar, name="api_remito_guardar"),
     # React Route for Detail
     path("comprobantes/remito/<int:id>/", login_required(TemplateView.as_view(template_name="react_app.html")), name="detalle_remito_react"),
     # API for Detail

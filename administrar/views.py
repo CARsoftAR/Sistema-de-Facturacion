@@ -8765,16 +8765,40 @@ def api_localidades_listar(request):
 # =========================================
 @login_required
 def api_remitos_listar(request):
-    """API para listar remitos"""
+    """API para listar remitos con filtros y paginación"""
     try:
-        remitos = Remito.objects.select_related('cliente', 'venta_asociada').all().order_by('-fecha')
+        from django.core.paginator import Paginator
+        from django.db.models import Q
+        import datetime
+
+        page_number = request.GET.get('page', 1)
+        per_page = request.GET.get('per_page', 10)
+        q = request.GET.get('q', '')
+        fecha = request.GET.get('fecha', '')
+
+        queryset = Remito.objects.select_related('cliente', 'venta_asociada').all().order_by('-fecha')
+
+        # Filtros
+        if q:
+            queryset = queryset.filter(
+                Q(cliente__nombre__icontains=q) | 
+                Q(id__icontains=q) |
+                Q(venta_asociada__id__icontains=q)
+            )
         
+        if fecha:
+            queryset = queryset.filter(fecha__date=fecha)
+
+        # Paginación
+        paginator = Paginator(queryset, per_page)
+        page_obj = paginator.get_page(page_number)
+
         data = []
-        for r in remitos:
+        for r in page_obj:
             data.append({
                 'id': r.id,
                 'numero': r.numero_formateado(),
-                'fecha': r.fecha.strftime('%d/%m/%Y %H:%M'),
+                'fecha': r.fecha.strftime('%d/%m/%Y'), # Solo fecha para la tabla
                 'cliente': r.cliente.nombre,
                 'venta_id': r.venta_asociada.id if r.venta_asociada else None,
                 'venta_str': r.venta_asociada.numero_factura_formateado() if r.venta_asociada else '-',
@@ -8783,8 +8807,14 @@ def api_remitos_listar(request):
                 'item_count': r.detalles.count()
             })
             
-        return JsonResponse({'remitos': data})
+        return JsonResponse({
+            'remitos': data,
+            'total': paginator.count,
+            'total_pages': paginator.num_pages,
+            'current_page': page_obj.number
+        })
     except Exception as e:
+        print(f"Error listar remitos: {e}")
         return JsonResponse({'error': str(e)}, status=500)
 
 
@@ -9286,42 +9316,54 @@ def api_nota_debito_crear(request, venta_id):
         
     try:
         data = json.loads(request.body)
-        monto = Decimal(str(data.get('monto', 0)))
-        motivo = data.get('motivo', 'Nota de Débito Genérica')
-
-        if monto <= 0:
-             return JsonResponse({'ok': False, 'error': 'El monto debe ser mayor a 0.'})
+        items = data.get('items', [])
+        motivo = data.get('motivo', 'Nota de Débito') # Motivo general opcional
+        
+        if not items:
+             return JsonResponse({'ok': False, 'error': 'Debe agregar al menos un item.'})
 
         venta = Venta.objects.get(pk=venta_id)
         
+        # Calcular total
+        total_nd = Decimal('0.00')
+        for item in items:
+            total_nd += Decimal(str(item.get('subtotal', 0)))
+            
+        if total_nd <= 0:
+            return JsonResponse({'ok': False, 'error': 'El monto total debe ser mayor a 0.'})
+
         # Crear ND
+        tipo_letra = venta.tipo_comprobante[-1] if venta.tipo_comprobante and venta.tipo_comprobante[-1] in ['A', 'B', 'C'] else 'X'
+        
         nd = NotaDebito.objects.create(
             cliente=venta.cliente,
             venta_asociada=venta,
-            tipo_comprobante=f"ND{venta.tipo_comprobante[-1] if venta.tipo_comprobante else 'X'}", # e.g., NO -> NDX, FA -> FDA? Better: NDA/NDB/NDC
-            total=monto,
+            tipo_comprobante=f"ND{tipo_letra}",
+            total=total_nd,
             motivo=motivo,
             estado='EMITIDA'
         )
-        
-        # Ajustar tipo comprobante mejorado
-        tipo_letra = venta.tipo_comprobante[-1] if venta.tipo_comprobante else 'X' # A, B, C
-        if tipo_letra not in ['A', 'B', 'C']: tipo_letra = 'X'
-        nd.tipo_comprobante = f"ND{tipo_letra}"
-        nd.save()
 
-        # Crear Detalle Genérico
-        DetalleNotaDebito.objects.create(
-            nota_debito=nd,
-            producto=Producto.objects.first(), # Fallback product necessary? Or make nullable? Assuming first product exists or generic service product.
-                                             # Better: find or create a generic 'Concepto ND' product if needed, but let's use first product for now as placeholder is risky.
-                                             # Actually, models says 'producto' is ForeignKey(Producto). We need a product.
-            cantidad=1,
-            precio_unitario=monto,
-            subtotal=monto
-        )
-        # Note: If no product exists, this will fail. Assuming system has products.
-        # Ideally we should have a 'Servicio / Concepto' product.
+        # Crear Detalles
+        for item in items:
+            producto_id = item.get('id')
+            cantidad = Decimal(str(item.get('cantidad', 1)))
+            precio = Decimal(str(item.get('precio', 0)))
+            subtotal = Decimal(str(item.get('subtotal', 0)))
+            
+            # Validar producto
+            try:
+                producto = Producto.objects.get(pk=producto_id)
+            except Producto.DoesNotExist:
+                 continue # O lanzar error
+                 
+            DetalleNotaDebito.objects.create(
+                nota_debito=nd,
+                producto=producto,
+                cantidad=cantidad,
+                precio_unitario=precio,
+                subtotal=subtotal
+            )
 
         # Generar Asiento Contable
         try:
@@ -9339,6 +9381,7 @@ def api_nota_debito_crear(request, venta_id):
     except Venta.DoesNotExist:
         return JsonResponse({'ok': False, 'error': 'Venta no encontrada.'}, status=404)
     except Exception as e:
+        print(f"Error ND: {e}")
         return JsonResponse({'ok': False, 'error': str(e)}, status=500)
 
 @csrf_exempt

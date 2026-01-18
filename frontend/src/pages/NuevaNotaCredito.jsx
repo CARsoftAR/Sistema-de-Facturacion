@@ -82,19 +82,17 @@ const NuevaNotaCredito = () => {
     };
 
     return (
-        <div className="p-6 max-w-5xl mx-auto fade-in">
-            <div className="flex justify-between items-center mb-6">
-                <div className="flex items-center gap-4">
-                    <BtnBack onClick={() => navigate('/notas-credito')} />
-                    <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
-                        <ArrowDownCircle className="text-red-600" size={32} />
-                        Nueva Nota de Crédito
-                    </h1>
-                </div>
-            </div>
+        <div className="p-6 pb-0 max-w-7xl mx-auto min-h-[calc(100vh-120px)] flex flex-col fade-in">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-0">
+                <div className="lg:col-span-5 space-y-6 overflow-y-auto pr-1">
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                <div className="lg:col-span-5 space-y-6">
+                    <div className="flex items-center gap-4">
+                        <BtnBack onClick={() => navigate('/notas-credito')} />
+                        <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
+                            <ArrowDownCircle className="text-red-600" size={32} />
+                            Nueva NC
+                        </h1>
+                    </div>
                     <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
                         <label className="block text-sm font-bold text-slate-500 mb-2">Venta a Anular/Devolver</label>
                         <div className="relative">
@@ -149,7 +147,7 @@ const NuevaNotaCredito = () => {
                     )}
                 </div>
 
-                <div className="lg:col-span-7">
+                <div className="lg:col-span-7 flex flex-col h-full min-h-0">
                     <div className="bg-white rounded-3xl border border-slate-200 shadow-sm flex flex-col h-full overflow-hidden">
                         <div className="p-6 border-b border-slate-100">
                             <h2 className="font-bold text-slate-700 flex items-center gap-2 text-lg">

@@ -2,13 +2,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { Pencil, Trash2, Search, Plus, RotateCcw, Package, AlertTriangle, CheckCircle } from 'lucide-react';
-import ProductoForm from '../components/productos/ProductoForm';
+// import ProductoForm from '../components/productos/ProductoForm'; // Removed as we use page now
 import { BtnAdd, BtnEdit, BtnDelete, BtnAction, BtnClear, BtnVertical } from '../components/CommonButtons';
 import { showDeleteAlert } from '../utils/alerts';
 import TablePagination from '../components/common/TablePagination';
 import EmptyState from '../components/EmptyState';
+import { useNavigate } from 'react-router-dom';
 
 const Productos = () => {
+    const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const location = useLocation();
     const [productos, setProductos] = useState([]);
@@ -63,9 +65,9 @@ const Productos = () => {
         setPage(1);
     }, [location.search]);
 
-    // Modal Form
-    const [showForm, setShowForm] = useState(false);
-    const [editingProduct, setEditingProduct] = useState(null);
+    // Modal Form (Deprecated for Page)
+    // const [showForm, setShowForm] = useState(false);
+    // const [editingProduct, setEditingProduct] = useState(null);
 
     const fetchProductos = useCallback(async (signal) => {
         if (itemsPerPage === 0) return;
@@ -124,20 +126,11 @@ const Productos = () => {
     };
 
     const handleCreate = () => {
-        setEditingProduct(null);
-        setShowForm(true);
+        navigate('/productos/nuevo');
     };
 
-    const handleEdit = async (producto) => {
-        try {
-            const res = await fetch(`/api/productos/${producto.id}/`);
-            const completeData = await res.json();
-            setEditingProduct(completeData);
-            setShowForm(true);
-        } catch (e) {
-            console.error("Error al cargar detalle", e);
-            alert("No se pudo cargar el detalle del producto.");
-        }
+    const handleEdit = (producto) => {
+        navigate(`/productos/editar/${producto.id}`);
     };
 
     const handleDelete = async (id) => {
@@ -293,7 +286,7 @@ const Productos = () => {
                                             <td className="text-end pe-4 py-3">
                                                 <div className="d-flex justify-content-end gap-2">
                                                     <div className="d-flex justify-content-end gap-2">
-                                                        <BtnEdit onClick={() => handleEdit(p.id)} />
+                                                        <BtnEdit onClick={() => handleEdit(p)} />
                                                         <BtnDelete onClick={() => handleDelete(p.id)} />
                                                     </div>
                                                 </div>
@@ -323,14 +316,14 @@ const Productos = () => {
                 </div>
             </div>
 
-            {/* Modal Form Overlay */}
-            {showForm && (
+            {/* Modal Form Overlay - Removed */}
+            {/* {showForm && (
                 <ProductoForm
                     producto={editingProduct}
                     onClose={() => setShowForm(false)}
                     onSave={handleSave}
                 />
-            )}
+            )} */}
         </div>
     );
 };

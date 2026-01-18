@@ -1,13 +1,15 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, Search, User, ArrowRightLeft, CreditCard, RotateCcw, Users, Pencil, Trash2 } from 'lucide-react';
-import ClienteForm from '../components/clientes/ClienteForm';
+// import ClienteForm from '../components/clientes/ClienteForm'; // Deprecated
 import { BtnAdd, BtnEdit, BtnDelete, BtnAction, BtnClear, BtnVertical } from '../components/CommonButtons';
+import { useNavigate } from 'react-router-dom';
 import { showDeleteAlert } from '../utils/alerts';
 import TablePagination from '../components/common/TablePagination';
 import EmptyState from '../components/EmptyState';
 
 const Clientes = () => {
+    const navigate = useNavigate();
     const [clientes, setClientes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
@@ -37,9 +39,9 @@ const Clientes = () => {
         condicion_fiscal: '',
     });
 
-    // Modal Form
-    const [showForm, setShowForm] = useState(false);
-    const [editingCliente, setEditingCliente] = useState(null);
+    // Modal Form (Deprecated)
+    // const [showForm, setShowForm] = useState(false);
+    // const [editingCliente, setEditingCliente] = useState(null);
 
     const fetchClientes = useCallback(async (signal) => {
         if (itemsPerPage === 0) return;
@@ -112,20 +114,11 @@ const Clientes = () => {
     };
 
     const handleCreate = () => {
-        setEditingCliente(null);
-        setShowForm(true);
+        navigate('/clientes/nuevo');
     };
 
-    const handleEdit = async (cliente) => {
-        try {
-            const res = await fetch(`/api/clientes/${cliente.id}/`);
-            const completeData = await res.json();
-            setEditingCliente(completeData);
-            setShowForm(true);
-        } catch (e) {
-            console.error("Error al cargar detalle", e);
-            alert("No se pudo cargar el detalle del cliente.");
-        }
+    const handleEdit = (cliente) => {
+        navigate(`/clientes/editar/${cliente.id}`);
     };
 
     const handleDelete = async (id) => {
@@ -293,14 +286,14 @@ const Clientes = () => {
                 </div>
             </div>
 
-            {/* Formulario Overlay */}
-            {showForm && (
+            {/* Formulario Overlay - Removed */}
+            {/* {showForm && (
                 <ClienteForm
                     cliente={editingCliente}
                     onClose={() => setShowForm(false)}
                     onSave={handleSave}
                 />
-            )}
+            )} */}
         </div>
     );
 };
