@@ -8374,6 +8374,46 @@ def api_bancos_crear(request):
     except Exception as e:
         return JsonResponse({'ok': False, 'error': str(e)})
 
+@require_POST
+@csrf_exempt
+@login_required
+def api_bancos_editar(request, id):
+    import json
+    from .models import CuentaBancaria
+    try:
+        data = json.loads(request.body)
+        c = CuentaBancaria.objects.get(id=id)
+        c.banco = data['banco']
+        c.cbu = data.get('cbu', '')
+        c.alias = data.get('alias', '')
+        c.moneda = data.get('moneda', 'ARS')
+        # Saldo inicial usually shouldn't be edited freely if it affects saldo_actual logic, 
+        # but for simplicity we allow editing basic fields. 
+        # If saldo_inicial changed, we might need to adjust saldo_actual difference, 
+        # but let's keep it simple for master data editing: just info.
+        c.save()
+        return JsonResponse({'ok': True})
+    except CuentaBancaria.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Cuenta no encontrada'})
+    except Exception as e:
+        return JsonResponse({'ok': False, 'error': str(e)})
+
+@require_POST
+@csrf_exempt
+@login_required
+def api_bancos_eliminar(request, id):
+    from .models import CuentaBancaria
+    try:
+        c = CuentaBancaria.objects.get(id=id)
+        # Soft delete or hard delete? The filter uses activo=True, so soft delete.
+        c.activo = False
+        c.save()
+        return JsonResponse({'ok': True})
+    except CuentaBancaria.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Cuenta no encontrada'})
+    except Exception as e:
+        return JsonResponse({'ok': False, 'error': str(e)})
+
 @login_required
 def api_bancos_movimientos(request):
     from .models import MovimientoBanco, CuentaBancaria

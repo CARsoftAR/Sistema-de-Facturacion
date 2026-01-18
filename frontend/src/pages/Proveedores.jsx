@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Truck, Plus, Search, Trash2, Phone, Mail, MapPin, X, Save, Building2, CreditCard, RotateCcw, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { BtnAdd, BtnEdit, BtnDelete, BtnAction, BtnClear, BtnGuardar, BtnCancelar, BtnEditar, BtnEliminar } from '../components/CommonButtons';
+import { BtnAdd, BtnEdit, BtnDelete, BtnAction, BtnClear, BtnGuardar, BtnCancelar } from '../components/CommonButtons';
 import { showDeleteAlert } from '../utils/alerts';
 import TablePagination from '../components/common/TablePagination';
 import EmptyState from '../components/EmptyState';
@@ -283,8 +283,8 @@ const Proveedores = () => {
                                             </td>
                                             <td className="text-end pe-4 py-3">
                                                 <div className="d-flex justify-content-end gap-2">
-                                                    <BtnEditar onClick={() => openModal(p)} />
-                                                    <BtnEliminar onClick={() => handleEliminar(p.id)} />
+                                                    <BtnEdit onClick={() => openModal(p)} />
+                                                    <BtnDelete onClick={() => handleEliminar(p.id)} />
                                                 </div>
                                             </td>
                                         </tr>

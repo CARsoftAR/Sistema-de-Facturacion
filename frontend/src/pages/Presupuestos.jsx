@@ -1,14 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import TablePagination from '../components/common/TablePagination'; // Moved up for safety
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { FileText, Plus, Search, Calendar, RefreshCw, Check, AlertCircle, ShoppingCart, Trash2, CheckCircle2, Clock, Eye, Briefcase } from 'lucide-react';
+import { FileText, Plus, Search, Check, AlertCircle, ShoppingCart, CheckCircle, Clock } from 'lucide-react';
 import { BtnAdd, BtnDelete, BtnAction, BtnClear, BtnView, BtnPrint, BtnTableAction } from '../components/CommonButtons';
 import EmptyState from '../components/EmptyState';
 import { showDeleteAlert } from '../utils/alerts';
-import Swal from 'sweetalert2'; // Assuming we might want nicely styled alerts for success/conversion too, or just use alert() for now.
+import Swal from 'sweetalert2';
 
 const STORAGE_KEY = 'table_prefs_presupuestos_items';
 
 const Presupuestos = () => {
+    console.log("Presupuestos Component Loaded. TablePagination:", TablePagination);
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const [presupuestos, setPresupuestos] = useState([]);
@@ -18,7 +20,11 @@ const Presupuestos = () => {
     const [totalItems, setTotalItems] = useState(0);
     const [itemsPerPage, setItemsPerPage] = useState(() => {
         const saved = localStorage.getItem(STORAGE_KEY);
-        return saved ? parseInt(saved, 10) : 10;
+        if (saved) {
+            const parsed = parseInt(saved, 10);
+            return (parsed && parsed > 0) ? parsed : 10;
+        }
+        return 10;
     });
 
     useEffect(() => {
@@ -168,7 +174,7 @@ const Presupuestos = () => {
     const getEstadoBadge = (estado) => {
         switch (estado) {
             case 'APROBADO':
-                return <span className="badge rounded-pill bg-success-subtle text-success border border-success px-3 py-2"><CheckCircle2 size={16} className="me-1 inline-block" /> Aprobado</span>;
+                return <span className="badge rounded-pill bg-success-subtle text-success border border-success px-3 py-2"><CheckCircle size={16} className="me-1 inline-block" /> Aprobado</span>;
             case 'PENDIENTE':
                 return <span className="badge rounded-pill bg-warning-subtle text-warning-emphasis border border-warning-subtle px-3 py-2"><Clock size={16} className="me-1 inline-block" /> Pendiente</span>;
             case 'VENCIDO':
@@ -186,7 +192,7 @@ const Presupuestos = () => {
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <div>
                     <h2 className="text-primary fw-bold mb-0" style={{ fontSize: '2rem' }}>
-                        <Briefcase className="me-2 inline-block" size={32} />
+                        <FileText className="me-2 inline-block" size={32} />
                         Presupuestos
                     </h2>
                     <p className="text-muted mb-0 ps-1" style={{ fontSize: '1rem' }}>

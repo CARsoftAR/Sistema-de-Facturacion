@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { Pencil, Trash2, Search, Plus, RotateCcw, Package, AlertTriangle, CheckCircle } from 'lucide-react';
 import ProductoForm from '../components/productos/ProductoForm';
-import { BtnAdd, BtnEditar, BtnEliminar, BtnAction, BtnClear, BtnVertical } from '../components/CommonButtons';
+import { BtnAdd, BtnEdit, BtnDelete, BtnAction, BtnClear, BtnVertical } from '../components/CommonButtons';
 import { showDeleteAlert } from '../utils/alerts';
 import TablePagination from '../components/common/TablePagination';
 import EmptyState from '../components/EmptyState';
@@ -293,8 +293,8 @@ const Productos = () => {
                                             <td className="text-end pe-4 py-3">
                                                 <div className="d-flex justify-content-end gap-2">
                                                     <div className="d-flex justify-content-end gap-2">
-                                                        <BtnEditar onClick={() => handleEdit(p.id)} />
-                                                        <BtnEliminar onClick={() => handleDelete(p.id)} />
+                                                        <BtnEdit onClick={() => handleEdit(p.id)} />
+                                                        <BtnDelete onClick={() => handleDelete(p.id)} />
                                                     </div>
                                                 </div>
                                             </td>

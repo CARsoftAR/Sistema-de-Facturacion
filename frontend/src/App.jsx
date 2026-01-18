@@ -43,6 +43,7 @@ import Categorias from './pages/Categorias'
 import Rubros from './pages/Rubros'
 import Unidades from './pages/Unidades'
 import Localidades from './pages/Localidades'
+import Bancos from './pages/Bancos'
 import ReportesContables from './pages/ReportesContables'
 import { useAuth } from './context/AuthContext'
 
@@ -173,6 +174,7 @@ function App() {
               <Route path="/proveedores" element={<ProtectedRoute permission="proveedores"><Proveedores /></ProtectedRoute>} />
               <Route path="/caja" element={<ProtectedRoute permission="caja"><Caja /></ProtectedRoute>} />
               <Route path="/caja/" element={<ProtectedRoute permission="caja"><Caja /></ProtectedRoute>} />
+              <Route path="/bancos" element={<ProtectedRoute permission="bancos"><Bancos /></ProtectedRoute>} />
               <Route path="/cheques" element={<ProtectedRoute permission="bancos"><Cheques /></ProtectedRoute>} />
               <Route path="/bancos/conciliacion" element={<ProtectedRoute permission="bancos"><ConciliacionBancaria /></ProtectedRoute>} />
 

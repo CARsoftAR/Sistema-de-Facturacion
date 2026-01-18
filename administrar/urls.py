@@ -410,10 +410,12 @@ urlpatterns = [
     # ==========================
     # BANCOS
     # ==========================
-    path("bancos/", views.bancos, name="bancos"),
+    path("bancos/", login_required(TemplateView.as_view(template_name="react_app.html")), name="bancos"),
     path("bancos/conciliacion", login_required(TemplateView.as_view(template_name="react_app.html")), name="bancos_conciliacion"),
     path("api/bancos/listar/", views.api_bancos_listar, name="api_bancos_listar"),
     path("api/bancos/crear/", views.api_bancos_crear, name="api_bancos_crear"),
+    path("api/bancos/<int:id>/editar/", views.api_bancos_editar, name="api_bancos_editar"),
+    path("api/bancos/<int:id>/eliminar/", views.api_bancos_eliminar, name="api_bancos_eliminar"),
     path("api/bancos/movimientos/", views.api_bancos_movimientos, name="api_bancos_movimientos"),
     path("api/bancos/movimiento/crear/", views.api_bancos_movimiento_crear, name="api_bancos_movimiento_crear"),
     path("api/bancos/conciliar/", views.api_bancos_conciliar, name="api_bancos_conciliar"),

@@ -18,7 +18,8 @@ import {
     X,
     CreditCard,
     ClipboardList,
-    LogOut
+    LogOut,
+    Landmark
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -298,6 +299,14 @@ const Sidebar = ({ standalone = false }) => {
                         href="/caja"
                         standalone={standalone}
                         permission="caja"
+                    />
+
+                    <SidebarItem
+                        icon={Landmark}
+                        label="Bancos"
+                        href="/bancos"
+                        standalone={standalone}
+                        permission="bancos"
                     />
 
                     <SidebarItem

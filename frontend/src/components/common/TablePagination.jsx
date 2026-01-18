@@ -74,7 +74,7 @@ const TablePagination = ({
                             &lt;
                         </button>
                     </li>
-                    {[...Array(totalPages)].map((_, i) => {
+                    {[...Array(Math.max(0, Number.isFinite(totalPages) ? totalPages : 0))].map((_, i) => {
                         // Logic to truncate pages if too many
                         if (totalPages > 10 && Math.abs(currentPage - (i + 1)) > 2 && i !== 0 && i !== totalPages - 1) {
                             if (i === 1 || i === totalPages - 2) return <li key={i} className="page-item disabled"><span className="page-link border-0 bg-transparent text-secondary">...</span></li>;

@@ -19,8 +19,11 @@ import {
     LogOut
 } from 'lucide-react';
 import Swal from 'sweetalert2';
-import { BtnClear, BtnEdit, BtnDelete } from '../components/CommonButtons';
+import { BtnClear, BtnEdit, BtnDelete, BtnAction } from '../components/CommonButtons';
+import TablePagination from '../components/common/TablePagination';
 import { showDeleteAlert } from '../utils/alerts';
+
+const STORAGE_KEY = 'table_prefs_caja_items';
 
 const Caja = () => {
     const [movimientos, setMovimientos] = useState([]);
@@ -31,15 +34,27 @@ const Caja = () => {
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
-    const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [itemsPerPage, setItemsPerPage] = useState(() => {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            const parsed = parseInt(saved, 10);
+            return (parsed && parsed > 0) ? parsed : 10;
+        }
+        return 10;
+    });
 
     useEffect(() => {
-        fetch('/api/config/obtener/')
-            .then(res => res.json())
-            .then(data => {
-                if (data.items_por_pagina) setItemsPerPage(data.items_por_pagina);
-            })
-            .catch(console.error);
+        // Consultar config solo si no hay preferencia local guardada para inicializar,
+        // pero como ya inicializamos con localStorage o 10, esto es secundario.
+        // Mantenemos la lógica de consultar si no hay nada guardado o para confirmar defaults.
+        if (!localStorage.getItem(STORAGE_KEY)) {
+            fetch('/api/config/obtener/')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.items_por_pagina) setItemsPerPage(data.items_por_pagina);
+                })
+                .catch(console.error);
+        }
     }, []);
 
     // Filtros
@@ -333,14 +348,14 @@ const Caja = () => {
             <div className="card border-0 shadow-sm mb-4">
                 <div className="card-body bg-light rounded">
                     <div className="row g-3">
-                        <div className="col-md-4">
+                        <div className="col-md-3">
                             <div className="input-group">
                                 <span className="input-group-text bg-white border-end-0"><Search size={18} className="text-muted" /></span>
                                 <input
                                     type="text"
                                     name="busqueda"
                                     className="form-control border-start-0"
-                                    placeholder="Buscar por descripción, usuario..."
+                                    placeholder="Buscar..."
                                     value={filters.busqueda}
                                     onChange={handleFilterChange}
                                 />
@@ -373,17 +388,15 @@ const Caja = () => {
                                 value={filters.tipo}
                                 onChange={handleFilterChange}
                             >
-                                <option value="">Todos los Tipos</option>
+                                <option value="">Tipo</option>
                                 <option value="Ingreso">Ingresos</option>
                                 <option value="Egreso">Egresos</option>
                             </select>
                         </div>
-                        <div className="col-md-2">
+                        <div className="col-md-3">
                             <div className="d-flex gap-1">
-                                <button onClick={fetchCajaData} className="btn btn-outline-primary flex-grow-1" title="Actualizar">
-                                    <Filter size={18} className="me-1 inline-block" /> Filtrar
-                                </button>
-                                <BtnClear onClick={resetFilters} label="" />
+                                <BtnAction onClick={fetchCajaData} label="Filtrar" icon={Search} color="primary" className="flex-grow-1" />
+                                <BtnClear onClick={resetFilters} label="Limpiar Filtro" className="flex-grow-1" />
                             </div>
                         </div>
                     </div>
@@ -391,18 +404,18 @@ const Caja = () => {
             </div>
 
             {/* Tabla */}
-            <div className="card border-0 shadow mb-4 flex-grow-1 overflow-hidden d-flex flex-column">
+            <div className="card border-0 shadow mb-0 flex-grow-1 overflow-hidden d-flex flex-column">
                 <div className="card-body p-0 d-flex flex-column overflow-hidden">
-                    <div className="table-responsive flex-grow-1 overflow-auto">
+                    <div className="table-responsive flex-grow-1 table-container-fixed">
                         <table className="table align-middle mb-0">
-                            <thead className="bg-white border-bottom">
+                            <thead className="table-dark" style={{ backgroundColor: '#212529', color: '#fff' }}>
                                 <tr>
-                                    <th className="ps-4 py-3 text-dark fw-bold">Fecha / Hora</th>
-                                    <th className="py-3 text-dark fw-bold">Descripción</th>
-                                    <th className="text-center py-3 text-dark fw-bold">Tipo</th>
-                                    <th className="text-end py-3 text-dark fw-bold">Monto</th>
-                                    <th className="py-3 text-dark fw-bold">Usuario</th>
-                                    <th className="text-end pe-4 py-3 text-dark fw-bold">Acciones</th>
+                                    <th className="ps-4 py-3 fw-bold" style={{ width: '15%' }}>Fecha / Hora</th>
+                                    <th className="py-3 fw-bold" style={{ width: '35%' }}>Descripción</th>
+                                    <th className="text-center py-3 fw-bold" style={{ width: '10%' }}>Tipo</th>
+                                    <th className="text-end py-3 fw-bold" style={{ width: '15%' }}>Monto</th>
+                                    <th className="py-3 fw-bold" style={{ width: '10%' }}>Usuario</th>
+                                    <th className="text-end pe-4 py-3 fw-bold" style={{ width: '15%' }}>Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -463,222 +476,198 @@ const Caja = () => {
                     </div>
 
                     {/* Paginación */}
-                    {!loading && (
-                        <div className="d-flex justify-content-between align-items-center p-3 border-top bg-light">
-                            <div className="d-flex align-items-center gap-2">
-                                <span className="text-muted small">Mostrando {movimientos.length} de {totalItems} registros</span>
-                            </div>
+                    <TablePagination
+                        currentPage={page}
+                        totalPages={totalPages}
+                        totalItems={totalItems}
+                        itemsPerPage={itemsPerPage}
+                        onPageChange={setPage}
+                        onItemsPerPageChange={(newVal) => {
+                            setItemsPerPage(newVal);
+                            setPage(1);
+                            localStorage.setItem(STORAGE_KEY, newVal);
+                        }}
+                    />
 
-                            <nav>
-                                <ul className="pagination mb-0 align-items-center gap-2">
-                                    <li className={`page-item ${page === 1 ? 'disabled' : ''}`}>
-                                        <button
-                                            className="page-link border-0 text-secondary bg-transparent p-0"
-                                            onClick={() => setPage(page - 1)}
-                                            style={{ width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                        >
-                                            &lt;
-                                        </button>
-                                    </li>
-                                    {[...Array(totalPages)].map((_, i) => {
-                                        if (totalPages > 10 && Math.abs(page - (i + 1)) > 2 && i !== 0 && i !== totalPages - 1) return null;
-                                        return (
-                                            <li key={i} className="page-item">
-                                                <button
-                                                    className={`page-link border-0 rounded-circle fw-bold ${page === i + 1 ? 'bg-primary text-white shadow-sm' : 'bg-transparent text-secondary'}`}
-                                                    onClick={() => setPage(i + 1)}
-                                                    style={{ width: '35px', height: '35px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                                >
-                                                    {i + 1}
-                                                </button>
-                                            </li>
-                                        );
-                                    })}
-                                    <li className={`page-item ${page === totalPages ? 'disabled' : ''}`}>
-                                        <button
-                                            className="page-link border-0 text-secondary bg-transparent p-0"
-                                            onClick={() => setPage(page + 1)}
-                                            style={{ width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                        >
-                                            &gt;
-                                        </button>
-                                    </li>
-                                </ul>
-                            </nav>
-                        </div>
-                    )}
-                </div>
-            </div>
+
+                </div >
+            </div >
 
             {/* MODAL: MOVIMIENTO (Nuevo/Editar) */}
-            {showMovimientoModal && (
-                <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-200">
-                        {/* Header */}
-                        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white">
-                            <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                                <PlusCircle className="text-blue-600" size={22} strokeWidth={2.5} />
-                                {editingMovimiento ? 'Editar Movimiento' : 'Nuevo Movimiento'}
-                            </h2>
-                            <button
-                                onClick={() => setShowMovimientoModal(false)}
-                                className="text-slate-400 hover:text-red-500 hover:bg-slate-50 p-2 rounded-full transition-all"
-                            >
-                                <X size={20} />
-                            </button>
-                        </div>
+            {
+                showMovimientoModal && (
+                    <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+                        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-200">
+                            {/* Header */}
+                            <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white">
+                                <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                                    <PlusCircle className="text-blue-600" size={22} strokeWidth={2.5} />
+                                    {editingMovimiento ? 'Editar Movimiento' : 'Nuevo Movimiento'}
+                                </h2>
+                                <button
+                                    onClick={() => setShowMovimientoModal(false)}
+                                    className="text-slate-400 hover:text-red-500 hover:bg-slate-50 p-2 rounded-full transition-all"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
 
-                        <form onSubmit={handleSaveMovimiento} className="p-6 space-y-5">
-                            {/* Tipo de Operación */}
-                            <div>
-                                <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Tipo de Operación</label>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <button
-                                        type="button"
-                                        onClick={() => setMovimientoForm({ ...movimientoForm, tipo: 'Ingreso' })}
-                                        className={`py-3 rounded-xl flex items-center justify-center gap-2 font-bold transition-all ${movimientoForm.tipo === 'Ingreso'
-                                            ? 'bg-green-600 text-white shadow-lg shadow-green-500/30 scale-[1.02]'
-                                            : 'bg-white border text-slate-400 hover:bg-slate-50'
-                                            }`}
-                                    >
-                                        <ArrowUpCircle size={20} /> Ingreso
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setMovimientoForm({ ...movimientoForm, tipo: 'Egreso' })}
-                                        className={`py-3 rounded-xl flex items-center justify-center gap-2 font-bold transition-all ${movimientoForm.tipo === 'Egreso'
-                                            ? 'bg-red-500 text-white shadow-lg shadow-red-500/30 scale-[1.02]'
-                                            : 'bg-white border text-slate-400 hover:bg-slate-50'
-                                            }`}
-                                    >
-                                        <ArrowDownCircle size={20} /> Egreso
-                                    </button>
+                            <form onSubmit={handleSaveMovimiento} className="p-6 space-y-5">
+                                {/* Tipo de Operación */}
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Tipo de Operación</label>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => setMovimientoForm({ ...movimientoForm, tipo: 'Ingreso' })}
+                                            className={`py-3 rounded-xl flex items-center justify-center gap-2 font-bold transition-all ${movimientoForm.tipo === 'Ingreso'
+                                                ? 'bg-green-600 text-white shadow-lg shadow-green-500/30 scale-[1.02]'
+                                                : 'bg-white border text-slate-400 hover:bg-slate-50'
+                                                }`}
+                                        >
+                                            <ArrowUpCircle size={20} /> Ingreso
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setMovimientoForm({ ...movimientoForm, tipo: 'Egreso' })}
+                                            className={`py-3 rounded-xl flex items-center justify-center gap-2 font-bold transition-all ${movimientoForm.tipo === 'Egreso'
+                                                ? 'bg-red-500 text-white shadow-lg shadow-red-500/30 scale-[1.02]'
+                                                : 'bg-white border text-slate-400 hover:bg-slate-50'
+                                                }`}
+                                        >
+                                            <ArrowDownCircle size={20} /> Egreso
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
 
-                            {/* Descripción */}
-                            <div>
-                                <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Descripción</label>
-                                <input
-                                    type="text"
-                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-medium text-slate-700 placeholder:text-slate-300"
-                                    placeholder="Ej: Cobro a cliente, Pago servicio..."
-                                    required
-                                    value={movimientoForm.descripcion}
-                                    onChange={(e) => setMovimientoForm({ ...movimientoForm, descripcion: e.target.value })}
-                                />
-                            </div>
-
-                            {/* Monto */}
-                            <div>
-                                <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Monto</label>
-                                <div className="relative">
-                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
+                                {/* Descripción */}
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Descripción</label>
                                     <input
-                                        type="number"
-                                        step="0.01"
-                                        className="w-full pl-8 pr-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-bold text-xl text-slate-800 placeholder:text-slate-300"
-                                        placeholder="0.00"
+                                        type="text"
+                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-medium text-slate-700 placeholder:text-slate-300"
+                                        placeholder="Ej: Cobro a cliente, Pago servicio..."
                                         required
-                                        value={movimientoForm.monto}
-                                        onChange={(e) => setMovimientoForm({ ...movimientoForm, monto: e.target.value })}
+                                        value={movimientoForm.descripcion}
+                                        onChange={(e) => setMovimientoForm({ ...movimientoForm, descripcion: e.target.value })}
                                     />
                                 </div>
-                            </div>
 
-                            <button
-                                type="submit"
-                                className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg shadow-blue-500/30 transition-all transform hover:-translate-y-0.5 active:scale-[0.98] flex items-center justify-center gap-2 mt-2"
-                            >
-                                <CheckCircle2 size={24} strokeWidth={2.5} />
-                                {editingMovimiento ? 'Actualizar Movimiento' : 'Guardar Movimiento'}
-                            </button>
-                        </form>
+                                {/* Monto */}
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Monto</label>
+                                    <div className="relative">
+                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            className="w-full pl-8 pr-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-bold text-xl text-slate-800 placeholder:text-slate-300"
+                                            placeholder="0.00"
+                                            required
+                                            value={movimientoForm.monto}
+                                            onChange={(e) => setMovimientoForm({ ...movimientoForm, monto: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+
+                                <button
+                                    type="submit"
+                                    className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg shadow-blue-500/30 transition-all transform hover:-translate-y-0.5 active:scale-[0.98] flex items-center justify-center gap-2 mt-2"
+                                >
+                                    <CheckCircle2 size={24} strokeWidth={2.5} />
+                                    {editingMovimiento ? 'Actualizar Movimiento' : 'Guardar Movimiento'}
+                                </button>
+                            </form>
+                        </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* MODAL: APERTURA */}
-            {showAperturaModal && (
-                <div className="d-flex align-items-center justify-content-center" style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 1100 }}>
-                    <div className="rounded-4 shadow-lg scale-in" style={{ width: '450px', overflow: 'hidden', backgroundColor: '#ffffff', border: 'none' }}>
-                        <div className="px-4 py-3 d-flex justify-content-between align-items-center bg-primary text-white">
-                            <h5 className="mb-0 fw-bold d-flex align-items-center gap-2">
-                                <LogIn size={20} />
-                                Apertura de Caja Diaria
-                            </h5>
-                            <button onClick={() => setShowAperturaModal(false)} className="btn-close btn-close-white shadow-none"></button>
-                        </div>
-                        <form onSubmit={handleApertura}>
-                            <div className="p-4">
-                                <p className="text-secondary mb-3">Ingrese el monto inicial (cambio) con el que inicia el día.</p>
-                                <div className="mb-3">
-                                    <label className="form-label fw-bold text-dark">Monto Inicial <span className="text-danger">*</span></label>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        className="form-control form-control-lg border shadow-none"
-                                        placeholder="0.00"
-                                        autoFocus
-                                        required
-                                        value={montoApertura}
-                                        onChange={(e) => setMontoApertura(e.target.value)}
-                                    />
+            {
+                showAperturaModal && (
+                    <div className="d-flex align-items-center justify-content-center" style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 1100 }}>
+                        <div className="rounded-4 shadow-lg scale-in" style={{ width: '450px', overflow: 'hidden', backgroundColor: '#ffffff', border: 'none' }}>
+                            <div className="px-4 py-3 d-flex justify-content-between align-items-center bg-primary text-white">
+                                <h5 className="mb-0 fw-bold d-flex align-items-center gap-2">
+                                    <LogIn size={20} />
+                                    Apertura de Caja Diaria
+                                </h5>
+                                <button onClick={() => setShowAperturaModal(false)} className="btn-close btn-close-white shadow-none"></button>
+                            </div>
+                            <form onSubmit={handleApertura}>
+                                <div className="p-4">
+                                    <p className="text-secondary mb-3">Ingrese el monto inicial (cambio) con el que inicia el día.</p>
+                                    <div className="mb-3">
+                                        <label className="form-label fw-bold text-dark">Monto Inicial <span className="text-danger">*</span></label>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            className="form-control form-control-lg border shadow-none"
+                                            placeholder="0.00"
+                                            autoFocus
+                                            required
+                                            value={montoApertura}
+                                            onChange={(e) => setMontoApertura(e.target.value)}
+                                        />
+                                    </div>
                                 </div>
-                            </div>
-                            <div className="px-4 py-3 bg-light d-flex justify-content-end gap-2 border-top">
-                                <button type="button" onClick={() => setShowAperturaModal(false)} className="btn btn-secondary px-4 fw-medium border-0 shadow-sm" style={{ backgroundColor: '#6c757d' }}>
-                                    Cancelar
-                                </button>
-                                <button type="submit" className="btn btn-primary px-4 fw-bold shadow-sm d-flex align-items-center gap-2">
-                                    <CheckCircle2 size={18} /> Abrir Caja
-                                </button>
-                            </div>
-                        </form>
+                                <div className="px-4 py-3 bg-light d-flex justify-content-end gap-2 border-top">
+                                    <button type="button" onClick={() => setShowAperturaModal(false)} className="btn btn-secondary px-4 fw-medium border-0 shadow-sm" style={{ backgroundColor: '#6c757d' }}>
+                                        Cancelar
+                                    </button>
+                                    <button type="submit" className="btn btn-primary px-4 fw-bold shadow-sm d-flex align-items-center gap-2">
+                                        <CheckCircle2 size={18} /> Abrir Caja
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* MODAL: CIERRE */}
-            {showCierreModal && (
-                <div className="d-flex align-items-center justify-content-center" style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 1100 }}>
-                    <div className="rounded-4 shadow-lg scale-in" style={{ width: '450px', overflow: 'hidden', backgroundColor: '#ffffff', border: 'none' }}>
-                        <div className="px-4 py-3 d-flex justify-content-between align-items-center bg-primary text-white">
-                            <h5 className="mb-0 fw-bold d-flex align-items-center gap-2">
-                                <LogOut size={20} />
-                                Cierre de Caja (Arqueo)
-                            </h5>
-                            <button onClick={() => setShowCierreModal(false)} className="btn-close btn-close-white shadow-none"></button>
-                        </div>
-                        <form onSubmit={submitCierre}>
-                            <div className="p-4">
-                                <p className="text-secondary mb-3">Por favor, ingresá el dinero físico total que hay en caja actualmente para realizar el arqueo.</p>
-                                <div className="mb-3">
-                                    <label className="form-label fw-bold text-dark">Monto Físico en Caja <span className="text-danger">*</span></label>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        className="form-control form-control-lg border shadow-none"
-                                        placeholder="0.00"
-                                        autoFocus
-                                        required
-                                        value={montoCierreReal}
-                                        onChange={(e) => setMontoCierreReal(e.target.value)}
-                                    />
+            {
+                showCierreModal && (
+                    <div className="d-flex align-items-center justify-content-center" style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 1100 }}>
+                        <div className="rounded-4 shadow-lg scale-in" style={{ width: '450px', overflow: 'hidden', backgroundColor: '#ffffff', border: 'none' }}>
+                            <div className="px-4 py-3 d-flex justify-content-between align-items-center bg-primary text-white">
+                                <h5 className="mb-0 fw-bold d-flex align-items-center gap-2">
+                                    <LogOut size={20} />
+                                    Cierre de Caja (Arqueo)
+                                </h5>
+                                <button onClick={() => setShowCierreModal(false)} className="btn-close btn-close-white shadow-none"></button>
+                            </div>
+                            <form onSubmit={submitCierre}>
+                                <div className="p-4">
+                                    <p className="text-secondary mb-3">Por favor, ingresá el dinero físico total que hay en caja actualmente para realizar el arqueo.</p>
+                                    <div className="mb-3">
+                                        <label className="form-label fw-bold text-dark">Monto Físico en Caja <span className="text-danger">*</span></label>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            className="form-control form-control-lg border shadow-none"
+                                            placeholder="0.00"
+                                            autoFocus
+                                            required
+                                            value={montoCierreReal}
+                                            onChange={(e) => setMontoCierreReal(e.target.value)}
+                                        />
+                                    </div>
                                 </div>
-                            </div>
-                            <div className="px-4 py-3 bg-light d-flex justify-content-end gap-2 border-top">
-                                <button type="button" onClick={() => setShowCierreModal(false)} className="btn btn-secondary px-4 fw-medium border-0 shadow-sm" style={{ backgroundColor: '#6c757d' }}>
-                                    Cancelar
-                                </button>
-                                <button type="submit" className="btn btn-primary px-4 fw-bold shadow-sm d-flex align-items-center gap-2">
-                                    <TrendingDown size={18} /> Cerrar Caja
-                                </button>
-                            </div>
-                        </form>
+                                <div className="px-4 py-3 bg-light d-flex justify-content-end gap-2 border-top">
+                                    <button type="button" onClick={() => setShowCierreModal(false)} className="btn btn-secondary px-4 fw-medium border-0 shadow-sm" style={{ backgroundColor: '#6c757d' }}>
+                                        Cancelar
+                                    </button>
+                                    <button type="submit" className="btn btn-primary px-4 fw-bold shadow-sm d-flex align-items-center gap-2">
+                                        <TrendingDown size={18} /> Cerrar Caja
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             <style>{`
                 .hover-bg-primary:hover { background-color: #e7f1ff !important; color: #0d6efd !important; }
@@ -687,7 +676,7 @@ const Caja = () => {
                 .tracking-wider { letter-spacing: 0.1em; }
                 .pagination .page-link:hover { background-color: #f8f9fa; }
             `}</style>
-        </div>
+        </div >
     );
 };
 

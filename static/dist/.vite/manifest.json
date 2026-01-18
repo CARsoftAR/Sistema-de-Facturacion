@@ -1,6 +1,6 @@
 {
   "index.html": {
-    "file": "assets/main-DrhEqRWj.js",
+    "file": "assets/main-DK4fck6W.js",
     "name": "main",
     "src": "index.html",
     "isEntry": true,
@@ -14,7 +14,7 @@
     ]
   },
   "src/pages/CuentasCorrientesClientes.jsx": {
-    "file": "assets/CuentasCorrientesClientes-586l-Irm.js",
+    "file": "assets/CuentasCorrientesClientes-B7ZSWLnQ.js",
     "name": "CuentasCorrientesClientes",
     "src": "src/pages/CuentasCorrientesClientes.jsx",
     "isDynamicEntry": true,
@@ -23,7 +23,7 @@
     ]
   },
   "src/pages/CuentasCorrientesProveedores.jsx": {
-    "file": "assets/CuentasCorrientesProveedores-BBuyImdu.js",
+    "file": "assets/CuentasCorrientesProveedores-x0HjE7cc.js",
     "name": "CuentasCorrientesProveedores",
     "src": "src/pages/CuentasCorrientesProveedores.jsx",
     "isDynamicEntry": true,
@@ -32,7 +32,7 @@
     ]
   },
   "src/pages/DetalleCuentaCorriente.jsx": {
-    "file": "assets/DetalleCuentaCorriente-q_a95yYc.js",
+    "file": "assets/DetalleCuentaCorriente-BANKCrXG.js",
     "name": "DetalleCuentaCorriente",
     "src": "src/pages/DetalleCuentaCorriente.jsx",
     "isDynamicEntry": true,

@@ -227,13 +227,13 @@ const Ventas = () => {
                         <table className="table align-middle mb-0">
                             <thead className="table-dark" style={{ backgroundColor: '#212529', color: '#fff' }}>
                                 <tr>
-                                    <th className="ps-4 py-3 fw-bold"># Venta</th>
-                                    <th className="py-3 fw-bold">Fecha</th>
-                                    <th className="py-3 fw-bold">Cliente</th>
-                                    <th className="py-3 fw-bold">Comprobante</th>
-                                    <th className="py-3 fw-bold">Total</th>
-                                    <th className="py-3 fw-bold">Estado</th>
-                                    <th className="text-end pe-4 py-3 fw-bold">Acciones</th>
+                                    <th className="ps-4 py-3 fw-bold" style={{ width: '10%' }}># Venta</th>
+                                    <th className="py-3 fw-bold" style={{ width: '15%' }}>Fecha</th>
+                                    <th className="py-3 fw-bold" style={{ width: '25%' }}>Cliente</th>
+                                    <th className="py-3 fw-bold" style={{ width: '10%' }}>Comprobante</th>
+                                    <th className="py-3 fw-bold" style={{ width: '15%' }}>Total</th>
+                                    <th className="py-3 fw-bold" style={{ width: '10%' }}>Estado</th>
+                                    <th className="text-end pe-4 py-3 fw-bold" style={{ width: '15%' }}>Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
