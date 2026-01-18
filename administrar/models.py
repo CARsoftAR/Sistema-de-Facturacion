@@ -121,6 +121,15 @@ class Marca(models.Model):
         return self.nombre
 
 
+# 🔹 Categorías
+class Categoria(models.Model):
+    nombre = models.CharField(max_length=100, unique=True)
+    descripcion = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return self.nombre
+
+
 
 # ð¹ Modelo de Empresa
 class Empresa(models.Model):

@@ -278,10 +278,11 @@ const Sidebar = ({ standalone = false }) => {
                         standalone={standalone}
                         permission="configuracion"
                         subItems={[
-                            { label: 'Categorías', href: '/categorias' },
                             { label: 'Marcas', href: '/marcas' },
+                            { label: 'Categorías', href: '/categorias' },
                             { label: 'Rubros', href: '/rubros' },
-                            { label: 'Sucursales', href: '/sucursales' },
+                            { label: 'Unidades', href: '/unidades' },
+                            { label: 'Localidades', href: '/localidades' },
                         ]}
                     />
 
@@ -298,13 +299,7 @@ const Sidebar = ({ standalone = false }) => {
                         standalone={standalone}
                         permission="caja"
                     />
-                    <SidebarItem
-                        icon={Wallet}
-                        label="Cheques / Bancos"
-                        href="/cheques"
-                        standalone={standalone}
-                        permission="bancos"
-                    />
+
                     <SidebarItem
                         icon={CreditCard}
                         label="Ctas. Corrientes"
@@ -336,6 +331,8 @@ const Sidebar = ({ standalone = false }) => {
                             { label: 'Asientos Manuales', href: '/contabilidad/asientos/' },
                             { label: 'Libro Mayor', href: '/contabilidad/mayor/' },
                             { label: 'Balance', href: '/contabilidad/balance/' },
+                            { label: 'Conciliación Bancaria', href: '/bancos/conciliacion' },
+                            { label: 'Gestión de Cheques', href: '/cheques' },
                             { label: 'Reportes', href: '/contabilidad/reportes/' },
                         ]}
                     />

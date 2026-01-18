@@ -386,3 +386,35 @@ export const BtnAgregar = ({ label = "Agregar", onClick, className = "", ...rest
     </button>
 );
 
+// ============================================================================
+// CLEAN WHITE ACTION BUTTONS (New Standard)
+// ============================================================================
+
+export const BtnIconWhite = ({ icon: Icon, onClick, color = "primary", title = "", size = 16, className = "", ...rest }) => {
+    const colors = {
+        success: '#10b981', // Green
+        primary: '#3b82f6', // Blue
+        danger: '#ef4444',  // Red
+        warning: '#f59e0b', // Orange
+        dark: '#1f2937'     // Gray
+    };
+
+    const iconColor = colors[color] || colors.dark;
+
+    return (
+        <button
+            type="button"
+            className={`btn bg-white border shadow-sm d-inline-flex align-items-center justify-content-center p-0 transition-all hover-scale rounded-2 ${className}`}
+            onClick={onClick}
+            title={title}
+            style={{ width: '32px', height: '32px' }}
+            {...rest}
+        >
+            {Icon && <Icon size={size} color={iconColor} strokeWidth={2.5} />}
+        </button>
+    );
+};
+
+export const BtnAddWhite = (props) => <BtnIconWhite icon={Plus} color="success" {...props} />;
+export const BtnEditWhite = (props) => <BtnIconWhite icon={Pencil} color="primary" {...props} />;
+export const BtnDeleteWhite = (props) => <BtnIconWhite icon={Trash2} color="danger" {...props} />;

@@ -1,105 +1,161 @@
 
 import React, { useState, useEffect } from 'react';
-import { BookOpen } from 'lucide-react';
-import { BtnAdd, BtnEdit, BtnDelete, BtnAction, BtnIcon, BtnCancel, BtnSave } from '../components/CommonButtons';
+import {
+    BookOpen,
+    Search,
+    Maximize2,
+    Minimize2,
+    Layers,
+    Filter,
+    Plus,
+    MoreHorizontal,
+    Edit2,
+    Trash2,
+    FileText,
+    Folder,
+    FolderOpen,
+    ChevronRight,
+    ChevronDown,
+    Check,
+    X as XIcon
+} from 'lucide-react';
+import { BtnAdd, BtnCancel, BtnSave, BtnAddWhite, BtnEditWhite, BtnDeleteWhite } from '../components/CommonButtons';
 import { showDeleteAlert } from '../utils/alerts';
 
-// ROW COMPONENT (Premium Design)
-// ROW COMPONENT (Premium Design)
-const CuentaRow = ({ cuenta, level, expanded, hasChildren, onToggle, onEdit, onDelete, onAddChild }) => {
-    // Indentation color guide based on level
-    const bordercolors = ['#0d6efd', '#6610f2', '#6f42c1', '#d63384', '#dc3545', '#fd7e14'];
-    const accentColor = bordercolors[level % bordercolors.length];
+// ROW COMPONENT (Premium Table Row)
+const CuentaRow = ({ cuenta, level, expanded, hasChildren, onToggle, onEdit, onDelete, onAddChild, openDropdownId, setOpenDropdownId }) => {
+
+    // Indentation for tree structure
+    const paddingLeft = level * 20;
 
     return (
-        <div
-            className="d-flex align-items-center mb-1 bg-white rounded-3 shadow-sm hover-shadow transition-all position-relative overflow-hidden group-hover-action"
-            style={{
-                marginLeft: `${level * 24}px`,
-                borderLeft: `4px solid ${cuenta.imputable ? '#e9ecef' : accentColor}`,
-                transition: 'all 0.2s ease',
-            }}
-        >
-            {/* Toggle / Icon Section */}
-            <div className="d-flex align-items-center ps-2 py-3" style={{ width: '50px' }}>
-                {hasChildren ? (
-                    <button
-                        className="btn btn-sm btn-light rounded-circle p-1 text-primary shadow-sm border-0"
-                        onClick={() => onToggle(cuenta.id)}
-                        style={{ width: '28px', height: '28px', lineHeight: '1' }}
-                    >
-                        <i className={`bi bi-chevron-${expanded ? 'down' : 'right'} fw-bold`} style={{ fontSize: '0.75rem' }}></i>
-                    </button>
-                ) : (
-                    <div style={{ width: '28px' }}></div>
-                )}
-            </div>
-
-            {/* Icon Type */}
-            <div className="me-3">
-                {cuenta.imputable ? (
-                    <div className="bg-white border rounded-circle d-flex align-items-center justify-content-center text-secondary shadow-sm" style={{ width: '36px', height: '36px' }}>
-                        <i className="bi bi-file-earmark-text-fill fs-5 text-secondary opacity-75"></i>
+        <tr className="group-hover-action hover:bg-light transition-all">
+            {/* Código / Jerarquía */}
+            <td className="align-middle py-2" style={{ width: '35%' }}>
+                <div className="d-flex align-items-center" style={{ paddingLeft: `${paddingLeft}px` }}>
+                    {/* Toggle Button */}
+                    <div style={{ width: '24px', marginRight: '8px', flexShrink: 0 }} className="d-flex justify-content-center">
+                        {hasChildren && (
+                            <button
+                                className="btn btn-sm p-0 border-0 text-muted hover-text-primary transition-colors d-flex align-items-center justify-content-center"
+                                onClick={(e) => { e.stopPropagation(); onToggle(cuenta.id); }}
+                                style={{ width: '20px', height: '20px' }}
+                            >
+                                {expanded ? <ChevronDown size={14} strokeWidth={2.5} /> : <ChevronRight size={14} strokeWidth={2.5} />}
+                            </button>
+                        )}
                     </div>
-                ) : (
-                    <div className="d-flex align-items-center justify-content-center rounded-circle shadow-sm" style={{ width: '36px', height: '36px', backgroundColor: `${accentColor}`, color: 'white' }}>
-                        <i className={`bi bi-folder${expanded ? '-fill' : '-fill'} fs-5`}></i>
-                    </div>
-                )}
-            </div>
 
-            {/* Content Section */}
-            <div className="flex-grow-1 py-2">
-                <div className="d-flex align-items-center">
-                    <span className="badge bg-light text-secondary border me-2 font-monospace fw-normal" style={{ fontSize: '0.8rem', letterSpacing: '0.5px' }}>
+                    {/* Icon */}
+                    <div className="me-2 text-primary text-opacity-75">
+                        {cuenta.imputable ? (
+                            <FileText size={16} className="text-muted" />
+                        ) : (
+                            expanded ? <FolderOpen size={16} className="text-warning" /> : <Folder size={16} className="text-warning" />
+                        )}
+                    </div>
+
+                    {/* Code & Name Wrapper for mobile/responsiveness if needed, but here simple text */}
+                    <span className={`font-monospace small fw-bold me-2 ${cuenta.imputable ? 'text-secondary' : 'text-dark'}`}>
                         {cuenta.codigo}
                     </span>
-                    {/* Badges for Account Type */}
-                    <span
-                        className="badge rounded-pill fw-normal shadow-sm"
-                        style={{
-                            fontSize: '0.65rem',
-                            backgroundColor:
-                                cuenta.tipo === 'ACTIVO' ? '#d1e7dd' :
-                                    cuenta.tipo === 'PASIVO' ? '#f8d7da' :
-                                        cuenta.tipo === 'PN' ? '#cfe2ff' :
-                                            cuenta.tipo === 'R_POS' ? '#d1e7dd' : '#f8d7da',
-                            color:
-                                cuenta.tipo === 'ACTIVO' ? '#0f5132' :
-                                    cuenta.tipo === 'PASIVO' ? '#842029' :
-                                        cuenta.tipo === 'PN' ? '#084298' :
-                                            cuenta.tipo === 'R_POS' ? '#0f5132' : '#842029',
-                            marginLeft: 'auto',
-                            order: 2
-                        }}
-                    >
-                        {cuenta.tipo}
+                    <span className={`text-truncate ${!cuenta.imputable ? 'fw-bold text-dark' : 'text-dark-emphasis'}`}>
+                        {cuenta.nombre}
                     </span>
                 </div>
-                <div className={`text-dark text-truncate mt-1 ${!cuenta.imputable ? 'fw-bold' : ''}`} style={{ fontSize: '0.95rem' }}>
-                    {cuenta.nombre}
-                </div>
-            </div>
+            </td>
 
-            {/* Actions (visible on hover) */}
-            <div className="d-flex gap-2 pe-3 opacity-0 group-hover-visible transition-opacity">
-                {!cuenta.imputable && (
-                    <BtnIcon
-                        icon="bi-plus-lg"
-                        color="success"
-                        onClick={() => onAddChild(cuenta)}
-                        title="Agregar analítica"
-                        size="sm"
-                    />
+            {/* Tipo */}
+            <td className="align-middle text-center py-2" style={{ width: '15%' }}>
+                <span
+                    className="badge rounded-pill fw-normal shadow-sm border"
+                    style={{
+                        fontSize: '0.7rem',
+                        backgroundColor:
+                            cuenta.tipo === 'ACTIVO' ? '#f0fdf4' : // green-50
+                                cuenta.tipo === 'PASIVO' ? '#fef2f2' : // red-50
+                                    cuenta.tipo === 'PN' ? '#eff6ff' : // blue-50
+                                        cuenta.tipo === 'R_POS' ? '#f0fdf4' : '#fef2f2',
+                        color:
+                            cuenta.tipo === 'ACTIVO' ? '#166534' : // green-800
+                                cuenta.tipo === 'PASIVO' ? '#991b1b' : // red-800
+                                    cuenta.tipo === 'PN' ? '#1e40af' : // blue-800
+                                        cuenta.tipo === 'R_POS' ? '#166534' : '#991b1b',
+                        borderColor:
+                            cuenta.tipo === 'ACTIVO' ? '#bbf7d0' :
+                                cuenta.tipo === 'PASIVO' ? '#fecaca' :
+                                    cuenta.tipo === 'PN' ? '#bfdbfe' :
+                                        cuenta.tipo === 'R_POS' ? '#bbf7d0' : '#fecaca',
+                    }}
+                >
+                    {cuenta.tipo}
+                </span>
+            </td>
+
+            {/* Imputable */}
+            <td className="align-middle text-center py-2" style={{ width: '10%' }}>
+                {cuenta.imputable ? (
+                    <Check size={16} className="text-success" />
+                ) : (
+                    <span className="text-muted opacity-25">-</span>
                 )}
-                <BtnEdit onClick={() => onEdit(cuenta)} />
-                <BtnDelete onClick={() => onDelete(cuenta.id, cuenta.nombre)} />
-            </div>
-        </div>
+            </td>
+
+            {/* Acciones Dropdown */}
+            <td className="align-middle text-end pe-4 py-2" style={{ width: '15%' }}>
+                <div className="position-relative d-inline-block">
+                    <button
+                        className={`btn btn-sm border shadow-sm d-flex align-items-center gap-1 ${openDropdownId === cuenta.id ? 'btn-primary text-white' : 'btn-light bg-white text-muted'}`}
+                        onClick={(e) => { e.stopPropagation(); setOpenDropdownId(openDropdownId === cuenta.id ? null : cuenta.id); }}
+                    >
+                        Acciones <ChevronDown size={14} />
+                    </button>
+
+                    {openDropdownId === cuenta.id && (
+                        <div
+                            className="position-absolute end-0 mt-1 bg-white border shadow rounded-3 py-2 fade-in"
+                            style={{ zIndex: 1000, minWidth: '180px' }}
+                        >
+                            <ul className="list-unstyled mb-0 text-start">
+                                {!cuenta.imputable && (
+                                    <li>
+                                        <button
+                                            className="dropdown-item d-flex align-items-center py-2 px-3 text-success"
+                                            onClick={(e) => { e.stopPropagation(); setOpenDropdownId(null); onAddChild(cuenta); }}
+                                        >
+                                            <Plus size={16} className="me-2" strokeWidth={2.5} /> Agregar Subcuenta
+                                        </button>
+                                    </li>
+                                )}
+                                <li>
+                                    <button
+                                        className="dropdown-item d-flex align-items-center py-2 px-3 text-primary"
+                                        onClick={(e) => { e.stopPropagation(); setOpenDropdownId(null); onEdit(cuenta); }}
+                                    >
+                                        <Edit2 size={16} className="me-2" strokeWidth={2.5} /> Editar
+                                    </button>
+                                </li>
+                                <li><hr className="dropdown-divider mx-2" /></li>
+                                <li>
+                                    <button
+                                        className="dropdown-item d-flex align-items-center py-2 px-3 text-danger"
+                                        onClick={(e) => { e.stopPropagation(); setOpenDropdownId(null); onDelete(cuenta.id, cuenta.nombre); }}
+                                    >
+                                        <Trash2 size={16} className="me-2" strokeWidth={2.5} /> Eliminar
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
+                    )}
+                </div>
+            </td>
+        </tr>
     );
 };
 
 const PlanCuentas = () => {
+    // Force refresh v4
+    console.log("PlanCuentas V4 Loaded - Dropdown");
     const [originalCuentas, setOriginalCuentas] = useState([]);
     const [filteredCuentas, setFilteredCuentas] = useState([]); // Tree structure
     const [expandedIds, setExpandedIds] = useState(new Set());
@@ -107,9 +163,24 @@ const PlanCuentas = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [totalCount, setTotalCount] = useState(0);
 
+    // Dropdown State
+    const [openDropdownId, setOpenDropdownId] = useState(null);
+
+    // Close dropdown backdrop
+    const CloseBackdrop = () => (
+        openDropdownId ? (
+            <div
+                className="position-fixed top-0 start-0 w-100 h-100"
+                style={{ zIndex: 998 }}
+                onClick={() => setOpenDropdownId(null)}
+            />
+        ) : null
+    );
+
+
     // Pagination
     const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [itemsPerPage, setItemsPerPage] = useState(20); // Default higher for table view
 
     // Modal
     const [showModal, setShowModal] = useState(false);
@@ -145,7 +216,7 @@ const PlanCuentas = () => {
                 };
                 setTotalCount(countNodes(data.cuentas));
 
-                // Auto-expand ALL by default so user sees full tree structure immediately
+                // Auto-expand ALL by default
                 setExpandedIds(allIds);
             }
         } catch (error) {
@@ -163,15 +234,12 @@ const PlanCuentas = () => {
     useEffect(() => {
         if (!searchTerm.trim()) {
             setFilteredCuentas(originalCuentas);
-            // Restore default expansion (Roots only) if clearing search? 
-            // Or keep user state. Let's keep user state but maybe safe to ensure roots are visible.
             return;
         }
 
         const lowerTerm = searchTerm.toLowerCase();
         let matchedIds = new Set();
 
-        // Recursively filter tree
         const filterTree = (nodes) => {
             return nodes.reduce((acc, node) => {
                 const matches = node.nombre.toLowerCase().includes(lowerTerm) || node.codigo.includes(lowerTerm);
@@ -182,11 +250,7 @@ const PlanCuentas = () => {
                 }
 
                 if (matches || filteredChildren.length > 0) {
-                    // Add to matched IDs to auto-expand
-                    matchedIds.add(node.id); // Expand this node to show its children if they match? 
-                    // Actually we want to expand parents of matches.
-                    // If filter returns this node, it implies it's visible. 
-                    // If we want to see text matches inside, we should expand this node.
+                    matchedIds.add(node.id);
                     acc.push({
                         ...node,
                         hijos: filteredChildren
@@ -199,7 +263,6 @@ const PlanCuentas = () => {
         const filtered = filterTree(originalCuentas);
         setFilteredCuentas(filtered);
 
-        // Auto expand all nodes in the filtered result
         const getAllIds = (nodes) => {
             let ids = [];
             nodes.forEach(n => {
@@ -260,9 +323,6 @@ const PlanCuentas = () => {
     };
 
     const handleCollapseAll = () => {
-        // Only keep roots expanded, or collapse everything? 
-        // Typically Collapse All means collapse everything except roots maybe?
-        // Let's collapse to Roots (Level 0)
         const rootIds = new Set(filteredCuentas.map(c => c.id));
         setExpandedIds(rootIds);
     };
@@ -384,142 +444,179 @@ const PlanCuentas = () => {
     };
 
     return (
-        <div className="container-fluid px-4 py-4" style={{ backgroundColor: '#f8f9fa', minHeight: '100vh' }}>
+        <div className="container-fluid px-4 pt-4 pb-0 h-100 d-flex flex-column bg-light fade-in">
+            <CloseBackdrop />
             <style>{`
-                .hover-shadow:hover { box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08) !important; transform: translateY(-1px); }
                 .group-hover-action:hover .group-hover-visible { opacity: 1 !important; }
+                .table-container-fixed { min-height: 400px; }
             `}</style>
 
             {/* HEADER */}
-            <div className="d-flex justify-content-between align-items-center mb-5">
+            <div className="d-flex justify-content-between align-items-center mb-4">
                 <div>
-                    <h1 className="fw-bold mb-1" style={{ fontSize: '2rem', color: '#1a1a1a', letterSpacing: '-0.5px' }}>
+                    <h2 className="text-primary fw-bold mb-0" style={{ fontSize: '2rem' }}>
+                        <BookOpen className="me-2 inline-block" size={32} />
                         Plan de Cuentas
-                    </h1>
-                    <p className="text-muted mb-0">Gestión integral de la estructura contable.</p>
+                    </h2>
+                    <p className="text-muted mb-0 ps-1" style={{ fontSize: '1rem' }}>
+                        Gestión integral de la estructura contable
+                    </p>
                 </div>
                 <div className="d-flex gap-2">
-                    <BtnAdd label="Nueva Raíz" icon={BookOpen} onClick={() => openNew(null)} className="px-4" />
+                    <BtnAdd label="Nueva Raíz" icon={BookOpen} onClick={() => openNew(null)} className="btn-lg shadow-sm" />
                 </div>
             </div>
 
             {/* CONTROLS BAR */}
-            <div className="bg-white p-3 rounded-4 shadow-sm mb-4 d-flex flex-wrap gap-3 align-items-center border">
-                <div className="flex-grow-1 position-relative">
-                    <i className="bi bi-search position-absolute text-muted" style={{ left: '15px', top: '50%', transform: 'translateY(-50%)' }}></i>
-                    <input
-                        type="text"
-                        className="form-control border-0 bg-light py-2 ps-5 rounded-2"
-                        placeholder="Buscar por cuenta, código o rubro..."
-                        value={searchTerm}
-                        onChange={e => setSearchTerm(e.target.value)}
-                        style={{ fontSize: '0.95rem' }}
-                    />
-                </div>
-                <div className="d-flex gap-2">
-                    <BtnAction label="Expandir" icon="bi-arrows-expand" onClick={handleExpandAll} color="secondary" />
-                    <BtnAction label="Contraer" icon="bi-arrows-collapse" onClick={handleCollapseAll} color="secondary" />
-                </div>
-                <div className="vr mx-1 opacity-25"></div>
-                <div className="text-muted small fw-bold">
-                    <i className="bi bi-layers-fill me-2 text-primary"></i>
-                    {totalCount} cuentas
+            <div className="card border-0 shadow-sm rounded-3 mb-3">
+                <div className="card-body p-2 d-flex flex-wrap gap-2 align-items-center">
+                    <div className="position-relative flex-grow-1" style={{ minWidth: '200px' }}>
+                        <Search className="position-absolute top-50 start-0 translate-middle-y ms-3 text-muted" size={18} />
+                        <input
+                            type="text"
+                            className="form-control ps-5 border-0 bg-light"
+                            placeholder="Buscar por cuenta, código o rubro..."
+                            value={searchTerm}
+                            onChange={e => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+
+                    <div className="d-flex gap-2">
+                        <button className="btn btn-white border text-muted fw-bold shadow-sm d-flex align-items-center gap-2" onClick={handleExpandAll}>
+                            <Maximize2 size={16} /> Expandir
+                        </button>
+                        <button className="btn btn-white border text-muted fw-bold shadow-sm d-flex align-items-center gap-2" onClick={handleCollapseAll}>
+                            <Minimize2 size={16} /> Contraer
+                        </button>
+                    </div>
+
+                    <div className="vr mx-2 text-muted"></div>
+
+                    <div className="ms-auto text-muted small fw-medium">
+                        <Layers size={14} className="me-1" />
+                        {totalCount} cuentas
+                    </div>
                 </div>
             </div>
 
-            {/* LOADING / EMPTY / LIST */}
-            {loading ? (
-                <div className="text-center py-5">
-                    <div className="spinner-border text-primary" role="status" style={{ width: '3rem', height: '3rem' }}></div>
-                    <p className="mt-3 text-muted">Cargando estructura...</p>
-                </div>
-            ) : visibleRows.length === 0 ? (
-                <div className="text-center py-5">
-                    <div className="bg-white rounded-circle shadow-sm d-inline-flex align-items-center justify-content-center mb-3" style={{ width: '80px', height: '80px' }}>
-                        <i className="bi bi-search text-muted fs-1"></i>
+            {/* TABLE STRUCTURE */}
+            <div className="card border-0 shadow mb-0 flex-grow-1 overflow-hidden d-flex flex-column">
+                <div className="card-body p-0 d-flex flex-column overflow-hidden">
+                    <div className="table-responsive flex-grow-1 table-container-fixed">
+                        <table className="table align-middle mb-0">
+                            <thead className="table-dark" style={{ backgroundColor: '#212529', color: '#fff' }}>
+                                <tr>
+                                    <th className="ps-4 py-3 fw-bold">Cuenta / Estructura</th>
+                                    <th className="text-center py-3 fw-bold">Rubro</th>
+                                    <th className="text-center py-3 fw-bold">Imputable</th>
+                                    <th className="text-end pe-4 py-3 fw-bold">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {loading ? (
+                                    <tr>
+                                        <td colSpan="4" className="text-center py-5">
+                                            <div className="spinner-border text-primary" role="status">
+                                                <span className="visually-hidden">Cargando...</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ) : visibleRows.length === 0 ? (
+                                    <tr>
+                                        <td colSpan="4" className="text-center py-5">
+                                            <div className="d-flex flex-column align-items-center">
+                                                <div className="bg-light rounded-circle shadow-sm d-inline-flex align-items-center justify-content-center mb-3" style={{ width: '80px', height: '80px' }}>
+                                                    <Search className="text-muted text-opacity-50" size={40} />
+                                                </div>
+                                                <h5 className="text-secondary">No hay cuentas para mostrar</h5>
+                                                <p className="text-muted small">Intenta con otros filtros.</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    visibleRows.map(c => (
+                                        <CuentaRow
+                                            key={c.id}
+                                            cuenta={c}
+                                            level={c.visualLevel}
+                                            expanded={expandedIds.has(c.id)}
+                                            hasChildren={c.hijos && c.hijos.length > 0}
+                                            onToggle={toggleExpand}
+                                            onEdit={openEdit}
+                                            onDelete={handleDelete}
+                                            onAddChild={openNew}
+                                            openDropdownId={openDropdownId}
+                                            setOpenDropdownId={setOpenDropdownId}
+                                        />
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
                     </div>
-                    <h5 className="text-secondary">No se encontraron cuentas</h5>
-                </div>
-            ) : (
-                <div className="d-flex flex-column gap-1 pb-5">
-                    {currentItems.map(c => (
-                        <CuentaRow
-                            key={c.id}
-                            cuenta={c}
-                            level={c.visualLevel}
-                            expanded={expandedIds.has(c.id)}
-                            hasChildren={c.hijos && c.hijos.length > 0}
-                            onToggle={toggleExpand}
-                            onEdit={openEdit}
-                            onDelete={handleDelete}
-                            onAddChild={openNew}
-                        />
-                    ))}
-                </div>
-            )}
 
-            {/* PAGINATION */}
-            {/* PAGINATION */}
-            {!loading && visibleRows.length > 0 && (
-                <div className="d-flex justify-content-between align-items-center p-3 border-top bg-light">
-                    <div className="d-flex align-items-center gap-2">
-                        <span className="text-muted small">Mostrando {visibleRows.length} cuentas</span>
-                        <select
-                            className="form-select form-select-sm border-secondary-subtle"
-                            style={{ width: '70px' }}
-                            value={itemsPerPage}
-                            onChange={(e) => { setItemsPerPage(Number(e.target.value)); setCurrentPage(1); }}
-                        >
-                            <option value="10">10</option>
-                            <option value="20">20</option>
-                            <option value="50">50</option>
-                            <option value="100">100</option>
-                        </select>
-                        <span className="text-muted small">por pág.</span>
-                    </div>
-
-                    <nav>
-                        <ul className="pagination mb-0 align-items-center gap-2">
-                            <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
-                                <button
-                                    className="page-link border-0 text-secondary bg-transparent p-0"
-                                    onClick={() => setCurrentPage(currentPage - 1)}
-                                    style={{ width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    {/* PAGINATION INSIDE CARD FOOTER */}
+                    {!loading && visibleRows.length > 0 && (
+                        <div className="d-flex justify-content-between align-items-center p-3 border-top bg-light">
+                            <div className="d-flex align-items-center gap-2">
+                                <span className="text-muted small">Mostrando {currentItems.length} de {visibleRows.length} cuentas visibles</span>
+                                <select
+                                    className="form-select form-select-sm border-secondary-subtle"
+                                    style={{ width: '70px' }}
+                                    value={itemsPerPage}
+                                    onChange={(e) => { setItemsPerPage(Number(e.target.value)); setCurrentPage(1); }}
                                 >
-                                    <i className="bi bi-chevron-left"></i>
-                                </button>
-                            </li>
+                                    <option value="20">20</option>
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                    <option value="200">200</option>
+                                </select>
+                                <span className="text-muted small">por pág.</span>
+                            </div>
 
-                            {[...Array(totalPages)].map((_, i) => {
-                                if (totalPages > 10 && Math.abs(currentPage - (i + 1)) > 2 && i !== 0 && i !== totalPages - 1) return null;
-                                return (
-                                    <li key={i} className="page-item">
+                            <nav>
+                                <ul className="pagination mb-0 align-items-center gap-2">
+                                    <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
                                         <button
-                                            className={`page-link border-0 rounded-circle fw-bold ${currentPage === i + 1 ? 'bg-primary text-white shadow-sm' : 'bg-transparent text-secondary'}`}
-                                            onClick={() => setCurrentPage(i + 1)}
-                                            style={{ width: '35px', height: '35px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                            className="page-link border-0 text-secondary bg-transparent p-0"
+                                            onClick={() => setCurrentPage(currentPage - 1)}
+                                            style={{ width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                         >
-                                            {i + 1}
+                                            <i className="bi bi-chevron-left"></i>
                                         </button>
                                     </li>
-                                );
-                            })}
 
-                            <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
-                                <button
-                                    className="page-link border-0 text-secondary bg-transparent p-0"
-                                    onClick={() => setCurrentPage(currentPage + 1)}
-                                    style={{ width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                >
-                                    <i className="bi bi-chevron-right"></i>
-                                </button>
-                            </li>
-                        </ul>
-                    </nav>
+                                    {[...Array(totalPages)].map((_, i) => {
+                                        if (totalPages > 10 && Math.abs(currentPage - (i + 1)) > 2 && i !== 0 && i !== totalPages - 1) return null;
+                                        return (
+                                            <li key={i} className="page-item">
+                                                <button
+                                                    className={`page-link border-0 rounded-circle fw-bold ${currentPage === i + 1 ? 'bg-primary text-white shadow-sm' : 'bg-transparent text-secondary'}`}
+                                                    onClick={() => setCurrentPage(i + 1)}
+                                                    style={{ width: '35px', height: '35px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                                >
+                                                    {i + 1}
+                                                </button>
+                                            </li>
+                                        );
+                                    })}
+
+                                    <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                                        <button
+                                            className="page-link border-0 text-secondary bg-transparent p-0"
+                                            onClick={() => setCurrentPage(currentPage + 1)}
+                                            style={{ width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                        >
+                                            <i className="bi bi-chevron-right"></i>
+                                        </button>
+                                    </li>
+                                </ul>
+                            </nav>
+                        </div>
+                    )}
                 </div>
-            )}
+            </div>
 
-            {/* MODAL (Redesigned) */}
+            {/* MODAL (Same as before) */}
             {showModal && (
                 <>
                     <div className="modal-backdrop fade show" style={{ backgroundColor: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(5px)' }}></div>

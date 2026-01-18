@@ -2,6 +2,8 @@ import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 import React from 'react';
 
+import { Trash2 } from 'lucide-react';
+
 const MySwal = withReactContent(Swal);
 
 /**
@@ -29,12 +31,12 @@ export const showConfirmationAlert = async (title, text, confirmText = 'Confirma
         iconHtml: iconComponent,
         customClass: {
             icon: 'border-0 bg-transparent shadow-none mb-4',
-            htmlContainer: 'text-slate-500 text-sm mb-6',
-            popup: 'rounded-2xl shadow-2xl border-0 p-6 w-full max-w-sm',
-            actions: 'w-full flex gap-3 !mt-0',
-            confirmButton: `w-full py-2.5 rounded-xl font-bold text-sm transition-all outline-none border-0 shadow-lg ${confirmBtnClass.replace('shadow-md', '')}`,
-            cancelButton: 'w-full py-2.5 rounded-xl font-bold text-sm text-slate-500 bg-slate-100 hover:bg-slate-200 transition-all outline-none border-0',
-            title: 'text-xl font-bold text-slate-800 mb-2'
+            htmlContainer: 'text-slate-500 text-base mb-8',
+            popup: 'rounded-[2rem] shadow-xl border-0 p-10 w-full max-w-md',
+            actions: 'w-full flex gap-6 px-4 !mt-0 justify-center',
+            confirmButton: `flex-1 py-3.5 rounded-2xl font-bold text-base transition-all outline-none border-0 shadow-none hover:shadow-md ${confirmBtnClass.replace('shadow-md', '')}`,
+            cancelButton: 'flex-1 py-3.5 rounded-2xl font-bold text-base text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all outline-none border-0',
+            title: 'text-2xl font-bold text-slate-800 mb-2'
         }
     } : {
         icon: 'warning',
@@ -64,7 +66,7 @@ export const showConfirmationAlert = async (title, text, confirmText = 'Confirma
         showCancelButton: true,
         confirmButtonText: confirmText,
         cancelButtonText: 'Cancelar',
-        reverseButtons: true,
+        reverseButtons: true, // Cancel top (if vertical) or left
         buttonsStyling: false,
         padding: '0', // handled by custom classes
         focusCancel: true,
@@ -75,8 +77,26 @@ export const showConfirmationAlert = async (title, text, confirmText = 'Confirma
 };
 
 export const showDeleteAlert = async (title, text, confirmText = 'Eliminar', options = {}) => {
-    return showConfirmationAlert(title, text, confirmText, 'danger', options);
+    const trashIcon = (
+        <div className="flex justify-center mb-2">
+            <div className="p-3 bg-red-50 rounded-full">
+                <Trash2 size={40} className="text-red-500" strokeWidth={2} />
+            </div>
+        </div>
+    );
+
+
+    return showConfirmationAlert(title, text, confirmText, 'danger', {
+        iconComponent: trashIcon,
+        customClass: {
+            actions: 'w-full flex gap-6 px-8 !mt-4 !mb-6'
+        },
+        ...options
+    });
 };
+
+
+
 
 export const showSuccessAlert = async (title, text, confirmText = 'Aceptar', options = {}) => {
     // If iconComponent is provided, don't force 'success' icon, let the component handle it.
@@ -92,3 +112,26 @@ export const showSuccessAlert = async (title, text, confirmText = 'Aceptar', opt
         }
     });
 };
+
+export const showToast = (title, icon = 'success') => {
+    const Toast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+        didOpen: (toast) => {
+            toast.onmouseenter = Swal.stopTimer;
+            toast.onmouseleave = Swal.resumeTimer;
+        },
+        customClass: {
+            popup: 'colored-toast'
+        }
+    });
+
+    Toast.fire({
+        icon: icon,
+        title: title
+    });
+};
+

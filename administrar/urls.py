@@ -135,7 +135,7 @@ urlpatterns = [
     path("contabilidad/asientos/", login_required(TemplateView.as_view(template_name="react_app.html")), name="asientos"),
     path("contabilidad/balance/", login_required(TemplateView.as_view(template_name="react_app.html")), name="balance"),
     path("contabilidad/mayor/", login_required(TemplateView.as_view(template_name="react_app.html")), name="mayor"),
-    path("contabilidad/reportes/", lambda request: render(request, "administrar/contabilidad/reportes.html"), name="reportes_contables"),
+    path("contabilidad/reportes/", login_required(TemplateView.as_view(template_name="react_app.html")), name="reportes_contables"),
     
     # ==========================
     # BACKUPS
@@ -183,7 +183,8 @@ urlpatterns = [
     # ==========================
     # RUBROS (HTML + API)
     # ==========================
-    path("rubros/", views.rubros_lista, name="rubros"),
+    # path("rubros/", views.rubros_lista, name="rubros"),
+    path("rubros/", login_required(TemplateView.as_view(template_name="react_app.html")), name="rubros_react"),
     path("api/rubros/listar/", views.api_rubros_listar, name="api_rubros_listar"),
     path("api/rubros/guardar/", views.api_rubros_guardar, name="api_rubros_guardar"),
 
@@ -210,7 +211,7 @@ urlpatterns = [
     # ==========================
     # LOCALIDADES
     # ==========================
-    path("localidades/", views.localidades_lista),
+    path("localidades/", login_required(TemplateView.as_view(template_name="react_app.html"))),
     path("api/provincias/listar/", views.api_provincias_listar, name="api_provincias_listar"),
     path("api/localidades/listar/", views.api_localidades_listar),
     path("api/localidades/<int:id>/", views.api_localidades_detalle),
@@ -265,11 +266,19 @@ urlpatterns = [
     path('presupuesto/pdf/<int:id>/', views.presupuesto_pdf, name='presupuesto_pdf'),
 
     # ===== MARCAS =====
-    path("marcas/", views.marcas_lista, name="marcas_lista"),
+    # path("marcas/", views.marcas_lista, name="marcas_lista"), # LEGACY
+    path("marcas/", login_required(TemplateView.as_view(template_name="react_app.html")), name="marcas_react"),
     path("api/marcas/listar/", views.api_marcas_listar, name="api_marcas_listar"),
     path("api/marcas/guardar/", views.api_marcas_guardar, name="api_marcas_guardar"),
     path("api/marcas/<int:id>/", views.api_marcas_detalle, name="api_marcas_detalle"),
     path("api/marcas/<int:id>/eliminar/", views.api_marcas_eliminar, name="api_marcas_eliminar"),
+
+    # ===== CATEGORIAS =====
+    path("categorias/", login_required(TemplateView.as_view(template_name="react_app.html")), name="categorias_react"),
+    path("api/categorias/listar/", views.api_categorias_listar, name="api_categorias_listar"),
+    path("api/categorias/guardar/", views.api_categorias_guardar, name="api_categorias_guardar"),
+    path("api/categorias/<int:id>/", views.api_categorias_detalle, name="api_categorias_detalle"),
+    path("api/categorias/<int:id>/eliminar/", views.api_categorias_eliminar, name="api_categorias_eliminar"),
 
     # ==========================
     # API PROVEEDORES
@@ -282,7 +291,7 @@ urlpatterns = [
     path("api/proveedores/<int:id>/eliminar/", views.api_proveedores_eliminar, name="api_proveedores_eliminar"),
 
     # ---------------- UNIDADES --------------------
-    path("unidades/", views.unidades_lista, name="unidades"),
+    path("unidades/", login_required(TemplateView.as_view(template_name="react_app.html")), name="unidades"),
     path("api/unidades/listar/", views.api_unidades_listar, name="api_unidades_listar"),
     path("api/unidades/guardar/", views.api_unidades_guardar, name="api_unidades_guardar"),
     path("api/unidades/<int:id>/", views.api_unidades_detalle, name="api_unidades_detalle"),
@@ -374,7 +383,7 @@ urlpatterns = [
     # HTML Views
     path("ctacte/clientes/", views.cc_clientes_lista, name="cc_clientes_lista"),
     path("ctacte/clientes/<int:id>/", views.cc_cliente_detalle, name="cc_cliente_detalle"),
-    path("ctacte/proveedores/", views.cc_proveedores_lista, name="cc_proveedores_lista"),
+    path("ctacte/proveedores/", login_required(TemplateView.as_view(template_name="react_app.html")), name="cc_proveedores_lista"),
     path("ctacte/proveedores/<int:id>/", views.cc_proveedor_detalle, name="cc_proveedor_detalle"),
     
     # API Clientes
@@ -402,6 +411,7 @@ urlpatterns = [
     # BANCOS
     # ==========================
     path("bancos/", views.bancos, name="bancos"),
+    path("bancos/conciliacion", login_required(TemplateView.as_view(template_name="react_app.html")), name="bancos_conciliacion"),
     path("api/bancos/listar/", views.api_bancos_listar, name="api_bancos_listar"),
     path("api/bancos/crear/", views.api_bancos_crear, name="api_bancos_crear"),
     path("api/bancos/movimientos/", views.api_bancos_movimientos, name="api_bancos_movimientos"),
