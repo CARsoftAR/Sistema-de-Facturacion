@@ -31,6 +31,9 @@ import DetalleNotaDebito from './pages/DetalleNotaDebito'
 import Presupuestos from './pages/Presupuestos'
 import NuevoPresupuesto from './pages/NuevoPresupuesto'
 import DetallePresupuesto from './pages/DetallePresupuesto'
+import NuevoRemito from './pages/NuevoRemito'
+import NuevaNotaCredito from './pages/NuevaNotaCredito'
+import NuevaNotaDebito from './pages/NuevaNotaDebito'
 
 import Parametros from './pages/Parametros'
 import ConfiguracionEmpresa from './pages/ConfiguracionEmpresa'
@@ -51,6 +54,7 @@ import { useAuth } from './context/AuthContext'
 const CuentasCorrientesClientes = React.lazy(() => import('./pages/CuentasCorrientesClientes'));
 const DetalleCuentaCorriente = React.lazy(() => import('./pages/DetalleCuentaCorriente'));
 const CuentasCorrientesProveedores = React.lazy(() => import('./pages/CuentasCorrientesProveedores'));
+const DetalleCuentaCorrienteProveedor = React.lazy(() => import('./pages/DetalleCuentaCorrienteProveedor'));
 
 const ProtectedRoute = ({ children, permission, isHome }) => {
   const { user, loading, hasPermission } = useAuth();
@@ -150,26 +154,55 @@ function App() {
               <Route path="/contabilidad/balance" element={<ProtectedRoute permission="contabilidad"><Balance /></ProtectedRoute>} />
               <Route path="/contabilidad/reportes" element={<ProtectedRoute permission="contabilidad"><ReportesContables /></ProtectedRoute>} />
               <Route path="/ventas" element={<ProtectedRoute permission="ventas"><Ventas /></ProtectedRoute>} />
+              <Route path="/ventas/" element={<ProtectedRoute permission="ventas"><Ventas /></ProtectedRoute>} />
               <Route path="/ventas/nuevo" element={<ProtectedRoute permission="ventas"><NuevaVenta /></ProtectedRoute>} />
+              <Route path="/ventas/nuevo/" element={<ProtectedRoute permission="ventas"><NuevaVenta /></ProtectedRoute>} />
               <Route path="/ventas/:id" element={<ProtectedRoute permission="ventas"><DetalleVenta /></ProtectedRoute>} />
+              <Route path="/ventas/:id/" element={<ProtectedRoute permission="ventas"><DetalleVenta /></ProtectedRoute>} />
               <Route path="/pedidos" element={<ProtectedRoute permission="ventas"><Pedidos /></ProtectedRoute>} />
+              <Route path="/pedidos/" element={<ProtectedRoute permission="ventas"><Pedidos /></ProtectedRoute>} />
               <Route path="/pedidos/nuevo" element={<ProtectedRoute permission="ventas"><NuevoPedido /></ProtectedRoute>} />
+              <Route path="/pedidos/nuevo/" element={<ProtectedRoute permission="ventas"><NuevoPedido /></ProtectedRoute>} />
               <Route path="/pedidos/:id" element={<ProtectedRoute permission="ventas"><DetallePedido /></ProtectedRoute>} />
+              <Route path="/pedidos/:id/" element={<ProtectedRoute permission="ventas"><DetallePedido /></ProtectedRoute>} />
 
               <Route path="/presupuestos" element={<ProtectedRoute permission="ventas"><Presupuestos /></ProtectedRoute>} />
+              <Route path="/presupuestos/" element={<ProtectedRoute permission="ventas"><Presupuestos /></ProtectedRoute>} />
               <Route path="/presupuestos/nuevo" element={<ProtectedRoute permission="ventas"><NuevoPresupuesto /></ProtectedRoute>} />
+              <Route path="/presupuestos/nuevo/" element={<ProtectedRoute permission="ventas"><NuevoPresupuesto /></ProtectedRoute>} />
               <Route path="/presupuestos/:id" element={<ProtectedRoute permission="ventas"><DetallePresupuesto /></ProtectedRoute>} />
+              <Route path="/presupuestos/:id/" element={<ProtectedRoute permission="ventas"><DetallePresupuesto /></ProtectedRoute>} />
 
               <Route path="/compras" element={<ProtectedRoute permission="compras"><Compras /></ProtectedRoute>} />
+              <Route path="/compras/" element={<ProtectedRoute permission="compras"><Compras /></ProtectedRoute>} />
               <Route path="/compras/nueva" element={<ProtectedRoute permission="compras"><NuevaCompra /></ProtectedRoute>} />
+              <Route path="/compras/nueva/" element={<ProtectedRoute permission="compras"><NuevaCompra /></ProtectedRoute>} />
               <Route path="/compras/:id" element={<ProtectedRoute permission="compras"><DetalleCompra /></ProtectedRoute>} />
+              <Route path="/compras/:id/" element={<ProtectedRoute permission="compras"><DetalleCompra /></ProtectedRoute>} />
 
 
               <Route path="/remitos" element={<ProtectedRoute permission="ventas"><Remitos /></ProtectedRoute>} />
+              <Route path="/remitos/" element={<ProtectedRoute permission="ventas"><Remitos /></ProtectedRoute>} />
+              <Route path="/remitos/nuevo" element={<ProtectedRoute permission="ventas"><NuevoRemito /></ProtectedRoute>} />
+              <Route path="/remitos/nuevo/" element={<ProtectedRoute permission="ventas"><NuevoRemito /></ProtectedRoute>} />
+              <Route path="/remitos/:id" element={<ProtectedRoute permission="ventas"><DetalleRemito /></ProtectedRoute>} />
+              <Route path="/remitos/:id/" element={<ProtectedRoute permission="ventas"><DetalleRemito /></ProtectedRoute>} />
               <Route path="/comprobantes/remito/:id" element={<ProtectedRoute permission="ventas"><DetalleRemito /></ProtectedRoute>} />
-              <Route path="/comprobantes/nc/:id" element={<ProtectedRoute permission="ventas"><DetalleNotaCredito /></ProtectedRoute>} />
+
               <Route path="/notas-credito" element={<ProtectedRoute permission="ventas"><NotasCredito /></ProtectedRoute>} />
+              <Route path="/notas-credito/" element={<ProtectedRoute permission="ventas"><NotasCredito /></ProtectedRoute>} />
+              <Route path="/notas-credito/nuevo" element={<ProtectedRoute permission="ventas"><NuevaNotaCredito /></ProtectedRoute>} />
+              <Route path="/notas-credito/nuevo/" element={<ProtectedRoute permission="ventas"><NuevaNotaCredito /></ProtectedRoute>} />
+              <Route path="/notas-credito/:id" element={<ProtectedRoute permission="ventas"><DetalleNotaCredito /></ProtectedRoute>} />
+              <Route path="/notas-credito/:id/" element={<ProtectedRoute permission="ventas"><DetalleNotaCredito /></ProtectedRoute>} />
+              <Route path="/comprobantes/nc/:id" element={<ProtectedRoute permission="ventas"><DetalleNotaCredito /></ProtectedRoute>} />
+
               <Route path="/notas-debito" element={<ProtectedRoute permission="ventas"><NotasDebito /></ProtectedRoute>} />
+              <Route path="/notas-debito/" element={<ProtectedRoute permission="ventas"><NotasDebito /></ProtectedRoute>} />
+              <Route path="/notas-debito/nuevo" element={<ProtectedRoute permission="ventas"><NuevaNotaDebito /></ProtectedRoute>} />
+              <Route path="/notas-debito/nuevo/" element={<ProtectedRoute permission="ventas"><NuevaNotaDebito /></ProtectedRoute>} />
+              <Route path="/notas-debito/:id" element={<ProtectedRoute permission="ventas"><DetalleNotaDebito /></ProtectedRoute>} />
+              <Route path="/notas-debito/:id/" element={<ProtectedRoute permission="ventas"><DetalleNotaDebito /></ProtectedRoute>} />
               <Route path="/comprobantes/nd/:id" element={<ProtectedRoute permission="ventas"><DetalleNotaDebito /></ProtectedRoute>} />
               <Route path="/proveedores" element={<ProtectedRoute permission="proveedores"><Proveedores /></ProtectedRoute>} />
               <Route path="/caja" element={<ProtectedRoute permission="caja"><Caja /></ProtectedRoute>} />
@@ -191,6 +224,11 @@ function App() {
               <Route path="/ctas-corrientes/proveedores" element={
                 <Suspense fallback={<div className="p-5 text-center text-muted"><h2>Cargando...</h2></div>}>
                   <ProtectedRoute permission="ctacte"><CuentasCorrientesProveedores /></ProtectedRoute>
+                </Suspense>
+              } />
+              <Route path="/ctas-corrientes/proveedores/:id" element={
+                <Suspense fallback={<div className="p-5 text-center text-muted"><h2>Cargando...</h2></div>}>
+                  <ProtectedRoute permission="ctacte"><DetalleCuentaCorrienteProveedor /></ProtectedRoute>
                 </Suspense>
               } />
 

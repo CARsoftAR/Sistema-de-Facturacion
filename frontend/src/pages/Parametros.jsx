@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Save, Monitor, Zap, CheckCircle2, Settings, Loader2, ShoppingCart, Printer, Laptop } from 'lucide-react';
+import { Save, Monitor, Zap, CheckCircle2, Settings, Loader2, ShoppingCart, Printer, Laptop, Package, Calculator, FileText } from 'lucide-react';
 
 // Estilos base según directrices de la USER_REQUEST
 const s = {
@@ -43,6 +43,7 @@ const Parametros = () => {
     const [pieFactura, setPieFactura] = useState('');
     const [ocultarBarraScroll, setOcultarBarraScroll] = useState(true);
     const [autoFocoCodigoBarras, setAutoFocoCodigoBarras] = useState(false);
+    const [comportamientoCodigoBarras, setComportamientoCodigoBarras] = useState('DEFAULT');
     const [discriminarIvaCompras, setDiscriminarIvaCompras] = useState(false);
     const [discriminarIvaVentas, setDiscriminarIvaVentas] = useState(false);
     const [redondeoPrecios, setRedondeoPrecios] = useState(1);
@@ -67,6 +68,7 @@ const Parametros = () => {
                 setPieFactura(response.data.pie_factura || '');
                 setOcultarBarraScroll(response.data.ocultar_barra_scroll ?? true); // Default True
                 setAutoFocoCodigoBarras(response.data.auto_foco_codigo_barras || false);
+                setComportamientoCodigoBarras(response.data.comportamiento_codigo_barras || 'DEFAULT');
                 setDiscriminarIvaCompras(response.data.discriminar_iva_compras || false);
                 setDiscriminarIvaVentas(response.data.discriminar_iva_ventas || false);
                 setRedondeoPrecios(response.data.redondeo_precios || 1);
@@ -92,6 +94,7 @@ const Parametros = () => {
                 pie_factura: pieFactura,
                 ocultar_barra_scroll: ocultarBarraScroll,
                 auto_foco_codigo_barras: autoFocoCodigoBarras,
+                comportamiento_codigo_barras: comportamientoCodigoBarras,
                 discriminar_iva_compras: discriminarIvaCompras,
                 discriminar_iva_ventas: discriminarIvaVentas,
                 redondeo_precios: redondeoPrecios
@@ -110,6 +113,17 @@ const Parametros = () => {
         }
     };
 
+    const [activeTab, setActiveTab] = useState('general');
+
+    const tabs = [
+        { id: 'general', label: 'General', icon: Settings },
+        { id: 'interfaz', label: 'Interfaz', icon: Laptop },
+        { id: 'ventas', label: 'Ventas y Stock', icon: Package },
+        { id: 'precios', label: 'Lógica Precios', icon: Zap },
+        { id: 'facturacion', label: 'Facturación', icon: Printer },
+        { id: 'compras', label: 'Compras y Costos', icon: ShoppingCart },
+    ];
+
     if (loading) return (
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
             <Loader2 className="animate-spin text-primary" size={48} />
@@ -117,421 +131,519 @@ const Parametros = () => {
     );
 
     return (
-        <div style={s.container}>
+        <div style={{ ...s.container, maxWidth: '1000px' }}>
             <header style={s.header}>
                 <h1 style={s.title}>Parámetros del Sistema</h1>
                 <p style={s.subtitle}>Ajustes técnicos y comportamiento de módulos</p>
             </header>
 
-            <div style={s.card}>
-                <div style={s.sectionTitle}>
-                    <Settings size={20} /> Ajustes Generales
-                </div>
-
-                {/* AUTOMATIZACIÓN - REMITOS */}
-                <div style={s.fieldGroup}>
-                    <label style={s.label}>AUTOMATIZACIÓN DE REMITOS</label>
-                    <div style={s.switchContainer}>
-                        <div style={{ paddingRight: '16px' }}>
-                            <div style={{ fontWeight: '600', fontSize: '14px', color: '#1e293b' }}>Generar Remitos Automáticamente</div>
-                            <div style={s.subtitle}>Al finalizar una venta, se creará un remito de entrega.</div>
-                        </div>
-                        <div className="form-check form-switch pt-0 mb-0">
-                            <input
-                                className="form-check-input"
-                                type="checkbox"
-                                checked={autoRemito}
-                                onChange={() => setAutoRemito(!autoRemito)}
-                                style={{ width: '40px', height: '20px', cursor: 'pointer' }}
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                {/* AUTOMATIZACIÓN - PRECIOS */}
-                <div style={s.fieldGroup}>
-                    <label style={s.label}>ACTUALIZACIÓN DE PRECIOS</label>
-                    <div style={s.switchContainer}>
-                        <div style={{ paddingRight: '16px' }}>
-                            <div style={{ fontWeight: '600', fontSize: '14px', color: '#1e293b' }}>Ajustar Precios desde Compras</div>
-                            <div style={s.subtitle}>Actualiza precios de venta automáticamente al recibir stock con nuevo costo.</div>
-                        </div>
-                        <div className="form-check form-switch pt-0 mb-0">
-                            <input
-                                className="form-check-input"
-                                type="checkbox"
-                                checked={autoUpdatePrices}
-                                onChange={() => setAutoUpdatePrices(!autoUpdatePrices)}
-                                style={{ width: '40px', height: '20px', cursor: 'pointer' }}
-                            />
+            <div style={{ display: 'flex', gap: '32px', alignItems: 'flex-start' }}>
+                {/* SIDEBAR DE TABS (Column izquierda) */}
+                <div style={{ width: '280px', flexShrink: 0 }}>
+                    <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '16px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}>
+                        <div className="d-flex flex-column gap-2">
+                            {tabs.map(tab => {
+                                const isActive = activeTab === tab.id;
+                                return (
+                                    <button
+                                        key={tab.id}
+                                        onClick={() => setActiveTab(tab.id)}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '12px',
+                                            padding: '12px 16px',
+                                            border: isActive ? '2px solid #1e293b' : '2px solid transparent',
+                                            borderRadius: '12px',
+                                            backgroundColor: isActive ? '#f8fafc' : 'transparent',
+                                            color: isActive ? '#2563eb' : '#64748b',
+                                            fontWeight: isActive ? '700' : '500',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s',
+                                            textAlign: 'left'
+                                        }}
+                                    >
+                                        <tab.icon size={20} strokeWidth={isActive ? 2.5 : 2} color={isActive ? '#2563eb' : 'currentColor'} />
+                                        <span style={{ lineHeight: '1.2' }}>{tab.label}</span>
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
-                </div>
 
-                {/* NUEVA SECCIÓN: AJUSTES DE INTERFAZ */}
-                <div style={{ ...s.sectionTitle, marginTop: '48px' }}>
-                    <Laptop size={20} /> Ajustes de Interfaz
-                </div>
-
-                {/* OCULTAR SCROLLBAR */}
-                <div style={s.fieldGroup}>
-                    <label style={s.label}>APARIENCIA DEL MENÚ</label>
-                    <div style={s.switchContainer}>
-                        <div style={{ paddingRight: '16px' }}>
-                            <div style={{ fontWeight: '600', fontSize: '14px', color: '#1e293b' }}>Ocultar Barra de Desplazamiento</div>
-                            <div style={s.subtitle}>Oculta la barra de scroll lateral para una apariencia más limpia (requiere mouse con rueda o trackpad).</div>
-                        </div>
-                        <div className="form-check form-switch pt-0 mb-0">
-                            <input
-                                className="form-check-input"
-                                type="checkbox"
-                                checked={ocultarBarraScroll}
-                                onChange={() => {
-                                    const newValue = !ocultarBarraScroll;
-                                    console.log('Parametros: Toggle cambiado a:', newValue);
-                                    setOcultarBarraScroll(newValue);
-                                    // Dispatch event immediately for instant preview
-                                    console.log('Parametros: Disparando evento configUpdated con detail:', { ocultar_barra_scroll: newValue });
-                                    window.dispatchEvent(new CustomEvent('configUpdated', {
-                                        detail: { ocultar_barra_scroll: newValue }
-                                    }));
-                                }}
-                                style={{ width: '40px', height: '20px', cursor: 'pointer' }}
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                {/* NUEVA SECCIÓN: VENTAS Y STOCK */}
-                <div style={{ ...s.sectionTitle, marginTop: '48px' }}>
-                    <ShoppingCart size={20} /> Ventas y Stock
-                </div>
-
-                {/* STOCK NEGATIVO */}
-                <div style={s.fieldGroup}>
-                    <label style={s.label}>GESTIÓN DE INVENTARIO</label>
-                    <div style={s.switchContainer}>
-                        <div style={{ paddingRight: '16px' }}>
-                            <div style={{ fontWeight: '600', fontSize: '14px', color: '#1e293b' }}>Permitir Stock Negativo</div>
-                            <div style={s.subtitle}>Habilita la venta de productos aunque el stock sea cero o menor.</div>
-                        </div>
-                        <div className="form-check form-switch pt-0 mb-0">
-                            <input
-                                className="form-check-input"
-                                type="checkbox"
-                                checked={permitirStockNegativo}
-                                onChange={() => setPermitirStockNegativo(!permitirStockNegativo)}
-                                style={{ width: '40px', height: '20px', cursor: 'pointer' }}
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                {/* ALERTA STOCK MÍNIMO */}
-                <div style={s.fieldGroup}>
-                    <div style={s.switchContainer}>
-                        <div style={{ paddingRight: '16px' }}>
-                            <div style={{ fontWeight: '600', fontSize: '14px', color: '#1e293b' }}>Alertas de Stock Crítico</div>
-                            <div style={s.subtitle}>Notificar visualmente cuando el stock esté por debajo del mínimo definido.</div>
-                        </div>
-                        <div className="form-check form-switch pt-0 mb-0">
-                            <input
-                                className="form-check-input"
-                                type="checkbox"
-                                checked={alertaStockMinimo}
-                                onChange={() => setAlertaStockMinimo(!alertaStockMinimo)}
-                                style={{ width: '40px', height: '20px', cursor: 'pointer' }}
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                {/* AUTO-FOCO CÓDIGO BARRAS */}
-                <div style={s.fieldGroup}>
-                    <div style={s.switchContainer}>
-                        <div style={{ paddingRight: '16px' }}>
-                            <div style={{ fontWeight: '600', fontSize: '14px', color: '#1e293b' }}>Auto-Foco en Código de Barras</div>
-                            <div style={s.subtitle}>Al abrir la pantalla de venta, el cursor se posará automáticamente en el buscador.</div>
-                        </div>
-                        <div className="form-check form-switch pt-0 mb-0">
-                            <input
-                                className="form-check-input"
-                                type="checkbox"
-                                checked={autoFocoCodigoBarras}
-                                onChange={() => setAutoFocoCodigoBarras(!autoFocoCodigoBarras)}
-                                style={{ width: '40px', height: '20px', cursor: 'pointer' }}
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                {/* MARGEN DE GANANCIA POR DEFECTO */}
-                <div style={s.fieldGroup}>
-                    <label style={s.label}>MARGEN DE GANANCIA SUGERIDO</label>
-                    <div style={s.inputWrapper}>
-                        <input
-                            type="text"
-                            value={margenGananciaDefecto}
-                            onChange={(e) => {
-                                const val = e.target.value.replace(',', '.');
-                                if (val === '' || /^\d*\.?\d*$/.test(val)) {
-                                    setMargenGananciaDefecto(val);
-                                }
-                            }}
-                            style={s.input}
-                            placeholder="0.00"
-                        />
-                        <span style={s.inputBadge}>% de utilidad sugerida</span>
-                    </div>
-                    <p style={{ ...s.subtitle, marginTop: '8px' }}>Porcentaje de margen que se aplicará por defecto al crear nuevos productos.</p>
-                </div>
-
-                {/* NUEVA SECCIÓN: LÓGICA DE PRECIOS */}
-                <div style={{ ...s.sectionTitle, marginTop: '48px' }}>
-                    <Zap size={20} /> Lógica de Precios
-                </div>
-                <p style={{ ...s.subtitle, marginBottom: '20px' }}>Selecciona cómo el sistema debe calcular el precio de venta final a partir del costo.</p>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '32px' }}>
-                    {/* OPCIÓN MARKUP */}
-                    <div
-                        onClick={() => setMetodoGanancia('MARKUP')}
+                    <button
                         style={{
-                            ...s.switchContainer,
-                            flexDirection: 'column',
-                            alignItems: 'flex-start',
-                            cursor: 'pointer',
-                            border: metodoGanancia === 'MARKUP' ? '2px solid #2563eb' : '1px solid #f1f5f9',
-                            backgroundColor: metodoGanancia === 'MARKUP' ? '#eff6ff' : '#f8fafc',
-                            transition: 'all 0.2s',
-                            position: 'relative',
-                            overflow: 'hidden'
+                            ...s.saveBtn,
+                            marginTop: '24px',
+                            opacity: saving ? 0.7 : 1,
+                            cursor: saving ? 'not-allowed' : 'pointer'
                         }}
+                        onClick={handleSave}
+                        disabled={saving}
                     >
-                        {metodoGanancia === 'MARKUP' && (
-                            <div style={{ position: 'absolute', top: '12px', right: '12px' }}>
-                                <CheckCircle2 size={18} color="#2563eb" />
-                            </div>
-                        )}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                            <span style={{ fontWeight: '700', fontSize: '14px', color: '#1e293b' }}>Sobre el Costo (Markup)</span>
-                        </div>
-                        <p style={{ ...s.subtitle, fontSize: '12px', lineHeight: '1.4' }}>
-                            Suma el porcentaje directamente al costo. <br />
-                            <b>Ej: $100 + 30% = $130.</b>
-                        </p>
-                    </div>
-
-                    {/* OPCIÓN MARGEN REAL */}
-                    <div
-                        onClick={() => setMetodoGanancia('MARGIN')}
-                        style={{
-                            ...s.switchContainer,
-                            flexDirection: 'column',
-                            alignItems: 'flex-start',
-                            cursor: 'pointer',
-                            border: metodoGanancia === 'MARGIN' ? '2px solid #2563eb' : '1px solid #f1f5f9',
-                            backgroundColor: metodoGanancia === 'MARGIN' ? '#eff6ff' : '#f8fafc',
-                            transition: 'all 0.2s',
-                            position: 'relative',
-                            overflow: 'hidden'
-                        }}
-                    >
-                        {metodoGanancia === 'MARGIN' && (
-                            <div style={{ position: 'absolute', top: '12px', right: '12px' }}>
-                                <CheckCircle2 size={18} color="#2563eb" />
-                            </div>
-                        )}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                            <span style={{ fontWeight: '700', fontSize: '14px', color: '#1e293b' }}>Sobre la Venta (Margen Real)</span>
-                        </div>
-                        <p style={{ ...s.subtitle, fontSize: '12px', lineHeight: '1.4' }}>
-                            Asegura que el porcentaje sea de la venta total. <br />
-                            <b>Ej: $100 + 30% = $142.86.</b>
-                        </p>
-                    </div>
+                        {saving ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
+                        {saving ? 'Guardando...' : 'Guardar Todo'}
+                    </button>
                 </div>
 
-                {/* PREVIEW DINÁMICO */}
-                <div style={{
-                    backgroundColor: '#1e293b',
-                    borderRadius: '20px',
-                    padding: '24px',
-                    color: 'white',
-                    marginBottom: '32px',
-                    boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)'
-                }}>
-                    <div style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                        Simulador de Proyección (Costo $100)
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div style={{ textAlign: 'center' }}>
-                            <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '4px' }}>COSTO</div>
-                            <div style={{ fontSize: '18px', fontWeight: '700' }}>$100.00</div>
-                        </div>
-                        <div style={{ color: '#3b82f6' }}><Zap size={16} /></div>
-                        <div style={{ textAlign: 'center' }}>
-                            <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '4px' }}>GANANCIA</div>
-                            <div style={{ fontSize: '18px', fontWeight: '700' }}>
-                                {parseFloat(margenGananciaDefecto) || 30}%
-                                {(parseFloat(margenGananciaDefecto) === 0 || !margenGananciaDefecto) && <span style={{ fontSize: '10px', display: 'block', color: '#64748b' }}>(Ejemplo)</span>}
-                            </div>
-                        </div>
-                        <div style={{ color: '#3b82f6' }}><Zap size={16} /></div>
-                        <div style={{ textAlign: 'center' }}>
-                            <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '4px' }}>P. VENTA</div>
-                            <div style={{
-                                fontSize: '24px',
-                                fontWeight: '900',
-                                color: '#3b82f6',
-                                textShadow: '0 0 20px rgba(59, 130, 246, 0.3)'
-                            }}>
-                                ${(() => {
-                                    const m = parseFloat(margenGananciaDefecto) || 30;
-                                    if (metodoGanancia === 'MARKUP') {
-                                        return (100 * (1 + (m / 100))).toFixed(2);
-                                    } else {
-                                        if (m >= 100) return "---";
-                                        return (100 / (1 - (m / 100))).toFixed(2);
-                                    }
-                                })()}
-                            </div>
-                        </div>
-                    </div>
-                    <p style={{ color: '#64748b', fontSize: '11px', marginTop: '16px', textAlign: 'center', fontStyle: 'italic' }}>
-                        {metodoGanancia === 'MARKUP'
-                            ? "Cálculo basado en suma directa sobre el costo (Markup)."
-                            : "Cálculo basado en rentabilidad sobre el precio final (Margen Real)."}
-                    </p>
-                </div>
+                {/* CONTENIDO (Columna derecha) */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ ...s.card, minHeight: '500px' }}>
 
-                {/* NUEVA SECCIÓN: FACTURACIÓN E IMPRESIÓN */}
-                <div style={{ ...s.sectionTitle, marginTop: '48px' }}>
-                    <Printer size={20} /> Facturación e Impresión
-                </div>
+                        {/* TAB 1: GENERAL */}
+                        {activeTab === 'general' && (
+                            <div className="fade-in">
+                                <div style={s.sectionTitle}>
+                                    <Settings size={20} /> Ajustes Generales
+                                </div>
 
-                {/* FORMATO DE PAPEL */}
-                <div style={s.fieldGroup}>
-                    <label style={s.label}>FORMATO DE IMPRESIÓN POR DEFECTO</label>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
-                        {[
-                            { id: 'A4', label: 'Hoja A4', desc: 'Soporte Universal', icon: Monitor },
-                            { id: 'T80', label: 'Ticket 80mm', desc: 'Térmica Grande', icon: Printer },
-                            { id: 'T58', label: 'Ticket 58mm', desc: 'Térmica Chica', icon: Printer }
-                        ].map(formato => (
-                            <div
-                                key={formato.id}
-                                onClick={() => setPapelImpresion(formato.id)}
-                                style={{
-                                    ...s.switchContainer,
-                                    flexDirection: 'column',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    cursor: 'pointer',
-                                    textAlign: 'center',
-                                    padding: '16px 10px',
-                                    border: papelImpresion === formato.id ? '2px solid #2563eb' : '1px solid #f1f5f9',
-                                    backgroundColor: papelImpresion === formato.id ? '#eff6ff' : '#f8fafc',
-                                    transition: 'all 0.2s',
-                                    position: 'relative'
-                                }}
-                            >
-                                {papelImpresion === formato.id && (
-                                    <div style={{ position: 'absolute', top: '8px', right: '8px' }}>
-                                        <CheckCircle2 size={16} color="#2563eb" />
+                                {/* AUTOMATIZACIÓN - REMITOS */}
+                                <div style={s.fieldGroup}>
+                                    <label style={s.label}>AUTOMATIZACIÓN DE REMITOS</label>
+                                    <div style={s.switchContainer}>
+                                        <div style={{ paddingRight: '16px' }}>
+                                            <div style={{ fontWeight: '600', fontSize: '14px', color: '#1e293b' }}>Generar Remitos Automáticamente</div>
+                                            <div style={s.subtitle}>Al finalizar una venta, se creará un remito de entrega.</div>
+                                        </div>
+                                        <div className="form-check form-switch pt-0 mb-0">
+                                            <input
+                                                className="form-check-input"
+                                                type="checkbox"
+                                                checked={autoRemito}
+                                                onChange={() => setAutoRemito(!autoRemito)}
+                                                style={{ width: '40px', height: '20px', cursor: 'pointer' }}
+                                            />
+                                        </div>
                                     </div>
-                                )}
-                                <formato.icon size={24} style={{ marginBottom: '8px', color: papelImpresion === formato.id ? '#2563eb' : '#64748b' }} />
-                                <div style={{ fontSize: '13px', fontWeight: '700', color: '#1e293b', marginBottom: '2px' }}>{formato.label}</div>
-                                <div style={{ fontSize: '10px', color: '#64748b' }}>{formato.desc}</div>
+                                </div>
+
+                                {/* AUTOMATIZACIÓN - PRECIOS */}
+                                <div style={s.fieldGroup}>
+                                    <label style={s.label}>ACTUALIZACIÓN DE PRECIOS</label>
+                                    <div style={s.switchContainer}>
+                                        <div style={{ paddingRight: '16px' }}>
+                                            <div style={{ fontWeight: '600', fontSize: '14px', color: '#1e293b' }}>Ajustar Precios desde Compras</div>
+                                            <div style={s.subtitle}>Actualiza precios de venta automáticamente al recibir stock con nuevo costo.</div>
+                                        </div>
+                                        <div className="form-check form-switch pt-0 mb-0">
+                                            <input
+                                                className="form-check-input"
+                                                type="checkbox"
+                                                checked={autoUpdatePrices}
+                                                onChange={() => setAutoUpdatePrices(!autoUpdatePrices)}
+                                                style={{ width: '40px', height: '20px', cursor: 'pointer' }}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                        ))}
+                        )}
+
+                        {/* TAB 2: INTERFAZ */}
+                        {activeTab === 'interfaz' && (
+                            <div className="fade-in">
+                                <div style={s.sectionTitle}>
+                                    <Laptop size={20} /> Ajustes de Interfaz
+                                </div>
+
+                                {/* OCULTAR SCROLLBAR */}
+                                <div style={s.fieldGroup}>
+                                    <label style={s.label}>APARIENCIA DEL MENÚ</label>
+                                    <div style={s.switchContainer}>
+                                        <div style={{ paddingRight: '16px' }}>
+                                            <div style={{ fontWeight: '600', fontSize: '14px', color: '#1e293b' }}>Ocultar Barra de Desplazamiento</div>
+                                            <div style={s.subtitle}>Oculta la barra de scroll lateral para una apariencia más limpia.</div>
+                                        </div>
+                                        <div className="form-check form-switch pt-0 mb-0">
+                                            <input
+                                                className="form-check-input"
+                                                type="checkbox"
+                                                checked={ocultarBarraScroll}
+                                                onChange={() => {
+                                                    const newValue = !ocultarBarraScroll;
+                                                    setOcultarBarraScroll(newValue);
+                                                    window.dispatchEvent(new CustomEvent('configUpdated', {
+                                                        detail: { ocultar_barra_scroll: newValue }
+                                                    }));
+                                                }}
+                                                style={{ width: '40px', height: '20px', cursor: 'pointer' }}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* COMPORTAMIENTO CODIGO BARRAS */}
+                                <div style={s.fieldGroup}>
+                                    <label style={s.label}>COMPORTAMIENTO LECTOR DE CÓDIGOS</label>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+                                        {[
+                                            { id: 'DEFAULT', label: 'Estándar', desc: 'Selecciona el producto' },
+                                            { id: 'CANTIDAD', label: 'Saltar a Cantidad', desc: 'Foco automático en cantidad' },
+                                            { id: 'DIRECTO', label: 'Ingreso Rápido', desc: 'Agrega x1 y limpia buscador' }
+                                        ].map(opt => (
+                                            <div
+                                                key={opt.id}
+                                                onClick={() => setComportamientoCodigoBarras(opt.id)}
+                                                style={{
+                                                    ...s.switchContainer,
+                                                    flexDirection: 'column',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    cursor: 'pointer',
+                                                    textAlign: 'center',
+                                                    padding: '16px 10px',
+                                                    border: comportamientoCodigoBarras === opt.id ? '2px solid #2563eb' : '1px solid #f1f5f9',
+                                                    backgroundColor: comportamientoCodigoBarras === opt.id ? '#eff6ff' : '#f8fafc',
+                                                    transition: 'all 0.2s',
+                                                    position: 'relative'
+                                                }}
+                                            >
+                                                {comportamientoCodigoBarras === opt.id && (
+                                                    <div style={{ position: 'absolute', top: '8px', right: '8px' }}>
+                                                        <CheckCircle2 size={16} color="#2563eb" />
+                                                    </div>
+                                                )}
+                                                <div style={{ fontSize: '13px', fontWeight: '700', color: '#1e293b', marginBottom: '2px' }}>{opt.label}</div>
+                                                <div style={{ fontSize: '10px', color: '#64748b' }}>{opt.desc}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* TAB 3: VENTAS Y STOCK */}
+                        {activeTab === 'ventas' && (
+                            <div className="fade-in">
+                                <div style={s.sectionTitle}>
+                                    <Package size={20} /> Ventas y Stock
+                                </div>
+
+                                {/* STOCK NEGATIVO */}
+                                <div style={s.fieldGroup}>
+                                    <label style={s.label}>GESTIÓN DE INVENTARIO</label>
+                                    <div style={s.switchContainer}>
+                                        <div style={{ paddingRight: '16px' }}>
+                                            <div style={{ fontWeight: '600', fontSize: '14px', color: '#1e293b' }}>Permitir Stock Negativo</div>
+                                            <div style={s.subtitle}>Habilita la venta de productos aunque el stock sea cero o menor.</div>
+                                        </div>
+                                        <div className="form-check form-switch pt-0 mb-0">
+                                            <input
+                                                className="form-check-input"
+                                                type="checkbox"
+                                                checked={permitirStockNegativo}
+                                                onChange={() => setPermitirStockNegativo(!permitirStockNegativo)}
+                                                style={{ width: '40px', height: '20px', cursor: 'pointer' }}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* ALERTA STOCK MÍNIMO */}
+                                <div style={s.fieldGroup}>
+                                    <div style={s.switchContainer}>
+                                        <div style={{ paddingRight: '16px' }}>
+                                            <div style={{ fontWeight: '600', fontSize: '14px', color: '#1e293b' }}>Alertas de Stock Crítico</div>
+                                            <div style={s.subtitle}>Notificar visualmente cuando el stock esté por debajo del mínimo definido.</div>
+                                        </div>
+                                        <div className="form-check form-switch pt-0 mb-0">
+                                            <input
+                                                className="form-check-input"
+                                                type="checkbox"
+                                                checked={alertaStockMinimo}
+                                                onChange={() => setAlertaStockMinimo(!alertaStockMinimo)}
+                                                style={{ width: '40px', height: '20px', cursor: 'pointer' }}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* AUTO-FOCO CÓDIGO BARRAS */}
+                                <div style={s.fieldGroup}>
+                                    <div style={s.switchContainer}>
+                                        <div style={{ paddingRight: '16px' }}>
+                                            <div style={{ fontWeight: '600', fontSize: '14px', color: '#1e293b' }}>Auto-Foco en Código de Barras</div>
+                                            <div style={s.subtitle}>Al abrir la pantalla de venta, el cursor se posará automáticamente en el buscador.</div>
+                                        </div>
+                                        <div className="form-check form-switch pt-0 mb-0">
+                                            <input
+                                                className="form-check-input"
+                                                type="checkbox"
+                                                checked={autoFocoCodigoBarras}
+                                                onChange={() => setAutoFocoCodigoBarras(!autoFocoCodigoBarras)}
+                                                style={{ width: '40px', height: '20px', cursor: 'pointer' }}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+
+
+                                {/* MARGEN DE GANANCIA POR DEFECTO */}
+                                <div style={s.fieldGroup}>
+                                    <label style={s.label}>MARGEN DE GANANCIA SUGERIDO</label>
+                                    <div style={s.inputWrapper}>
+                                        <input
+                                            type="text"
+                                            value={margenGananciaDefecto}
+                                            onChange={(e) => {
+                                                const val = e.target.value.replace(',', '.');
+                                                if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                                                    setMargenGananciaDefecto(val);
+                                                }
+                                            }}
+                                            style={s.input}
+                                            placeholder="0.00"
+                                        />
+                                        <span style={s.inputBadge}>% de utilidad sugerida</span>
+                                    </div>
+                                    <p style={{ ...s.subtitle, marginTop: '8px' }}>Porcentaje de margen que se aplicará por defecto al crear nuevos productos.</p>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* TAB 4: LÓGICA DE PRECIOS */}
+                        {activeTab === 'precios' && (
+                            <div className="fade-in">
+                                <div style={s.sectionTitle}>
+                                    <Zap size={20} /> Lógica de Precios
+                                </div>
+                                <p style={{ ...s.subtitle, marginBottom: '20px' }}>Selecciona cómo el sistema debe calcular el precio de venta final a partir del costo.</p>
+
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '32px' }}>
+                                    {/* OPCIÓN MARKUP */}
+                                    <div
+                                        onClick={() => setMetodoGanancia('MARKUP')}
+                                        style={{
+                                            ...s.switchContainer,
+                                            flexDirection: 'column',
+                                            alignItems: 'flex-start',
+                                            cursor: 'pointer',
+                                            border: metodoGanancia === 'MARKUP' ? '2px solid #2563eb' : '1px solid #f1f5f9',
+                                            backgroundColor: metodoGanancia === 'MARKUP' ? '#eff6ff' : '#f8fafc',
+                                            transition: 'all 0.2s',
+                                            position: 'relative',
+                                            overflow: 'hidden'
+                                        }}
+                                    >
+                                        {metodoGanancia === 'MARKUP' && (
+                                            <div style={{ position: 'absolute', top: '12px', right: '12px' }}>
+                                                <CheckCircle2 size={18} color="#2563eb" />
+                                            </div>
+                                        )}
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                                            <span style={{ fontWeight: '700', fontSize: '14px', color: '#1e293b' }}>Sobre el Costo (Markup)</span>
+                                        </div>
+                                        <p style={{ ...s.subtitle, fontSize: '12px', lineHeight: '1.4' }}>
+                                            Suma el porcentaje directamente al costo. <br />
+                                            <b>Ej: $100 + 30% = $130.</b>
+                                        </p>
+                                    </div>
+
+                                    {/* OPCIÓN MARGEN REAL */}
+                                    <div
+                                        onClick={() => setMetodoGanancia('MARGIN')}
+                                        style={{
+                                            ...s.switchContainer,
+                                            flexDirection: 'column',
+                                            alignItems: 'flex-start',
+                                            cursor: 'pointer',
+                                            border: metodoGanancia === 'MARGIN' ? '2px solid #2563eb' : '1px solid #f1f5f9',
+                                            backgroundColor: metodoGanancia === 'MARGIN' ? '#eff6ff' : '#f8fafc',
+                                            transition: 'all 0.2s',
+                                            position: 'relative',
+                                            overflow: 'hidden'
+                                        }}
+                                    >
+                                        {metodoGanancia === 'MARGIN' && (
+                                            <div style={{ position: 'absolute', top: '12px', right: '12px' }}>
+                                                <CheckCircle2 size={18} color="#2563eb" />
+                                            </div>
+                                        )}
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                                            <span style={{ fontWeight: '700', fontSize: '14px', color: '#1e293b' }}>Sobre la Venta (Margen Real)</span>
+                                        </div>
+                                        <p style={{ ...s.subtitle, fontSize: '12px', lineHeight: '1.4' }}>
+                                            Asegura que el porcentaje sea de la venta total. <br />
+                                            <b>Ej: $100 + 30% = $142.86.</b>
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* PREVIEW DINÁMICO */}
+                                <div style={{
+                                    backgroundColor: '#1e293b',
+                                    borderRadius: '20px',
+                                    padding: '24px',
+                                    color: 'white',
+                                    marginBottom: '32px',
+                                    boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)'
+                                }}>
+                                    <div style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                        Simulador de Proyección (Costo $100)
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                        <div style={{ textAlign: 'center' }}>
+                                            <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '4px' }}>COSTO</div>
+                                            <div style={{ fontSize: '18px', fontWeight: '700' }}>$100.00</div>
+                                        </div>
+                                        <div style={{ color: '#3b82f6' }}><Zap size={16} /></div>
+                                        <div style={{ textAlign: 'center' }}>
+                                            <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '4px' }}>GANANCIA</div>
+                                            <div style={{ fontSize: '18px', fontWeight: '700' }}>
+                                                {parseFloat(margenGananciaDefecto) || 30}%
+                                            </div>
+                                        </div>
+                                        <div style={{ color: '#3b82f6' }}><Zap size={16} /></div>
+                                        <div style={{ textAlign: 'center' }}>
+                                            <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '4px' }}>P. VENTA</div>
+                                            <div style={{
+                                                fontSize: '24px',
+                                                fontWeight: '900',
+                                                color: '#3b82f6',
+                                                textShadow: '0 0 20px rgba(59, 130, 246, 0.3)'
+                                            }}>
+                                                ${(() => {
+                                                    const m = parseFloat(margenGananciaDefecto) || 30;
+                                                    if (metodoGanancia === 'MARKUP') {
+                                                        return (100 * (1 + (m / 100))).toFixed(2);
+                                                    } else {
+                                                        if (m >= 100) return "---";
+                                                        return (100 / (1 - (m / 100))).toFixed(2);
+                                                    }
+                                                })()}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* TAB 5: FACTURACIÓN E IMPRESIÓN */}
+                        {activeTab === 'facturacion' && (
+                            <div className="fade-in">
+                                <div style={s.sectionTitle}>
+                                    <Printer size={20} /> Facturación e Impresión
+                                </div>
+
+                                {/* FORMATO DE PAPEL */}
+                                <div style={s.fieldGroup}>
+                                    <label style={s.label}>FORMATO DE IMPRESIÓN POR DEFECTO</label>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+                                        {[
+                                            { id: 'A4', label: 'Hoja A4', desc: 'Soporte Universal', icon: Monitor },
+                                            { id: 'T80', label: 'Ticket 80mm', desc: 'Térmica Grande', icon: Printer },
+                                            { id: 'T58', label: 'Ticket 58mm', desc: 'Térmica Chica', icon: Printer }
+                                        ].map(formato => (
+                                            <div
+                                                key={formato.id}
+                                                onClick={() => setPapelImpresion(formato.id)}
+                                                style={{
+                                                    ...s.switchContainer,
+                                                    flexDirection: 'column',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    cursor: 'pointer',
+                                                    textAlign: 'center',
+                                                    padding: '16px 10px',
+                                                    border: papelImpresion === formato.id ? '2px solid #2563eb' : '1px solid #f1f5f9',
+                                                    backgroundColor: papelImpresion === formato.id ? '#eff6ff' : '#f8fafc',
+                                                    transition: 'all 0.2s',
+                                                    position: 'relative'
+                                                }}
+                                            >
+                                                {papelImpresion === formato.id && (
+                                                    <div style={{ position: 'absolute', top: '8px', right: '8px' }}>
+                                                        <CheckCircle2 size={16} color="#2563eb" />
+                                                    </div>
+                                                )}
+                                                <formato.icon size={24} style={{ marginBottom: '8px', color: papelImpresion === formato.id ? '#2563eb' : '#64748b' }} />
+                                                <div style={{ fontSize: '13px', fontWeight: '700', color: '#1e293b', marginBottom: '2px' }}>{formato.label}</div>
+                                                <div style={{ fontSize: '10px', color: '#64748b' }}>{formato.desc}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* PIE DE FACTURA */}
+                                <div style={s.fieldGroup}>
+                                    <label style={s.label}>TEXTO AL PIE DE FACTURA (PERSONALIZADO)</label>
+                                    <textarea
+                                        style={s.textarea}
+                                        value={pieFactura}
+                                        onChange={(e) => setPieFactura(e.target.value)}
+                                        placeholder="Ej: Gracias por su compra. No se aceptan devoluciones sin el ticket."
+                                    />
+                                    <p style={{ ...s.subtitle, marginTop: '8px' }}>Este texto aparecerá fijo al final de todos los comprobantes impresos.</p>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* TAB 6: GESTIÓN DE COMPRAS Y COSTOS */}
+                        {activeTab === 'compras' && (
+                            <div className="fade-in">
+                                <div style={s.sectionTitle}>
+                                    <ShoppingCart size={20} /> Gestión de Compras y Costos
+                                </div>
+
+                                {/* DISCRIMINAR IVA EN COMPRAS */}
+                                <div style={s.fieldGroup}>
+                                    <div style={s.switchContainer}>
+                                        <div style={{ paddingRight: '16px' }}>
+                                            <div style={{ fontWeight: '600', fontSize: '14px', color: '#1e293b' }}>Discriminar IVA en Compras</div>
+                                            <div style={s.subtitle}>Permitir cargar Neto e IVA por separado al registrar una compra.</div>
+                                        </div>
+                                        <div className="form-check form-switch pt-0 mb-0">
+                                            <input
+                                                className="form-check-input"
+                                                type="checkbox"
+                                                checked={discriminarIvaCompras}
+                                                onChange={() => setDiscriminarIvaCompras(!discriminarIvaCompras)}
+                                                style={{ width: '40px', height: '20px', cursor: 'pointer' }}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* DISCRIMINAR IVA EN VENTAS */}
+                                <div style={s.fieldGroup}>
+                                    <div style={s.switchContainer}>
+                                        <div style={{ paddingRight: '16px' }}>
+                                            <div style={{ fontWeight: '600', fontSize: '14px', color: '#1e293b' }}>Discriminar IVA en Ventas</div>
+                                            <div style={s.subtitle}>Mostrar desglose de Neto e IVA en la pantalla de ventas y permitir edición.</div>
+                                        </div>
+                                        <div className="form-check form-switch pt-0 mb-0">
+                                            <input
+                                                className="form-check-input"
+                                                type="checkbox"
+                                                checked={discriminarIvaVentas}
+                                                onChange={() => setDiscriminarIvaVentas(!discriminarIvaVentas)}
+                                                style={{ width: '40px', height: '20px', cursor: 'pointer' }}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* REDONDEO DE PRECIOS */}
+                                <div style={s.fieldGroup}>
+                                    <label style={s.label}>REDONDEO AUTOMÁTICO DE PRECIOS</label>
+                                    <select
+                                        style={s.input}
+                                        value={redondeoPrecios}
+                                        onChange={(e) => setRedondeoPrecios(parseInt(e.target.value))}
+                                    >
+                                        <option value={1}>Sin Redondeo (Exacto)</option>
+                                        <option value={10}>Múltiplos de 10</option>
+                                        <option value={50}>Múltiplos de 50</option>
+                                        <option value={100}>Múltiplos de 100</option>
+                                    </select>
+                                    <p style={{ ...s.subtitle, marginTop: '8px' }}>Se aplicará al actualizar precios automáticamente desde una compra.</p>
+                                </div>
+                            </div>
+                        )}
+
                     </div>
                 </div>
-
-                {/* PIE DE FACTURA */}
-                <div style={s.fieldGroup}>
-                    <label style={s.label}>TEXTO AL PIE DE FACTURA (PERSONALIZADO)</label>
-                    <textarea
-                        style={s.textarea}
-                        value={pieFactura}
-                        onChange={(e) => setPieFactura(e.target.value)}
-                        placeholder="Ej: Gracias por su compra. No se aceptan devoluciones sin el ticket."
-                    />
-                    <p style={{ ...s.subtitle, marginTop: '8px' }}>Este texto aparecerá fijo al final de todos los comprobantes impresos.</p>
-                </div>
-
-                {/* NUEVA SECCIÓN: GESTIÓN DE COMPRAS Y COSTOS */}
-                <div style={{ ...s.sectionTitle, marginTop: '48px' }}>
-                    <ShoppingCart size={20} /> Gestión de Compras y Costos
-                </div>
-
-                {/* DISCRIMINAR IVA EN COMPRAS */}
-                <div style={s.fieldGroup}>
-                    <div style={s.switchContainer}>
-                        <div style={{ paddingRight: '16px' }}>
-                            <div style={{ fontWeight: '600', fontSize: '14px', color: '#1e293b' }}>Discriminar IVA en Compras</div>
-                            <div style={s.subtitle}>Permitir cargar Neto e IVA por separado al registrar una compra.</div>
-                        </div>
-                        <div className="form-check form-switch pt-0 mb-0">
-                            <input
-                                className="form-check-input"
-                                type="checkbox"
-                                checked={discriminarIvaCompras}
-                                onChange={() => setDiscriminarIvaCompras(!discriminarIvaCompras)}
-                                style={{ width: '40px', height: '20px', cursor: 'pointer' }}
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                {/* DISCRIMINAR IVA EN VENTAS */}
-                <div style={s.fieldGroup}>
-                    <div style={s.switchContainer}>
-                        <div style={{ paddingRight: '16px' }}>
-                            <div style={{ fontWeight: '600', fontSize: '14px', color: '#1e293b' }}>Discriminar IVA en Ventas</div>
-                            <div style={s.subtitle}>Mostrar desglose de Neto e IVA en la pantalla de ventas y permitir edición.</div>
-                        </div>
-                        <div className="form-check form-switch pt-0 mb-0">
-                            <input
-                                className="form-check-input"
-                                type="checkbox"
-                                checked={discriminarIvaVentas}
-                                onChange={() => setDiscriminarIvaVentas(!discriminarIvaVentas)}
-                                style={{ width: '40px', height: '20px', cursor: 'pointer' }}
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                {/* REDONDEO DE PRECIOS */}
-                <div style={s.fieldGroup}>
-                    <label style={s.label}>REDONDEO AUTOMÁTICO DE PRECIOS</label>
-                    <select
-                        style={s.input}
-                        value={redondeoPrecios}
-                        onChange={(e) => setRedondeoPrecios(parseInt(e.target.value))}
-                    >
-                        <option value={1}>Sin Redondeo (Exacto)</option>
-                        <option value={10}>Múltiplos de 10</option>
-                        <option value={50}>Múltiplos de 50</option>
-                        <option value={100}>Múltiplos de 100</option>
-                    </select>
-                    <p style={{ ...s.subtitle, marginTop: '8px' }}>Se aplicará al actualizar precios automáticamente desde una compra.</p>
-                </div>
-
-                <button
-                    style={{
-                        ...s.saveBtn,
-                        opacity: saving ? 0.7 : 1,
-                        cursor: saving ? 'not-allowed' : 'pointer'
-                    }}
-                    onClick={handleSave}
-                    disabled={saving}
-                >
-                    {saving ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
-                    {saving ? 'Guardando...' : 'Guardar Cambios'}
-                </button>
             </div>
 
             {/* MODAL DE ÉXITO */}

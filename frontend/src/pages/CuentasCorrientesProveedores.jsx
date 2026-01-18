@@ -92,11 +92,9 @@ const CuentasCorrientesProveedores = () => {
         setPage(1);
     };
 
-    // TODO: Implement Detalle Screen
+    // Navigate to Detail Screen
     const handleVerHistorial = (proveedor) => {
-        // navigate(`/ctas-corrientes/proveedores/${proveedor.id}`);
-        // For now preventing navigation until detail is ready, or let it 404/placeholder
-        alert("Detalle de proveedor en construcción");
+        navigate(`/ctas-corrientes/proveedores/${proveedor.id}`);
     };
 
     return (

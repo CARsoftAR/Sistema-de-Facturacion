@@ -100,7 +100,7 @@ const PaymentModal = ({
 
     return (
         <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 overflow-hidden transform transition-all animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto border border-slate-200">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 overflow-hidden transform transition-all animate-in fade-in zoom-in-95 duration-200 border border-slate-200">
 
                 {/* White Header (Centered Style - Premium) */}
                 <div className="relative pt-6 px-6 pb-2 text-center z-10" style={{ backgroundColor: 'white' }}>
@@ -129,9 +129,11 @@ const PaymentModal = ({
                 <form onSubmit={handleConfirm} className="p-6 pt-2">
 
                     {/* Big Total Display */}
-                    {total > 0 && (
+                    {(total > 0 || mode === 'payment') && (
                         <div className="text-center mb-6" style={{ backgroundColor: 'white' }}>
-                            <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">TOTAL A PAGAR</p>
+                            <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">
+                                {mode === 'payment' ? 'DEUDA TOTAL' : 'TOTAL A PAGAR'}
+                            </p>
                             <div className="text-4xl font-black text-slate-800 tracking-tight">
                                 {formatMoney(total)}
                             </div>
@@ -139,7 +141,7 @@ const PaymentModal = ({
                     )}
 
                     {/* Amount & Change Section - Side by Side */}
-                    <div className="mb-6">
+                    <div className="mb-3">
                         <div className="flex justify-between items-baseline mb-2">
                             <label className="block text-sm font-bold text-slate-700">
                                 {mode === 'sale' ? 'Monto Recibido' : 'Monto ($)'}
@@ -184,7 +186,7 @@ const PaymentModal = ({
                         )}
                     </div>
 
-                    <hr className="border-slate-100 my-5" />
+                    <hr className="border-slate-100 my-2" />
 
                     {/* Método de Pago Cards */}
                     <div className="mb-6">

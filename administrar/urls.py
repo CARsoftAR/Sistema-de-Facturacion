@@ -365,6 +365,7 @@ urlpatterns = [
     path("api/notas-debito/listar/", views.api_notas_debito_listar, name="api_notas_debito_listar"),
     path("api/notas-debito/crear/<int:venta_id>/", views.api_nota_debito_crear, name="api_nota_debito_crear"),
     path("api/notas-debito/<int:id>/", views.api_nota_debito_detalle, name="api_nota_debito_detalle"),
+    path("api/notas-debito/<int:id>/anular/", views.api_nota_debito_anular, name="api_nota_debito_anular"),
 
     # React Routes for Details
     path("comprobantes/remito/<int:id>/", login_required(TemplateView.as_view(template_name="react_app.html")), name="detalle_remito_react"),
@@ -384,7 +385,7 @@ urlpatterns = [
     path("ctacte/clientes/", views.cc_clientes_lista, name="cc_clientes_lista"),
     path("ctacte/clientes/<int:id>/", views.cc_cliente_detalle, name="cc_cliente_detalle"),
     path("ctacte/proveedores/", login_required(TemplateView.as_view(template_name="react_app.html")), name="cc_proveedores_lista"),
-    path("ctacte/proveedores/<int:id>/", views.cc_proveedor_detalle, name="cc_proveedor_detalle"),
+    path("ctas-corrientes/proveedores/<int:id>/", login_required(TemplateView.as_view(template_name="react_app.html")), name="ctacte_proveedor_detalle"),
     
     # API Clientes
     path("api/ctacte/clientes/listar/", views.api_cc_clientes_listar, name="api_cc_clientes_listar"),
@@ -399,6 +400,7 @@ urlpatterns = [
     path("api/ctacte/proveedores/listar/", views.api_cc_proveedores_listar, name="api_cc_proveedores_listar"),
     path("api/ctacte/proveedores/<int:id>/movimientos/", views.api_cc_proveedor_movimientos, name="api_cc_proveedor_movimientos"),
     path("api/ctacte/proveedores/nuevo/", views.api_cc_proveedor_nuevo_movimiento, name="api_cc_proveedor_nuevo_movimiento"),
+    path("api/ctacte/proveedores/<int:id>/registrar-pago/", views.api_cc_proveedor_registrar_pago, name="api_cc_proveedor_registrar_pago"),
     
     # API Recibos
     path("api/recibos/crear/", views.api_recibo_crear, name="api_recibo_crear"),

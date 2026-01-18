@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { CreditCard, FileText, Download, Plus } from 'lucide-react';
-import { BtnBack, BtnPrint, BtnClear, BtnTableAction } from '../components/CommonButtons';
+import { Truck, FileText, Download, Plus, ArrowLeft } from 'lucide-react';
+import { BtnBack, BtnPrint } from '../components/CommonButtons';
 import PaymentModal from '../components/common/PaymentModal';
 import TablePagination from '../components/common/TablePagination';
 import axios from 'axios';
 
-const DetalleCuentaCorriente = () => {
+const DetalleCuentaCorrienteProveedor = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const [cliente, setCliente] = useState(null);
+    const [proveedor, setProveedor] = useState(null);
     const [movimientos, setMovimientos] = useState([]);
     const [movimientosFiltrados, setMovimientosFiltrados] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -51,10 +51,10 @@ const DetalleCuentaCorriente = () => {
     const fetchMovimientos = async () => {
         setLoading(true);
         try {
-            const response = await axios.get(`/api/ctacte/clientes/${id}/movimientos/`);
+            const response = await axios.get(`/api/ctacte/proveedores/${id}/movimientos/`);
             console.log('API Response:', response.data);
             if (response.data.ok) {
-                setCliente(response.data.cliente);
+                setProveedor(response.data.proveedor);
                 setMovimientos(response.data.movimientos);
             }
         } catch (error) {
@@ -98,31 +98,30 @@ const DetalleCuentaCorriente = () => {
     };
 
     const handleVerDetalle = (mov) => {
-        const referrer = `/ctas-corrientes/clientes/${id}`;
+        const referrer = `/ctas-corrientes/proveedores/${id}`;
         switch (mov.comprobante_tipo) {
-            case 'venta':
-                navigate(`/ventas/${mov.comprobante_id}`, { state: { from: referrer } });
+            case 'compra':
+                navigate(`/compras/${mov.comprobante_id}`, { state: { from: referrer } });
                 break;
-            case 'nota_credito':
-                navigate(`/comprobantes/nc/${mov.comprobante_id}`, { state: { from: referrer } });
-                break;
-            case 'nota_debito':
-                navigate(`/comprobantes/nd/${mov.comprobante_id}`, { state: { from: referrer } });
+            case 'pago':
+                // navigate(`/recibos/${mov.comprobante_id}`, { state: { from: referrer } }); 
+                // TODO: View detail of receipt if implemented
                 break;
             default:
-                console.log('Tipo de comprobante no soportado:', mov.comprobante_tipo);
+                console.log('Tipo de comprobante no soportado para detalle:', mov.comprobante_tipo);
         }
     };
 
     const handleImprimir = () => {
-        window.open(`/ctacte/clientes/${id}/imprimir/`, '_blank');
+        // TODO: Implement backend endpoint if available or placeholder
+        window.open(`/ctacte/proveedores/${id}/imprimir/`, '_blank');
     };
 
     const handleRegistrarPago = async (paymentData) => {
         // paymentData comes from PaymentModal { monto, fecha, metodo_pago, descripcion, referencia, cheque, tarjeta }
-
+        setSavingPago(true);
         try {
-            const response = await axios.post(`/api/ctacte/clientes/${id}/registrar-pago/`, {
+            const response = await axios.post(`/api/ctacte/proveedores/${id}/registrar-pago/`, {
                 monto: paymentData.monto,
                 fecha: paymentData.fecha,
                 metodo_pago: paymentData.metodo_pago,
@@ -131,17 +130,15 @@ const DetalleCuentaCorriente = () => {
                 // Extra params flattened for backend if needed
                 referencia: paymentData.referencia,
 
-                // Cheque params currently expected flat by backend or object?
-                // Backend views.py expects: cheque_banco, cheque_numero, etc.
+                // Cheque params currently expected flat by backend
                 cheque_banco: paymentData.cheque?.bank,
                 cheque_numero: paymentData.cheque?.number,
                 cheque_fecha_emision: paymentData.cheque?.emissionDate,
                 cheque_fecha_pago: paymentData.cheque?.paymentDate,
                 cheque_firmante: paymentData.cheque?.signer,
 
-                // Tarjeta params if backend supported (not yet fully implemented in backend but safe to send)
-                tarjeta_last4: paymentData.tarjeta?.last4,
-                tarjeta_cuotas: paymentData.tarjeta?.installments
+                // Transferencia implies picking default bank or specifying? 
+                // Backend will pick default active bank if not specified.
             });
 
             if (response.data.ok) {
@@ -154,6 +151,8 @@ const DetalleCuentaCorriente = () => {
         } catch (error) {
             console.error('Error al registrar pago:', error);
             alert('Error al registrar el pago');
+        } finally {
+            setSavingPago(false);
         }
     };
 
@@ -165,10 +164,10 @@ const DetalleCuentaCorriente = () => {
 
     const getTipoBadge = (tipo) => {
         const badges = {
-            'VENTA': { color: 'danger', text: 'Venta' },
+            'COMPRA': { color: 'danger', text: 'Compra' },
             'PAGO': { color: 'success', text: 'Pago' },
-            'NOTA_CREDITO': { color: 'info', text: 'N/C' },
-            'NOTA_DEBITO': { color: 'warning', text: 'N/D' }
+            'NOTA_CREDITO': { color: 'info', text: 'N/C' }, // From supplier (reduces debt)
+            'NOTA_DEBITO': { color: 'warning', text: 'N/D' } // From supplier (increases debt)
         };
         const badge = badges[tipo] || { color: 'secondary', text: tipo };
         return (
@@ -201,36 +200,36 @@ const DetalleCuentaCorriente = () => {
                     {/* Header Interno */}
                     <div className="mb-6 flex-shrink-0">
                         <div className="flex items-center gap-3">
-                            <BtnBack onClick={() => navigate('/ctas-corrientes/clientes')} />
+                            <BtnBack onClick={() => navigate('/ctas-corrientes/proveedores')} />
                             <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
-                                <CreditCard className="text-blue-600" size={32} strokeWidth={2.5} />
+                                <Truck className="text-blue-600" size={32} strokeWidth={2.5} />
                                 Historial Cta. Cte.
                             </h1>
                         </div>
-                        <p className="text-slate-500 font-medium ml-14 mt-1">Movimientos de {cliente?.nombre}</p>
+                        <p className="text-slate-500 font-medium ml-14 mt-1">Movimientos de {proveedor?.nombre}</p>
                     </div>
 
-                    {/* Cliente / Saldo Card */}
+                    {/* Proveedor / Saldo Card */}
                     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 flex flex-col gap-3 flex-shrink-0">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100 shadow-sm">
-                                <CreditCard size={20} />
+                                <Truck size={20} />
                             </div>
                             <div>
-                                <h3 className="font-bold text-slate-800 text-base leading-tight">{cliente?.nombre}</h3>
-                                <p className="text-[10px] text-slate-400 font-mono">ID: #{cliente?.id}</p>
+                                <h3 className="font-bold text-slate-800 text-base leading-tight">{proveedor?.nombre}</h3>
+                                <p className="text-[10px] text-slate-400 font-mono">ID: #{proveedor?.id}</p>
                             </div>
                         </div>
 
                         <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-center">
-                            <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-0.5">Saldo Actual</p>
-                            <h2 className={`text-3xl font-black tracking-tight ${cliente?.saldo_actual > 0 ? 'text-red-600' : cliente?.saldo_actual < 0 ? 'text-emerald-600' : 'text-slate-400'}`}>
-                                {formatCurrency(cliente?.saldo_actual || 0)}
+                            <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-0.5">Saldo Actual</p>
+                            <h2 className={`text-3xl font-black tracking-tight ${proveedor?.saldo_actual > 0 ? 'text-red-600' : proveedor?.saldo_actual < 0 ? 'text-emerald-600' : 'text-slate-400'}`}>
+                                {formatCurrency(proveedor?.saldo_actual || 0)}
                             </h2>
-                            <div className="mt-1 text-[10px] font-bold uppercase">
-                                {cliente?.saldo_actual > 0 && <span className="text-red-500 bg-red-50 px-2 py-0.5 rounded">Deudor</span>}
-                                {cliente?.saldo_actual < 0 && <span className="text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded">A Favor</span>}
-                                {cliente?.saldo_actual === 0 && <span className="text-slate-500 bg-slate-100 px-2 py-0.5 rounded">Al Día</span>}
+                            <div className="mt-1 text-xs font-bold uppercase">
+                                {proveedor?.saldo_actual > 0 && <span className="text-red-500 bg-red-50 px-2 py-0.5 rounded">Deuda Pendiente</span>}
+                                {proveedor?.saldo_actual < 0 && <span className="text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded">A Favor</span>}
+                                {proveedor?.saldo_actual === 0 && <span className="text-slate-500 bg-slate-100 px-2 py-0.5 rounded">Al Día</span>}
                             </div>
                         </div>
 
@@ -249,47 +248,45 @@ const DetalleCuentaCorriente = () => {
                             <div className="p-1.5 bg-slate-100 text-slate-600 rounded-lg">
                                 <FileText size={16} />
                             </div>
-                            <h2 className="font-bold text-slate-700 text-sm">Filtros</h2>
+                            <h2 className="font-bold text-slate-700 text-lg">Filtros</h2>
                         </div>
 
                         <div className="space-y-3">
                             <div className="grid grid-cols-2 gap-2">
                                 <div>
-                                    <label className="block text-[10px] font-bold text-slate-500 mb-1">Desde</label>
+                                    <label className="block text-xs font-bold text-slate-500 mb-1">Desde</label>
                                     <input
                                         type="date"
-                                        className="w-full px-2 py-1.5 border border-slate-200 rounded-lg text-xs focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-slate-50 text-slate-700"
+                                        className="w-full px-2 py-1.5 border border-slate-200 rounded-lg text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-slate-50 text-slate-700"
                                         value={fechaDesde}
                                         onChange={(e) => setFechaDesde(e.target.value)}
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-[10px] font-bold text-slate-500 mb-1">Hasta</label>
+                                    <label className="block text-xs font-bold text-slate-500 mb-1">Hasta</label>
                                     <input
                                         type="date"
-                                        className="w-full px-2 py-1.5 border border-slate-200 rounded-lg text-xs focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-slate-50 text-slate-700"
+                                        className="w-full px-2 py-1.5 border border-slate-200 rounded-lg text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-slate-50 text-slate-700"
                                         value={fechaHasta}
                                         onChange={(e) => setFechaHasta(e.target.value)}
                                     />
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-[10px] font-bold text-slate-500 mb-1">Tipo Movimiento</label>
+                                <label className="block text-xs font-bold text-slate-500 mb-1">Tipo Movimiento</label>
                                 <select
-                                    className="w-full px-2 py-1.5 border border-slate-200 rounded-lg text-xs focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-slate-50 text-slate-700"
+                                    className="w-full px-2 py-1.5 border border-slate-200 rounded-lg text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-slate-50 text-slate-700"
                                     value={tipoFiltro}
                                     onChange={(e) => setTipoFiltro(e.target.value)}
                                 >
                                     <option value="">Todos</option>
-                                    <option value="VENTA">Ventas</option>
+                                    <option value="COMPRA">Compras</option>
                                     <option value="PAGO">Pagos</option>
-                                    <option value="NOTA_CREDITO">Notas de Crédito</option>
-                                    <option value="NOTA_DEBITO">Notas de Débito</option>
                                 </select>
                             </div>
                             <button
                                 onClick={limpiarFiltros}
-                                className="w-full py-1.5 text-xs text-slate-500 border border-slate-200 rounded-lg hover:bg-slate-50 hover:text-slate-700 transition-colors font-medium"
+                                className="w-full py-1.5 text-sm text-slate-500 border border-slate-200 rounded-lg hover:bg-slate-50 hover:text-slate-700 transition-colors font-medium"
                             >
                                 Limpiar Filtros
                             </button>
@@ -298,13 +295,14 @@ const DetalleCuentaCorriente = () => {
 
                     {/* Export Actions (Mini Card) */}
                     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-3 flex gap-2">
-                        <button onClick={() => window.open(`/api/ctacte/clientes/${id}/exportar/excel/`, '_blank')} className="flex-1 py-1.5 bg-emerald-50 text-emerald-700 font-bold text-[10px] rounded-lg border border-emerald-100 hover:bg-emerald-100 transition-colors flex flex-col items-center gap-0.5">
+                        {/* TODO: Implement export endpoints if needed */}
+                        <button disabled className="flex-1 py-1.5 bg-emerald-50 text-emerald-400 font-bold text-xs rounded-lg border border-emerald-100 flex flex-col items-center gap-0.5 opacity-50 cursor-not-allowed">
                             <Download size={14} /> Excel
                         </button>
-                        <button onClick={() => window.open(`/api/ctacte/clientes/${id}/exportar/pdf/`, '_blank')} className="flex-1 py-1.5 bg-red-50 text-red-700 font-bold text-[10px] rounded-lg border border-red-100 hover:bg-red-100 transition-colors flex flex-col items-center gap-0.5">
+                        <button disabled className="flex-1 py-1.5 bg-red-50 text-red-400 font-bold text-xs rounded-lg border border-red-100 flex flex-col items-center gap-0.5 opacity-50 cursor-not-allowed">
                             <FileText size={14} /> PDF
                         </button>
-                        <button onClick={handleImprimir} className="flex-1 py-1.5 bg-slate-50 text-slate-700 font-bold text-[10px] rounded-lg border border-slate-200 hover:bg-slate-100 transition-colors flex flex-col items-center gap-0.5">
+                        <button onClick={handleImprimir} className="flex-1 py-1.5 bg-slate-50 text-slate-700 font-bold text-xs rounded-lg border border-slate-200 hover:bg-slate-100 transition-colors flex flex-col items-center gap-0.5">
                             <Download size={14} /> Imprimir
                         </button>
                     </div>
@@ -330,14 +328,14 @@ const DetalleCuentaCorriente = () => {
                         {/* Tabla */}
                         <div className="flex-1 overflow-auto">
                             <table className="w-full text-sm item-table">
-                                <thead className="bg-slate-50 sticky top-0 z-10 shadow-sm text-xs font-semibold uppercase text-slate-500 tracking-wider">
+                                <thead className="bg-[#212529] text-white sticky top-0 z-10 shadow-sm text-sm font-semibold tracking-wide">
                                     <tr>
-                                        <th className="px-6 py-3 text-left w-32">Fecha</th>
-                                        <th className="px-6 py-3 text-center w-24">Tipo</th>
-                                        <th className="px-6 py-3 text-left">Descripción</th>
-                                        <th className="px-6 py-3 text-right w-28">Debe</th>
-                                        <th className="px-6 py-3 text-right w-28">Haber</th>
-                                        <th className="px-6 py-3 text-right w-32">Saldo</th>
+                                        <th className="px-6 py-3 text-left w-32 border-b border-slate-700">Fecha</th>
+                                        <th className="px-6 py-3 text-center w-24 border-b border-slate-700">Tipo</th>
+                                        <th className="px-6 py-3 text-left border-b border-slate-700">Descripción</th>
+                                        <th className="px-6 py-3 text-right w-28 border-b border-slate-700">Debe</th>
+                                        <th className="px-6 py-3 text-right w-28 border-b border-slate-700">Haber</th>
+                                        <th className="px-6 py-3 text-right w-32 border-b border-slate-700">Saldo</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100 bg-white">
@@ -353,9 +351,9 @@ const DetalleCuentaCorriente = () => {
                                     ) : (
                                         paginatedMovimientos.map((mov) => (
                                             <tr key={mov.id} className="hover:bg-blue-50/30 transition-colors group">
-                                                <td className="px-6 py-3 font-mono text-xs text-slate-500 font-medium">{mov.fecha}</td>
-                                                <td className="px-6 py-3 text-center">{getTipoBadge(mov.tipo)}</td>
-                                                <td className="px-6 py-3">
+                                                <td className="px-6 py-2.5 font-mono text-xs text-slate-500 font-medium">{mov.fecha}</td>
+                                                <td className="px-6 py-2.5 text-center">{getTipoBadge(mov.tipo)}</td>
+                                                <td className="px-6 py-2.5">
                                                     <span
                                                         className="text-blue-600 font-medium hover:underline cursor-pointer"
                                                         onClick={() => handleVerDetalle(mov)}
@@ -363,13 +361,13 @@ const DetalleCuentaCorriente = () => {
                                                         {mov.descripcion}
                                                     </span>
                                                 </td>
-                                                <td className="px-6 py-3 text-right font-medium text-red-500">
+                                                <td className="px-6 py-2.5 text-right font-medium text-emerald-600">
                                                     {mov.debe > 0 ? formatCurrency(mov.debe) : '-'}
                                                 </td>
-                                                <td className="px-6 py-3 text-right font-medium text-emerald-600">
+                                                <td className="px-6 py-2.5 text-right font-medium text-red-500">
                                                     {mov.haber > 0 ? formatCurrency(mov.haber) : '-'}
                                                 </td>
-                                                <td className={`px-6 py-3 text-right font-bold ${mov.saldo > 0 ? 'text-red-500' : mov.saldo < 0 ? 'text-emerald-600' : 'text-slate-400'}`}>
+                                                <td className={`px-6 py-2.5 text-right font-bold ${mov.saldo > 0 ? 'text-red-500' : mov.saldo < 0 ? 'text-emerald-600' : 'text-slate-400'}`}>
                                                     {formatCurrency(mov.saldo)}
                                                 </td>
                                             </tr>
@@ -402,13 +400,14 @@ const DetalleCuentaCorriente = () => {
                 isOpen={showPagoModal}
                 onClose={() => setShowPagoModal(false)}
                 onConfirm={handleRegistrarPago}
-                total={cliente?.saldo_actual || 0}
+                total={proveedor?.saldo_actual || 0}
                 mode="payment"
-                clientName={cliente?.nombre}
+                clientName={proveedor?.nombre}
                 isSaving={savingPago}
+                title="Registrar Pago a Proveedor"
             />
         </div>
     );
 };
 
-export default DetalleCuentaCorriente;
+export default DetalleCuentaCorrienteProveedor;

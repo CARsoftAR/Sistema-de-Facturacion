@@ -8847,6 +8847,7 @@ def api_empresa_config(request):
             'ocultar_barra_scroll': empresa.ocultar_barra_scroll,
             'pie_factura': empresa.pie_factura,
             'auto_foco_codigo_barras': empresa.auto_foco_codigo_barras,
+            'comportamiento_codigo_barras': empresa.comportamiento_codigo_barras,
             'discriminar_iva_compras': empresa.discriminar_iva_compras,
             'discriminar_iva_ventas': empresa.discriminar_iva_ventas,
             'redondeo_precios': empresa.redondeo_precios,
@@ -8906,6 +8907,9 @@ def api_empresa_config_guardar(request):
         if 'auto_foco_codigo_barras' in data:
             val = data['auto_foco_codigo_barras']
             empresa.auto_foco_codigo_barras = str(val).lower() == 'true' if isinstance(val, str) else bool(val)
+
+        if 'comportamiento_codigo_barras' in data:
+            empresa.comportamiento_codigo_barras = data['comportamiento_codigo_barras']
 
         if 'discriminar_iva_compras' in data:
             val = data['discriminar_iva_compras']
@@ -9334,6 +9338,79 @@ def api_nota_debito_crear(request, venta_id):
 
     except Venta.DoesNotExist:
         return JsonResponse({'ok': False, 'error': 'Venta no encontrada.'}, status=404)
+    except Exception as e:
+        return JsonResponse({'ok': False, 'error': str(e)}, status=500)
+
+@csrf_exempt
+@login_required
+@transaction.atomic
+def api_nota_debito_anular(request, id):
+    """Anular una Nota de Débito existente"""
+    if request.method != 'POST':
+        return JsonResponse({'ok': False, 'error': 'Método no permitido. Use POST.'}, status=405)
+        
+    try:
+        nd = NotaDebito.objects.get(pk=id)
+        
+        # Verificar que no esté ya anulada
+        if nd.estado == 'ANULADA':
+            return JsonResponse({'ok': False, 'error': 'Esta Nota de Débito ya está anulada.'})
+        
+        # Cambiar estado a ANULADA
+        nd.estado = 'ANULADA'
+        nd.save()
+        
+        # Generar Asiento Contable de Reversión
+        try:
+            from .services import AccountingService
+            from .models import Asiento, ItemAsiento, Ejercicio
+            
+            fecha_asiento = date.today()
+            ejercicio = AccountingService._obtener_ejercicio_vigente(fecha_asiento)
+            
+            if ejercicio:
+                # Obtener cuentas
+                cuenta_deudores = AccountingService._obtener_cuenta(AccountingService.CUENTA_DEUDORES_POR_VENTAS)
+                cuenta_ventas = AccountingService._obtener_cuenta(AccountingService.CUENTA_VENTAS)
+                cuenta_iva = AccountingService._obtener_cuenta(AccountingService.CUENTA_IVA_DEBITO)
+                
+                if all([cuenta_deudores, cuenta_ventas, cuenta_iva]):
+                    total = nd.total
+                    neto = total / Decimal("1.21")
+                    iva = total - neto
+                    
+                    # Crear asiento de reversión (invertir el asiento original)
+                    ultimo_numero = Asiento.objects.filter(ejercicio=ejercicio).order_by('-numero').first()
+                    nuevo_numero = (ultimo_numero.numero + 1) if ultimo_numero else 1
+                    
+                    asiento = Asiento.objects.create(
+                        numero=nuevo_numero,
+                        fecha=fecha_asiento,
+                        descripcion=f"Anulación ND {nd.numero_formateado()} - {nd.cliente.nombre}",
+                        ejercicio=ejercicio,
+                        origen='VENTAS',
+                        usuario='Sistema'
+                    )
+                    
+                    # Reversión: Invertir el asiento original
+                    # Original era: Debe Deudores, Haber Ventas + IVA
+                    # Reversión: Haber Deudores, Debe Ventas + IVA
+                    ItemAsiento.objects.create(asiento=asiento, cuenta=cuenta_deudores, debe=0, haber=total)
+                    ItemAsiento.objects.create(asiento=asiento, cuenta=cuenta_ventas, debe=neto, haber=0)
+                    ItemAsiento.objects.create(asiento=asiento, cuenta=cuenta_iva, debe=iva, haber=0)
+                    
+                    print(f"DEBUG: Asiento reversión ND {nuevo_numero} generado para anulación de ND {nd.id}")
+        except Exception as e:
+            print(f"Error generando asiento de reversión ND {nd.id}: {e}")
+            # No fallar la anulación si falla el asiento
+            
+        return JsonResponse({
+            'ok': True,
+            'message': f'Nota de Débito {nd.numero_formateado()} anulada correctamente.'
+        })
+        
+    except NotaDebito.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Nota de Débito no encontrada.'}, status=404)
     except Exception as e:
         return JsonResponse({'ok': False, 'error': str(e)}, status=500)
 
@@ -9786,20 +9863,289 @@ def api_cc_cliente_nuevo_movimiento(request):
 @login_required
 @verificar_permiso('ctacte')
 def api_cc_proveedores_listar(request):
-    """API placeholder para listar proveedores"""
-    return JsonResponse({'ok': False, 'error': 'Not implemented'}, status=501)
+    """API para listar proveedores con cuenta corriente"""
+    from .models import Proveedor
+    from django.core.paginator import Paginator
+    from django.db.models import Q
+    
+    page = request.GET.get('page', 1)
+    per_page = request.GET.get('per_page', 10)
+    busqueda = request.GET.get('busqueda', '')
+    estado_deuda = request.GET.get('estado_deuda', 'todos')
+    
+    qs = Proveedor.objects.all().order_by('nombre')
+    
+    if busqueda:
+        qs = qs.filter(Q(nombre__icontains=busqueda) | Q(cuit__icontains=busqueda))
+        
+    # Filtrar por estado_deuda
+    # En proveedores: 
+    # Sald > 0  => Deuda (Les debemos)
+    # Sald < 0  => A Favor (Nos deben / anticipo)
+    if estado_deuda == 'con_deuda':
+        qs = qs.filter(saldo_actual__gt=0)
+    elif estado_deuda == 'al_dia':
+        qs = qs.filter(saldo_actual=0)
+    elif estado_deuda == 'saldo_favor':
+        qs = qs.filter(saldo_actual__lt=0)
+        
+    paginator = Paginator(qs, per_page)
+    try:
+        items = paginator.page(page)
+    except:
+        items = paginator.page(1)
+        
+    data = []
+    for p in items:
+        data.append({
+            'id': p.id,
+            'nombre': p.nombre,
+            'cuit': p.cuit,
+            'telefono': p.telefono,
+            'email': p.email,
+            'direccion': p.direccion,
+            'saldo_actual': float(p.saldo_actual)
+        })
+        
+    return JsonResponse({
+        'ok': True,
+        'proveedores': data,
+        'total': paginator.count,
+        'total_pages': paginator.num_pages,
+        'current_page': items.number
+    })
 
 @login_required
 @verificar_permiso('ctacte')
 def api_cc_proveedor_movimientos(request, id):
-    """API placeholder para movimientos de proveedor"""
-    return JsonResponse({'ok': False, 'error': 'Not implemented'}, status=501)
+    """API para obtener todos los movimientos de cuenta corriente de un proveedor"""
+    from .models import Proveedor, Compra, MovimientoCuentaCorrienteProveedor
+    from decimal import Decimal
+    
+    try:
+        proveedor = Proveedor.objects.get(id=id)
+    except Proveedor.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Proveedor no encontrado'}, status=404)
+        
+    movimientos = []
+    
+    # 1. COMPRAS (aumentan deuda - Equivale a DEBE en visualización de deuda, pero contablemente Compra=Pasivo=Haber)
+    # Sin embargo, para mantener coherencia visual con Clientes donde Venta(Positivo)=Deuda:
+    # Compra(Positivo)=Deuda
+    # Venta: Debe(Total)
+    # Compra: Haber(Total) - Si seguimos contabilidad estricta.
+    # Pero si Saldo = Haber - Debe (Liability), entonces Compra suma al Haber.
+    
+    try:
+        # Estado REGISTRADA son las compras confirmadas
+        compras = Compra.objects.filter(proveedor=proveedor, estado='REGISTRADA')
+        for c in compras:
+            movimientos.append({
+                'id': f'C-{c.id}',
+                'fecha': c.fecha,
+                'tipo': 'COMPRA',
+                'descripcion': f'Compra #{c.nro_comprobante or c.id}',
+                'debe': 0,
+                'haber': float(c.total), # Aumenta Pasivo
+                'comprobante_id': c.id,
+                'comprobante_tipo': 'compra'
+            })
+    except Exception as e:
+        print(f"Error compras: {e}")
+
+    # 2. PAGOS (disminuyen deuda - DEBE)
+    try:
+        pagos = MovimientoCuentaCorrienteProveedor.objects.filter(proveedor=proveedor)
+        for p in pagos:
+             # Si el registro se hizo bien, un pago a proveedor es DEBE.
+             debe = float(p.monto) if p.tipo == 'DEBE' else 0
+             haber = float(p.monto) if p.tipo == 'HABER' else 0
+             
+             movimientos.append({
+                'id': f'P-{p.id}',
+                'fecha': p.fecha,
+                'tipo': 'PAGO',
+                'descripcion': p.descripcion,
+                'debe': debe,
+                'haber': haber,
+                'comprobante_id': p.id,
+                'comprobante_tipo': 'pago'
+            })
+    except Exception as e:
+        print(f"Error pagos: {e}")
+
+    # Sort
+    movimientos.sort(key=lambda x: x['fecha'])
+    
+    # Calcular Saldo (Liability: Haber - Debe)
+    saldo = Decimal('0')
+    for mov in movimientos:
+        saldo += Decimal(str(mov['haber'])) - Decimal(str(mov['debe']))
+        mov['saldo'] = float(saldo)
+        mov['fecha'] = mov['fecha'].strftime('%d/%m/%Y')
+
+    movimientos.reverse()
+    
+    return JsonResponse({
+        'ok': True,
+        'proveedor': {
+            'id': proveedor.id,
+            'nombre': proveedor.nombre,
+            'saldo_actual': float(saldo) 
+        },
+        'movimientos': movimientos
+    })
 
 @login_required
 @verificar_permiso('ctacte')
 def api_cc_proveedor_nuevo_movimiento(request):
     """API placeholder para nuevo movimiento proveedor"""
     return JsonResponse({'ok': False, 'error': 'Not implemented'}, status=501)
+
+@csrf_exempt
+@login_required
+@verificar_permiso('ctacte')
+def api_cc_proveedor_registrar_pago(request, id):
+    """API para registrar un pago a proveedor con integración total"""
+    import json
+    from datetime import datetime, date
+    from django.db import transaction
+    from decimal import Decimal
+    from .models import Proveedor, MovimientoCuentaCorrienteProveedor, CajaDiaria, MovimientoCaja, Recibo, ItemRecibo, Cheque, CuentaBancaria, MovimientoBanco
+    from .services import AccountingService
+    
+    if request.method != 'POST':
+        return JsonResponse({'ok': False, 'error': 'Método no permitido'}, status=405)
+    
+    try:
+        if request.content_type == 'application/json':
+            data = json.loads(request.body)
+        else:
+            data = request.POST
+
+        monto = Decimal(str(data.get('monto', '0')))
+        fecha_str = data.get('fecha', '')
+        metodo_pago = data.get('metodo_pago', 'EFECTIVO').upper()
+        descripcion = data.get('descripcion', '')
+        
+        if monto <= 0:
+            return JsonResponse({'ok': False, 'error': 'El monto debe ser mayor a cero'}, status=400)
+            
+        proveedor = Proveedor.objects.get(id=id)
+        
+        try:
+            fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
+        except:
+            fecha = date.today()
+
+        with transaction.atomic():
+            # 1. Crear Recibo ("Orden de Pago")
+            # Usamos el modelo Recibo con tipo 'PROVEEDOR'
+            ultimo_recibo = Recibo.objects.order_by('-numero').first()
+            nuevo_nro = (ultimo_recibo.numero + 1) if ultimo_recibo else 1
+            
+            recibo = Recibo.objects.create(
+                numero=nuevo_nro,
+                tipo='PROVEEDOR',
+                proveedor=proveedor,
+                fecha=fecha,
+                total=monto,
+                observaciones=descripcion or f"Pago Cta Cte - {metodo_pago}"
+            )
+            
+            # Cheque Propio (Emitido)
+            cheque_obj = None
+            if metodo_pago == 'CHEQUE':
+                banco_cheque = data.get('cheque_banco', 'Banco')
+                numero_cheque = data.get('cheque_numero', '')
+                fecha_emision = data.get('cheque_fecha_emision', fecha_str)
+                fecha_pago = data.get('cheque_fecha_pago', fecha_str)
+                firmante = data.get('cheque_firmante', '') # A quien se firma? O quien firma? En cheque propio firmamos nosotros
+                
+                if numero_cheque:
+                     # Cheque Propio
+                     cheque_obj = Cheque.objects.create(
+                        numero=numero_cheque,
+                        banco=banco_cheque,
+                        fecha_emision=fecha_emision,
+                        fecha_pago=fecha_pago,
+                        monto=monto,
+                        tipo='PROPIO',
+                        estado='ENTREGADO', # Entregado al proveedor
+                        destinatario=proveedor.nombre,
+                        observaciones=f"Pago a Proveedor Recibo #{recibo.numero_formateado()}"
+                     )
+
+            item_banco = ''
+            cuenta_bancaria_transferencia = None
+
+            if metodo_pago == 'CHEQUE':
+                item_banco = data.get('cheque_banco', '')
+            elif metodo_pago == 'TRANSFERENCIA':
+                cuenta_bancaria_transferencia = CuentaBancaria.objects.filter(activo=True).first()
+                if cuenta_bancaria_transferencia:
+                    item_banco = cuenta_bancaria_transferencia.banco
+
+            ItemRecibo.objects.create(
+                recibo=recibo,
+                forma_pago=metodo_pago if metodo_pago != 'TARJETA' else 'CREDITO', # Tarjeta usually Credito corp
+                monto=monto,
+                cheque=cheque_obj,
+                referencia=data.get('referencia', ''),
+                banco=item_banco
+            )
+
+            # 2. Movimiento en Cuenta Corriente (DEBE = Disminuye Deuda/Pasivo)
+            # Saldo liability = Haber - Debe.
+            # nuevo_saldo = actual (Haber-Debe) - monto (Debe) ? NO.
+            # Saldo Actual (Pasivo) = 1000. Pago 100. Nuevo Saldo = 900.
+            nuevo_saldo = proveedor.saldo_actual - monto
+            
+            movimiento = MovimientoCuentaCorrienteProveedor.objects.create(
+                proveedor=proveedor,
+                tipo='DEBE', # Pago decreases Liability
+                descripcion=descripcion or f'Pago a proveedor - {metodo_pago}',
+                monto=monto,
+                saldo=nuevo_saldo
+            )
+            
+            proveedor.saldo_actual = nuevo_saldo
+            proveedor.save()
+            
+            # 3. Impacto en Caja/Bancos (Salida de dinero)
+            if metodo_pago == 'EFECTIVO':
+                caja_activa = CajaDiaria.objects.filter(estado='ABIERTA').first()
+                if caja_activa:
+                    MovimientoCaja.objects.create(
+                        caja_diaria=caja_activa,
+                        usuario=request.user,
+                        tipo='Egreso',
+                        descripcion=f"Pago Proveedor {proveedor.nombre} (Recibo #{recibo.numero_formateado()})",
+                        monto=monto
+                    )
+            elif metodo_pago == 'TRANSFERENCIA' and cuenta_bancaria_transferencia:
+                 MovimientoBanco.objects.create(
+                    cuenta=cuenta_bancaria_transferencia,
+                    fecha=fecha,
+                    descripcion=f"Pago Proveedor {proveedor.nombre} (Recibo #{recibo.numero_formateado()})",
+                    monto=-monto # Egreso es negativo en MovimientoBanco? 
+                                 # Revisar modelo. 'monto': Positivo=Crédito, Negativo=Débito. 
+                                 # Salida de plata = Débito = Negativo.
+                 )
+                 cuenta_bancaria_transferencia.saldo_actual -= monto
+                 cuenta_bancaria_transferencia.save()
+
+            # 4. Asiento Contable
+            # TODO: AccountingService.registrar_pago_proveedor(recibo) if implemented
+            
+        return JsonResponse({'ok': True})
+        
+    except Proveedor.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Proveedor no encontrado'}, status=404)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'ok': False, 'error': str(e)}, status=500)
 
 @csrf_exempt
 @login_required

@@ -163,6 +163,18 @@ class Empresa(models.Model):
     permitir_stock_negativo = models.BooleanField(default=False, verbose_name="Permitir Stock Negativo")
     alerta_stock_minimo = models.BooleanField(default=True, verbose_name="Alerta de Stock Mínimo")
     auto_foco_codigo_barras = models.BooleanField(default=False, verbose_name="Auto-Foco Código de Barras")
+    
+    COMPORTAMIENTO_CODIGO_CHOICES = [
+        ('DEFAULT', 'Normal (Seleccionar y Focus Cantidad)'),
+        ('CANTIDAD', 'Saltar a Cantidad'),
+        ('DIRECTO', 'Agregar Directamente (Qty=1)'),
+    ]
+    comportamiento_codigo_barras = models.CharField(
+        max_length=20, 
+        choices=COMPORTAMIENTO_CODIGO_CHOICES, 
+        default='DEFAULT',
+        verbose_name="Comportamiento Escaneo Código de Barras"
+    )
     margen_ganancia_defecto = models.DecimalField(max_digits=5, decimal_places=2, default=0.0, verbose_name="Margen de Ganancia por Defecto (%)")
     metodo_ganancia = models.CharField(
         max_length=10, 

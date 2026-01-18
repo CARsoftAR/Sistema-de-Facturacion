@@ -5,6 +5,7 @@ import './index.css'
 import App from './App.jsx'
 import Sidebar from './components/Sidebar.jsx'
 import { AuthProvider } from './context/AuthContext'
+import ErrorBoundary from './components/ErrorBoundary'
 
 // Scenario 1: Full SPA App (e.g., Home Page)
 const rootElement = document.getElementById('root')
@@ -12,12 +13,14 @@ if (rootElement) {
   try {
     createRoot(rootElement).render(
       <StrictMode>
-        <AuthProvider>
-          <App />
-        </AuthProvider>
+        <ErrorBoundary>
+          <AuthProvider>
+            <App />
+          </AuthProvider>
+        </ErrorBoundary>
       </StrictMode>,
     )
-    console.log('App Version: 2.2 - FORCE REFRESH HASH ' + Date.now());
+    console.log('App Version: 2.9 - FORCE REFRESH HASH ' + Date.now());
   } catch (error) {
     document.body.innerHTML = `<div style="color:red; padding:20px; font-size:24px;"><h1>CRITICAL ERROR</h1><pre>${error.message}</pre></div>`;
     console.error("Critical Boot Error:", error);

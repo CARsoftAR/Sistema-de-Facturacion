@@ -261,31 +261,7 @@ const NuevoPresupuesto = () => {
     };
 
     return (
-        <div className="p-6 max-w-7xl mx-auto h-[calc(100vh-2rem)] flex flex-col fade-in">
-            {/* Header */}
-            <div className="mb-6 flex-shrink-0 flex justify-between items-end">
-                <div>
-                    <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
-                        <Briefcase className="text-blue-600" size={32} strokeWidth={2.5} />
-                        Nuevo Presupuesto
-                    </h1>
-                    <p className="text-slate-500 font-medium ml-10">Crear una nueva cotización para cliente</p>
-                </div>
-                <div className="flex gap-2">
-                    <button
-                        onClick={() => navigate('/presupuestos')}
-                        className="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 font-medium transition-colors"
-                    >
-                        Cancelar
-                    </button>
-                    <div className="hidden md:block">
-                        <div className="bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-sm text-sm text-slate-600 font-medium flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
-                            Modo Presupuesto
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <div className="p-6 pb-10 max-w-7xl mx-auto min-h-[calc(100vh-120px)] flex flex-col fade-in">
 
             {/* Mensaje */}
             {mensaje && (
@@ -308,6 +284,14 @@ const NuevoPresupuesto = () => {
                     className="lg:col-span-4 flex flex-col gap-6 overflow-y-auto pr-1"
                     style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                 >
+                    {/* Header Interno */}
+                    <div className="mb-6 flex-shrink-0">
+                        <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
+                            <Briefcase className="text-blue-600" size={32} strokeWidth={2.5} />
+                            Nuevo Presupuesto
+                        </h1>
+                        <p className="text-slate-500 font-medium ml-10">Crear una nueva cotización para cliente</p>
+                    </div>
                     <style>
                         {`
                             .lg\\:col-span-4::-webkit-scrollbar {
@@ -317,7 +301,7 @@ const NuevoPresupuesto = () => {
                     </style>
 
                     {/* Cliente Card */}
-                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow p-5 flex-shrink-0 group">
+                    <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5 flex-shrink-0 group">
                         <div className="flex items-center gap-2 mb-4">
                             <div className="p-2 bg-blue-50 text-blue-600 rounded-lg group-hover:bg-blue-100 transition-colors">
                                 <User size={20} />
@@ -385,7 +369,7 @@ const NuevoPresupuesto = () => {
                     </div>
 
                     {/* Options Card */}
-                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow p-5 flex-shrink-0 group">
+                    <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5 flex-shrink-0 group">
                         <div className="flex items-center gap-2 mb-4">
                             <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg group-hover:bg-indigo-100 transition-colors">
                                 <FileText size={20} />
@@ -410,173 +394,155 @@ const NuevoPresupuesto = () => {
                 </div>
 
                 {/* =============== COLUMNA DERECHA (8 cols) - PRODUCTOS =============== */}
-                <div className="lg:col-span-8 flex flex-col min-h-0">
-                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col flex-1 min-h-0 overflow-hidden relative">
+                <div className="lg:col-span-8 flex flex-col h-[calc(100vh-8rem)] bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden relative">
 
-                        {/* Header + Tooltip */}
-                        <div className="p-4 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between flex-shrink-0">
-                            <div className="flex items-center gap-2">
-                                <div className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg">
-                                    <ShoppingCart size={18} />
-                                </div>
-                                <h2 className="font-bold text-slate-700">Items del Presupuesto</h2>
-                            </div>
-                            <span className="text-xs font-medium text-slate-400 bg-slate-100 px-2 py-1 rounded-full">
-                                {items.length} items
-                            </span>
-                        </div>
-
-                        {/* Barra de Entrada de Productos */}
-                        <div className="p-5 border-b border-slate-100 bg-white flex-shrink-0 z-20">
-                            <div className="grid grid-cols-12 gap-3 items-end">
-                                {/* Código */}
-                                <div className="col-span-2 relative">
-                                    <label className="block text-xs font-bold text-slate-500 mb-1.5 ml-1">CÓDIGO</label>
-                                    <input
-                                        ref={codigoRef}
-                                        type="text"
-                                        value={inputCodigo}
-                                        onChange={(e) => setInputCodigo(e.target.value.toUpperCase())}
-                                        onKeyDown={handleCodigoKeyDown}
-                                        onBlur={handleCodigoBlur}
-                                        placeholder="XXX"
-                                        className="w-full px-3 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-slate-50 font-mono text-sm uppercase text-center font-bold tracking-wide"
-                                    />
-                                    {/* Dropdown Código */}
-                                    {mostrarSugerenciasCodigo && codigosSugeridos.length > 0 && (
-                                        <div ref={codigoListRef} className="absolute left-0 top-full mt-1 w-72 bg-white border border-slate-200 rounded-xl shadow-2xl max-h-64 overflow-y-auto z-50">
-                                            {codigosSugeridos.map((p, idx) => (
-                                                <div
-                                                    key={p.id}
-                                                    onClick={() => seleccionarProducto(p)}
-                                                    className={`px-4 py-3 cursor-pointer border-b border-slate-50 last:border-b-0 ${idx === sugerenciaCodigoActiva ? 'bg-blue-50' : 'hover:bg-slate-50'}`}
-                                                >
-                                                    <div className="flex justify-between items-baseline mb-1">
-                                                        <span className="font-mono text-sm font-bold text-blue-600 bg-blue-50 px-1.5 rounded">{p.codigo}</span>
-                                                        <span className="text-sm font-bold text-green-600">${p.precio_efectivo.toLocaleString('es-AR')}</span>
-                                                    </div>
-                                                    <div className="text-xs text-slate-600 truncate">{p.descripcion}</div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Producto */}
-                                <div className="col-span-6 relative">
-                                    <label className="block text-xs font-bold text-slate-500 mb-1.5 ml-1">PRODUCTO</label>
-                                    <input
-                                        ref={productoRef}
-                                        type="text"
-                                        value={inputProducto}
-                                        onChange={(e) => { setInputProducto(e.target.value); setProductoSeleccionado(null); }}
-                                        onKeyDown={handleProductoKeyDown}
-                                        onBlur={handleProductoBlur}
-                                        placeholder="Buscar producto por nombre..."
-                                        className="w-full px-3 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-slate-50 text-sm font-medium"
-                                    />
-                                    {/* Dropdown Producto */}
-                                    {mostrarSugerenciasProducto && productosSugeridos.length > 0 && (
-                                        <div ref={productoListRef} className="absolute left-0 top-full mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-2xl max-h-64 overflow-y-auto z-50">
-                                            {productosSugeridos.map((p, idx) => (
-                                                <div key={p.id} onClick={() => seleccionarProducto(p)} className={`px-4 py-3 cursor-pointer border-b border-slate-50 last:border-b-0 flex justify-between items-center ${idx === sugerenciaActiva ? 'bg-blue-50' : 'hover:bg-slate-50'}`}>
-                                                    <div className="flex-1 min-w-0 pr-4">
-                                                        <div className="font-bold text-slate-700 text-sm truncate">{p.descripcion}</div>
-                                                        <div className="text-xs text-slate-400 mt-0.5 flex items-center gap-2">
-                                                            <span className="bg-slate-100 px-1.5 rounded font-mono text-slate-500">{p.codigo}</span>
-                                                            <span className="text-sm text-slate-400">Stock: {p.stock}</span>
-                                                        </div>
-                                                    </div>
-                                                    <div className="text-right">
-                                                        <div className="text-sm font-bold text-slate-800">${p.precio_efectivo.toLocaleString('es-AR')}</div>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="col-span-2">
-                                    <label className="block text-xs font-bold text-slate-500 mb-1.5 ml-1 text-center">CANT.</label>
-                                    <input ref={cantidadRef} type="number" min="1" value={inputCantidad} onChange={(e) => setInputCantidad(e.target.value)} onKeyDown={handleCantidadKeyDown} className="w-full px-2 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-slate-50 text-sm text-center font-bold text-slate-800" />
-                                </div>
-
-                                <div className="col-span-2">
-                                    <button onClick={agregarProductoALista} disabled={!productoSeleccionado} className={`w-full py-2.5 rounded-lg flex items-center justify-center transition-all shadow-sm ${productoSeleccionado ? 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-md hover:-translate-y-0.5' : 'bg-slate-100 text-slate-300 cursor-not-allowed'}`}>
-                                        <Plus size={20} strokeWidth={3} />
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Listado de Items con Scroll */}
-                        <div className="flex-1 overflow-y-auto min-h-0 bg-slate-50/30">
-                            {items.length > 0 ? (
-                                <table className="w-full text-sm">
-                                    <thead className="bg-slate-50 sticky top-0 z-10 shadow-sm">
-                                        <tr className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                                            <th className="px-6 py-3 text-left w-24">Código</th>
-                                            <th className="px-6 py-3 text-left">Producto</th>
-                                            <th className="px-6 py-3 text-center w-32">Cantidad</th>
-                                            <th className="px-6 py-3 text-right w-32">Precio</th>
-                                            <th className="px-6 py-3 text-right w-32">Subtotal</th>
-                                            <th className="px-6 py-3 w-16"></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-slate-100 bg-white">
-                                        {items.map((item) => (
-                                            <tr key={item.id} className="hover:bg-blue-50/30 transition-colors group">
-                                                <td className="px-6 py-4 font-mono text-xs font-bold text-slate-500">{item.codigo}</td>
-                                                <td className="px-6 py-4">
-                                                    <p className="font-semibold text-slate-800">{item.descripcion}</p>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <div className="flex items-center justify-center bg-slate-100 rounded-lg p-1 w-fit mx-auto">
-                                                        <button onClick={() => cambiarCantidad(item.id, item.cantidad - 1)} className="w-6 h-6 rounded flex items-center justify-center text-slate-500 hover:bg-white hover:text-red-500 transition-colors disabled:opacity-50">-</button>
-                                                        <span className="w-8 text-center font-bold text-slate-700 text-xs">{item.cantidad}</span>
-                                                        <button onClick={() => cambiarCantidad(item.id, item.cantidad + 1)} className="w-6 h-6 rounded flex items-center justify-center text-slate-500 hover:bg-white hover:text-green-600 transition-colors">+</button>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 text-right text-slate-600 font-medium">${item.precio.toLocaleString('es-AR')}</td>
-                                                <td className="px-6 py-4 text-right font-bold text-slate-800">${item.subtotal.toLocaleString('es-AR')}</td>
-                                                <td className="px-6 py-4 text-center">
-                                                    <button onClick={() => eliminarItem(item.id)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
-                                                        <Trash2 size={18} />
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            ) : (
-                                <div className="flex flex-col items-center justify-center h-full text-slate-300 p-10">
-                                    <div className="w-32 h-32 bg-slate-100 rounded-full flex items-center justify-center mb-6 shadow-inner">
-                                        <ShoppingCart size={48} className="text-slate-200" />
-                                    </div>
-                                    <h3 className="text-xl font-bold text-slate-400 mb-2">Presupuesto vacío</h3>
-                                    <p className="text-slate-400 max-w-xs text-center text-sm">Escanea un código de barras o busca un producto para comenzar.</p>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Footer Total - DARK STYLE */}
-                        <div className="p-5 bg-slate-900 text-white flex-shrink-0 mt-auto rounded-b-xl shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
-                            <div className="flex justify-between items-center">
-                                <div className="space-y-1">
-                                    <p className="text-slate-400 text-sm font-medium uppercase tracking-wider">Total Estimado</p>
-                                    <div className="flex items-baseline gap-2">
-                                        <span className="text-4xl font-black tracking-tight">${totalGeneral.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
-                                        <span className="text-slate-400 font-light">ARS</span>
-                                    </div>
-                                </div>
-                                <BtnSave
-                                    label="Guardar Presupuesto"
-                                    onClick={guardarPresupuesto}
-                                    loading={guardando}
-                                    disabled={items.length === 0 || guardando}
-                                    className="px-8 py-4 rounded-xl font-bold text-lg"
+                    {/* Barra de Entrada de Productos */}
+                    <div className="p-5 border-b border-slate-100 bg-slate-50 flex-shrink-0 z-20">
+                        <div className="grid grid-cols-12 gap-4 items-end">
+                            {/* Código */}
+                            <div className="col-span-2 relative">
+                                <label className="block text-xs font-bold text-slate-500 mb-1.5 ml-1">CÓDIGO</label>
+                                <input
+                                    ref={codigoRef}
+                                    type="text"
+                                    value={inputCodigo}
+                                    onChange={(e) => setInputCodigo(e.target.value.toUpperCase())}
+                                    onKeyDown={handleCodigoKeyDown}
+                                    onBlur={handleCodigoBlur}
+                                    placeholder="XXX"
+                                    className="w-full px-3 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-slate-50 font-mono text-sm uppercase text-center font-bold tracking-wide"
                                 />
+                                {/* Dropdown Código */}
+                                {mostrarSugerenciasCodigo && codigosSugeridos.length > 0 && (
+                                    <div ref={codigoListRef} className="absolute left-0 top-full mt-1 w-72 bg-white border border-slate-200 rounded-xl shadow-2xl max-h-64 overflow-y-auto z-50">
+                                        {codigosSugeridos.map((p, idx) => (
+                                            <div
+                                                key={p.id}
+                                                onClick={() => seleccionarProducto(p)}
+                                                className={`px-4 py-3 cursor-pointer border-b border-slate-50 last:border-b-0 ${idx === sugerenciaCodigoActiva ? 'bg-blue-50' : 'hover:bg-slate-50'}`}
+                                            >
+                                                <div className="flex justify-between items-baseline mb-1">
+                                                    <span className="font-mono text-sm font-bold text-blue-600 bg-blue-50 px-1.5 rounded">{p.codigo}</span>
+                                                    <span className="text-sm font-bold text-green-600">${p.precio_efectivo.toLocaleString('es-AR')}</span>
+                                                </div>
+                                                <div className="text-xs text-slate-600 truncate">{p.descripcion}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
+
+                            {/* Producto */}
+                            <div className="col-span-6 relative">
+                                <label className="block text-xs font-bold text-slate-500 mb-1.5 ml-1">PRODUCTO</label>
+                                <input
+                                    ref={productoRef}
+                                    type="text"
+                                    value={inputProducto}
+                                    onChange={(e) => { setInputProducto(e.target.value); setProductoSeleccionado(null); }}
+                                    onKeyDown={handleProductoKeyDown}
+                                    onBlur={handleProductoBlur}
+                                    placeholder="Buscar producto por nombre..."
+                                    className="w-full px-3 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-slate-50 text-sm font-medium"
+                                />
+                                {/* Dropdown Producto */}
+                                {mostrarSugerenciasProducto && productosSugeridos.length > 0 && (
+                                    <div ref={productoListRef} className="absolute left-0 top-full mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-2xl max-h-64 overflow-y-auto z-50">
+                                        {productosSugeridos.map((p, idx) => (
+                                            <div key={p.id} onClick={() => seleccionarProducto(p)} className={`px-4 py-3 cursor-pointer border-b border-slate-50 last:border-b-0 flex justify-between items-center ${idx === sugerenciaActiva ? 'bg-blue-50' : 'hover:bg-slate-50'}`}>
+                                                <div className="flex-1 min-w-0 pr-4">
+                                                    <div className="font-bold text-slate-700 text-sm truncate">{p.descripcion}</div>
+                                                    <div className="text-xs text-slate-400 mt-0.5 flex items-center gap-2">
+                                                        <span className="bg-slate-100 px-1.5 rounded font-mono text-slate-500">{p.codigo}</span>
+                                                        <span className="text-sm text-slate-400">Stock: {p.stock}</span>
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <div className="text-sm font-bold text-slate-800">${p.precio_efectivo.toLocaleString('es-AR')}</div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="col-span-2">
+                                <label className="block text-xs font-bold text-slate-500 mb-1.5 ml-1 text-center">CANT.</label>
+                                <input ref={cantidadRef} type="number" min="1" value={inputCantidad} onChange={(e) => setInputCantidad(e.target.value)} onKeyDown={handleCantidadKeyDown} className="w-full px-2 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-slate-50 text-sm text-center font-bold text-slate-800" />
+                            </div>
+
+                            <div className="col-span-2">
+                                <button onClick={agregarProductoALista} disabled={!productoSeleccionado} className={`w-full py-2.5 rounded-lg flex items-center justify-center transition-all shadow-sm ${productoSeleccionado ? 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-md hover:-translate-y-0.5' : 'bg-slate-100 text-slate-300 cursor-not-allowed'}`}>
+                                    <Plus size={20} strokeWidth={3} />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Listado de Items con Scroll */}
+                    <div className="flex-1 overflow-y-auto min-h-0 bg-slate-50/30">
+                        <table className="w-full text-sm">
+                            <thead className="bg-slate-50 sticky top-0 z-10 shadow-sm">
+                                <tr className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                                    <th className="px-6 py-3 text-left w-24">Código</th>
+                                    <th className="px-6 py-3 text-left">Producto</th>
+                                    <th className="px-6 py-3 text-center w-32">Cantidad</th>
+                                    <th className="px-6 py-3 text-right w-32">Precio</th>
+                                    <th className="px-6 py-3 text-right w-32">Subtotal</th>
+                                    <th className="px-6 py-3 w-16"></th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 bg-white">
+                                {items.map((item) => (
+                                    <tr key={item.id} className="hover:bg-blue-50/30 transition-colors group">
+                                        <td className="px-6 py-4 font-mono text-xs font-bold text-slate-500">{item.codigo}</td>
+                                        <td className="px-6 py-4">
+                                            <p className="font-semibold text-slate-800">{item.descripcion}</p>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center justify-center bg-slate-100 rounded-lg p-1 w-fit mx-auto">
+                                                <button onClick={() => cambiarCantidad(item.id, item.cantidad - 1)} className="w-6 h-6 rounded flex items-center justify-center text-slate-500 hover:bg-white hover:text-red-500 transition-colors disabled:opacity-50">-</button>
+                                                <span className="w-8 text-center font-bold text-slate-700 text-xs">{item.cantidad}</span>
+                                                <button onClick={() => cambiarCantidad(item.id, item.cantidad + 1)} className="w-6 h-6 rounded flex items-center justify-center text-slate-500 hover:bg-white hover:text-green-600 transition-colors">+</button>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 text-right text-slate-600 font-medium">${item.precio.toLocaleString('es-AR')}</td>
+                                        <td className="px-6 py-4 text-right font-bold text-slate-800">${item.subtotal.toLocaleString('es-AR')}</td>
+                                        <td className="px-6 py-4 text-center">
+                                            <button onClick={() => eliminarItem(item.id)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
+                                                <Trash2 size={18} />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                                {items.length === 0 && (
+                                    <tr>
+                                        <td colSpan="6" className="py-10 text-center text-slate-400">
+                                            Tu presupuesto está vacío
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* Footer Total - DARK STYLE */}
+                    <div className="p-6 m-4 mb-8 rounded-3xl bg-slate-900 text-white flex-shrink-0 mt-auto shadow-2xl ring-1 ring-white/10">
+                        <div className="flex justify-between items-center">
+                            <div className="space-y-1">
+                                <p className="text-slate-400 text-sm font-medium uppercase tracking-wider">Total Estimado</p>
+                                <div className="flex items-baseline gap-2">
+                                    <span className="text-4xl font-black tracking-tight">${totalGeneral.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+                                    <span className="text-slate-400 font-light">ARS</span>
+                                </div>
+                            </div>
+                            <BtnSave
+                                label="Guardar Presupuesto"
+                                onClick={guardarPresupuesto}
+                                loading={guardando}
+                                disabled={items.length === 0 || guardando}
+                                className="px-8 py-4 rounded-xl font-bold text-lg"
+                            />
                         </div>
                     </div>
                 </div>

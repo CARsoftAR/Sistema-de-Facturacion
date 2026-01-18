@@ -3,6 +3,7 @@ import { Search, Plus, Trash2, ShoppingCart, CreditCard, DollarSign, FileText, C
 import { BtnSave } from '../components/CommonButtons';
 import { useProductSearch } from '../hooks/useProductSearch';
 import Swal from 'sweetalert2';
+import { showToast, showWarningAlert, showSuccessAlert } from '../utils/alerts';
 
 // CSRF Helper
 function getCookie(name) {
@@ -53,8 +54,10 @@ const NuevaCompra = () => {
     // Discriminar IVA (Compras) - Defaults to true usually for businesses but let's make it toggleable
     const [discriminarIVA, setDiscriminarIVA] = useState(false);
 
-    // Config (Auto focus)
+    // Config (Auto focus / Barcode Behavior)
     const [autoFoco, setAutoFoco] = useState(false);
+    const [barcodeMode, setBarcodeMode] = useState('DEFAULT'); // DEFAULT, CANTIDAD, DIRECTO
+    const [triggerDirectAdd, setTriggerDirectAdd] = useState(null);
 
     // ==================== PRODUCT SEARCH HOOK ====================
     const {
@@ -75,7 +78,12 @@ const NuevaCompra = () => {
             setProductoSeleccionado(producto);
             // Pre-fill cost if available (last cost)
             setInputCosto(producto.costo ? producto.costo.toString() : '');
-            setTimeout(() => cantidadRef.current?.select(), 50);
+
+            if (barcodeMode === 'DIRECTO') {
+                setTriggerDirectAdd(producto);
+            } else {
+                setTimeout(() => cantidadRef.current?.select(), 50);
+            }
         }
     });
 
@@ -88,6 +96,7 @@ const NuevaCompra = () => {
                 const data = await response.json();
                 setDiscriminarIVA(data.discriminar_iva_compras || false);
                 setAutoFoco(data.auto_foco_codigo_barras || false);
+                setBarcodeMode(data.comportamiento_codigo_barras || 'DEFAULT');
             } catch (error) {
                 console.error("Error fetching config:", error);
             }
@@ -121,6 +130,20 @@ const NuevaCompra = () => {
         return () => clearTimeout(timer);
     }, [busquedaProveedor]);
 
+    useEffect(() => {
+        if (triggerDirectAdd) {
+            const costo = parseFloat(triggerDirectAdd.costo || 0);
+            if (costo > 0) {
+                agregarProducto(triggerDirectAdd, 1, costo);
+            } else {
+                // If cost is 0, setup manual entry
+                setProductoSeleccionado(triggerDirectAdd);
+                setInputCosto('');
+                setTimeout(() => costoRef.current?.focus(), 50);
+            }
+            setTriggerDirectAdd(null);
+        }
+    }, [triggerDirectAdd]);
 
     // ==================== HANDLERS ====================
     const seleccionarProveedor = (p) => {
@@ -131,34 +154,35 @@ const NuevaCompra = () => {
         setTimeout(() => codigoRef.current?.focus(), 100);
     };
 
-    const agregarProducto = () => {
-        if (!productoSeleccionado) return;
+    const agregarProducto = (productoOverride = null, cantidadOverride = null, costoOverride = null) => {
+        const prod = productoOverride || productoSeleccionado;
+        if (!prod) return;
 
-        const cantidad = parseFloat(inputCantidad) || 1;
-        const costo = parseFloat(inputCosto) || 0;
+        const cantidad = cantidadOverride !== null ? parseFloat(cantidadOverride) : (parseFloat(inputCantidad) || 1);
+        const costo = costoOverride !== null ? parseFloat(costoOverride) : (parseFloat(inputCosto) || 0);
 
         if (costo <= 0) {
             Swal.fire('Atención', 'El costo debe ser mayor a 0', 'warning');
             return;
         }
 
-        const existe = items.find(i => i.id === productoSeleccionado.id);
+        const existe = items.find(i => i.id === prod.id);
 
         if (existe) {
             setItems(items.map(i =>
-                i.id === productoSeleccionado.id
+                i.id === prod.id
                     ? { ...i, cantidad: i.cantidad + cantidad, subtotal: (i.cantidad + cantidad) * costo, costo: costo }
                     : i
             ));
         } else {
             setItems([...items, {
-                id: productoSeleccionado.id,
-                codigo: productoSeleccionado.codigo,
-                descripcion: productoSeleccionado.descripcion,
+                id: prod.id,
+                codigo: prod.codigo,
+                descripcion: prod.descripcion,
                 cantidad: cantidad,
                 costo: costo,
                 subtotal: cantidad * costo,
-                iva_alicuota: productoSeleccionado.iva_alicuota || 21
+                iva_alicuota: prod.iva_alicuota || 21
             }]);
         }
 
@@ -191,11 +215,11 @@ const NuevaCompra = () => {
 
     const guardarCompra = async () => {
         if (!proveedor) {
-            Swal.fire('Error', 'Seleccione un proveedor', 'error');
+            showWarningAlert('Atención', 'Debe seleccionar un proveedor');
             return;
         }
         if (items.length === 0) {
-            Swal.fire('Error', 'Agregue al menos un producto', 'error');
+            showWarningAlert('Atención', 'Agregue al menos un producto');
             return;
         }
 
@@ -208,11 +232,11 @@ const NuevaCompra = () => {
                     'X-CSRFToken': getCookie('csrftoken')
                 },
                 body: JSON.stringify({
-                    proveedor_id: proveedor.id,
+                    proveedor: proveedor.id,
                     items: items.map(i => ({
                         producto_id: i.id,
                         cantidad: i.cantidad,
-                        precio_unitario: i.costo, // Backend expects 'precio_unitario' for orders check
+                        precio: i.costo,
                         iva_alicuota: i.iva_alicuota
                     })),
                     // If creating a direct purchase (received), we might need extra flags?
@@ -220,10 +244,11 @@ const NuevaCompra = () => {
                     // For now, let's keep it consistent with the "Nueva Compra" flow which creates an Order.
                     observaciones: `Compra directa (Web) - ${medioPago}`,
                     nro_comprobante: nroComprobante || 'S/N',
-                    condicion_pago: medioPago,
+                    condicion_pago: medioPago, // This might need to map to medio_pago expected by backend
                     total_estimado: totalGeneral,
-                    recibir_automaticamente: true // Flag custom I might interpret in backend if needed, or user receives later.
-                    // Simplification: Just create the order.
+                    recepcionar: true // We want to receive it immediately normally in this view? Or maybe just create order?
+                    // Based on "Nueva Compra" name, it often implies receiving stock.
+                    // Let's check backend: api_orden_compra_guardar accepts 'recepcionar'
                 })
             });
 
@@ -235,13 +260,15 @@ const NuevaCompra = () => {
                 // But let's verify if the user wants that flow later. 
                 // For now, success message.
 
-                Swal.fire({
-                    title: '¡Compra Registrada!',
-                    text: `Orden #${data.orden_id} creada correctamente.`,
-                    icon: 'success',
-                    timer: 2000,
-                    showConfirmButton: false
-                });
+                await showSuccessAlert(
+                    '¡Compra Registrada!',
+                    `Orden #${data.orden_id} creada correctamente.`,
+                    undefined,
+                    {
+                        timer: 2000,
+                        showConfirmButton: false
+                    }
+                );
 
                 setProveedor(null);
                 setItems([]);
@@ -249,7 +276,7 @@ const NuevaCompra = () => {
                 setMostrarModalPago(false);
                 setTimeout(() => proveedorInputRef.current?.focus(), 100);
             } else {
-                Swal.fire('Error', data.error || 'No se pudo guardar la compra', 'error');
+                showWarningAlert('Error', data.error || 'No se pudo guardar la compra');
             }
 
         } catch (error) {
@@ -261,23 +288,24 @@ const NuevaCompra = () => {
     };
 
     return (
-        <div className="p-6 max-w-7xl mx-auto h-[calc(100vh-2rem)] flex flex-col fade-in">
-            {/* Header */}
-            <div className="mb-6 flex-shrink-0">
-                <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
-                    <Truck className="text-indigo-600" size={32} strokeWidth={2.5} />
-                    Nueva Compra
-                </h1>
-                <p className="text-slate-500 font-medium ml-10">Registrar ingreso de mercadería</p>
-            </div>
+        <div className="p-6 pb-10 max-w-7xl mx-auto min-h-[calc(100vh-120px)] flex flex-col fade-in">
+
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-0">
 
                 {/* Left Panel: Proveedor & Info */}
                 <div className="lg:col-span-4 flex flex-col gap-6 overflow-y-auto">
+                    {/* Header Interno */}
+                    <div className="mb-6 flex-shrink-0">
+                        <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
+                            <Truck className="text-indigo-600" size={32} strokeWidth={2.5} />
+                            Nueva Compra
+                        </h1>
+                        <p className="text-slate-500 font-medium ml-10">Registrar ingreso de mercadería</p>
+                    </div>
 
                     {/* Proveedor Search */}
-                    <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
+                    <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-200">
                         <div className="flex items-center gap-2 mb-4 text-indigo-700">
                             <Truck size={20} />
                             <h2 className="font-bold text-lg">Proveedor</h2>
@@ -290,21 +318,41 @@ const NuevaCompra = () => {
                                 className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 bg-slate-50 font-medium"
                                 value={busquedaProveedor}
                                 onChange={(e) => setBusquedaProveedor(e.target.value)}
+                                autoComplete="off"
                                 onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && proveedoresSugeridos.length > 0) {
-                                        seleccionarProveedor(proveedoresSugeridos[0]);
+                                    if (e.key === 'ArrowDown') {
+                                        e.preventDefault();
+                                        setSugerenciaProveedorActiva(prev => {
+                                            const newVal = Math.min(prev + 1, proveedoresSugeridos.length - 1);
+                                            const item = proveedorListRef.current?.children[newVal];
+                                            item?.scrollIntoView({ block: 'nearest' });
+                                            return newVal;
+                                        });
+                                    } else if (e.key === 'ArrowUp') {
+                                        e.preventDefault();
+                                        setSugerenciaProveedorActiva(prev => {
+                                            const newVal = Math.max(prev - 1, 0);
+                                            const item = proveedorListRef.current?.children[newVal];
+                                            item?.scrollIntoView({ block: 'nearest' });
+                                            return newVal;
+                                        });
+                                    } else if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        if (proveedoresSugeridos.length > 0) {
+                                            seleccionarProveedor(proveedoresSugeridos[sugerenciaProveedorActiva]);
+                                        }
                                     }
                                 }}
                             />
                             <Search className="absolute left-3 top-3.5 text-slate-400" size={18} />
 
                             {mostrarSugerenciasProveedor && (
-                                <div className="absolute z-10 w-full mt-2 bg-white border border-slate-200 rounded-xl shadow-lg">
-                                    {proveedoresSugeridos.map(p => (
+                                <div ref={proveedorListRef} className="absolute z-10 w-full mt-2 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                                    {proveedoresSugeridos.map((p, idx) => (
                                         <div
                                             key={p.id}
                                             onClick={() => seleccionarProveedor(p)}
-                                            className="p-3 hover:bg-slate-50 cursor-pointer border-b border-slate-50 last:border-0"
+                                            className={`p-3 cursor-pointer border-b border-slate-50 last:border-0 ${idx === sugerenciaProveedorActiva ? 'bg-indigo-50 ring-1 ring-inset ring-indigo-100' : 'hover:bg-slate-50'}`}
                                         >
                                             <div className="font-bold text-slate-700">{p.nombre}</div>
                                             <div className="text-xs text-slate-500">{p.cuit || 'Sin CUIT'}</div>
@@ -375,30 +423,51 @@ const NuevaCompra = () => {
                 </div>
 
                 {/* Right Panel: Items */}
-                <div className="lg:col-span-8 flex flex-col min-h-0 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div className="lg:col-span-8 flex flex-col h-[calc(100vh-8rem)] bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
 
                     {/* Add Item Bar */}
-                    <div className="p-4 bg-slate-50 border-b border-slate-200 grid grid-cols-12 gap-3 items-end">
-                        <div className="col-span-2">
-                            <label className="text-xs font-bold text-slate-500 block mb-1">CÓDIGO</label>
+                    <div className="p-2 bg-slate-50 border-b border-slate-200 grid grid-cols-12 gap-2 items-end flex-shrink-0">
+                        <div className="col-span-2 relative">
+                            <label className="block text-xs font-bold text-slate-500 mb-1.5 ml-1">CÓDIGO</label>
                             <input
                                 ref={codigoRef}
-                                className="w-full px-3 py-2 border border-slate-200 rounded-lg font-mono text-sm uppercase"
+                                className="w-full px-3 py-2.5 border border-slate-200 rounded-lg font-mono text-sm uppercase font-bold tracking-wide text-center"
                                 value={inputCodigo}
-                                onChange={(e) => setInputCodigo(e.target.value)}
+                                onChange={(e) => setInputCodigo(e.target.value.toUpperCase())}
                                 onKeyDown={handleCodigoKeyDown}
+                                onBlur={handleCodigoBlur}
                                 placeholder="XXX"
+                                autoComplete="off"
                             />
+                            {mostrarSugerenciasCodigo && codigosSugeridos.length > 0 && (
+                                <div ref={codigoListRef} className="absolute top-full left-0 w-72 bg-white shadow-xl border border-slate-200 rounded-xl z-20 max-h-60 overflow-y-auto mt-1">
+                                    {codigosSugeridos.map((p, idx) => (
+                                        <div
+                                            key={p.id}
+                                            onClick={() => seleccionarProducto(p)}
+                                            className={`p-3 cursor-pointer text-sm border-b border-slate-50 last:border-0 ${idx === sugerenciaCodigoActiva ? 'bg-indigo-50 ring-1 ring-inset ring-indigo-100' : 'hover:bg-slate-50'}`}
+                                        >
+                                            <div className="flex justify-between items-center mb-1">
+                                                <span className="font-mono font-bold text-indigo-600 bg-indigo-50 px-1.5 rounded">{p.codigo}</span>
+                                                <span className="font-bold text-slate-700">${p.precio_efectivo.toLocaleString('es-AR')}</span>
+                                            </div>
+                                            <div className="text-xs text-slate-500 truncate">{p.descripcion}</div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                         <div className="col-span-5 relative">
-                            <label className="text-xs font-bold text-slate-500 block mb-1">PRODUCTO</label>
+                            <label className="block text-xs font-bold text-slate-500 mb-1.5 ml-1">PRODUCTO</label>
                             <input
                                 ref={productoRef}
-                                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                                className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm font-medium"
                                 value={inputProducto}
                                 onChange={(e) => setInputProducto(e.target.value)}
                                 onKeyDown={handleProductoKeyDown}
+                                onBlur={handleProductoBlur}
                                 placeholder="Buscar..."
+                                autoComplete="off"
                             />
                             {mostrarSugerenciasProducto && (
                                 <div ref={productoListRef} className="absolute top-full left-0 w-full bg-white shadow-xl border border-slate-200 rounded-xl z-20 max-h-60 overflow-y-auto mt-1">
@@ -419,22 +488,22 @@ const NuevaCompra = () => {
                             )}
                         </div>
                         <div className="col-span-2">
-                            <label className="text-xs font-bold text-slate-500 block mb-1">CANT.</label>
+                            <label className="block text-xs font-bold text-slate-500 mb-1.5 ml-1 text-center">CANT.</label>
                             <input
                                 ref={cantidadRef}
                                 type="number"
-                                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-center font-bold text-sm"
+                                className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-center font-bold text-sm"
                                 value={inputCantidad}
                                 onChange={(e) => setInputCantidad(e.target.value)}
                                 onKeyDown={handleCantidadKeyDown}
                             />
                         </div>
                         <div className="col-span-2">
-                            <label className="text-xs font-bold text-slate-500 block mb-1">COSTO</label>
+                            <label className="block text-xs font-bold text-slate-500 mb-1.5 ml-1 text-center">COSTO</label>
                             <input
                                 ref={costoRef}
                                 type="number"
-                                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-center font-bold text-sm"
+                                className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-center font-bold text-sm"
                                 value={inputCosto}
                                 onChange={(e) => setInputCosto(e.target.value)}
                                 onKeyDown={handleCostoKeyDown}
@@ -453,7 +522,7 @@ const NuevaCompra = () => {
                     </div>
 
                     {/* Table */}
-                    <div className="flex-1 overflow-y-auto">
+                    <div className="flex-1 overflow-y-auto min-h-0">
                         <table className="w-full text-sm">
                             <thead className="bg-slate-50 sticky top-0 z-10 text-xs text-slate-500 uppercase font-bold tracking-wider">
                                 <tr>
@@ -494,7 +563,7 @@ const NuevaCompra = () => {
                     </div>
 
                     {/* Footer */}
-                    <div className="p-5 bg-slate-900 text-white flex justify-between items-center rounded-b-xl shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
+                    <div className="p-6 m-4 mb-8 rounded-3xl bg-slate-900 text-white flex justify-between items-center shadow-2xl ring-1 ring-white/10 flex-shrink-0">
                         {discriminarIVA ? (
                             <div className="flex items-center gap-8">
                                 <div className="space-y-0.5">

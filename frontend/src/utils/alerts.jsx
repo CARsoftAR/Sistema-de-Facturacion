@@ -2,7 +2,32 @@ import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 import React from 'react';
 
-import { Trash2 } from 'lucide-react';
+import { Trash2, AlertCircle, Check } from 'lucide-react';
+// ... existing imports ...
+
+// ... existing code ...
+
+export const showWarningAlert = async (title, text, confirmText = 'Entendido', options = {}) => {
+    const warningIcon = (
+        <div className="flex justify-center mb-2">
+            <div className="p-3 bg-orange-50 rounded-full">
+                <AlertCircle size={40} className="text-orange-500" strokeWidth={2} />
+            </div>
+        </div>
+    );
+
+    return showConfirmationAlert(title, text, confirmText, 'primary', {
+        iconComponent: warningIcon,
+        ...options,
+        showCancelButton: false,
+        customClass: {
+            ...options.customClass,
+            cancelButton: 'hidden display-none',
+            actions: 'w-full flex justify-center !mt-4 !mb-4',
+            confirmButton: 'px-8 py-2.5 rounded-xl font-bold text-sm bg-blue-600 text-white shadow-lg hover:bg-blue-700 border-0 outline-none'
+        }
+    });
+};
 
 const MySwal = withReactContent(Swal);
 
@@ -99,11 +124,16 @@ export const showDeleteAlert = async (title, text, confirmText = 'Eliminar', opt
 
 
 export const showSuccessAlert = async (title, text, confirmText = 'Aceptar', options = {}) => {
-    // If iconComponent is provided, don't force 'success' icon, let the component handle it.
-    const iconType = options.iconComponent ? undefined : 'success';
+    const successIcon = options.iconComponent ? options.iconComponent : (
+        <div className="flex justify-center mb-2">
+            <div className="p-3 bg-green-50 rounded-full">
+                <Check size={40} className="text-green-500" strokeWidth={3} />
+            </div>
+        </div>
+    );
 
     return showConfirmationAlert(title, text, confirmText, 'success', {
-        icon: iconType,
+        iconComponent: successIcon,
         ...options,
         showCancelButton: false,
         customClass: {
@@ -133,5 +163,11 @@ export const showToast = (title, icon = 'success') => {
         icon: icon,
         title: title
     });
+    Toast.fire({
+        icon: icon,
+        title: title
+    });
 };
+
+
 

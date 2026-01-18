@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import {
     Printer, Eye, FileText, Calendar, Search,
-    ArrowUpDown, Filter, X
+    ArrowUpDown, Filter, X, Truck, Plus, ChevronRight
 } from 'lucide-react';
-import { BtnView, BtnPrint, BtnClear } from '../components/CommonButtons';
+import { BtnView, BtnPrint, BtnClear, BtnEdit } from '../components/CommonButtons';
 import EmptyState from '../components/EmptyState';
 import TablePagination from '../components/common/TablePagination';
 
@@ -71,11 +70,11 @@ const Remitos = () => {
     }, [fetchRemitos]);
 
     const handlePrint = (id) => {
-        window.open(`/comprobantes/remito/${id}/imprimir/?model=modern`, '_blank');
+        window.open(`/api/remitos/${id}/pdf/`, '_blank');
     };
 
     const handleView = (id) => {
-        navigate(`/comprobantes/remito/${id}/`);
+        navigate(`/remitos/${id}`);
     };
 
     const handleFilterChange = (e) => {
@@ -90,127 +89,150 @@ const Remitos = () => {
     };
 
     return (
-        <div className="container-fluid px-4 pt-4 pb-3 main-content-container bg-light fade-in">
+        <div className="p-6 pb-10 max-w-7xl mx-auto fade-in">
             {/* Header */}
-            <div className="d-flex justify-content-between align-items-center mb-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                 <div>
-                    <h2 className="text-primary fw-bold mb-0" style={{ fontSize: '2rem' }}>
-                        <FileText className="me-2 inline-block" size={32} />
+                    <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
+                        <Truck className="text-blue-600" size={32} strokeWidth={2.5} />
                         Remitos
-                    </h2>
-                    <p className="text-muted mb-0 ps-1" style={{ fontSize: '1rem' }}>
-                        Gestión de entregas y remitos.
-                    </p>
+                    </h1>
+                    <p className="text-slate-500 font-medium ml-10">Gestión de entregas y traslados de mercadería</p>
                 </div>
+                <button
+                    onClick={() => navigate('/remitos/nuevo')}
+                    className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl font-bold shadow-lg shadow-blue-200 transition-all hover:-translate-y-1"
+                >
+                    <Plus size={20} strokeWidth={3} />
+                    Nuevo Remito
+                </button>
             </div>
 
-            {/* Filters */}
-            <div className="card border-0 shadow-sm mb-4">
-                <div className="card-body bg-light rounded">
-                    <div className="row g-3">
-                        <div className="col-12 col-md-5">
-                            <div className="input-group">
-                                <span className="input-group-text bg-white border-end-0">
-                                    <Search size={18} className="text-muted" />
-                                </span>
-                                <input
-                                    type="text"
-                                    className="form-control border-start-0 ps-0"
-                                    placeholder="Buscar por cliente, número..."
-                                    name="busqueda"
-                                    value={filters.busqueda}
-                                    onChange={handleFilterChange}
-                                />
-                            </div>
-                        </div>
-                        <div className="col-12 col-md-3">
+            {/* Filtros Card */}
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                    <div className="md:col-span-6 relative">
+                        <label className="block text-xs font-bold text-slate-400 mb-1.5 ml-1 uppercase tracking-wider">Buscar Comprobante</label>
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                             <input
-                                type="date"
-                                className="form-control"
-                                name="fecha"
-                                value={filters.fecha}
+                                type="text"
+                                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium text-slate-700"
+                                placeholder="Cliente, número de remito..."
+                                name="busqueda"
+                                value={filters.busqueda}
                                 onChange={handleFilterChange}
                             />
                         </div>
-                        <div className="col-12 col-md-4 d-flex gap-2 justify-content-end">
-                            <BtnClear onClick={clearFilters} />
-                        </div>
+                    </div>
+                    <div className="md:col-span-3">
+                        <label className="block text-xs font-bold text-slate-400 mb-1.5 ml-1 uppercase tracking-wider">Fecha</label>
+                        <input
+                            type="date"
+                            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium text-slate-700 font-mono"
+                            name="fecha"
+                            value={filters.fecha}
+                            onChange={handleFilterChange}
+                        />
+                    </div>
+                    <div className="md:col-span-3 flex gap-2">
+                        <button
+                            onClick={clearFilters}
+                            className="flex-1 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-bold transition-all flex items-center justify-center gap-2"
+                        >
+                            <X size={18} />
+                            Limpiar
+                        </button>
                     </div>
                 </div>
             </div>
 
-            {/* Table */}
-            <div className="card border-0 shadow mb-0 flex-grow-1 overflow-hidden d-flex flex-column">
-                <div className="card-body p-0 d-flex flex-column overflow-hidden">
-                    <div className="table-responsive flex-grow-1 table-container-fixed">
-                        <table className="table align-middle mb-0">
-                            <thead className="table-dark" style={{ backgroundColor: '#212529', color: '#fff' }}>
+            {/* Listado */}
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col min-h-[500px]">
+                <div className="p-0">
+                    <table className="w-full text-sm">
+                        <thead>
+                            <tr className="bg-slate-50/50 border-b border-slate-100">
+                                <th className="px-6 py-4 text-left font-bold text-slate-400 uppercase tracking-widest text-[10px]">Fecha</th>
+                                <th className="px-6 py-4 text-left font-bold text-slate-400 uppercase tracking-widest text-[10px]">Número</th>
+                                <th className="px-6 py-4 text-left font-bold text-slate-400 uppercase tracking-widest text-[10px]">Cliente</th>
+                                <th className="px-6 py-4 text-left font-bold text-slate-400 uppercase tracking-widest text-[10px]">Venta Asoc.</th>
+                                <th className="px-6 py-4 text-left font-bold text-slate-400 uppercase tracking-widest text-[10px]">Estado</th>
+                                <th className="px-6 py-4 text-right font-bold text-slate-400 uppercase tracking-widest text-[10px]">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                            {loading && remitos.length === 0 ? (
                                 <tr>
-                                    <th className="ps-4 py-3 fw-bold">Fecha</th>
-                                    <th className="py-3 fw-bold">Número</th>
-                                    <th className="py-3 fw-bold">Cliente</th>
-                                    <th className="py-3 fw-bold">Venta Asoc.</th>
-                                    <th className="py-3 fw-bold">Estado</th>
-                                    <th className="pe-4 py-3 text-end fw-bold">Acciones</th>
+                                    <td colSpan="6" className="py-20 text-center">
+                                        <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent"></div>
+                                        <p className="mt-4 text-slate-500 font-medium">Cargando remitos...</p>
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                {loading && remitos.length === 0 ? (
-                                    <tr>
-                                        <td colSpan="6" className="text-center py-5">
-                                            <div className="spinner-border text-primary" role="status"></div>
+                            ) : remitos.length === 0 ? (
+                                <tr>
+                                    <td colSpan="6" className="py-20">
+                                        <EmptyState
+                                            icon={Truck}
+                                            title="No se encontraron remitos"
+                                            description="Intenta ajustando los filtros de búsqueda."
+                                            iconColor="text-blue-500"
+                                            bgIconColor="bg-blue-50"
+                                        />
+                                    </td>
+                                </tr>
+                            ) : (
+                                remitos.map((remito) => (
+                                    <tr key={remito.id} className="hover:bg-slate-50/50 transition-colors group">
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <div className="flex items-center gap-2">
+                                                <Calendar size={14} className="text-slate-400" />
+                                                <span className="font-bold text-slate-700">{remito.fecha}</span>
+                                            </div>
                                         </td>
-                                    </tr>
-                                ) : remitos.length === 0 ? (
-                                    <tr>
-                                        <td colSpan="6" className="py-5">
-                                            <EmptyState
-                                                icon={FileText}
-                                                title="No hay remitos"
-                                                description="Los remitos generados aparecerán aquí."
-                                                iconColor="text-blue-500"
-                                                bgIconColor="bg-blue-50"
-                                            />
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <span className="font-mono text-sm font-black text-blue-600 bg-blue-50 px-2 py-1 rounded-lg">
+                                                {remito.numero}
+                                            </span>
                                         </td>
-                                    </tr>
-                                ) : (
-                                    remitos.map((remito) => (
-                                        <tr key={remito.id} className="border-bottom-0">
-                                            <td className="ps-4 fw-medium text-dark py-3">{remito.fecha}</td>
-                                            <td className="text-primary fw-bold font-monospace py-3">{remito.numero}</td>
-                                            <td className="fw-medium text-dark py-3">{remito.cliente}</td>
-                                            <td className="py-3">
-                                                {remito.venta_id ? (
-                                                    <span className="badge bg-light text-dark border fw-medium">
-                                                        FC: {remito.venta_str}
-                                                    </span>
-                                                ) : (
-                                                    <span className="text-muted small">-</span>
-                                                )}
-                                            </td>
-                                            <td className="py-3">
-                                                <span className={`badge rounded-pill px-3 py-2 fw-medium ${remito.estado === 'ENTREGADO' ? 'bg-success-subtle text-success border border-success' :
-                                                    remito.estado === 'ANULADO' ? 'bg-danger-subtle text-danger border border-danger' :
-                                                        'bg-warning-subtle text-warning-emphasis border border-warning'
-                                                    }`}>
-                                                    {remito.estado}
-                                                </span>
-                                            </td>
-                                            <td className="pe-4 text-end py-3">
-                                                <div className="d-flex justify-content-end gap-2">
-                                                    <BtnView onClick={() => navigate(`/remitos/${remito.id}`)} />
-                                                    <BtnPrint onClick={() => window.open(`/api/remitos/${remito.id}/pdf/`, '_blank')} />
+                                        <td className="px-6 py-4">
+                                            <span className="font-bold text-slate-800">{remito.cliente}</span>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            {remito.venta_id ? (
+                                                <div className="flex items-center gap-1.5 text-slate-500 font-bold text-xs bg-slate-100 w-fit px-2.5 py-1 rounded-full border border-slate-200">
+                                                    <FileText size={12} />
+                                                    FC: {remito.venta_str}
                                                 </div>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+                                            ) : (
+                                                <span className="text-slate-300">-</span>
+                                            )}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-black uppercase tracking-tighter shadow-sm border ${remito.estado === 'ENTREGADO' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                                                remito.estado === 'ANULADO' ? 'bg-red-50 text-red-600 border-red-100' :
+                                                    'bg-amber-50 text-amber-600 border-amber-100'
+                                                }`}>
+                                                <div className={`w-1.5 h-1.5 rounded-full mr-2 ${remito.estado === 'ENTREGADO' ? 'bg-emerald-500' :
+                                                    remito.estado === 'ANULADO' ? 'bg-red-500' : 'bg-amber-500'
+                                                    }`}></div>
+                                                {remito.estado}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-right">
+                                            <div className="flex justify-end gap-2">
+                                                <BtnView onClick={() => handleView(remito.id)} />
+                                                <BtnPrint onClick={() => handlePrint(remito.id)} />
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
 
-                    {/* Pagination */}
-                    {/* Pagination */}
+                <div className="mt-auto p-4 border-t border-slate-100 bg-slate-50/50">
                     <TablePagination
                         currentPage={page}
                         totalPages={totalPages}
