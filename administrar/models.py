@@ -683,6 +683,8 @@ class PerfilUsuario(models.Model):
     acceso_ctacte = models.BooleanField(default=False, verbose_name="Acceso a Ctas. Corrientes")
     acceso_remitos = models.BooleanField(default=False, verbose_name="Acceso a Remitos")
     
+    # Datos personales
+    telefono = models.CharField(max_length=30, blank=True, verbose_name="Teléfono")
     imagen = models.ImageField(upload_to='perfiles/', blank=True, null=True, verbose_name="Imagen de Perfil")
 
     def __str__(self):

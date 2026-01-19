@@ -24,7 +24,9 @@ def get_user_agent(request):
 
 class ActiveSessionMiddleware(MiddlewareMixin):
     """
-    Middleware para actualizar la última actividad de las sesiones activas
+    Middleware para actualizar la última actividad de las sesiones activas.
+    NOTA: Este middleware solo ACTUALIZA sesiones existentes, no las crea.
+    Las sesiones se crean únicamente en el signal user_logged_in.
     """
     def process_request(self, request):
         if request.user.is_authenticated and request.session.session_key:
@@ -36,13 +38,9 @@ class ActiveSessionMiddleware(MiddlewareMixin):
                 # El campo last_activity se actualiza automáticamente con auto_now=True
                 session.save()
             except ActiveSession.DoesNotExist:
-                # Si no existe, crear la sesión activa
-                ActiveSession.objects.create(
-                    user=request.user,
-                    session_key=request.session.session_key,
-                    ip_address=get_client_ip(request),
-                    user_agent=get_user_agent(request)
-                )
+                # No crear sesión aquí - solo el signal de login debe crearlas
+                # Esto evita crear sesiones huérfanas por cookies de sesión antiguas
+                pass
         return None
 
 
@@ -63,11 +61,9 @@ def log_user_login(sender, request, user, **kwargs):
     
     # Crear sesión activa
     if request.session.session_key:
-        # Eliminar sesiones antiguas del mismo usuario si existen
-        ActiveSession.objects.filter(
-            user=user,
-            session_key=request.session.session_key
-        ).delete()
+        # Eliminar TODAS las sesiones antiguas del mismo usuario
+        # Esto asegura que solo haya una sesión activa por usuario
+        ActiveSession.objects.filter(user=user).delete()
         
         ActiveSession.objects.create(
             user=user,

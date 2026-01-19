@@ -50,6 +50,7 @@ import Unidades from './pages/Unidades'
 import Localidades from './pages/Localidades'
 import Bancos from './pages/Bancos'
 import ReportesContables from './pages/ReportesContables'
+import MiPerfil from './pages/MiPerfil'
 import { useAuth } from './context/AuthContext'
 
 // Lazy load component to safely handle build errors
@@ -236,6 +237,9 @@ function App() {
                   <ProtectedRoute permission="ctacte"><DetalleCuentaCorrienteProveedor /></ProtectedRoute>
                 </Suspense>
               } />
+
+              <Route path="/perfil" element={<ProtectedRoute><MiPerfil /></ProtectedRoute>} />
+              <Route path="/mi-perfil" element={<ProtectedRoute><MiPerfil /></ProtectedRoute>} />
 
               <Route path="*" element={<div className="p-5" style={{ zIndex: 9999, position: 'relative' }}><h1>REACT 404</h1><p>Pathname: {window.location.pathname}</p></div>} />
 

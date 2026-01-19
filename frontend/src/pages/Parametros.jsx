@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Save, Monitor, Zap, CheckCircle2, Settings, Loader2, ShoppingCart, Printer, Laptop, Package, Calculator, FileText } from 'lucide-react';
+import { Save, Monitor, Zap, CheckCircle2, Settings, Loader2, ShoppingCart, Printer, Laptop, Package, Calculator, FileText, Mail, Lock, Server, Shield } from 'lucide-react';
 
 // Estilos base según directrices de la USER_REQUEST
 const s = {
@@ -48,6 +48,14 @@ const Parametros = () => {
     const [discriminarIvaVentas, setDiscriminarIvaVentas] = useState(false);
     const [redondeoPrecios, setRedondeoPrecios] = useState(1);
 
+    // Estados SMTP
+    const [smtpServer, setSmtpServer] = useState('');
+    const [smtpPort, setSmtpPort] = useState(587);
+    const [smtpUser, setSmtpUser] = useState('');
+    const [smtpSecurity, setSmtpSecurity] = useState('STARTTLS');
+    const [smtpPassword, setSmtpPassword] = useState('');
+    const [hasSmtpPassword, setHasSmtpPassword] = useState(false);
+
     useEffect(() => {
         fetchConfig();
     }, []);
@@ -72,6 +80,13 @@ const Parametros = () => {
                 setDiscriminarIvaCompras(response.data.discriminar_iva_compras || false);
                 setDiscriminarIvaVentas(response.data.discriminar_iva_ventas || false);
                 setRedondeoPrecios(response.data.redondeo_precios || 1);
+
+                // SMTP
+                setSmtpServer(response.data.smtp_server || '');
+                setSmtpPort(response.data.smtp_port || 587);
+                setSmtpUser(response.data.smtp_user || '');
+                setSmtpSecurity(response.data.smtp_security || 'STARTTLS');
+                setHasSmtpPassword(response.data.has_smtp_password || false);
             }
         } catch (error) {
             console.error("Error cargando configuración:", error);
@@ -97,7 +112,14 @@ const Parametros = () => {
                 comportamiento_codigo_barras: comportamientoCodigoBarras,
                 discriminar_iva_compras: discriminarIvaCompras,
                 discriminar_iva_ventas: discriminarIvaVentas,
-                redondeo_precios: redondeoPrecios
+                redondeo_precios: redondeoPrecios,
+
+                // SMTP Payload
+                smtp_server: smtpServer,
+                smtp_port: smtpPort,
+                smtp_user: smtpUser,
+                smtp_security: smtpSecurity,
+                smtp_password: smtpPassword // Solo se envía si se editó
             };
             const response = await axios.post('/api/config/guardar/', payload);
             if (response.data.ok) {
@@ -122,6 +144,7 @@ const Parametros = () => {
         { id: 'precios', label: 'Lógica Precios', icon: Zap },
         { id: 'facturacion', label: 'Facturación', icon: Printer },
         { id: 'compras', label: 'Compras y Costos', icon: ShoppingCart },
+        { id: 'email', label: 'Correo Electrónico', icon: Mail },
     ];
 
     if (loading) return (
@@ -376,8 +399,6 @@ const Parametros = () => {
                                         </div>
                                     </div>
                                 </div>
-
-
 
                                 {/* MARGEN DE GANANCIA POR DEFECTO */}
                                 <div style={s.fieldGroup}>
@@ -642,6 +663,102 @@ const Parametros = () => {
                             </div>
                         )}
 
+                        {/* TAB 7: CORREO ELECTRÓNICO */}
+                        {activeTab === 'email' && (
+                            <div className="fade-in">
+                                <div style={s.sectionTitle}>
+                                    <Mail size={20} /> Configuración de Correo (SMTP)
+                                </div>
+                                <p style={{ ...s.subtitle, marginBottom: '24px' }}>
+                                    Configura el servidor de correo saliente para enviar notificaciones, recuperaciones de contraseña y comprobantes.
+                                </p>
+
+                                {/* SERVIDOR Y PUERTO */}
+                                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px', marginBottom: '24px' }}>
+                                    <div>
+                                        <label style={s.label}>SERVIDOR SMTP</label>
+                                        <div style={s.inputWrapper}>
+                                            <input
+                                                type="text"
+                                                value={smtpServer}
+                                                onChange={(e) => setSmtpServer(e.target.value)}
+                                                style={s.input}
+                                                placeholder="Ej: smtp.gmail.com"
+                                            />
+                                            <span style={s.inputBadge}><Server size={14} /></span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label style={s.label}>PUERTO</label>
+                                        <input
+                                            type="number"
+                                            value={smtpPort}
+                                            onChange={(e) => setSmtpPort(e.target.value)}
+                                            style={s.input}
+                                            placeholder="587"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* SEGURIDAD */}
+                                <div style={s.fieldGroup}>
+                                    <label style={s.label}>SEGURIDAD DE CONEXIÓN</label>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                        {['STARTTLS', 'SSL'].map(sec => (
+                                            <div
+                                                key={sec}
+                                                onClick={() => setSmtpSecurity(sec)}
+                                                style={{
+                                                    ...s.switchContainer,
+                                                    justifyContent: 'center',
+                                                    cursor: 'pointer',
+                                                    border: smtpSecurity === sec ? '2px solid #2563eb' : '1px solid #f1f5f9',
+                                                    backgroundColor: smtpSecurity === sec ? '#eff6ff' : '#f8fafc',
+                                                    padding: '12px'
+                                                }}
+                                            >
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                    <Shield size={16} color={smtpSecurity === sec ? '#2563eb' : '#64748b'} />
+                                                    <span style={{ fontWeight: '600', color: smtpSecurity === sec ? '#1e293b' : '#64748b' }}>{sec}</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* CREDENCIALES */}
+                                <div style={{ backgroundColor: '#f8fafc', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+                                    <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px', color: '#334155', fontWeight: '700', fontSize: '14px' }}>
+                                        <Lock size={16} /> Credenciales de Autenticación
+                                    </div>
+
+                                    <div style={s.fieldGroup}>
+                                        <label style={s.label}>USUARIO / EMAIL</label>
+                                        <input
+                                            type="text"
+                                            value={smtpUser}
+                                            onChange={(e) => setSmtpUser(e.target.value)}
+                                            style={{ ...s.input, backgroundColor: 'white' }}
+                                            placeholder="tu_correo@gmail.com"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label style={s.label}>CONTRASEÑA / APP PASSWORD</label>
+                                        <input
+                                            type="password"
+                                            value={smtpPassword}
+                                            onChange={(e) => setSmtpPassword(e.target.value)}
+                                            style={{ ...s.input, backgroundColor: 'white' }}
+                                            placeholder={hasSmtpPassword ? "•••••••• (Guardada - Escribe para cambiar)" : "••••••••"}
+                                        />
+                                        <p style={{ ...s.subtitle, fontSize: '12px', marginTop: '8px' }}>
+                                            Para Gmail, debes usar una "Contraseña de Aplicación" si tienes 2FA activado.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

@@ -81,6 +81,11 @@ def verificar_permiso(permiso):
 # AUTENTICACIÓN
 #====================================
 def login_view(request):
+    # Si ya está logueado, redirigir al dashboard/next
+    if request.user.is_authenticated:
+        next_url = request.GET.get('next') or '/'
+        return redirect(next_url)
+
     if request.method == 'POST':
         username = request.POST.get('username')
         password = request.POST.get('password')
@@ -89,49 +94,18 @@ def login_view(request):
         user = authenticate(request, username=username, password=password)
         
         if user is not None:
-            # Verificar si ya existe una sesión activa para este usuario
-            # (Excluyendo la sesión actual si es que ya tiene una cookie, aunque en login usualmente no)
-            existing_sessions = ActiveSession.objects.filter(user=user)
+            # --- BYPASS TEMPORAL DE SESIÓN ÚNICA ---
+            # Deshabilitamos la verificación estricta para permitir el ingreso
+            # existing_sessions = ActiveSession.objects.filter(user=user)
+            # if existing_sessions.exists() and not force_logout:
+            #     ... (código comentado) ...
             
-            if existing_sessions.exists() and not force_logout:
-                # CONFLICTO: Ya hay sesión activa
-                current_session = existing_sessions.first()
-                
-                # Preparamos datos para mostrar al usuario
-                conflict_data = {
-                    'ip': current_session.ip_address,
-                    'last_activity': current_session.last_activity,
-                    'user_agent': current_session.user_agent
-                }
-                
-                return render(request, 'administrar/login.html', {
-                    'conflict': True,
-                    'conflict_data': conflict_data,
-                    'username_value': username, # Para re-llenar el form oculto o visible
-                    # No pasamos password por seguridad, el usuario deberá reingresarla si fuera un campo visible,
-                    # pero en este flujo "Force Logout" asumimos que la validación ya pasó arriba.
-                    # Sin embargo, para "Force Logout" necesitaremos enviar las credenciales de nuevo o un token.
-                    # Simplificación: En el HTML pediremos confirmar "Cerrar sesión" y re-enviaremos los datos.
-                })
-            
-            # Si llegamos aquí es porque:
-            # 1. No hay sesiones activas OR
-            # 2. force_logout es True (el usuario decidió patear al otro)
-            
-            if force_logout:
-                # Eliminar todas las sesiones anteriores
-                existing_sessions.delete()
-                
             # Login normal
             login(request, user)
-            
-            # Crear/Registrar la nueva sesión activa lo maneja el user_logged_in signal
-            # que ya tenemos en middleware.py (log_user_login)
             
             next_url = request.POST.get('next') or request.GET.get('next') or '/'
             return redirect(next_url)
         else:
-            # messages.error(request, 'Usuario o contraseña incorrectos') # Eliminado para evitar duplicidad
             return render(request, 'administrar/login.html', {
                 'form': {'errors': True}, 
                 'username_value': username
@@ -1164,7 +1138,7 @@ def admin_usuarios(request):
 def api_usuario_crear(request):
     try:
         data = json.loads(request.body)
-        username = data.get('email') # Usamos email como username
+        username = data.get('username') # Separamos username de email
         email = data.get('email')
         password = data.get('password')
         first_name = data.get('first_name')
@@ -1206,7 +1180,7 @@ def api_usuario_editar(request):
         with transaction.atomic():
             user.first_name = data.get('first_name')
             user.email = data.get('email')
-            user.username = data.get('email') # Mantener sync
+            user.username = data.get('username')
             
             if data.get('password'):
                 user.set_password(data.get('password'))
@@ -1255,6 +1229,7 @@ def api_usuario_detalle(request, id):
         
         data = {
             'id': user.id,
+            'username': user.username,
             'first_name': user.first_name,
             'email': user.email,
             'acceso_ventas': perfil.acceso_ventas,
@@ -8904,6 +8879,13 @@ def api_empresa_config(request):
             'discriminar_iva_ventas': empresa.discriminar_iva_ventas,
             'redondeo_precios': empresa.redondeo_precios,
             'logo': empresa.logo.url if empresa.logo else None,
+            
+            # SMTP Config
+            'smtp_server': empresa.smtp_server,
+            'smtp_port': empresa.smtp_port,
+            'smtp_user': empresa.smtp_user,
+            'smtp_security': empresa.smtp_security,
+            'has_smtp_password': bool(empresa.smtp_password), # No devolver contraseña real
         })
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
@@ -8980,6 +8962,16 @@ def api_empresa_config_guardar(request):
                 empresa.redondeo_precios = int(data['redondeo_precios'])
             except (TypeError, ValueError):
                 pass
+        
+        # SMTP
+        if 'smtp_server' in data: empresa.smtp_server = data['smtp_server']
+        if 'smtp_port' in data: 
+            try: empresa.smtp_port = int(data['smtp_port'])
+            except: pass
+        if 'smtp_user' in data: empresa.smtp_user = data['smtp_user']
+        if 'smtp_security' in data: empresa.smtp_security = data['smtp_security']
+        if 'smtp_password' in data and data['smtp_password']: # Solo actualizar si viene valor
+            empresa.smtp_password = data['smtp_password']
 
         # Datos Empresa
         empresa.nombre = data.get('nombre', empresa.nombre)
@@ -10550,3 +10542,142 @@ def api_categorias_detalle(request, id):
         return JsonResponse({'id': c.id, 'nombre': c.nombre, 'descripcion': c.descripcion})
     except Categoria.DoesNotExist:
         return JsonResponse({'error': 'Categoría no encontrada'}, status=404)
+
+
+# ==========================================
+# MI PERFIL APIs
+# ==========================================
+
+@csrf_exempt
+@login_required
+def api_mi_perfil_info(request):
+    """API para obtener o actualizar la información del perfil del usuario actual"""
+    user = request.user
+    
+    if request.method == 'GET':
+        # Obtener datos del perfil
+        try:
+            perfil = user.perfilusuario
+            telefono = perfil.telefono if hasattr(perfil, 'telefono') else ''
+            imagen_url = perfil.imagen.url if perfil.imagen else ''
+            
+            # Construir diccionario de permisos
+            permisos = {
+                'ventas': perfil.acceso_ventas,
+                'compras': perfil.acceso_compras,
+                'productos': perfil.acceso_productos,
+                'clientes': perfil.acceso_clientes,
+                'proveedores': perfil.acceso_proveedores,
+                'caja': perfil.acceso_caja,
+                'contabilidad': perfil.acceso_contabilidad,
+                'configuracion': perfil.acceso_configuracion,
+                'usuarios': perfil.acceso_usuarios,
+                'reportes': perfil.acceso_reportes,
+                'pedidos': perfil.acceso_pedidos or False,
+                'bancos': perfil.acceso_bancos or False,
+                'ctacte': perfil.acceso_ctacte or False,
+                'remitos': perfil.acceso_remitos or False,
+            }
+        except PerfilUsuario.DoesNotExist:
+            telefono = ''
+            imagen_url = ''
+            permisos = {}
+        
+        data = {
+            'username': user.username,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'email': user.email,
+            'telefono': telefono,
+            'imagen_url': imagen_url,
+            'rol': 'Administrador' if user.is_staff else 'Usuario',
+            'is_staff': user.is_staff,
+            'permisos': permisos
+        }
+        
+        return JsonResponse({'ok': True, 'data': data})
+    
+    elif request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            
+            # Actualizar campos del User
+            user.first_name = data.get('first_name', user.first_name)
+            user.last_name = data.get('last_name', user.last_name)
+            user.email = data.get('email', user.email)
+            user.save()
+            
+            # Actualizar o crear perfil
+            perfil, created = PerfilUsuario.objects.get_or_create(user=user)
+            if 'telefono' in data:
+                perfil.telefono = data['telefono']
+                perfil.save()
+            
+            return JsonResponse({'ok': True, 'message': 'Perfil actualizado correctamente'})
+        except Exception as e:
+            return JsonResponse({'ok': False, 'error': str(e)}, status=500)
+    
+    return JsonResponse({'ok': False, 'error': 'Método no permitido'}, status=405)
+
+
+@csrf_exempt
+@require_POST
+@login_required
+def api_mi_perfil_password(request):
+    """API para cambiar la contraseña del usuario actual"""
+    try:
+        data = json.loads(request.body)
+        current_password = data.get('current_password', '')
+        new_password = data.get('new_password', '')
+        
+        if not current_password or not new_password:
+            return JsonResponse({'ok': False, 'error': 'Todos los campos son requeridos'})
+        
+        # Verificar contraseña actual
+        if not request.user.check_password(current_password):
+            return JsonResponse({'ok': False, 'error': 'La contraseña actual es incorrecta'})
+        
+        # Validar nueva contraseña
+        if len(new_password) < 6:
+            return JsonResponse({'ok': False, 'error': 'La nueva contraseña debe tener al menos 6 caracteres'})
+        
+        # Cambiar contraseña
+        request.user.set_password(new_password)
+        request.user.save()
+        
+        # Actualizar sesión para que no se cierre
+        update_session_auth_hash(request, request.user)
+        
+        return JsonResponse({'ok': True, 'message': 'Contraseña cambiada correctamente'})
+        
+    except Exception as e:
+        return JsonResponse({'ok': False, 'error': str(e)}, status=500)
+
+
+@csrf_exempt
+@require_POST
+@login_required
+def api_mi_perfil_imagen(request):
+    """API para subir/actualizar la imagen de perfil del usuario"""
+    try:
+        if 'imagen' not in request.FILES:
+            return JsonResponse({'ok': False, 'error': 'No se envió ninguna imagen'})
+        
+        imagen = request.FILES['imagen']
+        
+        # Obtener o crear perfil
+        perfil, created = PerfilUsuario.objects.get_or_create(user=request.user)
+        
+        # Guardar imagen
+        perfil.imagen = imagen
+        perfil.save()
+        
+        return JsonResponse({
+            'ok': True,
+            'imagen_url': perfil.imagen.url,
+            'message': 'Imagen actualizada correctamente'
+        })
+        
+    except Exception as e:
+        return JsonResponse({'ok': False, 'error': str(e)}, status=500)
+
