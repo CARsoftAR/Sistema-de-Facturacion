@@ -3041,8 +3041,29 @@ def buscar_productos(request):
 # =======================================
 
 def api_ventas_listar(request):
-    """API para listar todas las ventas"""
+    """API para listar todas las ventas con soporte para filtros mejorados"""
+    q = request.GET.get("q", "").strip()
     ventas = Venta.objects.select_related("cliente").all().order_by("-fecha")
+    
+    if q:
+        from django.db.models import Q
+        
+        # Intentamos ver si es un número de factura formateado (ej: 0001-00000023)
+        # Si tiene un guión, tomamos la parte después del guión como el ID
+        busqueda_id = q
+        if "-" in q:
+            parts = q.split("-")
+            if len(parts) > 1:
+                try:
+                    busqueda_id = str(int(parts[-1])) # "00000023" -> "23"
+                except ValueError:
+                    pass
+
+        ventas = ventas.filter(
+            Q(cliente__nombre__icontains=q) |
+            Q(id__iexact=busqueda_id) |
+            Q(tipo_comprobante__icontains=q)
+        )
     
     data = []
     for v in ventas:
@@ -3053,6 +3074,7 @@ def api_ventas_listar(request):
             "tipo_comprobante": v.tipo_comprobante,
             "total": float(v.total),
             "estado": v.estado,
+            "numero_factura": v.numero_factura_formateado()
         })
     
     return JsonResponse({"ok": True, "data": data})
@@ -8983,58 +9005,6 @@ def api_empresa_config_guardar(request):
         })
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
-
-# ==========================================
-# API REMITOS Y NOTAS DE CRÉDITO (PAGINADOS)
-# ==========================================
-
-@login_required
-def api_remitos_listar(request):
-    try:
-        from django.core.paginator import Paginator
-        
-        page_number = request.GET.get('page', 1)
-        per_page = request.GET.get('per_page', 10)
-        q = request.GET.get('q', '')
-        fecha = request.GET.get('fecha', '')
-
-        remitos = Remito.objects.all().order_by('-fecha', '-id')
-
-        if q:
-            remitos = remitos.filter(
-                Q(cliente__nombre__icontains=q) | 
-                Q(numero__icontains=q)
-            )
-
-        if fecha:
-            remitos = remitos.filter(fecha=fecha)
-
-        paginator = Paginator(remitos, per_page)
-        page_obj = paginator.get_page(page_number)
-
-        data = []
-        for r in page_obj:
-            data.append({
-                'id': r.id,
-                'fecha': r.fecha.strftime('%d/%m/%Y'),
-                'numero': r.numero_formateado(),
-                'cliente': r.cliente.nombre,
-                'venta_id': r.venta_asociada.id if r.venta_asociada else None,
-                'venta_str': r.venta_asociada.numero_factura_formateado() if r.venta_asociada else '-',
-                'estado': r.estado
-            })
-
-        return JsonResponse({
-            'remitos': data,
-            'total': paginator.count,
-            'total_pages': paginator.num_pages,
-            'current_page': page_obj.number
-        })
-
-    except Exception as e:
-        print(f"Error api_remitos_listar: {e}")
-        return JsonResponse({'error': str(e)}, status=500)
-
 
 @login_required
 def api_notas_credito_listar(request):

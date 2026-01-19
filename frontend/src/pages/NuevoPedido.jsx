@@ -324,12 +324,11 @@ const NuevoPedido = () => {
                     style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                 >
 
-                    <div className="flex items-center gap-4">
-                        <BtnBack onClick={() => navigate('/pedidos')} />
-                    </div>
-
-                    {/* Header Interno */}
-                    <div className="flex-shrink-0">
+                    {/* Header: Back Button & Title Stacked */}
+                    <div className="mb-6 flex-shrink-0">
+                        <div className="mb-4">
+                            <BtnBack onClick={() => navigate('/pedidos')} />
+                        </div>
                         <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
                             <ClipboardList className="text-blue-600" size={32} strokeWidth={2.5} />
                             Nuevo Pedido
@@ -505,7 +504,7 @@ const NuevoPedido = () => {
 
                             <div className="col-span-2">
                                 <label className="block text-xs font-bold text-slate-500 mb-1.5 ml-1 text-center">CANT.</label>
-                                <input ref={cantidadRef} type="number" min="1" value={inputCantidad} onChange={(e) => setInputCantidad(e.target.value)} onKeyDown={handleCantidadKeyDown} className="w-full px-2 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-slate-50 text-sm text-center font-bold text-slate-800" />
+                                <input ref={cantidadRef} type="number" min="1" value={inputCantidad} onChange={(e) => setInputCantidad(e.target.value)} onKeyDown={handleCantidadKeyDown} disabled={!productoSeleccionado} title={!productoSeleccionado ? "Seleccione un producto primero" : "Cantidad"} className={`w-full px-2 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm text-center font-bold transition-colors ${!productoSeleccionado ? 'bg-slate-100 text-slate-400 cursor-not-allowed opacity-75' : 'bg-slate-50 text-slate-800'}`} />
                             </div>
 
                             <div className="col-span-2">

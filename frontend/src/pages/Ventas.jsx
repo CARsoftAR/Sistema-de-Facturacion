@@ -192,7 +192,7 @@ const Ventas = () => {
                 <BtnAdd
                     label="Nueva Venta"
                     icon={ShoppingCart}
-                    className="btn-lg shadow-sm"
+                    className="btn-lg shadow-lg shadow-blue-500/30 hover:shadow-blue-600/40 active:scale-95 transition-all"
                     onClick={() => navigate('/ventas/nuevo')}
                 />
             </div>
@@ -228,12 +228,12 @@ const Ventas = () => {
                             <thead className="table-dark" style={{ backgroundColor: '#212529', color: '#fff' }}>
                                 <tr>
                                     <th className="ps-4 py-3 fw-bold" style={{ width: '10%' }}># Venta</th>
-                                    <th className="py-3 fw-bold" style={{ width: '15%' }}>Fecha</th>
-                                    <th className="py-3 fw-bold" style={{ width: '25%' }}>Cliente</th>
-                                    <th className="py-3 fw-bold" style={{ width: '10%' }}>Comprobante</th>
-                                    <th className="py-3 fw-bold" style={{ width: '15%' }}>Total</th>
+                                    <th className="py-3 fw-bold" style={{ width: '12%' }}>Fecha</th>
+                                    <th className="py-3 fw-bold" style={{ width: '18%' }}>Cliente</th>
+                                    <th className="py-3 fw-bold" style={{ width: '8%' }}>Comprobante</th>
+                                    <th className="py-3 fw-bold" style={{ width: '12%' }}>Total</th>
                                     <th className="py-3 fw-bold" style={{ width: '10%' }}>Estado</th>
-                                    <th className="text-end pe-4 py-3 fw-bold" style={{ width: '15%' }}>Acciones</th>
+                                    <th className="text-end pe-4 py-3 fw-bold" style={{ width: '30%' }}>Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -261,7 +261,11 @@ const Ventas = () => {
                                             </td>
                                             <td className="fw-medium py-3">{v.cliente}</td>
                                             <td className="py-3">
-                                                <span className="badge bg-white text-dark border shadow-sm">
+                                                <span className={`badge border shadow-sm ${v.tipo_comprobante === 'A' ? 'bg-blue-100 text-blue-800 border-blue-200' :
+                                                    v.tipo_comprobante === 'B' ? 'bg-orange-100 text-orange-800 border-orange-200' :
+                                                        v.tipo_comprobante === 'C' ? 'bg-emerald-100 text-emerald-800 border-emerald-200' :
+                                                            'bg-white text-dark border-slate-200'
+                                                    }`}>
                                                     {v.tipo_comprobante || '-'}
                                                 </span>
                                             </td>

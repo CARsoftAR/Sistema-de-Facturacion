@@ -52,19 +52,23 @@ const DetalleRemito = () => {
     return (
         <div className="container-fluid px-4 pt-4 pb-0 h-100 d-flex flex-column bg-light" style={{ minHeight: '100vh', overflowY: 'auto' }}>
             {/* Header Standardized */}
-            <div className="d-flex justify-content-between align-items-center mb-4">
-                <div>
-                    <h2 className="text-primary fw-bold mb-0" style={{ fontSize: '2rem' }}>
-                        <FileText className="me-2 inline-block" size={32} />
-                        Detalle de Remito
-                    </h2>
-                    <p className="text-muted mb-0 ps-1" style={{ fontSize: '1rem' }}>
-                        {remito.numero}
-                    </p>
-                </div>
-                <div className="d-flex gap-2">
+            <div className="mb-4">
+                <div className="mb-4">
                     <BtnBack onClick={() => navigate('/remitos')} />
-                    <BtnPrint onClick={handlePrint} />
+                </div>
+                <div className="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 className="text-primary fw-bold mb-0" style={{ fontSize: '2rem' }}>
+                            <FileText className="me-2 inline-block" size={32} />
+                            Detalle de Remito
+                        </h2>
+                        <p className="text-muted mb-0 ps-1" style={{ fontSize: '1rem' }}>
+                            {remito.numero}
+                        </p>
+                    </div>
+                    <div className="d-flex gap-2">
+                        <BtnPrint onClick={handlePrint} />
+                    </div>
                 </div>
             </div>
 

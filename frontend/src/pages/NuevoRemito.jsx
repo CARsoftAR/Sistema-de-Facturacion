@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
     FileText, Search, User, Package, Calendar,
@@ -8,6 +8,24 @@ import {
 import { BtnSave, BtnBack } from '../components/CommonButtons';
 import { useProductSearch } from '../hooks/useProductSearch';
 import Swal from 'sweetalert2';
+import { showSuccessAlert } from '../utils/alerts';
+
+
+// Helper for CSRF Token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
 
 const NuevoRemito = () => {
     const navigate = useNavigate();
@@ -15,7 +33,7 @@ const NuevoRemito = () => {
     const ventaIdParam = searchParams.get('venta_id');
 
     // MODO: 'VENTA' (Linked) or 'MANUAL' (Independent)
-    const [modo, setModo] = useState('VENTA');
+    const [modo, setModo] = useState('MANUAL');
 
     // STATE FOR 'VENTA' MODE
     const [ventaId, setVentaId] = useState(ventaIdParam || '');
@@ -26,8 +44,10 @@ const NuevoRemito = () => {
     const [busquedaCliente, setBusquedaCliente] = useState('');
     const [clientesSugeridos, setClientesSugeridos] = useState([]);
     const [mostrarSugerenciasCliente, setMostrarSugerenciasCliente] = useState(false);
+    const [sugerenciaClienteActiva, setSugerenciaClienteActiva] = useState(0);
     const [inputCantidad, setInputCantidad] = useState('1');
     const [itemsManuales, setItemsManuales] = useState([]);
+    const [comportamientoCodigoBarras, setComportamientoCodigoBarras] = useState('DEFAULT');
 
     // COMMON STATE
     const [loading, setLoading] = useState(false);
@@ -37,7 +57,12 @@ const NuevoRemito = () => {
 
     // Refs for Manual Mode
     const clienteInputRef = useRef(null);
+    const clienteListRef = useRef(null);
     const cantidadRef = useRef(null);
+    const codigoInputRef = useRef(null);
+
+    // State for selected product in manual mode
+    const [productoSeleccionado, setProductoSeleccionado] = useState(null);
 
     // Initial Setup
     useEffect(() => {
@@ -46,6 +71,22 @@ const NuevoRemito = () => {
             buscarVenta(ventaIdParam);
         }
     }, [ventaIdParam]);
+
+    // Load System Config
+    useEffect(() => {
+        fetch('/api/config/obtener/')
+            .then(res => res.json())
+            .then(data => {
+                console.log('Config loaded:', data); // Log full config
+                if (data && data.comportamiento_codigo_barras) {
+                    console.log('Setting comportamiento to:', data.comportamiento_codigo_barras);
+                    setComportamientoCodigoBarras(data.comportamiento_codigo_barras);
+                } else {
+                    console.log('No comportamiento config found, using default');
+                }
+            })
+            .catch(err => console.error("Error loading config:", err));
+    }, []);
 
     // ==================== MANUAL MODE HOOKS ====================
     const {
@@ -57,17 +98,99 @@ const NuevoRemito = () => {
         handleCodigoBlur, handleProductoBlur,
         seleccionar: seleccionarProducto,
         codigoListRef, productoListRef, nextInputRef: productoRef,
-        limpiar: limpiarBusquedaProducto
+        limpiar: limpiarBusquedaProducto,
+        sugerenciaCodigoActiva,
+        sugerenciaActiva
     } = useProductSearch({
         onSelect: (producto) => {
-            // Logic when product selected
-            // We just set focus to quantity
-            setTimeout(() => cantidadRef.current?.select(), 50);
+            setProductoSeleccionado(producto);
         }
     });
 
+    // ITEM MANAGEMENT MANUAL
+    const agregarItemManual = useCallback((productoOverride = null, cantidadOverride = null) => {
+        const prod = productoOverride || productoSeleccionado;
+        if (!prod) return;
+
+        const cant = cantidadOverride !== null ? parseFloat(cantidadOverride) : parseFloat(inputCantidad);
+        if (isNaN(cant) || cant <= 0) return;
+
+        // Check stock warning (optional for remito, but good practice)
+        // If it's a remito, we are delivering, so stock IS important.
+        if (prod.stock < cant) {
+            Swal.fire({
+                title: 'Stock Insuficiente',
+                text: `El producto tiene ${prod.stock} en stock.`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Agregar igual',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    doAgregar();
+                }
+            });
+        } else {
+            doAgregar();
+        }
+
+        function doAgregar() {
+            setItemsManuales(prev => {
+                const existingIndex = prev.findIndex(item => item.producto_id === prod.id);
+                if (existingIndex >= 0) {
+                    // Update existing
+                    const newItems = [...prev];
+                    newItems[existingIndex] = {
+                        ...newItems[existingIndex],
+                        cantidad: newItems[existingIndex].cantidad + cant
+                    };
+                    return newItems;
+                } else {
+                    // Add new
+                    return [...prev, {
+                        producto_id: prod.id,
+                        producto_descripcion: prod.descripcion,
+                        producto_codigo: prod.codigo,
+                        cantidad: cant
+                    }];
+                }
+            });
+
+            // Reset fields
+            limpiarBusquedaProducto();
+            setProductoSeleccionado(null);
+            setInputCantidad('1');
+            // Focus back to code
+            if (codigoInputRef.current) {
+                codigoInputRef.current.focus();
+            }
+        }
+    }, [productoSeleccionado, inputCantidad, limpiarBusquedaProducto]); // Dependencies for useCallback
+
+    // EFFECT: Handle auto-focus when product is selected
+    useEffect(() => {
+        if (productoSeleccionado) {
+            if (comportamientoCodigoBarras === 'CANTIDAD') {
+                // Small timeout to ensure DOM update (disabled -> enabled)
+                setTimeout(() => cantidadRef.current?.select(), 50);
+            } else if (comportamientoCodigoBarras === 'DIRECTO') {
+                // Add immediately
+                agregarItemManual(productoSeleccionado, 1);
+            }
+        }
+    }, [productoSeleccionado, comportamientoCodigoBarras, agregarItemManual]);
+
+    // EFFECT: Auto-focus client search when switching to MANUAL mode
+    useEffect(() => {
+        if (modo === 'MANUAL') {
+            setTimeout(() => {
+                clienteInputRef.current?.focus();
+            }, 100);
+        }
+    }, [modo]);
+
     // State for selected product in manual mode
-    const [productoSeleccionado, setProductoSeleccionado] = useState(null);
+    // State for selected product moved up to prevent ReferenceError
 
     // Hook wrapper limitation: useProductSearch doesn't return the selected product directly effectively in all versions, 
     // so we might need to capture it in onSelect.
@@ -80,6 +203,70 @@ const NuevoRemito = () => {
     };
 
     // ==================== FETCHING & HANDLERS ====================
+
+    // VENTA SEARCH LOGIC (Autocomplete)
+    const [busquedaVenta, setBusquedaVenta] = useState('');
+    const [ventasSugeridas, setVentasSugeridas] = useState([]);
+    const [mostrarSugerenciasVenta, setMostrarSugerenciasVenta] = useState(false);
+    const [sugerenciaVentaActiva, setSugerenciaVentaActiva] = useState(0);
+    const ventaListRef = useRef(null);
+
+    useEffect(() => {
+        if (!busquedaVenta || busquedaVenta.length < 1) {
+            setVentasSugeridas([]);
+            setMostrarSugerenciasVenta(false);
+            return;
+        }
+        const timer = setTimeout(async () => {
+            try {
+                const response = await fetch(`/api/ventas/listar/?q=${encodeURIComponent(busquedaVenta)}`);
+                const data = await response.json();
+                setVentasSugeridas(data.data || []);
+                setMostrarSugerenciasVenta((data.data || []).length > 0);
+                setSugerenciaVentaActiva(0);
+            } catch (error) { console.error(error); }
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [busquedaVenta]);
+
+    const handleVentaKeyDown = (e) => {
+        if (!mostrarSugerenciasVenta || ventasSugeridas.length === 0) return;
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            setSugerenciaVentaActiva(prev => (prev < ventasSugeridas.length - 1 ? prev + 1 : prev));
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            setSugerenciaVentaActiva(prev => (prev > 0 ? prev - 1 : 0));
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            seleccionarVenta(ventasSugeridas[sugerenciaVentaActiva]);
+        } else if (e.key === 'Escape') {
+            setMostrarSugerenciasVenta(false);
+        }
+    };
+
+    const seleccionarVenta = async (v) => {
+        setLoading(true);
+        setMostrarSugerenciasVenta(false);
+        setBusquedaVenta('');
+        try {
+            const response = await fetch(`/api/ventas/${v.id}/`);
+            const data = await response.json();
+            if (data.error) {
+                Swal.fire('Error', data.error, 'error');
+                setVenta(null);
+            } else {
+                setVenta(data);
+                setVentaId(data.id.toString());
+                setDireccionEntrega(data.cliente_domicilio || '');
+            }
+        } catch (error) {
+            console.error("Error cargando venta:", error);
+            Swal.fire('Error', 'No se pudo cargar la venta', 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const buscarVenta = async (id) => {
         if (!id) return;
@@ -115,60 +302,63 @@ const NuevoRemito = () => {
                 const data = await response.json();
                 setClientesSugeridos(data.data || []);
                 setMostrarSugerenciasCliente((data.data || []).length > 0);
+                setSugerenciaClienteActiva(0);
             } catch (error) { console.error(error); }
         }, 300);
         return () => clearTimeout(timer);
     }, [busquedaCliente]);
+
+    const handleClienteKeyDown = (e) => {
+        if (!mostrarSugerenciasCliente || clientesSugeridos.length === 0) return;
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            setSugerenciaClienteActiva(prev => {
+                const newVal = prev < clientesSugeridos.length - 1 ? prev + 1 : prev;
+                // Scroll into view logic
+                if (clienteListRef.current) {
+                    const activeItem = clienteListRef.current.children[newVal];
+                    if (activeItem) {
+                        activeItem.scrollIntoView({ block: 'nearest' });
+                    }
+                }
+                return newVal;
+            });
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            setSugerenciaClienteActiva(prev => {
+                const newVal = prev > 0 ? prev - 1 : 0;
+                if (clienteListRef.current) {
+                    const activeItem = clienteListRef.current.children[newVal];
+                    if (activeItem) {
+                        activeItem.scrollIntoView({ block: 'nearest' });
+                    }
+                }
+                return newVal;
+            });
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            seleccionarCliente(clientesSugeridos[sugerenciaClienteActiva]);
+        } else if (e.key === 'Escape') {
+            setMostrarSugerenciasCliente(false);
+        }
+    };
 
     const seleccionarCliente = (c) => {
         setCliente(c);
         setBusquedaCliente('');
         setMostrarSugerenciasCliente(false);
         setDireccionEntrega(c.domicilio || '');
+        // Auto-focus barcode input
+        setTimeout(() => {
+            if (codigoInputRef.current) {
+                codigoInputRef.current.focus();
+            }
+        }, 100);
     };
 
     // ITEM MANAGEMENT MANUAL
-    const agregarItemManual = () => {
-        if (!productoSeleccionado) return;
 
-        const cant = parseFloat(inputCantidad);
-        if (!cant || cant <= 0) return;
-
-        // Check stock warning (optional for remito, but good practice)
-        // If it's a remito, we are delivering, so stock IS important.
-        if (productoSeleccionado.stock < cant) {
-            Swal.fire({
-                title: 'Stock Insuficiente',
-                text: `El producto tiene ${productoSeleccionado.stock} en stock.`,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Agregar igual',
-                cancelButtonText: 'Cancelar'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    doAgregar();
-                }
-            });
-        } else {
-            doAgregar();
-        }
-
-        function doAgregar() {
-            setItemsManuales(prev => [...prev, {
-                producto_id: productoSeleccionado.id,
-                producto_descripcion: productoSeleccionado.descripcion,
-                producto_codigo: productoSeleccionado.codigo,
-                cantidad: cant
-            }]);
-
-            // Reset fields
-            limpiarBusquedaProducto();
-            setProductoSeleccionado(null);
-            setInputCantidad('1');
-            // Focus back to code
-            document.querySelector('input[placeholder="XXX"]')?.focus(); // Hacky ref access, use hook ref if possible
-        }
-    };
 
     const eliminarItemManual = (idx) => {
         setItemsManuales(prev => prev.filter((_, i) => i !== idx));
@@ -208,27 +398,31 @@ const NuevoRemito = () => {
 
             const response = await fetch(`/api/remitos/guardar/`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
                 body: JSON.stringify(body)
             });
             const data = await response.json();
 
             if (data.ok) {
-                Swal.fire({
-                    title: 'Éxito',
-                    text: 'Remito generado correctamente',
-                    icon: 'success',
-                    showDenyButton: true,
-                    confirmButtonText: 'Ir a Lista',
-                    denyButtonText: 'Imprimir',
-                }).then((result) => {
-                    if (result.isDenied) {
-                        window.open(`/comprobantes/remito/${data.id}/imprimir/`, '_blank');
-                        navigate('/remitos');
-                    } else {
-                        navigate('/remitos');
+                const result = await showSuccessAlert(
+                    'Éxito',
+                    'Remito generado correctamente',
+                    'Ir a Lista',
+                    {
+                        cancelButtonText: 'Imprimir',
+                        showCancelButton: true
                     }
-                });
+                );
+
+                if (result.isConfirmed) {
+                    navigate('/remitos');
+                } else if (result.dismiss === Swal.DismissReason.cancel) {
+                    window.open(`/comprobantes/remito/${data.id}/imprimir/`, '_blank');
+                    navigate('/remitos');
+                }
             } else {
                 Swal.fire('Error', data.error || 'Error al guardar remito', 'error');
             }
@@ -244,64 +438,82 @@ const NuevoRemito = () => {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-0">
 
                 {/* LEFT COLUMN: Data Input */}
-                <div className="lg:col-span-5 space-y-6 overflow-y-auto pr-1">
+                <div className="lg:col-span-5 space-y-6 h-[calc(100vh-8rem)] pr-1 flex flex-col">
 
-                    {/* Header */}
-                    <div className="flex items-center gap-4">
-                        <BtnBack onClick={() => navigate('/remitos')} />
-                        <div>
-                            <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
-                                <Truck className="text-blue-600" size={32} />
-                                Nuevo Remito
-                            </h1>
-                            <p className="text-slate-500 font-medium text-sm">Generación de documentos de traslado</p>
+                    {/* Header: Back Button & Title Stacked */}
+                    <div className="mb-6 flex-shrink-0">
+                        <div className="mb-4">
+                            <BtnBack onClick={() => navigate('/remitos')} />
                         </div>
+                        <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
+                            <Truck className="text-blue-600" size={32} />
+                            Nuevo Remito
+                        </h1>
+                        <p className="text-slate-500 font-medium text-sm">Generación de documentos de traslado</p>
                     </div>
 
                     {/* Mode Selector */}
-                    <div className="bg-white p-1 rounded-2xl border border-slate-200 shadow-sm inline-flex relative z-0 w-full justify-center">
-                        <button
-                            onClick={() => setModo('VENTA')}
-                            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all flex-1 ${modo === 'VENTA' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'
-                                }`}
-                        >
-                            Desde Venta
-                        </button>
+                    <div className="flex gap-4 w-full">
                         <button
                             onClick={() => setModo('MANUAL')}
-                            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all flex-1 ${modo === 'MANUAL' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'
+                            className={`px-4 py-3 rounded-xl text-sm font-bold transition-all flex-1 border ${modo === 'MANUAL' ? 'bg-blue-600 text-white border-blue-600 shadow-md' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
                                 }`}
                         >
                             Manual
                         </button>
+                        <button
+                            onClick={() => setModo('VENTA')}
+                            className={`px-4 py-3 rounded-xl text-sm font-bold transition-all flex-1 border ${modo === 'VENTA' ? 'bg-blue-600 text-white border-blue-600 shadow-md' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
+                                }`}
+                        >
+                            Desde Venta
+                        </button>
                     </div>
 
-                    {/* VENTA SEARCH */}
                     {modo === 'VENTA' && (
                         <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
                             <label className="block text-sm font-bold text-slate-500 mb-2">Venta Asociada</label>
-                            <div className="relative">
-                                <input
-                                    type="text"
-                                    placeholder="ID de Venta (ej: 123)"
-                                    value={ventaId}
-                                    onChange={(e) => setVentaId(e.target.value)}
-                                    className="w-full pl-4 pr-12 py-3 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 bg-slate-50 transition-all font-medium"
-                                />
-                                <button
-                                    onClick={() => buscarVenta(ventaId)}
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                                >
-                                    <Search size={18} />
-                                </button>
-                            </div>
-                            {venta && (
-                                <div className="mt-4 p-4 bg-slate-50 rounded-2xl border border-slate-100 animate-in fade-in">
-                                    <p className="font-bold text-slate-800 text-lg">{venta.cliente_nombre}</p>
-                                    <p className="text-slate-500 text-sm mt-1">{venta.cliente_cuit || 'Consumidor Final'}</p>
-                                    <div className="mt-2 text-xs text-blue-600 font-bold bg-blue-50 w-fit px-2 py-1 rounded">
-                                        Venta #{venta.id} confirmada
+
+                            {!venta ? (
+                                <div className="relative">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                                    <input
+                                        type="text"
+                                        className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 bg-slate-50 transition-all font-medium"
+                                        placeholder="Buscar por ID o Número de Factura..."
+                                        value={busquedaVenta}
+                                        onChange={(e) => setBusquedaVenta(e.target.value)}
+                                        onKeyDown={handleVentaKeyDown}
+                                        onFocus={() => setMostrarSugerenciasVenta(true)}
+                                        onBlur={() => setTimeout(() => setMostrarSugerenciasVenta(false), 200)}
+                                    />
+                                    {mostrarSugerenciasVenta && ventasSugeridas.length > 0 && (
+                                        <div ref={ventaListRef} className="absolute z-50 w-full mt-2 bg-white border border-slate-100 rounded-xl shadow-xl max-h-60 overflow-y-auto ring-1 ring-black/5">
+                                            {ventasSugeridas.map((v, index) => (
+                                                <div
+                                                    key={v.id}
+                                                    onClick={() => seleccionarVenta(v)}
+                                                    className={`px-4 py-3 cursor-pointer border-b border-slate-50 flex justify-between items-center ${index === sugerenciaVentaActiva ? 'bg-blue-50' : 'hover:bg-slate-50'}`}
+                                                >
+                                                    <div>
+                                                        <span className="font-bold text-slate-700">{v.numero_factura}</span>
+                                                        <p className="text-xs text-slate-400">{v.cliente}</p>
+                                                    </div>
+                                                    <span className="text-xs font-bold bg-slate-100 text-slate-500 px-2 py-1 rounded">ID: {v.id}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100 flex justify-between items-center group">
+                                    <div>
+                                        <p className="font-bold text-slate-800">{venta.cliente_nombre}</p>
+                                        <p className="text-sm text-slate-500">Factura: {venta.id} | Total: ${venta.total}</p>
                                     </div>
+                                    <button onClick={() => { setVenta(null); setVentaId(''); }} className="text-slate-400 hover:text-red-500 hover:bg-white p-2 rounded-full transition-all">
+                                        <Trash2 size={18} />
+                                    </button>
                                 </div>
                             )}
                         </div>
@@ -324,17 +536,18 @@ const NuevoRemito = () => {
                                         placeholder="Buscar cliente..."
                                         value={busquedaCliente}
                                         onChange={(e) => setBusquedaCliente(e.target.value)}
+                                        onKeyDown={handleClienteKeyDown}
                                         onFocus={() => setMostrarSugerenciasCliente(true)}
                                         onBlur={() => setTimeout(() => setMostrarSugerenciasCliente(false), 200)}
                                         className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 bg-slate-50 transition-all font-medium"
                                     />
                                     {mostrarSugerenciasCliente && clientesSugeridos.length > 0 && (
-                                        <div className="absolute z-10 w-full mt-2 bg-white border border-slate-100 rounded-xl shadow-xl max-h-60 overflow-y-auto ring-1 ring-black/5">
-                                            {clientesSugeridos.map((c) => (
+                                        <div ref={clienteListRef} className="absolute z-10 w-full mt-2 bg-white border border-slate-100 rounded-xl shadow-xl max-h-60 overflow-y-auto ring-1 ring-black/5">
+                                            {clientesSugeridos.map((c, index) => (
                                                 <div
                                                     key={c.id}
                                                     onClick={() => seleccionarCliente(c)}
-                                                    className="px-4 py-3 cursor-pointer border-b border-slate-50 hover:bg-slate-50 flex justify-between"
+                                                    className={`px-4 py-3 cursor-pointer border-b border-slate-50 flex justify-between ${index === sugerenciaClienteActiva ? 'bg-blue-50' : 'hover:bg-slate-50'}`}
                                                 >
                                                     <span className="font-bold text-slate-700">{c.nombre}</span>
                                                     <span className="text-xs text-slate-400 font-mono">{c.cuit}</span>
@@ -358,27 +571,31 @@ const NuevoRemito = () => {
                     )}
 
                     {/* Delivery Info */}
-                    <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 space-y-4">
-                        <label className="block text-sm font-bold text-slate-500 ml-1">Dirección de Entrega</label>
-                        <textarea
-                            value={direccionEntrega}
-                            onChange={(e) => setDireccionEntrega(e.target.value)}
-                            className="w-full p-4 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 bg-slate-50 transition-all text-sm h-24"
-                            placeholder="Ingrese la dirección de destino..."
-                        />
+                    <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 flex-1 flex flex-col space-y-4 min-h-0">
+                        <div className="flex-none">
+                            <label className="block text-sm font-bold text-slate-500 ml-1 mb-2">Dirección de Entrega</label>
+                            <textarea
+                                value={direccionEntrega}
+                                onChange={(e) => setDireccionEntrega(e.target.value)}
+                                className="w-full p-4 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 bg-slate-50 transition-all text-sm h-24 resize-none"
+                                placeholder="Ingrese la dirección de destino..."
+                            />
+                        </div>
 
-                        <label className="block text-sm font-bold text-slate-500 ml-1 mt-4">Observaciones</label>
-                        <textarea
-                            value={observaciones}
-                            onChange={(e) => setObservaciones(e.target.value)}
-                            className="w-full p-4 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 bg-slate-50 transition-all text-sm h-20"
-                            placeholder="Notas adicionales..."
-                        />
+                        <div className="flex-1 flex flex-col min-h-0">
+                            <label className="block text-sm font-bold text-slate-500 ml-1 mb-2 mt-2">Observaciones</label>
+                            <textarea
+                                value={observaciones}
+                                onChange={(e) => setObservaciones(e.target.value)}
+                                className="w-full flex-1 p-4 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 bg-slate-50 transition-all text-sm resize-none min-h-[5rem]"
+                                placeholder="Notas adicionales..."
+                            />
+                        </div>
                     </div>
                 </div>
 
                 {/* RIGHT COLUMN: Items */}
-                <div className="lg:col-span-7 flex flex-col h-full min-h-0">
+                <div className="lg:col-span-7 flex flex-col h-[calc(100vh-8rem)] min-h-0">
                     <div className="bg-white rounded-3xl border border-slate-200 shadow-sm flex flex-col h-full overflow-hidden">
 
                         {/* Headers & Add Item (Only Manual) */}
@@ -394,6 +611,7 @@ const NuevoRemito = () => {
                                         <label className="text-xs font-bold text-slate-400 ml-1">CÓDIGO</label>
                                         <div className="relative">
                                             <input
+                                                ref={codigoInputRef}
                                                 type="text"
                                                 placeholder="XXX"
                                                 value={inputCodigo}
@@ -404,8 +622,8 @@ const NuevoRemito = () => {
                                             />
                                             {mostrarSugerenciasCodigo && codigosSugeridos.length > 0 && (
                                                 <div ref={codigoListRef} className="absolute left-0 top-full mt-1 w-64 bg-white border border-slate-200 rounded-lg shadow-xl max-h-48 overflow-y-auto z-50">
-                                                    {codigosSugeridos.map((p) => (
-                                                        <div key={p.id} onClick={() => handleSeleccionarProductoManual(p)} className="px-4 py-2 hover:bg-slate-50 cursor-pointer border-b border-slate-50 text-xs">
+                                                    {codigosSugeridos.map((p, index) => (
+                                                        <div key={p.id} onClick={() => handleSeleccionarProductoManual(p)} className={`px-4 py-2 cursor-pointer border-b border-slate-50 text-xs ${index === sugerenciaCodigoActiva ? 'bg-blue-50' : 'hover:bg-slate-50'}`}>
                                                             <span className="font-bold text-blue-600">{p.codigo}</span> - {p.descripcion}
                                                         </div>
                                                     ))}
@@ -428,8 +646,8 @@ const NuevoRemito = () => {
                                             />
                                             {mostrarSugerenciasProducto && productosSugeridos.length > 0 && (
                                                 <div ref={productoListRef} className="absolute left-0 top-full mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-xl max-h-48 overflow-y-auto z-50">
-                                                    {productosSugeridos.map((p) => (
-                                                        <div key={p.id} onClick={() => handleSeleccionarProductoManual(p)} className="px-4 py-2 hover:bg-slate-50 cursor-pointer border-b border-slate-50 text-xs flex justify-between">
+                                                    {productosSugeridos.map((p, index) => (
+                                                        <div key={p.id} onClick={() => handleSeleccionarProductoManual(p)} className={`px-4 py-2 cursor-pointer border-b border-slate-50 text-xs flex justify-between ${index === sugerenciaActiva ? 'bg-blue-50' : 'hover:bg-slate-50'}`}>
                                                             <span>{p.descripcion}</span>
                                                             <span className={`font-bold ${p.stock <= 5 ? 'text-red-500' : 'text-slate-400'}`}>Stock: {p.stock}</span>
                                                         </div>
@@ -448,7 +666,9 @@ const NuevoRemito = () => {
                                             value={inputCantidad}
                                             onChange={(e) => setInputCantidad(e.target.value)}
                                             onKeyDown={(e) => e.key === 'Enter' && agregarItemManual()}
-                                            className="w-full px-2 py-2 border border-slate-200 rounded-lg text-sm text-center font-bold"
+                                            className={`w-full px-2 py-2 border border-slate-200 rounded-lg text-sm text-center font-bold transition-colors ${!productoSeleccionado ? 'bg-slate-100 text-slate-400 cursor-not-allowed opacity-75' : 'bg-white text-slate-800'}`}
+                                            disabled={!productoSeleccionado}
+                                            title={!productoSeleccionado ? "Seleccione un producto primero" : "Cantidad"}
                                         />
                                     </div>
                                     <div className="col-span-1">
@@ -527,13 +747,13 @@ const NuevoRemito = () => {
                             </table>
                         </div>
 
-                        {/* Footer Action */}
-                        <div className="p-6 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+                        {/* Footer Action - DARK STYLE */}
+                        <div className="p-6 m-4 mb-8 rounded-3xl bg-slate-900 text-white flex-shrink-0 mt-auto shadow-2xl ring-1 ring-white/10 flex justify-end">
                             <BtnSave
                                 label="Generar Remito"
-                                icon={<Truck size={20} />}
                                 onClick={handleGuardar}
                                 disabled={guardando || (modo === 'VENTA' ? !venta : (!cliente || itemsManuales.length === 0))}
+                                className="px-8 py-4 rounded-xl font-bold text-lg"
                             />
                         </div>
                     </div>

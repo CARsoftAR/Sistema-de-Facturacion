@@ -9,6 +9,7 @@ import {
     Truck,
     XCircle,
     ShoppingBag,
+    ShoppingCart,
     RotateCcw,
     CheckCircle2,
     Clock,
@@ -233,8 +234,8 @@ const Compras = () => {
                 </div>
                 <BtnAdd
                     label="Nueva Compra"
-                    icon={ShoppingBag}
-                    className="btn-lg shadow-sm"
+                    icon={ShoppingCart}
+                    className="btn-lg shadow-lg shadow-blue-500/30 hover:shadow-blue-600/40 active:scale-95 transition-all"
                     onClick={() => navigate('/compras/nueva')}
                 />
             </div>

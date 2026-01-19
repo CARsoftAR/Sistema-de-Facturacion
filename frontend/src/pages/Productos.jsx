@@ -180,7 +180,7 @@ const Productos = () => {
                         Gestiona el catálogo completo de productos y servicios.
                     </p>
                 </div>
-                <BtnAdd label="Nuevo Producto" icon={Package} onClick={handleCreate} className="btn-lg shadow-sm" />
+                <BtnAdd label="Nuevo Producto" icon={Package} onClick={handleCreate} className="btn-lg shadow-lg shadow-blue-500/30 hover:shadow-blue-600/40 active:scale-95 transition-all" />
             </div>
 
             {/* FILTROS */}

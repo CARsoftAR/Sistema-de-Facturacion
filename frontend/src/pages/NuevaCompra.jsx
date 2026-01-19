@@ -296,7 +296,7 @@ const NuevaCompra = () => {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-0">
 
                 {/* Left Panel: Proveedor & Info */}
-                <div className="lg:col-span-4 flex flex-col gap-6 overflow-y-auto">
+                <div className="lg:col-span-4 flex flex-col gap-6 h-[calc(100vh-8rem)]">
 
                     <div className="flex items-center gap-4">
                         <BtnBack onClick={() => navigate('/compras')} />
@@ -385,7 +385,7 @@ const NuevaCompra = () => {
                     </div>
 
                     {/* Datos Comprobante */}
-                    <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
+                    <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 flex-1 flex flex-col min-h-0">
                         <div className="flex items-center gap-2 mb-4 text-slate-700">
                             <FileText size={20} />
                             <h2 className="font-bold text-lg">Detalles</h2>
@@ -499,10 +499,11 @@ const NuevaCompra = () => {
                             <input
                                 ref={cantidadRef}
                                 type="number"
-                                className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-center font-bold text-sm"
+                                className={`w-full px-3 py-2.5 border border-slate-200 rounded-lg text-center font-bold text-sm transition-colors ${!productoSeleccionado ? 'bg-slate-100 text-slate-400' : 'bg-white text-slate-900'}`}
                                 value={inputCantidad}
                                 onChange={(e) => setInputCantidad(e.target.value)}
                                 onKeyDown={handleCantidadKeyDown}
+                                disabled={!productoSeleccionado}
                             />
                         </div>
                         <div className="col-span-2">
@@ -510,18 +511,19 @@ const NuevaCompra = () => {
                             <input
                                 ref={costoRef}
                                 type="number"
-                                className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-center font-bold text-sm"
+                                className={`w-full px-3 py-2.5 border border-slate-200 rounded-lg text-center font-bold text-sm transition-colors ${!productoSeleccionado ? 'bg-slate-100 text-slate-400' : 'bg-white text-slate-900'}`}
                                 value={inputCosto}
                                 onChange={(e) => setInputCosto(e.target.value)}
                                 onKeyDown={handleCostoKeyDown}
                                 placeholder="0.00"
+                                disabled={!productoSeleccionado}
                             />
                         </div>
                         <div className="col-span-1">
                             <button
                                 onClick={agregarProducto}
                                 disabled={!productoSeleccionado}
-                                className="w-full py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center"
+                                className={`w-full py-2 rounded-lg flex items-center justify-center transition-all ${!productoSeleccionado ? 'bg-slate-100 text-slate-300 shadow-none' : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-md hover:shadow-lg'}`}
                             >
                                 <Plus size={20} />
                             </button>

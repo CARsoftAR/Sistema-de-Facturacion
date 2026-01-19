@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Plus, Trash2, User, ShoppingCart, FileText, X, Check, ClipboardList, Save, AlertTriangle, Briefcase } from 'lucide-react';
-import { BtnSave, BtnCancel } from '../components/CommonButtons';
+import { BtnSave, BtnCancel, BtnBack } from '../components/CommonButtons';
 import { useProductSearch } from '../hooks/useProductSearch';
 
 // Obtener CSRF Token
@@ -281,11 +281,13 @@ const NuevoPresupuesto = () => {
 
                 {/* =============== COLUMNA IZQUIERDA (4 cols) =============== */}
                 <div
-                    className="lg:col-span-4 flex flex-col gap-6 overflow-y-auto pr-1"
-                    style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                    className="lg:col-span-4 flex flex-col gap-6 h-[calc(100vh-8rem)] pr-1"
                 >
                     {/* Header Interno */}
                     <div className="mb-6 flex-shrink-0">
+                        <div className="mb-4">
+                            <BtnBack onClick={() => navigate('/presupuestos')} />
+                        </div>
                         <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
                             <Briefcase className="text-blue-600" size={32} strokeWidth={2.5} />
                             Nuevo Presupuesto
@@ -369,7 +371,7 @@ const NuevoPresupuesto = () => {
                     </div>
 
                     {/* Options Card */}
-                    <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5 flex-shrink-0 group">
+                    <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5 group flex-1 flex flex-col min-h-0">
                         <div className="flex items-center gap-2 mb-4">
                             <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg group-hover:bg-indigo-100 transition-colors">
                                 <FileText size={20} />
@@ -380,10 +382,10 @@ const NuevoPresupuesto = () => {
                             <label className="block text-xs font-bold text-slate-500 mb-1.5 ml-1">VALIDEZ (DÍAS)</label>
                             <input type="number" value={validez} onChange={(e) => setValidez(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 focus:ring-2 focus:ring-blue-500 outline-none" />
                         </div>
-                        <div>
+                        <div className="flex-1 flex flex-col min-h-0">
                             <label className="block text-xs font-bold text-slate-500 mb-1.5 ml-1">OBSERVACIONES</label>
                             <textarea
-                                className="w-full h-24 p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 resize-none text-sm text-slate-700"
+                                className="w-full flex-1 p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 resize-none text-sm text-slate-700 min-h-[6rem]"
                                 placeholder="Notas o detalles adicionales..."
                                 value={observaciones}
                                 onChange={(e) => setObservaciones(e.target.value)}
@@ -468,7 +470,7 @@ const NuevoPresupuesto = () => {
 
                             <div className="col-span-2">
                                 <label className="block text-xs font-bold text-slate-500 mb-1.5 ml-1 text-center">CANT.</label>
-                                <input ref={cantidadRef} type="number" min="1" value={inputCantidad} onChange={(e) => setInputCantidad(e.target.value)} onKeyDown={handleCantidadKeyDown} className="w-full px-2 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-slate-50 text-sm text-center font-bold text-slate-800" />
+                                <input ref={cantidadRef} type="number" min="1" value={inputCantidad} onChange={(e) => setInputCantidad(e.target.value)} onKeyDown={handleCantidadKeyDown} disabled={!productoSeleccionado} title={!productoSeleccionado ? "Seleccione un producto primero" : "Cantidad"} className={`w-full px-2 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm text-center font-bold transition-colors ${!productoSeleccionado ? 'bg-slate-100 text-slate-400 cursor-not-allowed opacity-75' : 'bg-slate-50 text-slate-800'}`} />
                             </div>
 
                             <div className="col-span-2">

@@ -199,7 +199,7 @@ const Presupuestos = () => {
                         Gestión de Presupuestos y Cotizaciones
                     </p>
                 </div>
-                <BtnAdd onClick={() => navigate('/presupuestos/nuevo')} label="Nuevo Presupuesto" icon={FileText} className="btn-lg shadow-sm" />
+                <BtnAdd onClick={() => navigate('/presupuestos/nuevo')} label="Nuevo Presupuesto" icon={FileText} className="btn-lg shadow-lg shadow-blue-500/30 hover:shadow-blue-600/40 active:scale-95 transition-all" />
             </div>
 
             {/* Filtros */}

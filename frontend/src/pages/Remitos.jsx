@@ -70,7 +70,7 @@ const Remitos = () => {
     }, [fetchRemitos]);
 
     const handlePrint = (id) => {
-        window.open(`/api/remitos/${id}/pdf/`, '_blank');
+        window.open(`/comprobantes/remito/${id}/imprimir/`, '_blank');
     };
 
     const handleView = (id) => {
@@ -114,7 +114,7 @@ const Remitos = () => {
                 </div>
                 <BtnAdd
                     label="Nuevo Remito"
-                    icon={Plus}
+                    icon={Truck}
                     className="btn-lg shadow-sm"
                     onClick={() => navigate('/remitos/nuevo')}
                 />
@@ -196,7 +196,7 @@ const Remitos = () => {
                                             <td className="py-3">
                                                 {remito.venta_id ? (
                                                     <span className="badge bg-light text-dark border font-mono">
-                                                        FC: {remito.venta_str}
+                                                        FC: {remito.venta_str} <span className="text-muted ms-1">(ID: {remito.venta_id})</span>
                                                     </span>
                                                 ) : (
                                                     <span className="text-muted">-</span>

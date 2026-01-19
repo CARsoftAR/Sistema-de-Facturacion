@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search, Plus, Trash2, User, ShoppingCart, CreditCard, DollarSign, FileText, Check, X } from 'lucide-react';
-import { BtnSave } from '../components/CommonButtons';
+import { BtnSave, BtnBack } from '../components/CommonButtons';
 import { useProductSearch } from '../hooks/useProductSearch';
 import PaymentModal from '../components/common/PaymentModal';
 import Swal from 'sweetalert2';
@@ -22,6 +23,7 @@ function getCookie(name) {
 }
 
 const NuevaVenta = () => {
+    const navigate = useNavigate();
     // ==================== STATE & REFS ====================
     // 1. REFS FIRST
     const codigoRef = useRef(null);
@@ -376,9 +378,12 @@ const NuevaVenta = () => {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-0">
 
                 {/* CLOUMNA IZQUIERDA (CLIENTE / PROVEEDOR / INFO) */}
-                <div className="lg:col-span-4 flex flex-col gap-6 overflow-y-auto pr-1">
-                    {/* Header Interno */}
+                <div className="lg:col-span-4 flex flex-col gap-6 h-[calc(100vh-8rem)] pr-1">
+                    {/* Header Interno: Back Button & Title Stacked */}
                     <div className="mb-6 flex-shrink-0">
+                        <div className="mb-4">
+                            <BtnBack onClick={() => navigate('/ventas')} />
+                        </div>
                         <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
                             <ShoppingCart className="text-blue-600" size={32} strokeWidth={2.5} />
                             Nueva Venta
@@ -452,7 +457,7 @@ const NuevaVenta = () => {
                     </div>
 
                     {/* Botones de Método de Pago y Opciones */}
-                    <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5 flex-shrink-0">
+                    <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5 flex-1 flex flex-col min-h-0">
                         <div className="flex items-center gap-2 mb-4">
                             <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
                                 <CreditCard size={20} />
@@ -553,7 +558,17 @@ const NuevaVenta = () => {
 
                             <div className="col-span-2">
                                 <label className="block text-xs font-bold text-slate-500 mb-1.5 ml-1 text-center">CANT.</label>
-                                <input ref={cantidadRef} type="number" min="1" value={inputCantidad} onChange={(e) => setInputCantidad(e.target.value)} onKeyDown={handleCantidadKeyDown} className="w-full px-2 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-slate-50 text-sm text-center font-bold text-slate-800" />
+                                <input
+                                    ref={cantidadRef}
+                                    type="number"
+                                    min="1"
+                                    value={inputCantidad}
+                                    onChange={(e) => setInputCantidad(e.target.value)}
+                                    onKeyDown={handleCantidadKeyDown}
+                                    disabled={!productoSeleccionado}
+                                    title={!productoSeleccionado ? "Seleccione un producto primero" : "Cantidad"}
+                                    className={`w-full px-2 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm text-center font-bold transition-colors ${!productoSeleccionado ? 'bg-slate-100 text-slate-400 cursor-not-allowed opacity-75' : 'bg-slate-50 text-slate-800'}`}
+                                />
                             </div>
 
                             <div className="col-span-2">

@@ -132,14 +132,33 @@ export const showSuccessAlert = async (title, text, confirmText = 'Aceptar', opt
         </div>
     );
 
+    const shouldShowCancel = !!options.showCancelButton;
+
+    // Si queremos el botón cancelar, necesitamos asegurarnos de que el layout sea el correcto 
+    // (similar a showDeleteAlert con gap-6 y padding)
+    const standardActionsClass = shouldShowCancel ? 'w-full flex gap-6 px-8 !mt-4 !mb-6' : undefined;
+
+    const baseCustomClass = {
+        ...options.customClass,
+        // Only overwrite actions if we need the specific 2-button layout and user didn't provide one
+        actions: (options.customClass?.actions) || standardActionsClass || (options.customClass?.actions),
+    };
+
+    // IMPORTANT: Only add cancelButton key if we want to OVERRIDE the default.
+    // If shouldShowCancel is TRUE, we want the default style (so do NOT add key).
+    // If shouldShowCancel is FALSE, we want to HIDE it (add key 'hidden').
+    if (!shouldShowCancel) {
+        baseCustomClass.cancelButton = 'hidden display-none';
+    } else if (options.customClass?.cancelButton) {
+        // If user provided a specific class, use it
+        baseCustomClass.cancelButton = options.customClass.cancelButton;
+    }
+
     return showConfirmationAlert(title, text, confirmText, 'success', {
         iconComponent: successIcon,
+        showCancelButton: shouldShowCancel,
         ...options,
-        showCancelButton: false,
-        customClass: {
-            ...options.customClass,
-            cancelButton: 'hidden display-none'
-        }
+        customClass: baseCustomClass
     });
 };
 

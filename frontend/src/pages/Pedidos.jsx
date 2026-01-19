@@ -195,7 +195,7 @@ const Pedidos = () => {
                 <BtnAdd
                     label="Nuevo Pedido"
                     icon={ShoppingCart}
-                    className="btn-lg shadow-sm"
+                    className="btn-lg shadow-lg shadow-blue-500/30 hover:shadow-blue-600/40 active:scale-95 transition-all"
                     onClick={() => navigate('/pedidos/nuevo')}
                 />
             </div>

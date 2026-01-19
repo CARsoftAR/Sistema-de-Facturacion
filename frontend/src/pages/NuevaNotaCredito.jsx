@@ -28,7 +28,28 @@ const NuevaNotaCredito = () => {
         if (!id) return;
         setLoading(true);
         try {
-            const response = await fetch(`/api/ventas/${id}/`);
+            // Si el ID tiene un guión o es largo, intentamos buscarlo como número de factura
+            let finalId = id;
+            if (id.includes('-') || id.length > 5) {
+                // Buscamos primero en el listado de ventas para ver si coincide con el número formateado
+                const listRes = await fetch(`/api/ventas/listar/?q=${encodeURIComponent(id)}`);
+                const listData = await listRes.json();
+
+                // NOTA: Como api_ventas_listar actualmente NO filtra en el backend (lo acabo de ver),
+                // tenemos que filtrar aquí en el frontend los resultados de 'data'.
+                // Pero wait, si el backend no filtra, traerá todas.
+                // Mejor aún: El backend de ventas listar NO FILTRA. Voy a arreglar el backend también.
+
+                if (listData.ok && listData.data.length > 0) {
+                    // Buscamos coincidencia exacta o la primera que contenga el número
+                    const match = listData.data.find(v => v.id.toString() === id || (v.numero_factura && v.numero_factura.includes(id)));
+                    if (match) {
+                        finalId = match.id;
+                    }
+                }
+            }
+
+            const response = await fetch(`/api/ventas/${finalId}/`);
             const data = await response.json();
             if (data.error) {
                 Swal.fire('Error', data.error, 'error');
@@ -86,12 +107,16 @@ const NuevaNotaCredito = () => {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-0">
                 <div className="lg:col-span-5 space-y-6 overflow-y-auto pr-1">
 
-                    <div className="flex items-center gap-4">
-                        <BtnBack onClick={() => navigate('/notas-credito')} />
+                    {/* Header: Back Button & Title Stacked */}
+                    <div className="mb-6 flex-shrink-0">
+                        <div className="mb-4">
+                            <BtnBack onClick={() => navigate('/notas-credito')} />
+                        </div>
                         <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
-                            <ArrowDownCircle className="text-red-600" size={32} />
+                            <ArrowDownCircle className="text-red-600" size={32} strokeWidth={2.5} />
                             Nueva NC
                         </h1>
+                        <p className="text-slate-500 font-medium ml-10">Generar comprobante de devolución o anulación</p>
                     </div>
                     <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
                         <label className="block text-sm font-bold text-slate-500 mb-2">Venta a Anular/Devolver</label>
@@ -101,13 +126,19 @@ const NuevaNotaCredito = () => {
                                 placeholder="ID de Venta (ej: 123)"
                                 value={ventaId}
                                 onChange={(e) => setVentaId(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && buscarVenta(ventaId.trim())}
                                 className="w-full pl-4 pr-12 py-3 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 bg-slate-50 transition-all font-medium"
                             />
                             <button
-                                onClick={() => buscarVenta(ventaId)}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                                onClick={() => buscarVenta(ventaId.trim())}
+                                disabled={loading}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
                             >
-                                <Search size={18} />
+                                {loading ? (
+                                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                ) : (
+                                    <Search size={18} />
+                                )}
                             </button>
                         </div>
                     </div>

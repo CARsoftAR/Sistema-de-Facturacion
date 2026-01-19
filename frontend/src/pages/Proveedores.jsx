@@ -197,7 +197,7 @@ const Proveedores = () => {
                         Administra tus proveedores y contactos.
                     </p>
                 </div>
-                <BtnAdd label="Nuevo Proveedor" icon={Users} onClick={() => openModal()} className="btn-lg shadow-sm" />
+                <BtnAdd label="Nuevo Proveedor" icon={Users} onClick={() => openModal()} className="btn-lg shadow-lg shadow-blue-500/30 hover:shadow-blue-600/40 active:scale-95 transition-all" />
             </div>
 
             {/* Filtros */}
