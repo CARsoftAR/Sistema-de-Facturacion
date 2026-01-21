@@ -16,7 +16,8 @@ import {
     TrendingDown,
     Calendar,
     LogIn,
-    LogOut
+    LogOut,
+    Printer
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { BtnClear, BtnEdit, BtnDelete, BtnAction } from '../components/CommonButtons';
@@ -81,6 +82,13 @@ const Caja = () => {
 
     const [montoApertura, setMontoApertura] = useState('');
     const [montoCierreReal, setMontoCierreReal] = useState('');
+
+    // State for History/Reports
+    const [showHistoryModal, setShowHistoryModal] = useState(false);
+    const [showDetailModal, setShowDetailModal] = useState(false);
+    const [historyData, setHistoryData] = useState([]);
+    const [selectedCierre, setSelectedCierre] = useState(null);
+    const [loadingHistory, setLoadingHistory] = useState(false);
 
     const fetchCajaData = useCallback(async () => {
         setLoading(true);
@@ -201,6 +209,40 @@ const Caja = () => {
         }
     };
 
+    const fetchHistory = async () => {
+        setLoadingHistory(true);
+        setShowHistoryModal(true);
+        try {
+            const res = await fetch('/api/caja/cierres/');
+            const data = await res.json();
+            if (data.cierres) {
+                setHistoryData(data.cierres);
+            }
+        } catch (error) {
+            console.error(error);
+            Swal.fire('Error', 'No se pudo cargar el historial', 'error');
+        } finally {
+            setLoadingHistory(false);
+        }
+    };
+
+    const fetchCierreDetail = async (id) => {
+        try {
+            Swal.fire({ title: 'Cargando...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            const res = await fetch(`/api/caja/cierre/${id}/`);
+            const data = await res.json();
+            Swal.close();
+
+            if (data.caja) {
+                setSelectedCierre(data);
+                setShowDetailModal(true);
+            }
+        } catch (error) {
+            console.error(error);
+            Swal.fire('Error', 'No se pudo cargar el detalle', 'error');
+        }
+    };
+
     const handleCierre = () => {
         setMontoCierreReal('');
         setShowCierreModal(true);
@@ -273,8 +315,8 @@ const Caja = () => {
     return (
         <div className="container-fluid px-4 pt-4 pb-0 h-100 d-flex flex-column bg-light fade-in" style={{ maxHeight: '100vh', overflow: 'hidden' }}>
             {/* Compact Header with Integrated Balance */}
-            <div className="d-flex flex-column flex-xl-row justify-content-between align-items-xl-center mb-4 gap-3">
-                {/* Title Section */}
+            <div className="d-flex flex-column flex-xl-row justify-content-between align-items-xl-center mb-4 gap-3 border-bottom pb-4">
+                {/* Clean Title Section */}
                 <div>
                     <h2 className="text-primary fw-bold mb-0" style={{ fontSize: '2rem' }}>
                         <Wallet className="me-2 inline-block" size={32} />
@@ -292,31 +334,24 @@ const Caja = () => {
                     </div>
                 </div>
 
-                {/* Right Side: Balance + Actions */}
-                <div className="d-flex flex-column flex-md-row align-items-md-center gap-3">
-                    {/* Compact Balance Display */}
-                    <div className="px-4 py-2 rounded-4 shadow-sm border-0 d-flex align-items-center gap-3"
-                        style={{
-                            background: ((filters.tipo || filters.busqueda || filters.fecha_desde || filters.fecha_hasta) ? saldoFiltrado : saldoActual) >= 0
-                                ? 'linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)' // Soft Pastel Green
-                                : 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)', // Soft Pastel Red
-                            minWidth: '220px'
-                        }}>
-                        <div className="bg-white bg-opacity-25 p-2 rounded-circle">
-                            <Wallet size={24} className="text-dark" />
+                {/* Right Side: Clean Balance + Actions */}
+                <div className="d-flex flex-column flex-md-row align-items-md-center gap-4">
+                    {/* Minimalist Balance */}
+                    <div className="text-end">
+                        <div className="small text-muted fw-bold text-uppercase" style={{ fontSize: '0.7rem', letterSpacing: '0.5px' }}>
+                            {(filters.tipo || filters.busqueda || filters.fecha_desde || filters.fecha_hasta) ? 'SALDO FILTRADO' : 'SALDO ACTUAL'}
                         </div>
-                        <div>
-                            <div className="small text-dark text-opacity-75 fw-bold text-uppercase" style={{ fontSize: '0.7rem', letterSpacing: '1px' }}>
-                                {(filters.tipo || filters.busqueda || filters.fecha_desde || filters.fecha_hasta) ? 'Balance Filtrado' : 'Saldo en Caja'}
-                            </div>
-                            <div className="h3 mb-0 fw-bold text-dark">
-                                {formatCurrency((filters.tipo || filters.busqueda || filters.fecha_desde || filters.fecha_hasta) ? saldoFiltrado : saldoActual)}
-                            </div>
+                        <div className={`h2 mb-0 fw-bold ${((filters.tipo || filters.busqueda || filters.fecha_desde || filters.fecha_hasta) ? saldoFiltrado : saldoActual) >= 0 ? 'text-dark' : 'text-danger'}`}>
+                            {formatCurrency((filters.tipo || filters.busqueda || filters.fecha_desde || filters.fecha_hasta) ? saldoFiltrado : saldoActual)}
                         </div>
                     </div>
 
                     {/* Buttons */}
                     <div className="d-flex gap-2">
+                        <button onClick={fetchHistory} className="btn btn-white border shadow-sm d-flex align-items-center gap-2 fw-medium px-3 py-2 text-primary hover-bg-primary transition-all">
+                            <RotateCcw size={18} /> Historial Cierres
+                        </button>
+
                         {!cajaAbierta ? (
                             <button onClick={() => setShowAperturaModal(true)} className="btn btn-primary shadow-sm d-flex align-items-center gap-2 fw-bold px-3 py-2">
                                 <TrendingUp size={18} /> Abrir
@@ -626,6 +661,7 @@ const Caja = () => {
                 )
             }
 
+
             {/* MODAL: CIERRE */}
             {
                 showCierreModal && (
@@ -668,6 +704,178 @@ const Caja = () => {
                     </div>
                 )
             }
+
+            {/* MODAL: HISTORIAL CIERRES */}
+            {showHistoryModal && (
+                <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-200 flex flex-col max-h-[90vh]">
+                        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white">
+                            <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                                <RotateCcw className="text-blue-600" size={22} strokeWidth={2.5} />
+                                Historial de Cierres (Z)
+                            </h2>
+                            <button onClick={() => setShowHistoryModal(false)} className="text-slate-400 hover:text-red-500 hover:bg-slate-50 p-2 rounded-full transition-all">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="flex-grow overflow-auto p-4">
+                            <table className="table align-middle">
+                                <thead className="table-light">
+                                    <tr>
+                                        <th>Fecha Cierre</th>
+                                        <th>Usuario</th>
+                                        <th className="text-end">Monto Sistema</th>
+                                        <th className="text-end">Monto Real</th>
+                                        <th className="text-end">Diferencia</th>
+                                        <th className="text-end">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {loadingHistory ? (
+                                        <tr><td colSpan="6" className="text-center py-4"><div className="spinner-border text-primary" /></td></tr>
+                                    ) : historyData.length === 0 ? (
+                                        <tr><td colSpan="6" className="text-center py-4 text-muted">No hay cierres registrados</td></tr>
+                                    ) : (
+                                        historyData.map(c => (
+                                            <tr key={c.id}>
+                                                <td>{c.fecha_cierre}</td>
+                                                <td>{c.usuario}</td>
+                                                <td className="text-end fw-medium">${c.monto_sistema.toLocaleString('es-AR')}</td>
+                                                <td className="text-end fw-bold">${c.monto_real.toLocaleString('es-AR')}</td>
+                                                <td className={`text-end fw-bold ${c.diferencia === 0 ? 'text-muted' : c.diferencia > 0 ? 'text-success' : 'text-danger'}`}>
+                                                    {c.diferencia > 0 ? '+' : ''}{c.diferencia.toLocaleString('es-AR')}
+                                                </td>
+                                                <td className="text-end">
+                                                    <button onClick={() => fetchCierreDetail(c.id)} className="btn btn-sm btn-outline-primary shadow-sm hover:translate-y-[-1px] transition-all">
+                                                        <Search size={16} /> Ver Detalle
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* MODAL: DETALLE DE CIERRE (ARQUEO) */}
+            {showDetailModal && selectedCierre && (
+                <div className="fixed inset-0 z-[1200] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-200 flex flex-col max-h-[95vh]">
+                        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-gray-50">
+                            <div>
+                                <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                                    <CheckCircle2 className="text-green-600" size={22} strokeWidth={2.5} />
+                                    Detalle de Cierre #{selectedCierre.caja.id}
+                                </h2>
+                                <p className="text-sm text-slate-500 ms-8">Cerrado el {selectedCierre.caja.fecha_cierre} por {selectedCierre.caja.usuario}</p>
+                            </div>
+                            <button onClick={() => setShowDetailModal(false)} className="text-slate-400 hover:text-red-500 hover:bg-slate-50 p-2 rounded-full transition-all">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="flex-grow overflow-auto p-6 bg-slate-50/50">
+                            {/* Kards Summary */}
+                            <div className="row g-3 mb-4">
+                                <div className="col-md-3">
+                                    <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm h-100">
+                                        <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Monto Apertura</div>
+                                        <div className="text-2xl font-bold text-slate-700">${selectedCierre.caja.monto_apertura.toLocaleString('es-AR')}</div>
+                                    </div>
+                                </div>
+                                <div className="col-md-3">
+                                    <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm h-100">
+                                        <div className="text-xs font-bold text-green-500 uppercase tracking-wider mb-1">Ingresos</div>
+                                        <div className="text-2xl font-bold text-green-600">+${selectedCierre.resumen.ingresos.toLocaleString('es-AR')}</div>
+                                    </div>
+                                </div>
+                                <div className="col-md-3">
+                                    <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm h-100">
+                                        <div className="text-xs font-bold text-red-500 uppercase tracking-wider mb-1">Egresos</div>
+                                        <div className="text-2xl font-bold text-red-600">-${Math.abs(selectedCierre.resumen.egresos).toLocaleString('es-AR')}</div>
+                                    </div>
+                                </div>
+                                <div className="col-md-3">
+                                    <div className="bg-slate-800 p-3 rounded-xl border border-slate-700 shadow-sm h-100 text-white">
+                                        <div className="text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">Saldo Sistema</div>
+                                        <div className="text-2xl font-bold">${selectedCierre.caja.monto_sistema.toLocaleString('es-AR')}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="row g-3 mb-4">
+                                <div className="col-md-6">
+                                    <div className={`p-4 rounded-xl border h-100 flex items-center justify-between ${selectedCierre.caja.diferencia === 0 ? 'bg-white border-slate-200' : selectedCierre.caja.diferencia > 0 ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                                        <div>
+                                            <div className="text-sm font-bold text-slate-500 uppercase tracking-wider">Resultado del Arqueo</div>
+                                            <div className="text-3xl font-bold text-slate-800 mt-1">${selectedCierre.caja.monto_real.toLocaleString('es-AR')}</div>
+                                            <div className="text-sm text-slate-500">Monto Real en Caja</div>
+                                        </div>
+                                        <div className="text-end">
+                                            <div className={`text-lg font-bold ${selectedCierre.caja.diferencia === 0 ? 'text-muted' : selectedCierre.caja.diferencia > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                {selectedCierre.caja.diferencia > 0 ? '+' : ''}{selectedCierre.caja.diferencia.toLocaleString('es-AR')}
+                                            </div>
+                                            <div className="text-xs font-bold uppercase text-slate-400">Diferencia</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="col-md-6">
+                                    <div className="bg-white p-4 rounded-xl border border-slate-200 h-100">
+                                        <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Observaciones</div>
+                                        <p className="text-slate-600 italic">"{selectedCierre.caja.observaciones || 'Sin observaciones'}"</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                                <div className="px-4 py-3 bg-slate-50 border-b border-slate-200 font-bold text-slate-700 text-sm uppercase tracking-wider">
+                                    Detalle de Movimientos
+                                </div>
+                                <table className="table fs-sm mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Hora</th>
+                                            <th>Descripción</th>
+                                            <th>Tipo</th>
+                                            <th>Usuario</th>
+                                            <th className="text-end">Monto</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {selectedCierre.movimientos.map(m => (
+                                            <tr key={m.id}>
+                                                <td>{m.fecha}</td>
+                                                <td>{m.descripcion}</td>
+                                                <td>
+                                                    <span className={`badge rounded-pill ${m.tipo === 'Ingreso' ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50'}`}>
+                                                        {m.tipo}
+                                                    </span>
+                                                </td>
+                                                <td>{m.usuario}</td>
+                                                <td className={`text-end fw-bold ${m.tipo === 'Ingreso' ? 'text-green-600' : 'text-red-600'}`}>
+                                                    {m.tipo === 'Egreso' ? '-' : '+'}${m.monto.toLocaleString('es-AR')}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div className="p-4 bg-white border-t border-slate-100 flex justify-end gap-2">
+                            <button onClick={() => window.print()} className="btn btn-outline-secondary d-flex align-items-center gap-2">
+                                <Printer size={18} /> Imprimir
+                            </button>
+                            <button onClick={() => setShowDetailModal(false)} className="btn btn-primary px-5">
+                                Cerrar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <style>{`
                 .hover-bg-primary:hover { background-color: #e7f1ff !important; color: #0d6efd !important; }

@@ -133,6 +133,128 @@ body {
 }
 
 /* Global Table Styles - Soft Silver Separators */
-.table > :not(caption) > * > * {
-  border-bottom-color: #cbd5e1 !important; /* Slate-300 */
+.table> :not(caption)>*>* {
+  border-bottom-color: #cbd5e1 !important;
+  /* Slate-300 */
+}
+
+/* =================================================
+   GLOBAL PRINT STYLES
+   Oculta la navegación y muestra solo el contenido
+   ================================================= */
+@media print {
+
+  /* Ocultar sidebar completamente */
+  .d-flex.flex-column.position-fixed,
+  .position-fixed.h-100.start-0 {
+    display: none !important;
+  }
+
+  /* Ocultar TopNavbar */
+  nav,
+  header,
+  .d-flex.justify-content-between.align-items-center.px-4.py-3,
+  [class*="TopNavbar"],
+  .bg-white.shadow-sm {
+    display: none !important;
+  }
+
+  /* Ocultar elementos de navegación auxiliares */
+  .d-print-none {
+    display: none !important;
+  }
+
+  /* Resetear margins del contenido principal */
+  main,
+  main.flex-grow-1 {
+    margin-left: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+
+  /* Hacer que el contenedor principal use todo el espacio */
+  .d-flex.vh-100.overflow-hidden.bg-light {
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+    background: white !important;
+  }
+
+  /* Contenido con scroll debe ser visible */
+  .overflow-auto,
+  .overflow-hidden {
+    overflow: visible !important;
+    height: auto !important;
+  }
+
+  /* Fondo blanco para impresión */
+  body,
+  html,
+  #root {
+    background: white !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  /* Asegurar que las tablas se impriman correctamente */
+  table {
+    page-break-inside: auto !important;
+    border-collapse: collapse !important;
+    width: 100% !important;
+  }
+
+  tr {
+    page-break-inside: avoid !important;
+    page-break-after: auto !important;
+  }
+
+  thead {
+    display: table-header-group !important;
+  }
+
+  tfoot {
+    display: table-footer-group !important;
+  }
+
+  /* Mostrar elementos ocultos que deben verse en impresión */
+  .d-none.d-print-block {
+    display: block !important;
+  }
+
+  .d-none.d-print-table-row {
+    display: table-row !important;
+  }
+
+  /* Tamaño de página y márgenes */
+  @page {
+    size: A4;
+    margin: 15mm 10mm;
+  }
+
+  /* Evitar que el navegador escale el contenido */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Estilos específicos para reportes */
+  .report-results {
+    width: 100% !important;
+  }
+
+  .report-table-container {
+    width: 100% !important;
+    overflow: visible !important;
+  }
+
+  /* Header de reporte debe repetirse en cada página */
+  .print-header {
+    position: running(header);
+  }
+}
+
+/* Cursor pointer para el icono del calendario en inputs de fecha */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
 }

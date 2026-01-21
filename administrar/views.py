@@ -456,15 +456,30 @@ def api_caja_movimientos_lista(request):
         # Query base
         movimientos = MovimientoCaja.objects.select_related('usuario').all()
         
-        # Filtros de fecha
+        # Helper para parsear fechas flexiblemente
+        def parse_date_param(date_str):
+            if not date_str: return None
+            for fmt in ('%Y-%m-%d', '%d/%m/%Y', '%d-%m-%Y'):
+                try:
+                    return datetime.strptime(date_str, fmt).date()
+                except ValueError:
+                    continue
+            return None
+
+        # Filtros de fecha usando RANGOS DE TIEMPO (Más robusto)
         if fecha_desde:
-            try:
-                movimientos = movimientos.filter(fecha__date__gte=datetime.strptime(fecha_desde, '%Y-%m-%d').date())
-            except ValueError: pass
+            d_desde = parse_date_param(fecha_desde)
+            if d_desde:
+                # Create start of day datetime
+                dt_desde = datetime.combine(d_desde, datetime.min.time())
+                movimientos = movimientos.filter(fecha__gte=dt_desde)
+                
         if fecha_hasta:
-            try:
-                movimientos = movimientos.filter(fecha__date__lte=datetime.strptime(fecha_hasta, '%Y-%m-%d').date())
-            except ValueError: pass
+            d_hasta = parse_date_param(fecha_hasta)
+            if d_hasta:
+                # Create end of day datetime
+                dt_hasta = datetime.combine(d_hasta, datetime.max.time())
+                movimientos = movimientos.filter(fecha__lte=dt_hasta)
         
         if tipo:
             movimientos = movimientos.filter(tipo=tipo)
@@ -478,11 +493,15 @@ def api_caja_movimientos_lista(request):
         total = movimientos.count()
         movimientos_page = movimientos.order_by('-fecha')[(page - 1) * per_page : page * per_page]
         
+        from django.utils import timezone
+        
         data = []
         for m in movimientos_page:
+            # Convert DB time (UTC) to Local Time before formatting
+            local_date = timezone.localtime(m.fecha)
             data.append({
                 'id': m.id,
-                'fecha': m.fecha.strftime('%d/%m/%Y %H:%M'),
+                'fecha': local_date.strftime('%d/%m/%Y %H:%M'),
                 'tipo': m.tipo,
                 'descripcion': m.descripcion,
                 'monto': float(m.monto),
@@ -804,6 +823,98 @@ def api_caja_apertura(request):
         return JsonResponse({'ok': True, 'id': caja.id})
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+@verificar_permiso('caja')
+def api_caja_cierres_lista(request):
+    """API para listar el historial de cierres de caja (Cierre Z)"""
+    try:
+        page = int(request.GET.get('page', 1))
+        per_page = int(request.GET.get('per_page', 10))
+        
+        cajas = CajaDiaria.objects.filter(estado='CERRADA').select_related('usuario').order_by('-fecha_cierre')
+        
+        total = cajas.count()
+        cajas_page = cajas[(page - 1) * per_page : page * per_page]
+        
+        data = []
+        for c in cajas_page:
+            diferencia = (c.monto_cierre_real or 0) - c.monto_cierre_sistema
+            data.append({
+                'id': c.id,
+                'fecha_apertura': c.fecha_apertura.strftime('%d/%m/%Y %H:%M'),
+                'fecha_cierre': c.fecha_cierre.strftime('%d/%m/%Y %H:%M') if c.fecha_cierre else '-',
+                'usuario': c.usuario.username,
+                'monto_inicial': float(c.monto_apertura),
+                'monto_sistema': float(c.monto_cierre_sistema),
+                'monto_real': float(c.monto_cierre_real or 0),
+                'diferencia': float(diferencia),
+            })
+            
+        return JsonResponse({
+            'cierres': data,
+            'total': total,
+            'page': page,
+            'per_page': per_page,
+            'total_pages': (total + per_page - 1) // per_page
+        })
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+@verificar_permiso('caja')
+def api_caja_cierre_detalle(request, id):
+    """API para obtener el detalle completo de un cierre específico (Arqueo Detallado)"""
+    from django.db.models import Sum
+    from django.shortcuts import get_object_or_404
+    
+    caja = get_object_or_404(CajaDiaria, id=id)
+    
+    # Movimientos de esa sesión de caja
+    movimientos = MovimientoCaja.objects.filter(caja_diaria=caja).select_related('usuario').order_by('fecha')
+    
+    movs_data = []
+    ingresos = 0
+    egresos = 0
+    
+    for m in movimientos:
+        movs_data.append({
+            'id': m.id,
+            'fecha': m.fecha.strftime('%H:%M'),
+            'tipo': m.tipo,
+            'descripcion': m.descripcion,
+            'monto': float(m.monto),
+            'usuario': m.usuario.username if m.usuario else 'Sistema',
+        })
+        if m.tipo == 'Ingreso':
+            ingresos += m.monto
+        else:
+            egresos += m.monto
+
+    diferencia = (caja.monto_cierre_real or 0) - caja.monto_cierre_sistema
+
+    return JsonResponse({
+        'caja': {
+            'id': caja.id,
+            'estado': caja.estado,
+            'fecha_apertura': caja.fecha_apertura.strftime('%d/%m/%Y %H:%M'),
+            'fecha_cierre': caja.fecha_cierre.strftime('%d/%m/%Y %H:%M') if caja.fecha_cierre else '-',
+            'usuario': caja.usuario.username,
+            'monto_apertura': float(caja.monto_apertura),
+            'monto_sistema': float(caja.monto_cierre_sistema),
+            'monto_real': float(caja.monto_cierre_real or 0),
+            'diferencia': float(diferencia),
+            'observaciones': caja.observaciones,
+        },
+        'resumen': {
+            'ingresos': float(ingresos),
+            'egresos': float(egresos),
+            'saldo_teorico': float(caja.monto_apertura + ingresos - egresos)
+        },
+        'movimientos': movs_data
+    })
 
 
 # =======================================
@@ -8855,6 +8966,7 @@ def api_empresa_config(request):
         
         return JsonResponse({
             'nombre': empresa.nombre,
+            'nombre_fantasia': empresa.nombre_fantasia,
             'cuit': empresa.cuit,
             'direccion': empresa.direccion,
             'localidad': empresa.localidad,
@@ -8975,6 +9087,7 @@ def api_empresa_config_guardar(request):
 
         # Datos Empresa
         empresa.nombre = data.get('nombre', empresa.nombre)
+        empresa.nombre_fantasia = data.get('nombre_fantasia', empresa.nombre_fantasia)
         empresa.cuit = data.get('cuit', empresa.cuit)
         empresa.direccion = data.get('direccion', empresa.direccion)
         empresa.localidad = data.get('localidad', empresa.localidad)

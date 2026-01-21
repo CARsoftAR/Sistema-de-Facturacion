@@ -13,6 +13,7 @@ from .views import (
     api_productos_eliminar,
     api_productos_verificar_codigo,
 )
+from .views_reportes import api_reportes_generar
 
 urlpatterns = [
 
@@ -81,6 +82,9 @@ urlpatterns = [
     path("api/caja/cierre/", views.api_caja_cierre, name="api_caja_cierre"),
     path("api/caja/apertura/", views.api_caja_apertura, name="api_caja_apertura"),
     path("api/caja/estado/", views.api_caja_estado, name="api_caja_estado"),
+    # Reportes de Caja (Cierre Z / Arqueo)
+    path("api/caja/cierres/", views.api_caja_cierres_lista, name="api_caja_cierres_lista"),
+    path("api/caja/cierre/<int:id>/", views.api_caja_cierre_detalle, name="api_caja_cierre_detalle"),
     
     # API Plan de Cuentas
     path("api/contabilidad/plan-cuentas/", views.api_plan_cuentas_lista, name="api_plan_cuentas_lista"),
@@ -97,6 +101,7 @@ urlpatterns = [
     path("api/estadisticas/compras/", views.api_estadisticas_compras, name="api_estadisticas_compras"),
     path("api/estadisticas/stock/", views.api_estadisticas_stock, name="api_estadisticas_stock"),
     path("api/estadisticas/caja/", views.api_estadisticas_caja, name="api_estadisticas_caja"),
+    path("api/reportes/generar/", api_reportes_generar, name="api_reportes_generar"),
     path("api/reportes/exportar/", views.api_reportes_exportar, name="api_reportes_exportar"),
 
     # API Ejercicios Contables

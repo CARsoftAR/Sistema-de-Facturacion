@@ -19,7 +19,8 @@ import {
     CreditCard,
     ClipboardList,
     LogOut,
-    Landmark
+    Landmark,
+    BarChart3
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -215,6 +216,14 @@ const Sidebar = ({ standalone = false }) => {
                         icon={LayoutDashboard}
                         label="Dashboard"
                         href="/dashboard"
+                        standalone={standalone}
+                        permission="reportes"
+                    />
+
+                    <SidebarItem
+                        icon={BarChart3}
+                        label="Reportes"
+                        href="/reportes"
                         standalone={standalone}
                         permission="reportes"
                     />

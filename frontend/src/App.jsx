@@ -38,6 +38,7 @@ import NuevoProducto from './pages/NuevoProducto'
 import NuevoCliente from './pages/NuevoCliente'
 
 import Parametros from './pages/Parametros'
+import Reportes from './pages/Reportes'
 import ConfiguracionEmpresa from './pages/ConfiguracionEmpresa'
 import Dashboard from './pages/Dashboard'
 import Usuarios from './pages/Usuarios'
@@ -147,6 +148,7 @@ function App() {
               <Route path="/precios/actualizar" element={<ProtectedRoute permission="productos"><ActualizarPrecios /></ProtectedRoute>} />
               <Route path="/precios/actualizar" element={<ProtectedRoute permission="productos"><ActualizarPrecios /></ProtectedRoute>} />
               <Route path="/parametros" element={<ProtectedRoute permission="configuracion"><Parametros /></ProtectedRoute>} />
+              <Route path="/reportes" element={<ProtectedRoute permission="reportes"><Reportes /></ProtectedRoute>} />
               <Route path="/configuracion/empresa" element={<ProtectedRoute permission="configuracion"><ConfiguracionEmpresa /></ProtectedRoute>} />
               <Route path="/marcas" element={<ProtectedRoute permission="productos"><Marcas /></ProtectedRoute>} />
               <Route path="/categorias" element={<ProtectedRoute permission="productos"><Categorias /></ProtectedRoute>} />
