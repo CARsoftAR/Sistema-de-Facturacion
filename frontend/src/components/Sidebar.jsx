@@ -1,3 +1,4 @@
+// Sidebar Component - Updated with Stock Management
 import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -56,15 +57,20 @@ const SidebarItem = ({ icon: Icon, label, href, subItems, isOpen, activeSubItem,
         }
     };
 
+
     // Check if this item is active (including subitems)
-    const isActive = location.pathname === href || (visibleSubItems && visibleSubItems.some(item => location.pathname === item.href));
+    // For items with subitems, only mark active if a subitem matches the current route
+    // For items without subitems, mark active if href matches current route
+    const isActive = hasSubItems
+        ? (visibleSubItems && visibleSubItems.some(item => location.pathname === item.href))
+        : (href && location.pathname === href);
 
     return (
         <div className="mb-1">
             {/* Main Item */}
             {hasSubItems ? (
                 <div
-                    className={`d-flex align-items-center justify-content-between px-3 py-2 rounded pointer user-select-none transition-all ${isExpanded || isActive ? 'bg-primary text-white shadow-sm' : 'text-white hover-bg-dark-subtle'}`}
+                    className={`d-flex align-items-center justify-content-between px-3 py-2 rounded pointer user-select-none transition-all ${isActive ? 'bg-primary text-white shadow-sm' : 'text-white hover-bg-dark-subtle'}`}
                     style={{ cursor: 'pointer', transition: 'all 0.2s ease' }}
                     onClick={handleClick}
                 >
@@ -253,8 +259,10 @@ const Sidebar = ({ standalone = false }) => {
                         standalone={standalone}
                         permission="productos"
                         subItems={[
-                            { label: 'Productos', href: '/productos' },
-                            { label: 'Actualizar Precios', href: '/precios/actualizar' },
+                            { label: 'Productos', href: '/productos', permission: 'productos' },
+                            { label: 'Actualizar Precios', href: '/precios/actualizar', permission: 'productos' },
+                            { label: 'Ajuste de Stock', href: '/ajuste-stock', permission: 'productos' },
+                            { label: 'Movimientos de Stock', href: '/movimientos-stock', permission: 'productos' },
                         ]}
                     />
 

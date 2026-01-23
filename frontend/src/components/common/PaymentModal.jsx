@@ -9,8 +9,9 @@ const PaymentModal = ({
     mode = 'sale', // 'sale' | 'payment' | 'purchase'
     clientName = '',
     allowCtaCte = true, // Legacy prop, prefer allowedMethods
-    allowedMethods = ['EFECTIVO', 'TARJETA', 'TRANSFERENCIA', 'CHEQUE', 'CTACTE'], // Control specific methods
-    initialMethod = 'EFECTIVO'
+    allowedMethods = ['EFECTIVO', 'TARJETA', 'CHEQUE', 'CTACTE'], // Control specific methods
+    initialMethod = 'EFECTIVO',
+    onMethodChange = null // Callback to parent
 }) => {
     if (!isOpen) return null;
 
@@ -199,7 +200,10 @@ const PaymentModal = ({
                                     <button
                                         key={m}
                                         type="button"
-                                        onClick={() => setMethod(m)}
+                                        onClick={() => {
+                                            setMethod(m);
+                                            if (onMethodChange) onMethodChange(m);
+                                        }}
                                         className={`relative flex flex-col items-center justify-center gap-2 p-3 rounded-xl border-2 transition-all duration-200 ${active ? `${conf.border} ${conf.bg} shadow-sm ring-1 ring-inset ${conf.border}` : 'border-slate-100 hover:border-slate-200 hover:bg-slate-50'
                                             }`}
                                     >

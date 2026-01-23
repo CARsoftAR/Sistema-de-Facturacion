@@ -57,7 +57,11 @@ const NuevaVenta = () => {
 
     // Configuración
     const [cargandoConfig, setCargandoConfig] = useState(true);
-    const [config, setConfig] = useState({ auto_foco_codigo_barras: false, discriminar_iva_ventas: false });
+    const [config, setConfig] = useState({
+        auto_foco_codigo_barras: false,
+        discriminar_iva_ventas: false,
+        comportamiento_codigo_barras: 'DEFAULT'
+    });
 
     // ==================== PRODUCT SEARCH HOOK ====================
     const {
@@ -78,10 +82,81 @@ const NuevaVenta = () => {
             const precio = medioPago === 'TARJETA' ? producto.precio_tarjeta : producto.precio_efectivo;
             setProductoSeleccionado(producto);
             setInputPrecio(precio.toString());
-            // Focus quantity safe check
-            setTimeout(() => cantidadRef.current?.select(), 50);
+            setInputCantidad('1');
+
+            if (config.comportamiento_codigo_barras === 'DIRECTO') {
+                // Ingreso Rápido: Agregar inmediatamente
+                setTimeout(() => {
+                    handleAutoAdd(producto, 1, precio);
+                }, 50);
+            } else if (config.comportamiento_codigo_barras === 'CANTIDAD') {
+                // Saltar a Cantidad
+                setTimeout(() => cantidadRef.current?.select(), 50);
+            }
         }
     });
+
+    const handleAutoAdd = (producto, cantidad, precio) => {
+        if (!producto) return;
+
+        // Validar Stock
+        if (producto.stock <= 0) {
+            setAlertaStock({
+                titulo: 'Producto sin Stock',
+                mensaje: `El producto "${producto.descripcion}" no tiene stock disponible.`
+            });
+            return;
+        }
+
+        const existe = items.find(i => i.id === producto.id);
+        const cantidadTotal = existe ? existe.cantidad + cantidad : cantidad;
+
+        if (cantidadTotal > producto.stock) {
+            setAlertaStock({
+                titulo: 'Stock Insuficiente',
+                mensaje: `No se puede agregar esa cantidad. Stock disponible: ${producto.stock}`
+            });
+            return;
+        }
+
+        if (existe) {
+            setItems(prevItems => prevItems.map(i =>
+                i.id === producto.id
+                    ? { ...i, cantidad: i.cantidad + cantidad, subtotal: (i.cantidad + cantidad) * i.precio }
+                    : i
+            ));
+        } else {
+            setItems(prevItems => [...prevItems, {
+                id: producto.id,
+                codigo: producto.codigo,
+                descripcion: producto.descripcion,
+                precio: precio,
+                precio_efectivo: producto.precio_efectivo,
+                precio_tarjeta: producto.precio_tarjeta,
+                cantidad: cantidad,
+                subtotal: cantidad * precio,
+                stock: producto.stock,
+                iva_alicuota: producto.iva_alicuota || 21.0
+            }]);
+        }
+
+        limpiarCamposEntrada();
+        codigoRef.current?.focus();
+    };
+
+    // ==================== PRICE RECALCULATION ====================
+    const recalcularPrecios = (nuevoMedio) => {
+        setMedioPago(nuevoMedio);
+        setItems(prevItems => prevItems.map(item => {
+            // Actualizar el precio activo según el nuevo medio
+            const nuevoPrecio = nuevoMedio === 'TARJETA' ? (item.precio_tarjeta || item.precio_efectivo) : item.precio_efectivo;
+            return {
+                ...item,
+                precio: nuevoPrecio,
+                subtotal: item.cantidad * nuevoPrecio
+            };
+        }));
+    };
 
     // ==================== EFFECTS ====================
     useEffect(() => {
@@ -91,9 +166,13 @@ const NuevaVenta = () => {
                 const data = await response.json();
                 setConfig({
                     auto_foco_codigo_barras: data.auto_foco_codigo_barras || false,
+                    comportamiento_codigo_barras: data.comportamiento_codigo_barras || 'DEFAULT',
                     discriminar_iva_ventas: data.discriminar_iva_ventas || false,
                     habilita_remitos: data.habilita_remitos || false
                 });
+                // Initialize local states from config
+                setDiscriminarIVA(data.discriminar_iva_ventas || false);
+                setGenerarRemito(data.habilita_remitos || false);
             } catch (error) {
                 console.error("Error fetching config:", error);
             } finally {
@@ -198,53 +277,9 @@ const NuevaVenta = () => {
 
     const agregarProductoALista = () => {
         if (!productoSeleccionado) return;
-
-        // Validar Stock
-        if (productoSeleccionado.stock <= 0) {
-            setAlertaStock({
-                titulo: 'Producto sin Stock',
-                mensaje: `El producto "${productoSeleccionado.descripcion}" no tiene stock disponible.`
-            });
-            return;
-        }
-
         const cantidad = parseFloat(inputCantidad) || 1;
         const precio = parseFloat(inputPrecio) || productoSeleccionado.precio_efectivo;
-
-        // Validar cantidad
-        const existe = items.find(i => i.id === productoSeleccionado.id);
-        const cantidadTotal = existe ? existe.cantidad + cantidad : cantidad;
-
-        if (cantidadTotal > productoSeleccionado.stock) {
-            setAlertaStock({
-                titulo: 'Stock Insuficiente',
-                mensaje: `No se puede agregar esa cantidad. Stock disponible: ${productoSeleccionado.stock}`
-            });
-            return;
-        }
-
-        if (existe) {
-            setItems(items.map(i =>
-                i.id === productoSeleccionado.id
-                    ? { ...i, cantidad: i.cantidad + cantidad, subtotal: (i.cantidad + cantidad) * i.precio }
-                    : i
-            ));
-        } else {
-            setItems([...items, {
-                id: productoSeleccionado.id,
-                codigo: productoSeleccionado.codigo,
-                descripcion: productoSeleccionado.descripcion,
-                precio: precio,
-                cantidad: cantidad,
-                subtotal: cantidad * precio,
-                stock: productoSeleccionado.stock,
-                iva_alicuota: productoSeleccionado.iva_alicuota || 21.0
-            }]);
-        }
-
-        setMensaje(null);
-        limpiarCamposEntrada();
-        codigoRef.current?.focus();
+        handleAutoAdd(productoSeleccionado, cantidad, precio);
     };
 
     const limpiarCamposEntrada = () => {
@@ -342,14 +377,39 @@ const NuevaVenta = () => {
 
             if (data.ok) {
                 setMostrarModalPago(false);
-                setMensaje({ tipo: 'success', texto: `Venta #${data.venta_id} registrada correctamente.` });
                 setCliente(null);
                 setItems([]);
                 setGenerarRemito(false);
                 limpiarCamposEntrada();
+
+                Swal.fire({
+                    title: '<span class="text-2xl font-black text-slate-800">¡Venta Registrada!</span>',
+                    html: `<p class="text-slate-500 font-medium">Venta #${data.venta_id} guardada con éxito.</p>`,
+                    iconHtml: `
+                        <div class="w-24 h-24 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-white shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                        </div>
+                    `,
+                    showConfirmButton: true,
+                    confirmButtonText: 'Entendido',
+                    confirmButtonColor: '#2563eb',
+                    customClass: {
+                        popup: 'rounded-3xl p-10',
+                        confirmButton: 'rounded-xl px-12 py-3 font-bold text-lg shadow-lg hover:shadow-blue-500/30 transition-all',
+                        icon: 'border-0 bg-transparent'
+                    }
+                });
+
                 setTimeout(() => clienteInputRef.current?.focus(), 100);
             } else {
-                setMensaje({ tipo: 'error', texto: data.error || 'Error al guardar la venta.' });
+                Swal.fire({
+                    title: 'Error',
+                    text: data.error || 'Error al guardar la venta.',
+                    icon: 'error',
+                    confirmButtonColor: '#ef4444'
+                });
             }
         } catch (err) {
             setMensaje({ tipo: 'error', texto: 'Error de conexión. Intente nuevamente.' });
@@ -364,15 +424,7 @@ const NuevaVenta = () => {
         <div className="p-6 pb-10 max-w-7xl mx-auto min-h-[calc(100vh-120px)] flex flex-col fade-in">
 
 
-            {/* Mensaje */}
-            {mensaje && (
-                <div className={`mb-4 p-4 rounded-xl flex-shrink-0 shadow-sm border-l-4 ${mensaje.tipo === 'success' ? 'bg-white border-green-500 text-green-800' : 'bg-white border-red-500 text-red-800'}`}>
-                    <div className="flex items-center gap-3">
-                        {mensaje.tipo === 'success' ? <Check size={20} className="text-green-500" /> : <X size={20} className="text-red-500" />}
-                        <span className="font-medium">{mensaje.texto}</span>
-                    </div>
-                </div>
-            )}
+            {/* El mensaje de éxito/error ahora se muestra por SweetAlert modal */}
 
             {/* Layout principal */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-0">
@@ -456,33 +508,7 @@ const NuevaVenta = () => {
                         )}
                     </div>
 
-                    {/* Botones de Método de Pago y Opciones */}
-                    <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5 flex-1 flex flex-col min-h-0">
-                        <div className="flex items-center gap-2 mb-4">
-                            <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
-                                <CreditCard size={20} />
-                            </div>
-                            <h2 className="font-bold text-slate-700 text-lg">Método de Pago Preferido</h2>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                            {[
-                                { value: 'EFECTIVO', label: 'Efectivo', icon: DollarSign, color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-200' },
-                                { value: 'TARJETA', label: 'Tarjeta', icon: CreditCard, color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-200' },
-                                { value: 'CTACTE', label: 'Cta. Cte.', icon: FileText, color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-200' },
-                                { value: 'CHEQUE', label: 'Cheque', icon: DollarSign, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200' },
-                            ].map(({ value, label, icon: Icon, color, bg, border }) => {
-                                const active = medioPago === value;
-                                return (
-                                    <label key={value} className={`relative flex flex-col items-center justify-center gap-2 p-3 rounded-xl cursor-pointer border-2 transition-all ${active ? `${border} ${bg}` : 'border-slate-100 hover:border-slate-300 hover:bg-slate-50'}`}>
-                                        <input type="radio" name="medioPago" value={value} checked={active} onChange={(e) => setMedioPago(e.target.value)} className="hidden" />
-                                        <Icon size={24} className={active ? color : 'text-slate-400'} />
-                                        <span className={`font-semibold text-sm ${active ? 'text-slate-800' : 'text-slate-500'}`}>{label}</span>
-                                        {active && <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-current text-slate-800"></div>}
-                                    </label>
-                                );
-                            })}
-                        </div>
-                    </div>
+                    {/* Opciones de Venta removidas (Ahora se manejan desde Parámetros) */}
                 </div>
 
                 {/* COLUMNA DERECHA (CARRITO) */}
@@ -722,6 +748,7 @@ const NuevaVenta = () => {
                     isOpen={mostrarModalPago}
                     onClose={() => setMostrarModalPago(false)}
                     onConfirm={handleConfirmPayment}
+                    onMethodChange={recalcularPrecios}
                     total={totalGeneral}
                     mode="sale"
                     clientName={cliente?.nombre}

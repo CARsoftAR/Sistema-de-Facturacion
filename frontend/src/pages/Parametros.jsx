@@ -211,7 +211,13 @@ const Parametros = () => {
 
                 {/* CONTENIDO (Columna derecha) */}
                 <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ ...s.card, minHeight: '500px' }}>
+                    <div style={{
+                        ...s.card,
+                        height: 'calc(100vh - 250px)',
+                        overflowY: 'auto',
+                        overflowX: 'hidden',
+                        paddingRight: '20px' // Espacio para la barra de scroll
+                    }}>
 
                         {/* TAB 1: GENERAL */}
                         {activeTab === 'general' && (
@@ -220,25 +226,7 @@ const Parametros = () => {
                                     <Settings size={20} /> Ajustes Generales
                                 </div>
 
-                                {/* AUTOMATIZACIÓN - REMITOS */}
-                                <div style={s.fieldGroup}>
-                                    <label style={s.label}>AUTOMATIZACIÓN DE REMITOS</label>
-                                    <div style={s.switchContainer}>
-                                        <div style={{ paddingRight: '16px' }}>
-                                            <div style={{ fontWeight: '600', fontSize: '14px', color: '#1e293b' }}>Generar Remitos Automáticamente</div>
-                                            <div style={s.subtitle}>Al finalizar una venta, se creará un remito de entrega.</div>
-                                        </div>
-                                        <div className="form-check form-switch pt-0 mb-0">
-                                            <input
-                                                className="form-check-input"
-                                                type="checkbox"
-                                                checked={autoRemito}
-                                                onChange={() => setAutoRemito(!autoRemito)}
-                                                style={{ width: '40px', height: '20px', cursor: 'pointer' }}
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
+                                {/* REMITOS MOVED TO VENTAS TAB */}
 
                                 {/* AUTOMATIZACIÓN - PRECIOS */}
                                 <div style={s.fieldGroup}>
@@ -375,6 +363,45 @@ const Parametros = () => {
                                                 type="checkbox"
                                                 checked={alertaStockMinimo}
                                                 onChange={() => setAlertaStockMinimo(!alertaStockMinimo)}
+                                                style={{ width: '40px', height: '20px', cursor: 'pointer' }}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* GENERAR REMITOS */}
+                                <div style={s.fieldGroup}>
+                                    <label style={s.label}>DOCUMENTACIÓN ADJUNTA</label>
+                                    <div style={s.switchContainer}>
+                                        <div style={{ paddingRight: '16px' }}>
+                                            <div style={{ fontWeight: '600', fontSize: '14px', color: '#1e293b' }}>Generar Remito Automático</div>
+                                            <div style={s.subtitle}>Al confirmar una venta, se emitirá siempre el remito de entrega.</div>
+                                        </div>
+                                        <div className="form-check form-switch pt-0 mb-0">
+                                            <input
+                                                className="form-check-input"
+                                                type="checkbox"
+                                                checked={autoRemito}
+                                                onChange={() => setAutoRemito(!autoRemito)}
+                                                style={{ width: '40px', height: '20px', cursor: 'pointer' }}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* DISCRIMINAR IVA EN VENTAS */}
+                                <div style={s.fieldGroup}>
+                                    <div style={s.switchContainer}>
+                                        <div style={{ paddingRight: '16px' }}>
+                                            <div style={{ fontWeight: '600', fontSize: '14px', color: '#1e293b' }}>Discriminar IVA en Ventas (Factura A)</div>
+                                            <div style={s.subtitle}>Habilita el desglose de IVA y permite emitir facturas tipo A para Responsables Inscriptos.</div>
+                                        </div>
+                                        <div className="form-check form-switch pt-0 mb-0">
+                                            <input
+                                                className="form-check-input"
+                                                type="checkbox"
+                                                checked={discriminarIvaVentas}
+                                                onChange={() => setDiscriminarIvaVentas(!discriminarIvaVentas)}
                                                 style={{ width: '40px', height: '20px', cursor: 'pointer' }}
                                             />
                                         </div>
@@ -626,24 +653,7 @@ const Parametros = () => {
                                     </div>
                                 </div>
 
-                                {/* DISCRIMINAR IVA EN VENTAS */}
-                                <div style={s.fieldGroup}>
-                                    <div style={s.switchContainer}>
-                                        <div style={{ paddingRight: '16px' }}>
-                                            <div style={{ fontWeight: '600', fontSize: '14px', color: '#1e293b' }}>Discriminar IVA en Ventas</div>
-                                            <div style={s.subtitle}>Mostrar desglose de Neto e IVA en la pantalla de ventas y permitir edición.</div>
-                                        </div>
-                                        <div className="form-check form-switch pt-0 mb-0">
-                                            <input
-                                                className="form-check-input"
-                                                type="checkbox"
-                                                checked={discriminarIvaVentas}
-                                                onChange={() => setDiscriminarIvaVentas(!discriminarIvaVentas)}
-                                                style={{ width: '40px', height: '20px', cursor: 'pointer' }}
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
+                                {/* DISCRIMINAR IVA EN VENTAS (MOVED TO VENTAS TAB) */}
 
                                 {/* REDONDEO DE PRECIOS */}
                                 <div style={s.fieldGroup}>

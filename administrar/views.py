@@ -1729,6 +1729,7 @@ def proveedor_eliminar(request, id):
 # -----------------------------------------
 # LISTA COMPLETA DE PROVEEDORES (API)
 # -----------------------------------------
+@login_required
 def api_proveedores_lista(request):
     proveedores = Proveedor.objects.all().order_by("nombre")
 
@@ -1740,7 +1741,7 @@ def api_proveedores_lista(request):
         "email": p.email,
     } for p in proveedores]
 
-    return JsonResponse(data, safe=False)
+    return JsonResponse({"ok": True, "proveedores": data})
 
 
 @csrf_exempt
@@ -8112,184 +8113,101 @@ def api_estadisticas_caja(request):
 @login_required
 @verificar_permiso('reportes')
 def api_reportes_exportar(request):
-    """API para exportar un reporte integral a Excel"""
+    """API para exportar un reporte específico a Excel"""
     try:
         import openpyxl
         from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
         from io import BytesIO
-        from django.db.models import Sum, Count, Avg, F, ExpressionWrapper, DecimalField
         from datetime import datetime
         
+        report_id = request.GET.get('id')
+        fecha_desde_str = request.GET.get('fecha_desde', '')
+        fecha_hasta_str = request.GET.get('fecha_hasta', '')
+        cliente_id = request.GET.get('cliente_id')
+        proveedor_id = request.GET.get('proveedor_id')
+
+        if not report_id:
+            return JsonResponse({'ok': False, 'error': 'ID de reporte no especificado'})
+
+        # Reutilizamos la lógica del API de generación para obtener los datos
+        # Esto asegura consistencia total entre pantalla y Excel
+        from .views_reportes import api_reportes_generar
+        
+        # Simulamos una request interna para llamar a la función de generación
+        # (Alternativa: refactorizar para que api_reportes_generar devuelva datos puros)
+        response = api_reportes_generar(request)
+        import json
+        res_data = json.loads(response.content)
+
+        if not res_data.get('ok'):
+            return JsonResponse({'ok': False, 'error': res_data.get('error', 'Error generando datos')})
+
+        headers = res_data['headers']
+        data_list = res_data['data']
+
         # Crear Workbook
         wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Reporte"
         
         # Estilos
         header_font = Font(bold=True, color="FFFFFF")
-        header_fill = PatternFill(start_color="4F81BD", end_color="4F81BD", fill_type="solid")
+        header_fill = PatternFill(start_color="1E293B", end_color="1E293B", fill_type="solid")
         center_align = Alignment(horizontal='center')
         currency_format = '"$"#,##0.00'
         thin_border = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
 
-        def agregar_hoja(nombre, headers, data, column_widths=None):
-            ws = wb.create_sheet(title=nombre)
-            # Headers
+        # Título del Reporte en el Excel
+        ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=len(headers))
+        title_cell = ws.cell(row=1, column=1, value=f"Reporte: {report_id.upper()}")
+        title_cell.font = Font(bold=True, size=14)
+        title_cell.alignment = center_align
+
+        ws.merge_cells(start_row=2, start_column=1, end_row=2, end_column=len(headers))
+        period_str = f"Período: {fecha_desde_str or 'Inicio'} al {fecha_hasta_str or 'Hoy'}"
+        period_cell = ws.cell(row=2, column=1, value=period_str)
+        period_cell.alignment = center_align
+
+        # Headers
+        for col_num, header in enumerate(headers, 1):
+            cell = ws.cell(row=4, column=col_num, value=header)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = center_align
+            cell.border = thin_border
+        
+        # Data
+        row_idx = 5
+        for item in data_list:
             for col_num, header in enumerate(headers, 1):
-                cell = ws.cell(row=1, column=col_num, value=header)
-                cell.font = header_font
-                cell.fill = header_fill
-                cell.alignment = center_align
+                value = item.get(header, '')
+                cell = ws.cell(row=row_idx, column=col_num, value=value)
                 cell.border = thin_border
-            
-            # Data
-            for row_num, row_data in enumerate(data, 2):
-                for col_num, value in enumerate(row_data, 1):
-                    cell = ws.cell(row=row_num, column=col_num, value=value)
-                    cell.border = thin_border
-                    # Auto-format currency
-                    if isinstance(value, (int, float)) and col_num > 1: # Asumiendo col 1 es texto/fecha
-                         if 'Monto' in headers[col_num-1] or 'Total' in headers[col_num-1] or 'Precio' in headers[col_num-1] or 'Valor' in headers[col_num-1] or 'Costo' in headers[col_num-1]:
-                            cell.number_format = currency_format
+                
+                # Formatear números si el header sugiere moneda o totales
+                h_lower = header.lower()
+                is_numeric = isinstance(value, (int, float, Decimal))
+                
+                if is_numeric:
+                    if any(x in h_lower for x in ['total', 'neto', 'iva', 'monto', 'costo', 'valor', 'debe', 'haber', 'saldo', 'utilidad', 'recaudado']):
+                        cell.number_format = currency_format
+                    else:
+                        cell.number_format = '#,##0.00'
+            row_idx += 1
 
-            # Column Widths
-            if column_widths:
-                for i, width in enumerate(column_widths, 1):
-                    ws.column_dimensions[openpyxl.utils.get_column_letter(i)].width = width
+        # Totales al final si hay columnas numéricas
+        # (Opcional, pero consistente con la pantalla)
         
-        # Eliminar hoja default
-        if 'Sheet' in wb.sheetnames:
-            del wb['Sheet']
-
-        # Filtros
-        fecha_desde_str = request.GET.get('fecha_desde', '')
-        fecha_hasta_str = request.GET.get('fecha_hasta', '')
-        
-        fecha_desde = None
-        fecha_hasta = None
-        
-        if fecha_desde_str:
-            try: fecha_desde = datetime.strptime(fecha_desde_str, '%Y-%m-%d').date()
-            except: pass
-        if fecha_hasta_str:
-            try: fecha_hasta = datetime.strptime(fecha_hasta_str, '%Y-%m-%d').date()
-            except: pass
-
-        # ==========================
-        # 1. VENTAS
-        # ==========================
-        ventas = Venta.objects.all().select_related('cliente')
-        if fecha_desde: ventas = ventas.filter(fecha__date__gte=fecha_desde)
-        if fecha_hasta: ventas = ventas.filter(fecha__date__lte=fecha_hasta)
-        
-        data_ventas = []
-        for v in ventas:
-            cliente_nombre = v.cliente.nombre if v.cliente else "Cliente Eliminado"
-            data_ventas.append([
-                v.id,
-                v.fecha.strftime('%d/%m/%Y'),
-                cliente_nombre,
-                v.tipo_comprobante,
-                v.estado,
-                float(v.total)
-            ])
-        
-        agregar_hoja(
-            "Ventas", 
-            ['ID', 'Fecha', 'Cliente', 'Tipo', 'Estado', 'Monto Total'], 
-            data_ventas,
-            [10, 15, 40, 10, 15, 20]
-        )
-
-        # ==========================
-        # 2. COMPRAS
-        # ==========================
-        compras = Compra.objects.all().select_related('proveedor')
-        if fecha_desde: compras = compras.filter(fecha__date__gte=fecha_desde)
-        if fecha_hasta: compras = compras.filter(fecha__date__lte=fecha_hasta)
-        
-        data_compras = []
-        for c in compras:
-            prov = c.proveedor.nombre if c.proveedor else 'Sin Proveedor'
-            data_compras.append([
-                c.id,
-                c.fecha.strftime('%d/%m/%Y'),
-                prov,
-                c.nro_comprobante,
-                float(c.total)
-            ])
-            
-        agregar_hoja(
-            "Compras", 
-            ['ID', 'Fecha', 'Proveedor', 'Nro Factura', 'Monto Total'], 
-            data_compras,
-            [10, 15, 40, 20, 20]
-        )
-
-        # ==========================
-        # 3. CAJA
-        # ==========================
-        movimientos = MovimientoCaja.objects.all()
-        if fecha_desde: movimientos = movimientos.filter(fecha__date__gte=fecha_desde)
-        if fecha_hasta: movimientos = movimientos.filter(fecha__date__lte=fecha_hasta)
-        
-        data_caja = []
-        for m in movimientos:
-            data_caja.append([
-                m.id,
-                m.fecha.strftime('%d/%m/%Y %H:%M'),
-                m.tipo,
-                m.descripcion,
-                float(m.monto)
-            ])
-            
-        agregar_hoja(
-            "Caja", 
-            ['ID', 'Fecha/Hora', 'Tipo', 'Descripción', 'Monto'], 
-            data_caja,
-            [10, 20, 15, 50, 20]
-        )
-
-        # ==========================
-        # 4. STOCK (Snapshot actual)
-        # ==========================
-        # Stock no filtra por fecha, es el estado actual
-        productos = Producto.objects.all().select_related('rubro', 'marca')
-        
-        data_stock = []
-        for p in productos:
-            rubro = p.rubro.nombre if p.rubro else '-'
-            marca = p.marca.nombre if p.marca else '-'
-            
-            # Validar valores numéricos
-            stock = p.stock if p.stock is not None else 0
-            costo = p.costo if p.costo is not None else 0
-            precio = p.precio_efectivo if p.precio_efectivo is not None else 0
-            
-            valor_total = stock * costo
-            
-            data_stock.append([
-                p.codigo,
-                p.descripcion,
-                rubro,
-                marca,
-                float(stock),
-                float(costo),
-                float(precio),
-                float(valor_total)
-            ])
-            
-        agregar_hoja(
-            "Stock Actual", 
-            ['Código', 'Descripción', 'Rubro', 'Marca', 'Stock', 'Costo Unit.', 'Precio Venta', 'Valor Total'], 
-            data_stock,
-            [15, 40, 20, 20, 10, 15, 15, 20]
-        )
+        # Ajustar anchos
+        for i, header in enumerate(headers, 1):
+            ws.column_dimensions[openpyxl.utils.get_column_letter(i)].width = 20
 
         # Generar respuesta
         output = BytesIO()
         wb.save(output)
         output.seek(0)
         
-        filename = f"Reporte_General_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
+        filename = f"Reporte_{report_id}_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
         response = HttpResponse(
             output.read(),
             content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -8297,6 +8215,9 @@ def api_reportes_exportar(request):
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
         
         return response
+
+    except Exception as e:
+        return JsonResponse({'ok': False, 'error': str(e)}, status=500)
 
     except Exception as e:
         import traceback

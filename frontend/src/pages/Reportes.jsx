@@ -70,12 +70,14 @@ const Reportes = () => {
         return `${d}/${m}/${y}`;
     };
 
-    const [filtros, setFiltros] = useState({
+    const initialFilters = {
         fecha_desde: formatDate(firstDayOfMonth),
         fecha_hasta: formatDate(today),
         cliente_id: '',
         proveedor_id: ''
-    });
+    };
+
+    const [filtros, setFiltros] = useState(initialFilters);
     const [clientes, setClientes] = useState([]);
     const [proveedores, setProveedores] = useState([]);
 
@@ -97,23 +99,43 @@ const Reportes = () => {
 
     const fetchSelectors = async () => {
         try {
-            const [resCl, resPr] = await Promise.all([
-                fetch('/api/clientes/listar-simple/'),
-                fetch('/api/proveedores/lista/')
-            ]);
+            console.log('Cargando electores (clientes)...');
+            const resCl = await fetch('/api/clientes/listar-simple/');
             const dataCl = await resCl.json();
+            if (dataCl.ok && dataCl.clientes) {
+                setClientes(dataCl.clientes);
+                console.log('Clientes cargados:', dataCl.clientes.length);
+            }
+        } catch (e) { console.error('Error cargando clientes:', e); }
+
+        try {
+            console.log('Cargando electores (proveedores)...');
+            const resPr = await fetch('/api/proveedores/lista/');
             const dataPr = await resPr.json();
-            if (dataCl.clientes) setClientes(dataCl.clientes);
-            if (dataPr.proveedores) setProveedores(dataPr.proveedores);
-        } catch (e) {
-            console.error('Error cargando listas para selectores', e);
-        }
+            console.log('Respuesta proveedores API:', dataPr);
+
+            if (dataPr.ok && dataPr.proveedores) {
+                setProveedores(dataPr.proveedores);
+                console.log('Proveedores cargados (formato ok):', dataPr.proveedores.length);
+            } else if (Array.isArray(dataPr)) {
+                setProveedores(dataPr); // Fallback por si acaso
+                console.log('Proveedores cargados (formato array):', dataPr.length);
+            } else if (dataPr.proveedores) {
+                setProveedores(dataPr.proveedores);
+                console.log('Proveedores cargados (formato viejo):', dataPr.proveedores.length);
+            } else {
+                console.warn('Formato de respuesta de proveedores inesperado:', dataPr);
+            }
+        } catch (e) { console.error('Error cargando proveedores:', e); }
     };
 
     React.useEffect(() => {
-        if (selectedReport?.id === 'cl_mov' || selectedReport?.id === 'pr_mov') {
-            fetchSelectors();
-        }
+        fetchSelectors();
+    }, []);
+
+    React.useEffect(() => {
+        setReportData(null);
+        setFiltros(initialFilters);
     }, [selectedReport]);
 
     const tabs = [
@@ -133,18 +155,23 @@ const Reportes = () => {
             { id: 'iva_ventas', title: 'Libro IVA Ventas', desc: 'Reporte para presentaciones fiscales.' }
         ],
         caja: [
-            { id: 'c_gastos', title: 'Egresos de Caja', desc: 'Listado de gastos y retiros de efectivo.' }
+            { id: 'c_ingresos', title: 'Ingresos de Caja', desc: 'Listado de entradas de efectivo y cobros.' },
+            { id: 'c_gastos', title: 'Egresos de Caja', desc: 'Listado de gastos y retiros de efectivo.' },
+            { id: 'c_resumen', title: 'Resumen General de Caja', desc: 'Consolidado de todos los movimientos y saldos.' }
         ],
         compras: [
             { id: 'co_diarias', title: 'Resumen de Compras', desc: 'Carga de stock y facturas de proveedores.' },
             { id: 'iva_compras', title: 'Libro IVA Compras', desc: 'Reporte detallado de créditos fiscales.' }
         ],
         clientes: [
-            { id: 'cl_saldos', title: 'Saldos de Clientes', desc: 'Listado de cuentas corrientes pendientes.' },
+            { id: 'cl_saldos', title: 'Saldos de Clientes (General)', desc: 'Listado completo de saldos (debe y haber).' },
+            { id: 'cl_saldos_deudores', title: 'Saldos de Clientes Deudores', desc: 'Únicamente clientes con cuentas pendientes.' },
+            { id: 'cl_saldos_favor', title: 'Saldos de Clientes a Favor', desc: 'Únicamente clientes con saldo a su favor.' },
             { id: 'cl_mov', title: 'Movimientos por Cliente', desc: 'Historial completo de un cliente específico.' }
         ],
         proveedores: [
-            { id: 'pr_saldos', title: 'Saldos de Proveedores', desc: 'Deudas pendientes con proveedores.' },
+            { id: 'pr_saldos', title: 'Saldos de Proveedores (Deuda)', desc: 'Deudas pendientes con proveedores.' },
+            { id: 'pr_saldos_favor', title: 'Saldos de Proveedores a Favor', desc: 'Saldos a favor con proveedores.' },
             { id: 'pr_mov', title: 'Movimientos por Proveedor', desc: 'Historial de pagos y facturas.' }
         ],
         productos: [
@@ -207,21 +234,31 @@ const Reportes = () => {
         const { headers, data } = reportData;
 
         // Calcular totales para columnas numéricas
-        const totals = {};
-        const numericColumns = [];
         headers.forEach(h => {
             const hLower = h.toLowerCase();
             const isNumericHeader = hLower.includes('total') || hLower.includes('neto') ||
                 hLower.includes('iva') || hLower.includes('monto') || hLower.includes('costo') ||
                 hLower.includes('valor') || hLower.includes('debe') || hLower.includes('haber') ||
-                hLower.includes('saldo') || hLower.includes('cantidad') || hLower.includes('comprobantes');
+                hLower.includes('saldo') || hLower.includes('cantidad') || hLower.includes('comprobantes') ||
+                hLower.includes('ingreso') || hLower.includes('egreso');
 
             if (isNumericHeader && data.length > 0) {
-                const sum = data.reduce((acc, row) => {
-                    const val = row[h];
-                    return acc + (typeof val === 'number' ? val : 0);
-                }, 0);
-                totals[h] = sum;
+                // Determine if this is a "running balance" column
+                const isRunningBalance = hLower.includes('acum') ||
+                    (['cl_mov', 'pr_mov', 'c_resumen'].includes(selectedReport?.id) && hLower === 'saldo');
+
+                if (isRunningBalance) {
+                    // For running balances, the total is the terminal value
+                    const lastValue = data[data.length - 1][h];
+                    totals[h] = typeof lastValue === 'number' ? lastValue : 0;
+                } else {
+                    // For others, we sum
+                    const sum = data.reduce((acc, row) => {
+                        const val = row[h];
+                        return acc + (typeof val === 'number' ? val : 0);
+                    }, 0);
+                    totals[h] = sum;
+                }
                 numericColumns.push(h);
             }
         });
@@ -232,7 +269,7 @@ const Reportes = () => {
             const isCurrency = hLower.includes('total') || hLower.includes('neto') ||
                 hLower.includes('iva') || hLower.includes('monto') || hLower.includes('costo') ||
                 hLower.includes('valor') || hLower.includes('debe') || hLower.includes('haber') ||
-                hLower.includes('saldo');
+                hLower.includes('saldo') || hLower.includes('ingreso') || hLower.includes('egreso');
 
             if (isCurrency) {
                 return val.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 2 });
@@ -290,12 +327,33 @@ const Reportes = () => {
                                 {headers.map((h, j) => {
                                     const val = row[h];
                                     const isNumeric = typeof val === 'number';
+
+                                    // Lógica de colores condicionales
+                                    let textColor = '#1e293b'; // Default
+                                    const hLower = h.toLowerCase();
+
+                                    if (isNumeric) {
+                                        const isBalance = hLower.includes('saldo');
+                                        const isDebit = hLower.includes('debe') || hLower.includes('egreso') || hLower.includes('gasto');
+                                        const isCredit = hLower.includes('haber') || hLower.includes('ingreso');
+
+                                        if (isBalance) {
+                                            if (val > 0) textColor = '#ef4444'; // Deuda -> Rojo
+                                            if (val < 0) textColor = '#22c55e'; // A favor -> Verde
+                                        } else if (isDebit && val !== 0) {
+                                            textColor = '#ef4444'; // Salidas/Debe -> Rojo
+                                        } else if (isCredit && val !== 0) {
+                                            textColor = '#22c55e'; // Entradas/Haber -> Verde
+                                        }
+                                    }
+
                                     return (
                                         <td key={j} style={{
                                             padding: '10px 12px',
-                                            color: '#1e293b',
+                                            color: textColor,
                                             textAlign: isNumeric ? 'right' : 'left',
-                                            fontFamily: isNumeric ? "'Roboto Mono', monospace" : 'inherit'
+                                            fontFamily: isNumeric ? "'Roboto Mono', monospace" : 'inherit',
+                                            fontWeight: (isNumeric && textColor !== '#1e293b') ? '600' : '400'
                                         }}>
                                             {formatValue(val, h)}
                                         </td>

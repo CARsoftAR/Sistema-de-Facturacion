@@ -1,6 +1,6 @@
 {
   "index.html": {
-    "file": "assets/main-DVtYLtJ4.js",
+    "file": "assets/main-TM_rFXli.js",
     "name": "main",
     "src": "index.html",
     "isEntry": true,
@@ -11,11 +11,11 @@
       "src/pages/DetalleCuentaCorrienteProveedor.jsx"
     ],
     "css": [
-      "assets/main-BBBewrZe.css"
+      "assets/main-h_VKxky6.css"
     ]
   },
   "src/pages/CuentasCorrientesClientes.jsx": {
-    "file": "assets/CuentasCorrientesClientes-D0ePtKYP.js",
+    "file": "assets/CuentasCorrientesClientes-B1CDp3C3.js",
     "name": "CuentasCorrientesClientes",
     "src": "src/pages/CuentasCorrientesClientes.jsx",
     "isDynamicEntry": true,
@@ -24,7 +24,7 @@
     ]
   },
   "src/pages/CuentasCorrientesProveedores.jsx": {
-    "file": "assets/CuentasCorrientesProveedores-ID9-V57w.js",
+    "file": "assets/CuentasCorrientesProveedores-BTWCC2V5.js",
     "name": "CuentasCorrientesProveedores",
     "src": "src/pages/CuentasCorrientesProveedores.jsx",
     "isDynamicEntry": true,
@@ -33,7 +33,7 @@
     ]
   },
   "src/pages/DetalleCuentaCorriente.jsx": {
-    "file": "assets/DetalleCuentaCorriente-DGOET0De.js",
+    "file": "assets/DetalleCuentaCorriente-Chl8FUqu.js",
     "name": "DetalleCuentaCorriente",
     "src": "src/pages/DetalleCuentaCorriente.jsx",
     "isDynamicEntry": true,
@@ -42,7 +42,7 @@
     ]
   },
   "src/pages/DetalleCuentaCorrienteProveedor.jsx": {
-    "file": "assets/DetalleCuentaCorrienteProveedor-DPT611TP.js",
+    "file": "assets/DetalleCuentaCorrienteProveedor-Cx_5n-LX.js",
     "name": "DetalleCuentaCorrienteProveedor",
     "src": "src/pages/DetalleCuentaCorrienteProveedor.jsx",
     "isDynamicEntry": true,

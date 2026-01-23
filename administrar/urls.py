@@ -6,6 +6,7 @@ from django.views.generic import TemplateView
 from . import views
 from . import views_backup
 from . import views_comprobantes
+from . import views_stock
 from django.shortcuts import render
 from .views import (
     api_buscar_productos,
@@ -248,6 +249,13 @@ urlpatterns = [
     path("api/productos/<int:id>/editar/", views.api_productos_editar, name="api_productos_editar"),
     path("api/productos/<int:id>/eliminar/", api_productos_eliminar, name="api_productos_eliminar"),
     path("api/productos/verificar_codigo/", api_productos_verificar_codigo, name="api_productos_verificar_codigo"),
+
+    # ==========================
+    # API STOCK MANAGEMENT
+    # ==========================
+    path("api/stock/ajuste/", views_stock.api_stock_ajuste_crear, name="api_stock_ajuste_crear"),
+    path("api/stock/movimientos/", views_stock.api_stock_movimientos_listar, name="api_stock_movimientos_listar"),
+    path("api/stock/movimientos/<int:producto_id>/", views_stock.api_stock_movimientos_producto, name="api_stock_movimientos_producto"),
 
     # Actualización masiva de precios
     path("actualizar-precios/", views.actualizar_precios, name="actualizar_precios"),

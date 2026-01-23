@@ -36,6 +36,8 @@ import NuevaNotaCredito from './pages/NuevaNotaCredito'
 import NuevaNotaDebito from './pages/NuevaNotaDebito'
 import NuevoProducto from './pages/NuevoProducto'
 import NuevoCliente from './pages/NuevoCliente'
+import AjusteStock from './pages/AjusteStock'
+import MovimientosStock from './pages/MovimientosStock'
 
 import Parametros from './pages/Parametros'
 import Reportes from './pages/Reportes'
@@ -145,6 +147,8 @@ function App() {
               <Route path="/productos" element={<ProtectedRoute permission="productos"><Productos /></ProtectedRoute>} />
               <Route path="/productos/nuevo" element={<ProtectedRoute permission="productos"><NuevoProducto /></ProtectedRoute>} />
               <Route path="/productos/editar/:id" element={<ProtectedRoute permission="productos"><NuevoProducto /></ProtectedRoute>} />
+              <Route path="/ajuste-stock" element={<ProtectedRoute permission="productos"><AjusteStock /></ProtectedRoute>} />
+              <Route path="/movimientos-stock" element={<ProtectedRoute permission="productos"><MovimientosStock /></ProtectedRoute>} />
               <Route path="/precios/actualizar" element={<ProtectedRoute permission="productos"><ActualizarPrecios /></ProtectedRoute>} />
               <Route path="/precios/actualizar" element={<ProtectedRoute permission="productos"><ActualizarPrecios /></ProtectedRoute>} />
               <Route path="/parametros" element={<ProtectedRoute permission="configuracion"><Parametros /></ProtectedRoute>} />
