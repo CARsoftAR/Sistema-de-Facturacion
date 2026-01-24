@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, Trash2, User, ShoppingCart, FileText, X, Check, ClipboardList, Save, AlertTriangle, Briefcase } from 'lucide-react';
+import { Search, Plus, Trash2, User, ShoppingCart, FileText, X, Check, ClipboardList, Save, AlertTriangle } from 'lucide-react';
 import { BtnSave, BtnCancel, BtnBack } from '../components/CommonButtons';
 import { useProductSearch } from '../hooks/useProductSearch';
 
@@ -20,7 +20,19 @@ function getCookie(name) {
     return cookieValue;
 }
 
-const NuevoPresupuesto = () => {
+const AutoFocusInput = ({ onKeyDownNext, ...props }) => {
+    const inputRef = useRef(null);
+    useLayoutEffect(() => {
+        if (inputRef.current) {
+            inputRef.current.focus();
+            requestAnimationFrame(() => inputRef.current?.focus());
+            setTimeout(() => inputRef.current?.focus(), 200);
+        }
+    }, []);
+    return <input ref={inputRef} {...props} />;
+};
+
+const NuevoPedido = () => {
     const navigate = useNavigate();
 
     // ==================== STATE ====================
@@ -58,15 +70,23 @@ const NuevoPresupuesto = () => {
 
     const [items, setItems] = useState([]);
     const [observaciones, setObservaciones] = useState('');
-    const [validez, setValidez] = useState(15);
     const [guardando, setGuardando] = useState(false);
     const [mensaje, setMensaje] = useState(null);
 
+    // Modal Stock Custom
+    const [modalStockOpen, setModalStockOpen] = useState(false);
+    const [productoPendiente, setProductoPendiente] = useState(null);
+
     // Referencias
     const codigoRef = useRef(null);
+    // productoRef (from hook)
     const cantidadRef = useRef(null);
     const clienteInputRef = useRef(null);
+
+    // Referencias para scroll automático en listas
     const clienteListRef = useRef(null);
+    // codigoListRef (from hook)
+    // productoListRef (from hook)
 
     // ==================== FOCUS INICIAL ====================
     useEffect(() => {
@@ -92,6 +112,7 @@ const NuevoPresupuesto = () => {
         return () => clearTimeout(timer);
     }, [busquedaCliente]);
 
+    // ==================== OBTENER INICIALES ====================
     const getInitials = (nombre) => {
         if (!nombre) return '?';
         const palabras = nombre.trim().split(/\s+/);
@@ -101,6 +122,7 @@ const NuevoPresupuesto = () => {
         return nombre.substring(0, 2).toUpperCase();
     };
 
+    // ==================== SELECCIONAR CLIENTE ====================
     const seleccionarCliente = (c) => {
         setCliente(c);
         setBusquedaCliente('');
@@ -109,6 +131,7 @@ const NuevoPresupuesto = () => {
         setTimeout(() => codigoRef.current?.focus(), 100);
     };
 
+    // ==================== MANEJO DE TECLAS - CLIENTE ====================
     const handleClienteKeyDown = (e) => {
         if (e.key === 'ArrowDown') {
             e.preventDefault();
@@ -139,16 +162,27 @@ const NuevoPresupuesto = () => {
         const cantidad = parseFloat(inputCantidad) || 1;
         const precio = parseFloat(inputPrecio) || productoSeleccionado.precio_efectivo;
 
-        // NOTA: En Presupuestos NO validamos stock estricto, pero podemos avisar si se desea.
-        // Por requerimiento: "Sin modificar el stock". Así que permitimos agregar libremente.
+        // Verificar stock
+        const existe = items.find(i => i.id === productoSeleccionado.id);
+        const cantidadTotal = existe ? existe.cantidad + cantidad : cantidad;
 
-        encolarProducto(productoSeleccionado, cantidad, precio);
+        if (cantidadTotal > productoSeleccionado.stock) {
+            // Abrir Modal Stock Custom
+            setProductoPendiente({
+                producto: productoSeleccionado,
+                cantidad,
+                precio,
+                existe
+            });
+            setModalStockOpen(true);
+            return;
+        }
+
+        encolarProducto(productoSeleccionado, cantidad, precio, existe);
     };
 
-    const encolarProducto = (prod, cant, prec) => {
-        const existe = items.find(i => i.id === prod.id);
-
-        if (existe) {
+    const encolarProducto = (prod, cant, prec, exist) => {
+        if (exist) {
             setItems(items.map(i =>
                 i.id === prod.id
                     ? { ...i, cantidad: i.cantidad + cant, subtotal: (i.cantidad + cant) * i.precio }
@@ -171,12 +205,35 @@ const NuevoPresupuesto = () => {
         codigoRef.current?.focus();
     };
 
+    const confirmarAgregarStock = () => {
+        if (productoPendiente) {
+            encolarProducto(
+                productoPendiente.producto,
+                productoPendiente.cantidad,
+                productoPendiente.precio,
+                productoPendiente.existe
+            );
+        }
+        setModalStockOpen(false);
+        setProductoPendiente(null);
+    };
+
+    const cancelarAgregarStock = () => {
+        setModalStockOpen(false);
+        setProductoPendiente(null);
+        limpiarCamposEntrada();
+        codigoRef.current?.focus();
+    };
+
     const limpiarCamposEntrada = () => {
         limpiarBusqueda();
         setInputCantidad('1');
         setInputPrecio('');
         setProductoSeleccionado(null);
     };
+
+    // ==================== MANEJO DE TECLAS - CÓDIGO/PRODUCTO ====================
+    // Handlers removed (handled by hook)
 
     const handleCantidadKeyDown = (e) => {
         if (e.key === 'Enter') {
@@ -185,6 +242,7 @@ const NuevoPresupuesto = () => {
         }
     };
 
+    // ==================== ACCIONES ITEM ====================
     const cambiarCantidad = (id, nuevaCantidad) => {
         if (nuevaCantidad < 1) return;
         setItems(items.map(i =>
@@ -200,40 +258,32 @@ const NuevoPresupuesto = () => {
 
     const totalGeneral = items.reduce((acc, i) => acc + i.subtotal, 0);
 
-    // ==================== GUARDAR PRESUPUESTO ====================
-    const guardarPresupuesto = async () => {
+    // ==================== GUARDAR PEDIDO ====================
+    const guardarPedido = async () => {
         if (items.length === 0) {
             setMensaje({ tipo: 'error', texto: 'Debe agregar al menos un producto.' });
             return;
         }
-        // Permitimos consumidor final automatico si cliente es null (backend lo maneja)
+        if (!cliente) {
+            setMensaje({ tipo: 'error', texto: 'Debe seleccionar un cliente.' });
+            return;
+        }
 
         setGuardando(true);
         setMensaje(null);
 
         try {
             const payload = {
-                cliente_id: cliente ? cliente.id : null,
+                cliente_id: cliente.id,
                 detalles: items.map(p => ({
-                    id: p.id,
-                    descripcion: p.descripcion, // Backend needs name sometimes if not strictly linked, asking just in case
+                    producto_id: p.id,
                     cantidad: p.cantidad,
-                    precio: p.precio,
-                    subtotal: p.subtotal
+                    precio_unitario: p.precio
                 })),
-                items: items.map(p => ({ // Mapping for specific backend structure if different
-                    id: p.id,
-                    descripcion: p.descripcion,
-                    cantidad: p.cantidad,
-                    precio: p.precio,
-                    subtotal: p.subtotal
-                })),
-                total: totalGeneral,
-                validez: validez,
                 observaciones: observaciones
             };
 
-            const response = await fetch('/api/presupuesto/guardar/', {
+            const response = await fetch('/api/pedidos/crear/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -245,13 +295,14 @@ const NuevoPresupuesto = () => {
             const data = await response.json();
 
             if (data.ok) {
+                // Éxito
                 setItems([]);
                 setCliente(null);
                 setObservaciones('');
-                setMensaje({ tipo: 'success', texto: `Presupuesto guardado correctamente.` });
-                setTimeout(() => navigate('/presupuestos'), 1500);
+                setMensaje({ tipo: 'success', texto: `Pedido #${data.id} creado correctamente.` });
+                setTimeout(() => navigate('/pedidos'), 1500);
             } else {
-                setMensaje({ tipo: 'error', texto: data.error || 'Error al guardar el presupuesto.' });
+                setMensaje({ tipo: 'error', texto: data.error || 'Error al guardar el pedido.' });
             }
         } catch (err) {
             setMensaje({ tipo: 'error', texto: 'Error de conexión.' });
@@ -260,22 +311,9 @@ const NuevoPresupuesto = () => {
         }
     };
 
+    // ==================== RENDER ====================
     return (
-        <div className="p-6 pb-0 max-w-7xl mx-auto h-[calc(100vh-120px)] flex flex-col fade-in">
-            {/* Force Update v4 */}
-
-            {/* Mensaje */}
-            {mensaje && (
-                <div className={`mb-4 p-4 rounded-xl flex-shrink-0 shadow-sm border-l-4 ${mensaje.tipo === 'success'
-                    ? 'bg-white border-green-500 text-green-800'
-                    : 'bg-white border-red-500 text-red-800'
-                    }`}>
-                    <div className="flex items-center gap-3">
-                        {mensaje.tipo === 'success' ? <Check size={20} className="text-green-500" /> : <X size={20} className="text-red-500" />}
-                        <span className="font-medium">{mensaje.texto}</span>
-                    </div>
-                </div>
-            )}
+        <div className="p-6 pb-0 max-w-7xl mx-auto min-h-[calc(100vh-120px)] flex flex-col fade-in">
 
             {/* Layout principal */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-0">
@@ -285,16 +323,17 @@ const NuevoPresupuesto = () => {
                     className="lg:col-span-4 flex flex-col gap-6 overflow-y-auto pr-1"
                     style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                 >
-                    {/* Header Interno */}
+
+                    {/* Header: Back Button & Title Stacked */}
                     <div className="mb-6 flex-shrink-0">
                         <div className="mb-4">
-                            <BtnBack onClick={() => navigate('/presupuestos')} />
+                            <BtnBack onClick={() => navigate('/pedidos')} />
                         </div>
                         <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
-                            <Briefcase className="text-blue-600" size={32} strokeWidth={2.5} />
-                            Nuevo Presupuesto
+                            <ClipboardList className="text-blue-600" size={32} strokeWidth={2.5} />
+                            Nuevo Pedido
                         </h1>
-                        <p className="text-slate-500 font-medium ml-10">Crear una nueva cotización para cliente</p>
+                        <p className="text-slate-500 font-medium ml-10">Registrar un nuevo pedido de cliente</p>
                     </div>
                     <style>
                         {`
@@ -372,27 +411,20 @@ const NuevoPresupuesto = () => {
                         )}
                     </div>
 
-                    {/* Options Card - WITHOUT flex-1 */}
-                    <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5 group flex flex-col min-h-0">
+                    {/* Observaciones Card - Replaces Payment Methods */}
+                    <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5 flex-shrink-0 group flex-1">
                         <div className="flex items-center gap-2 mb-4">
-                            <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg group-hover:bg-indigo-100 transition-colors">
+                            <div className="p-2 bg-purple-50 text-purple-600 rounded-lg group-hover:bg-purple-100 transition-colors">
                                 <FileText size={20} />
                             </div>
-                            <h2 className="font-bold text-slate-700 text-lg">Opciones</h2>
+                            <h2 className="font-bold text-slate-700 text-lg">Observaciones</h2>
                         </div>
-                        <div className="mb-3">
-                            <label className="block text-xs font-bold text-slate-500 mb-1.5 ml-1">VALIDEZ (DÍAS)</label>
-                            <input type="number" value={validez} onChange={(e) => setValidez(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 focus:ring-2 focus:ring-blue-500 outline-none" />
-                        </div>
-                        <div className="flex-1 flex flex-col min-h-0">
-                            <label className="block text-xs font-bold text-slate-500 mb-1.5 ml-1">OBSERVACIONES</label>
-                            <textarea
-                                className="w-full flex-1 p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 resize-none text-sm text-slate-700 min-h-[6rem]"
-                                placeholder="Notas o detalles adicionales..."
-                                value={observaciones}
-                                onChange={(e) => setObservaciones(e.target.value)}
-                            />
-                        </div>
+                        <textarea
+                            className="w-full h-40 p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-purple-500 resize-none text-sm text-slate-700 font-medium"
+                            placeholder="Notas o detalles adicionales del pedido..."
+                            value={observaciones}
+                            onChange={(e) => setObservaciones(e.target.value)}
+                        />
                     </div>
 
                 </div>
@@ -458,7 +490,7 @@ const NuevoPresupuesto = () => {
                                                     <div className="font-bold text-slate-700 text-sm truncate">{p.descripcion}</div>
                                                     <div className="text-xs text-slate-400 mt-0.5 flex items-center gap-2">
                                                         <span className="bg-slate-100 px-1.5 rounded font-mono text-slate-500">{p.codigo}</span>
-                                                        <span className="text-sm text-slate-400">Stock: {p.stock}</span>
+                                                        {p.stock <= 5 && <span className="text-amber-500 font-bold">¡Poco Stock: {p.stock}!</span>}
                                                     </div>
                                                 </div>
                                                 <div className="text-right">
@@ -502,6 +534,7 @@ const NuevoPresupuesto = () => {
                                         <td className="px-6 py-4 font-mono text-xs font-bold text-slate-500">{item.codigo}</td>
                                         <td className="px-6 py-4">
                                             <p className="font-semibold text-slate-800">{item.descripcion}</p>
+                                            {item.cantidad > item.stock && <p className="text-xs text-amber-600 flex items-center gap-1 mt-1"><AlertTriangle size={12} /> Supera Stock ({item.stock})</p>}
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center justify-center bg-slate-100 rounded-lg p-1 w-fit mx-auto">
@@ -522,7 +555,7 @@ const NuevoPresupuesto = () => {
                                 {items.length === 0 && (
                                     <tr>
                                         <td colSpan="6" className="py-10 text-center text-slate-400">
-                                            Tu presupuesto está vacío
+                                            Tu carrito de pedidos está vacío
                                         </td>
                                     </tr>
                                 )}
@@ -541,8 +574,8 @@ const NuevoPresupuesto = () => {
                                 </div>
                             </div>
                             <BtnSave
-                                label="Guardar Presupuesto"
-                                onClick={guardarPresupuesto}
+                                label="Guardar Pedido"
+                                onClick={guardarPedido}
                                 loading={guardando}
                                 disabled={items.length === 0 || guardando}
                                 className="px-8 py-4 rounded-xl font-bold text-lg"
@@ -551,8 +584,41 @@ const NuevoPresupuesto = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Modal de Stock */}
+            {modalStockOpen && productoPendiente && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-in zoom-in-95 duration-200 border border-slate-200">
+                        <div className="flex flex-col items-center text-center">
+                            <div className="w-16 h-16 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center mb-4">
+                                <AlertTriangle size={32} strokeWidth={2.5} />
+                            </div>
+                            <h3 className="text-xl font-bold text-slate-800 mb-2">Advertencia de Stock</h3>
+                            <p className="text-slate-600 mb-6">
+                                El producto <span className="font-bold text-slate-800">"{productoPendiente.producto.descripcion}"</span> no tiene stock suficiente.
+                                <br />
+                                <span className="text-sm mt-2 block bg-amber-50 text-amber-700 py-1 px-2 rounded-lg inline-block">
+                                    Stock Disponible: {productoPendiente.producto.stock}
+                                </span>
+                            </p>
+
+                            <div className="flex gap-3 w-full">
+                                <BtnCancel
+                                    onClick={cancelarAgregarStock}
+                                    className="flex-1"
+                                />
+                                <BtnSave
+                                    label="Agregar Igual"
+                                    onClick={confirmarAgregarStock}
+                                    className="flex-1 justify-center bg-amber-500 hover:bg-amber-600 shadow-amber-500/30"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
 
-export default NuevoPresupuesto;
+export default NuevoPedido;

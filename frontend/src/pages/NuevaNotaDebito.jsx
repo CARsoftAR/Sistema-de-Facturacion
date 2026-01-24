@@ -204,12 +204,22 @@ const NuevaNotaDebito = () => {
 
 
     return (
-        <div className="p-6 pb-0 max-w-7xl mx-auto min-h-[calc(100vh-120px)] flex flex-col fade-in">
+        <div className="p-6 pb-0 max-w-7xl mx-auto h-[calc(100vh-120px)] flex flex-col fade-in">
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-0">
 
                 {/* COLUMNA IZQUIERDA: INFO VENTA + MOTIVO */}
-                <div className="lg:col-span-4 flex flex-col gap-6 h-[calc(100vh-8rem)] pr-1">
+                <div
+                    className="lg:col-span-4 flex flex-col gap-6 overflow-y-auto pr-1"
+                    style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                >
+                    <style>
+                        {`
+                            .lg\\:col-span-4::-webkit-scrollbar {
+                                display: none;
+                            }
+                        `}
+                    </style>
 
                     <div className="flex items-center gap-4">
                         <BtnBack onClick={() => navigate('/notas-debito')} />
@@ -253,8 +263,8 @@ const NuevaNotaDebito = () => {
                         )}
                     </div>
 
-                    {/* Motivo Box */}
-                    <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5 flex-1 flex flex-col min-h-0">
+                    {/* Motivo Box - Changed flex-1 to just flex-col */}
+                    <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5 flex flex-col min-h-0">
                         <label className="block text-sm font-bold text-slate-600 mb-2">Motivo / Observación</label>
                         <textarea
                             className="w-full flex-1 p-3 border border-slate-200 rounded-xl focus:ring-2 focus:border-emerald-500 resize-none text-sm min-h-[6rem]"
@@ -385,7 +395,7 @@ const NuevaNotaDebito = () => {
                     </div>
 
                     {/* Footer Totals */}
-                    <div className="p-6 m-4 mb-8 rounded-3xl bg-slate-900 text-white flex justify-between items-center shadow-2xl ring-1 ring-white/10 flex-shrink-0">
+                    <div className="p-6 m-4 mb-8 rounded-3xl bg-slate-900 text-white flex justify-between items-center shadow-2xl ring-1 ring-white/10 flex-shrink-0 mt-auto">
                         <div className="space-y-1">
                             <p className="text-slate-400 text-sm font-medium uppercase tracking-wider">Total Debito</p>
                             <div className="flex items-baseline gap-2">

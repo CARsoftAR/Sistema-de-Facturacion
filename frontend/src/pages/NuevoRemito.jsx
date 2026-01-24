@@ -438,7 +438,17 @@ const NuevoRemito = () => {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-0">
 
                 {/* LEFT COLUMN: Data Input */}
-                <div className="lg:col-span-5 space-y-6 h-[calc(100vh-8rem)] pr-1 flex flex-col">
+                <div
+                    className="lg:col-span-4 flex flex-col gap-6 overflow-y-auto pr-1"
+                    style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                >
+                    <style>
+                        {`
+                            .lg\\:col-span-4::-webkit-scrollbar {
+                                display: none;
+                            }
+                        `}
+                    </style>
 
                     {/* Header: Back Button & Title Stacked */}
                     <div className="mb-6 flex-shrink-0">
@@ -595,167 +605,165 @@ const NuevoRemito = () => {
                 </div>
 
                 {/* RIGHT COLUMN: Items */}
-                <div className="lg:col-span-7 flex flex-col h-[calc(100vh-8rem)] min-h-0">
-                    <div className="bg-white rounded-3xl border border-slate-200 shadow-sm flex flex-col h-full overflow-hidden">
+                <div className="lg:col-span-8 flex flex-col h-full bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden relative">
 
-                        {/* Headers & Add Item (Only Manual) */}
-                        <div className="p-6 border-b border-slate-100">
-                            <h2 className="font-bold text-slate-700 flex items-center gap-2 text-lg mb-4">
-                                <Package size={20} className="text-indigo-500" />
-                                Ítems del Remito
-                            </h2>
+                    {/* Headers & Add Item (Only Manual) */}
+                    <div className="p-6 border-b border-slate-100">
+                        <h2 className="font-bold text-slate-700 flex items-center gap-2 text-lg mb-4">
+                            <Package size={20} className="text-indigo-500" />
+                            Ítems del Remito
+                        </h2>
 
-                            {modo === 'MANUAL' && (
-                                <div className="grid grid-cols-12 gap-3 items-end bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                                    <div className="col-span-3">
-                                        <label className="text-xs font-bold text-slate-400 ml-1">CÓDIGO</label>
-                                        <div className="relative">
-                                            <input
-                                                ref={codigoInputRef}
-                                                type="text"
-                                                placeholder="XXX"
-                                                value={inputCodigo}
-                                                onChange={(e) => setInputCodigo(e.target.value.toUpperCase())}
-                                                onKeyDown={handleCodigoKeyDown}
-                                                onBlur={handleCodigoBlur}
-                                                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono uppercase text-center font-bold"
-                                            />
-                                            {mostrarSugerenciasCodigo && codigosSugeridos.length > 0 && (
-                                                <div ref={codigoListRef} className="absolute left-0 top-full mt-1 w-64 bg-white border border-slate-200 rounded-lg shadow-xl max-h-48 overflow-y-auto z-50">
-                                                    {codigosSugeridos.map((p, index) => (
-                                                        <div key={p.id} onClick={() => handleSeleccionarProductoManual(p)} className={`px-4 py-2 cursor-pointer border-b border-slate-50 text-xs ${index === sugerenciaCodigoActiva ? 'bg-blue-50' : 'hover:bg-slate-50'}`}>
-                                                            <span className="font-bold text-blue-600">{p.codigo}</span> - {p.descripcion}
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <div className="col-span-6">
-                                        <label className="text-xs font-bold text-slate-400 ml-1">PRODUCTO</label>
-                                        <div className="relative">
-                                            <input
-                                                ref={productoRef}
-                                                type="text"
-                                                placeholder="Buscar..."
-                                                value={inputProducto}
-                                                onChange={(e) => { setInputProducto(e.target.value); setProductoSeleccionado(null); }}
-                                                onKeyDown={handleProductoKeyDown}
-                                                onBlur={handleProductoBlur}
-                                                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
-                                            />
-                                            {mostrarSugerenciasProducto && productosSugeridos.length > 0 && (
-                                                <div ref={productoListRef} className="absolute left-0 top-full mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-xl max-h-48 overflow-y-auto z-50">
-                                                    {productosSugeridos.map((p, index) => (
-                                                        <div key={p.id} onClick={() => handleSeleccionarProductoManual(p)} className={`px-4 py-2 cursor-pointer border-b border-slate-50 text-xs flex justify-between ${index === sugerenciaActiva ? 'bg-blue-50' : 'hover:bg-slate-50'}`}>
-                                                            <span>{p.descripcion}</span>
-                                                            <span className={`font-bold ${p.stock <= 5 ? 'text-red-500' : 'text-slate-400'}`}>Stock: {p.stock}</span>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <div className="col-span-2">
-                                        <label className="text-xs font-bold text-slate-400 ml-1 text-center block">CANT.</label>
+                        {modo === 'MANUAL' && (
+                            <div className="grid grid-cols-12 gap-3 items-end bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                                <div className="col-span-3">
+                                    <label className="text-xs font-bold text-slate-400 ml-1">CÓDIGO</label>
+                                    <div className="relative">
                                         <input
-                                            ref={cantidadRef}
-                                            type="number"
-                                            min="0.1"
-                                            step="0.1"
-                                            value={inputCantidad}
-                                            onChange={(e) => setInputCantidad(e.target.value)}
-                                            onKeyDown={(e) => e.key === 'Enter' && agregarItemManual()}
-                                            className={`w-full px-2 py-2 border border-slate-200 rounded-lg text-sm text-center font-bold transition-colors ${!productoSeleccionado ? 'bg-slate-100 text-slate-400 cursor-not-allowed opacity-75' : 'bg-white text-slate-800'}`}
-                                            disabled={!productoSeleccionado}
-                                            title={!productoSeleccionado ? "Seleccione un producto primero" : "Cantidad"}
+                                            ref={codigoInputRef}
+                                            type="text"
+                                            placeholder="XXX"
+                                            value={inputCodigo}
+                                            onChange={(e) => setInputCodigo(e.target.value.toUpperCase())}
+                                            onKeyDown={handleCodigoKeyDown}
+                                            onBlur={handleCodigoBlur}
+                                            className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono uppercase text-center font-bold"
                                         />
-                                    </div>
-                                    <div className="col-span-1">
-                                        <button
-                                            onClick={agregarItemManual}
-                                            disabled={!productoSeleccionado}
-                                            className={`w-full py-2 rounded-lg flex items-center justify-center ${productoSeleccionado ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-slate-100 text-slate-300'}`}
-                                        >
-                                            <Plus size={18} />
-                                        </button>
+                                        {mostrarSugerenciasCodigo && codigosSugeridos.length > 0 && (
+                                            <div ref={codigoListRef} className="absolute left-0 top-full mt-1 w-64 bg-white border border-slate-200 rounded-lg shadow-xl max-h-48 overflow-y-auto z-50">
+                                                {codigosSugeridos.map((p, index) => (
+                                                    <div key={p.id} onClick={() => handleSeleccionarProductoManual(p)} className={`px-4 py-2 cursor-pointer border-b border-slate-50 text-xs ${index === sugerenciaCodigoActiva ? 'bg-blue-50' : 'hover:bg-slate-50'}`}>
+                                                        <span className="font-bold text-blue-600">{p.codigo}</span> - {p.descripcion}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
-                            )}
-                        </div>
+                                <div className="col-span-6">
+                                    <label className="text-xs font-bold text-slate-400 ml-1">PRODUCTO</label>
+                                    <div className="relative">
+                                        <input
+                                            ref={productoRef}
+                                            type="text"
+                                            placeholder="Buscar..."
+                                            value={inputProducto}
+                                            onChange={(e) => { setInputProducto(e.target.value); setProductoSeleccionado(null); }}
+                                            onKeyDown={handleProductoKeyDown}
+                                            onBlur={handleProductoBlur}
+                                            className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                                        />
+                                        {mostrarSugerenciasProducto && productosSugeridos.length > 0 && (
+                                            <div ref={productoListRef} className="absolute left-0 top-full mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-xl max-h-48 overflow-y-auto z-50">
+                                                {productosSugeridos.map((p, index) => (
+                                                    <div key={p.id} onClick={() => handleSeleccionarProductoManual(p)} className={`px-4 py-2 cursor-pointer border-b border-slate-50 text-xs flex justify-between ${index === sugerenciaActiva ? 'bg-blue-50' : 'hover:bg-slate-50'}`}>
+                                                        <span>{p.descripcion}</span>
+                                                        <span className={`font-bold ${p.stock <= 5 ? 'text-red-500' : 'text-slate-400'}`}>Stock: {p.stock}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="col-span-2">
+                                    <label className="text-xs font-bold text-slate-400 ml-1 text-center block">CANT.</label>
+                                    <input
+                                        ref={cantidadRef}
+                                        type="number"
+                                        min="0.1"
+                                        step="0.1"
+                                        value={inputCantidad}
+                                        onChange={(e) => setInputCantidad(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && agregarItemManual()}
+                                        className={`w-full px-2 py-2 border border-slate-200 rounded-lg text-sm text-center font-bold transition-colors ${!productoSeleccionado ? 'bg-slate-100 text-slate-400 cursor-not-allowed opacity-75' : 'bg-white text-slate-800'}`}
+                                        disabled={!productoSeleccionado}
+                                        title={!productoSeleccionado ? "Seleccione un producto primero" : "Cantidad"}
+                                    />
+                                </div>
+                                <div className="col-span-1">
+                                    <button
+                                        onClick={agregarItemManual}
+                                        disabled={!productoSeleccionado}
+                                        className={`w-full py-2 rounded-lg flex items-center justify-center ${productoSeleccionado ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-slate-100 text-slate-300'}`}
+                                    >
+                                        <Plus size={18} />
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
 
-                        {/* Items List */}
-                        <div className="flex-1 overflow-y-auto p-0 bg-slate-50/30">
-                            <table className="w-full text-sm">
-                                <thead className="bg-slate-50 sticky top-0 z-10 border-b border-slate-100">
-                                    <tr className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                                        <th className="px-6 py-4 text-left">Producto</th>
-                                        <th className="px-6 py-4 text-center w-32">Cantidad</th>
-                                        {modo === 'MANUAL' && <th className="px-6 py-4 w-10"></th>}
+                    {/* Items List */}
+                    <div className="flex-1 overflow-y-auto p-0 bg-slate-50/30">
+                        <table className="w-full text-sm">
+                            <thead className="bg-slate-50 sticky top-0 z-10 border-b border-slate-100">
+                                <tr className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                    <th className="px-6 py-4 text-left">Producto</th>
+                                    <th className="px-6 py-4 text-center w-32">Cantidad</th>
+                                    {modo === 'MANUAL' && <th className="px-6 py-4 w-10"></th>}
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 bg-white">
+                                {/* LISTA VENTA */}
+                                {modo === 'VENTA' && venta && venta.detalles.map((item, idx) => (
+                                    <tr key={idx} className="hover:bg-blue-50/50 transition-colors">
+                                        <td className="px-6 py-4">
+                                            <p className="font-bold text-slate-800">{item.producto_descripcion}</p>
+                                            <p className="text-xs text-slate-400 font-mono mt-0.5">{item.producto_codigo}</p>
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            <span className="font-black text-slate-700 bg-slate-100 px-3 py-1 rounded-lg">
+                                                {item.cantidad}
+                                            </span>
+                                        </td>
                                     </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-100 bg-white">
-                                    {/* LISTA VENTA */}
-                                    {modo === 'VENTA' && venta && venta.detalles.map((item, idx) => (
-                                        <tr key={idx} className="hover:bg-blue-50/50 transition-colors">
-                                            <td className="px-6 py-4">
-                                                <p className="font-bold text-slate-800">{item.producto_descripcion}</p>
-                                                <p className="text-xs text-slate-400 font-mono mt-0.5">{item.producto_codigo}</p>
-                                            </td>
-                                            <td className="px-6 py-4 text-center">
-                                                <span className="font-black text-slate-700 bg-slate-100 px-3 py-1 rounded-lg">
-                                                    {item.cantidad}
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    ))}
+                                ))}
 
-                                    {/* LISTA MANUAL */}
-                                    {modo === 'MANUAL' && itemsManuales.map((item, idx) => (
-                                        <tr key={idx} className="hover:bg-blue-50/50 transition-colors">
-                                            <td className="px-6 py-4">
-                                                <p className="font-bold text-slate-800">{item.producto_descripcion}</p>
-                                                <p className="text-xs text-slate-400 font-mono mt-0.5">{item.producto_codigo}</p>
-                                            </td>
-                                            <td className="px-6 py-4 text-center">
-                                                <span className="font-black text-slate-700 bg-slate-100 px-3 py-1 rounded-lg">
-                                                    {item.cantidad}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-center">
-                                                <button onClick={() => eliminarItemManual(idx)} className="text-slate-400 hover:text-red-500">
-                                                    <Trash2 size={16} />
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))}
+                                {/* LISTA MANUAL */}
+                                {modo === 'MANUAL' && itemsManuales.map((item, idx) => (
+                                    <tr key={idx} className="hover:bg-blue-50/50 transition-colors">
+                                        <td className="px-6 py-4">
+                                            <p className="font-bold text-slate-800">{item.producto_descripcion}</p>
+                                            <p className="text-xs text-slate-400 font-mono mt-0.5">{item.producto_codigo}</p>
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            <span className="font-black text-slate-700 bg-slate-100 px-3 py-1 rounded-lg">
+                                                {item.cantidad}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            <button onClick={() => eliminarItemManual(idx)} className="text-slate-400 hover:text-red-500">
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
 
-                                    {/* EMPTY STATES */}
-                                    {((modo === 'VENTA' && !venta) || (modo === 'MANUAL' && itemsManuales.length === 0)) && (
-                                        <tr>
-                                            <td colSpan="3" className="py-20 text-center text-slate-400">
-                                                <div className="bg-slate-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 opacity-50">
-                                                    <ShoppingCart size={32} />
-                                                </div>
-                                                <p className="font-medium">
-                                                    {modo === 'VENTA' ? 'Busque una venta para cargar los ítems' : 'Agregue productos manualmente'}
-                                                </p>
-                                            </td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
+                                {/* EMPTY STATES */}
+                                {((modo === 'VENTA' && !venta) || (modo === 'MANUAL' && itemsManuales.length === 0)) && (
+                                    <tr>
+                                        <td colSpan="3" className="py-20 text-center text-slate-400">
+                                            <div className="bg-slate-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 opacity-50">
+                                                <ShoppingCart size={32} />
+                                            </div>
+                                            <p className="font-medium">
+                                                {modo === 'VENTA' ? 'Busque una venta para cargar los ítems' : 'Agregue productos manualmente'}
+                                            </p>
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
 
-                        {/* Footer Action - DARK STYLE */}
-                        <div className="p-6 m-4 mb-8 rounded-3xl bg-slate-900 text-white flex-shrink-0 mt-auto shadow-2xl ring-1 ring-white/10 flex justify-end">
-                            <BtnSave
-                                label="Generar Remito"
-                                onClick={handleGuardar}
-                                disabled={guardando || (modo === 'VENTA' ? !venta : (!cliente || itemsManuales.length === 0))}
-                                className="px-8 py-4 rounded-xl font-bold text-lg"
-                            />
-                        </div>
+                    {/* Footer Action - DARK STYLE */}
+                    <div className="p-6 m-4 mb-8 rounded-3xl bg-slate-900 text-white flex-shrink-0 mt-auto shadow-2xl ring-1 ring-white/10 flex justify-end">
+                        <BtnSave
+                            label="Generar Remito"
+                            onClick={handleGuardar}
+                            disabled={guardando || (modo === 'VENTA' ? !venta : (!cliente || itemsManuales.length === 0))}
+                            className="px-8 py-4 rounded-xl font-bold text-lg"
+                        />
                     </div>
                 </div>
             </div>

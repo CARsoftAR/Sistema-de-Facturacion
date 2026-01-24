@@ -261,8 +261,7 @@ const NuevoPresupuesto = () => {
     };
 
     return (
-        <div className="p-6 pb-0 max-w-7xl mx-auto h-[calc(100vh-120px)] flex flex-col fade-in">
-            {/* Force Update v4 */}
+        <div className="p-6 pb-10 max-w-7xl mx-auto min-h-[calc(100vh-120px)] flex flex-col fade-in">
 
             {/* Mensaje */}
             {mensaje && (
@@ -282,8 +281,7 @@ const NuevoPresupuesto = () => {
 
                 {/* =============== COLUMNA IZQUIERDA (4 cols) =============== */}
                 <div
-                    className="lg:col-span-4 flex flex-col gap-6 overflow-y-auto pr-1"
-                    style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                    className="lg:col-span-4 flex flex-col gap-6 h-[calc(100vh-8rem)] pr-1"
                 >
                     {/* Header Interno */}
                     <div className="mb-6 flex-shrink-0">
@@ -372,8 +370,8 @@ const NuevoPresupuesto = () => {
                         )}
                     </div>
 
-                    {/* Options Card - WITHOUT flex-1 */}
-                    <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5 group flex flex-col min-h-0">
+                    {/* Options Card */}
+                    <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5 group flex-1 flex flex-col min-h-0">
                         <div className="flex items-center gap-2 mb-4">
                             <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg group-hover:bg-indigo-100 transition-colors">
                                 <FileText size={20} />
@@ -398,7 +396,7 @@ const NuevoPresupuesto = () => {
                 </div>
 
                 {/* =============== COLUMNA DERECHA (8 cols) - PRODUCTOS =============== */}
-                <div className="lg:col-span-8 flex flex-col h-full bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden relative">
+                <div className="lg:col-span-8 flex flex-col h-[calc(100vh-8rem)] bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden relative">
 
                     {/* Barra de Entrada de Productos */}
                     <div className="p-5 border-b border-slate-100 bg-slate-50 flex-shrink-0 z-20">

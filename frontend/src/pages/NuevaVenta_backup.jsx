@@ -393,7 +393,7 @@ const NuevaVenta = () => {
     // ==================== UI PARTS ====================
 
     return (
-        <div className="p-6 pb-0 max-w-7xl mx-auto min-h-[calc(100vh-120px)] flex flex-col fade-in">
+        <div className="p-6 pb-10 max-w-7xl mx-auto min-h-[calc(100vh-120px)] flex flex-col fade-in">
 
 
             {/* El mensaje de éxito/error ahora se muestra por SweetAlert modal */}
@@ -402,10 +402,7 @@ const NuevaVenta = () => {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-0">
 
                 {/* CLOUMNA IZQUIERDA (CLIENTE / PROVEEDOR / INFO) */}
-                <div
-                    className="lg:col-span-4 flex flex-col gap-6 overflow-y-auto pr-1"
-                    style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-                >
+                <div className="lg:col-span-4 flex flex-col gap-6 h-[calc(100vh-8rem)] pr-1">
                     {/* Header Interno: Back Button & Title Stacked */}
                     <div className="mb-6 flex-shrink-0">
                         <div className="mb-4">
@@ -418,13 +415,6 @@ const NuevaVenta = () => {
                         <p className="text-slate-500 font-medium ml-10">Registrar una nueva operación de venta</p>
                     </div>
                     {/* Cliente Card */}
-                    <style>
-                        {`
-                            .lg\\:col-span-4::-webkit-scrollbar {
-                                display: none;
-                            }
-                        `}
-                    </style>
                     <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5 flex-shrink-0">
                         <div className="flex items-center gap-2 mb-4">
                             <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
@@ -494,7 +484,7 @@ const NuevaVenta = () => {
                 </div>
 
                 {/* COLUMNA DERECHA (CARRITO) */}
-                <div className="lg:col-span-8 flex flex-col h-full bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden relative">
+                <div className="lg:col-span-8 flex flex-col h-[calc(100vh-8rem)] bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden relative">
 
                     {/* Barra de Entrada de Productos */}
                     <div className="p-5 border-b border-slate-100 bg-slate-50 flex-shrink-0 z-20">
@@ -668,7 +658,7 @@ const NuevaVenta = () => {
                     </div>
 
                     {/* Footer Total */}
-                    <div className="p-6 m-4 mb-8 rounded-3xl bg-slate-900 text-white flex justify-between items-center shadow-2xl ring-1 ring-white/10 flex-shrink-0 mt-auto">
+                    <div className="p-6 m-4 mb-8 rounded-3xl bg-slate-900 text-white flex justify-between items-center shadow-2xl ring-1 ring-white/10 flex-shrink-0">
                         {discriminarIVA ? (
                             <div className="flex items-center gap-8">
                                 <div className="space-y-0.5">
