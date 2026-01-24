@@ -165,7 +165,7 @@ const NuevaCompra = () => {
         const costo = costoOverride !== null ? parseFloat(costoOverride) : (parseFloat(inputCosto) || 0);
 
         if (costo <= 0) {
-            Swal.fire('Atención', 'El costo debe ser mayor a 0', 'warning');
+            showWarningAlert('Atención', 'El costo debe ser mayor a 0');
             return;
         }
 
@@ -284,19 +284,19 @@ const NuevaCompra = () => {
 
         } catch (error) {
             console.error(error);
-            Swal.fire('Error', 'Error de conexión', 'error');
+            showWarningAlert('Error', 'Error de conexión con el servidor.');
         } finally {
             setGuardando(false);
         }
     };
 
     return (
-        <div className="p-6 pb-0 max-w-7xl mx-auto min-h-[calc(100vh-120px)] flex flex-col fade-in">
+        <div className="p-4 pb-0 max-w-7xl mx-auto min-h-[calc(100vh-120px)] flex flex-col fade-in">
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-0">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 flex-1 min-h-0">
 
                 {/* Left Panel: Proveedor & Info */}
-                <div className="lg:col-span-4 flex flex-col gap-6 h-[calc(100vh-8rem)]">
+                <div className="lg:col-span-4 flex flex-col gap-4 h-[calc(100vh-7rem)]">
 
                     <div className="flex items-center gap-4">
                         <BtnBack onClick={() => navigate('/compras')} />
@@ -312,7 +312,7 @@ const NuevaCompra = () => {
                     </div>
 
                     {/* Proveedor Search */}
-                    <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-200">
+                    <div className="bg-white rounded-3xl p-4 shadow-sm border border-slate-200">
                         <div className="flex items-center gap-2 mb-4 text-indigo-700">
                             <Truck size={20} />
                             <h2 className="font-bold text-lg">Proveedor</h2>
@@ -322,7 +322,7 @@ const NuevaCompra = () => {
                                 ref={proveedorInputRef}
                                 type="text"
                                 placeholder="Buscar Proveedor..."
-                                className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 bg-slate-50 font-medium"
+                                className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 bg-slate-50 font-medium"
                                 value={busquedaProveedor}
                                 onChange={(e) => setBusquedaProveedor(e.target.value)}
                                 autoComplete="off"
@@ -385,7 +385,7 @@ const NuevaCompra = () => {
                     </div>
 
                     {/* Datos Comprobante */}
-                    <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 flex-1 flex flex-col min-h-0">
+                    <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 flex-1 flex flex-col min-h-0">
                         <div className="flex items-center gap-2 mb-4 text-slate-700">
                             <FileText size={20} />
                             <h2 className="font-bold text-lg">Detalles</h2>
@@ -572,7 +572,7 @@ const NuevaCompra = () => {
                     </div>
 
                     {/* Footer */}
-                    <div className="p-6 m-4 mb-8 rounded-3xl bg-slate-900 text-white flex justify-between items-center shadow-2xl ring-1 ring-white/10 flex-shrink-0">
+                    <div className="p-4 m-3 mb-6 rounded-2xl bg-slate-900 text-white flex justify-between items-center shadow-xl ring-1 ring-white/10 flex-shrink-0">
                         {discriminarIVA ? (
                             <div className="flex items-center gap-8">
                                 <div className="space-y-0.5">

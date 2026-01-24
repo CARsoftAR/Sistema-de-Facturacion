@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { X, Save, AlertCircle, Package, DollarSign, Tag, Layers, Truck } from 'lucide-react';
 import SearchableSelect from '../components/common/SearchableSelect';
 import { BtnCancel, BtnSave, BtnBack } from '../components/CommonButtons';
+import { showWarningAlert, showSuccessAlert } from '../utils/alerts';
 import Swal from 'sweetalert2';
 
 const NuevoProducto = () => {
@@ -15,7 +16,6 @@ const NuevoProducto = () => {
     const [marcas, setMarcas] = useState([]);
     const [rubros, setRubros] = useState([]);
     const [proveedores, setProveedores] = useState([]);
-    const [serverError, setServerError] = useState(null);
     const [loading, setLoading] = useState(!!id);
 
     // Dynamic Fields Watch
@@ -70,7 +70,7 @@ const NuevoProducto = () => {
                 }
             } catch (error) {
                 console.error("Error cargando datos:", error);
-                setServerError("Error al cargar datos iniciales.");
+                showWarningAlert("Error", "No se pudieron cargar los datos iniciales.");
                 setLoading(false);
             }
         };
@@ -103,7 +103,7 @@ const NuevoProducto = () => {
                 tipo_bulto: producto.tipo_bulto || 'UN'
             });
         } catch (e) {
-            setServerError("No se pudo cargar el producto.");
+            showWarningAlert("Error", "No se pudo cargar el producto.");
         } finally {
             setLoading(false);
         }
@@ -133,7 +133,6 @@ const NuevoProducto = () => {
     // Given the user wants "standardization", layout is priority. Logic copy is secondary but needed.
 
     const onSubmit = async (data) => {
-        setServerError(null);
         const formData = new FormData();
         Object.keys(data).forEach(key => {
             if (data[key] !== null && data[key] !== undefined) {
@@ -154,25 +153,22 @@ const NuevoProducto = () => {
             const result = await response.json();
 
             if (!result.ok) {
-                if (result.errors) {
-                    const msg = Object.values(result.errors).flat().join(', ');
-                    setServerError(msg);
-                } else {
-                    setServerError(result.error || 'Ocurrió un error al guardar.');
-                }
+                const msg = result.errors
+                    ? Object.values(result.errors).flat().join(', ')
+                    : (result.error || 'Ocurrió un error al guardar.');
+                showWarningAlert('Atención', msg);
                 return;
             }
 
-            Swal.fire({
-                title: 'Éxito',
-                text: id ? 'Producto actualizado correctamente' : 'Producto creado correctamente',
-                icon: 'success',
-                timer: 1500,
-                showConfirmButton: false
-            });
+            showSuccessAlert(
+                'Éxito',
+                id ? 'Producto actualizado correctamente' : 'Producto creado correctamente',
+                undefined,
+                { timer: 1500, showConfirmButton: false }
+            );
             navigate('/productos');
         } catch (error) {
-            setServerError('Error de conexión con el servidor.');
+            showWarningAlert('Error', 'Error de conexión con el servidor.');
         }
     };
 
@@ -197,10 +193,10 @@ const NuevoProducto = () => {
 
     return (
         <div className="p-6 pb-0 max-w-7xl mx-auto min-h-[calc(100vh-120px)] flex flex-col fade-in">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-0">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 flex-1 min-h-0">
 
                 {/* LEFT COLUMN: Header & Info */}
-                <div className="lg:col-span-4 flex flex-col gap-6 overflow-y-auto pr-1">
+                <div className="lg:col-span-4 flex flex-col gap-4 overflow-y-auto pr-1">
                     <div className="flex items-center gap-4">
                         <BtnBack onClick={() => navigate('/productos')} />
                         <div>
@@ -213,24 +209,17 @@ const NuevoProducto = () => {
                             </p>
                         </div>
                     </div>
-
-                    {serverError && (
-                        <div className="p-4 rounded-xl bg-red-50 border border-red-100 flex items-center gap-3 text-red-700">
-                            <AlertCircle size={20} className="flex-shrink-0" />
-                            <span className="font-medium text-sm">{serverError}</span>
-                        </div>
-                    )}
                 </div>
 
                 {/* RIGHT COLUMN: Form */}
                 <div className="lg:col-span-8 flex flex-col h-full min-h-0">
                     <div className="bg-white rounded-3xl border border-slate-200 shadow-sm flex flex-col h-full overflow-hidden">
-                        <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
-                            <form id="producto-form" onSubmit={handleSubmit(onSubmit)} onKeyDown={handleKeyDown} autoComplete="off" className="flex flex-col gap-6">
+                        <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+                            <form id="producto-form" onSubmit={handleSubmit(onSubmit)} onKeyDown={handleKeyDown} autoComplete="off" className="flex flex-col gap-4">
 
                                 {/* SECCIÓN 1: DATOS PRINCIPALES */}
                                 <div className="bg-slate-50/50 p-6 rounded-2xl border border-slate-100">
-                                    <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                    <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
                                         <Tag size={14} /> Información Básica
                                     </h3>
                                     <div className="grid grid-cols-12 gap-x-4 gap-y-4">
@@ -344,12 +333,12 @@ const NuevoProducto = () => {
                                 </div>
 
                                 {/* SECCIÓN 2: GRID DOBLE */}
-                                <div className="grid grid-cols-12 gap-6">
+                                <div className="grid grid-cols-12 gap-4">
 
                                     {/* COLUMNA IZQUIERDA: INVENTARIO */}
                                     <div className="col-span-12 md:col-span-5 flex flex-col">
-                                        <div className="bg-white p-6 rounded-2xl border border-slate-200 h-full shadow-sm">
-                                            <h3 className="text-xs font-bold text-amber-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                        <div className="bg-white p-4 rounded-2xl border border-slate-200 h-full shadow-sm">
+                                            <h3 className="text-xs font-bold text-amber-500 uppercase tracking-widest mb-3 flex items-center gap-2">
                                                 <Layers size={16} /> Inventario
                                             </h3>
 
@@ -382,11 +371,11 @@ const NuevoProducto = () => {
 
                                     {/* COLUMNA DERECHA: PRECIOS */}
                                     <div className="col-span-12 md:col-span-7 flex flex-col">
-                                        <div className="bg-white p-6 rounded-2xl border-l-[6px] border-emerald-500 shadow-sm h-full relative overflow-hidden">
+                                        <div className="bg-white p-4 rounded-2xl border-l-[6px] border-emerald-500 shadow-sm h-full relative overflow-hidden">
                                             <div className="absolute top-0 right-0 p-4 opacity-5">
                                                 <DollarSign size={100} />
                                             </div>
-                                            <h3 className="text-xs font-bold text-emerald-600 uppercase tracking-widest mb-4 flex items-center gap-2 relative z-10">
+                                            <h3 className="text-xs font-bold text-emerald-600 uppercase tracking-widest mb-3 flex items-center gap-2 relative z-10">
                                                 <DollarSign size={16} /> Costos y Precios
                                             </h3>
 
@@ -458,7 +447,7 @@ const NuevoProducto = () => {
                                 </div>
 
                                 {/* FOOTER ACTIONS */}
-                                <div className="p-6 bg-slate-50 rounded-b-3xl border-t border-slate-100 flex justify-end gap-3 -mx-6 -mb-6">
+                                <div className="p-4 bg-slate-50 rounded-b-3xl border-t border-slate-100 flex justify-end gap-3 -mx-4 -mb-4">
                                     <BtnCancel onClick={() => navigate('/productos')} />
                                     <BtnSave
                                         form="producto-form"

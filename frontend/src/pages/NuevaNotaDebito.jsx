@@ -184,7 +184,7 @@ const NuevaNotaDebito = () => {
 
             if (data.ok) {
                 Swal.fire({
-                    title: '¡Éxito!',
+                    title: 'Éxito',
                     text: data.message,
                     icon: 'success',
                     timer: 2000,

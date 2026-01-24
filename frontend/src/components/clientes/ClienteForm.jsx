@@ -43,17 +43,19 @@ const ClienteForm = ({ cliente, onClose, onSave }) => {
                 telefono: cliente.telefono || '',
                 email: cliente.email || '',
                 domicilio: cliente.domicilio || '',
+                localidad: cliente.localidad || '',
+                provincia: cliente.provincia || '',
                 lista_precio: cliente.lista_precio || '1',
                 limite_credito: cliente.limite_credito || 0,
                 notas: cliente.notas || '',
-                activo: cliente.activo !== false, // Default true
+                activo: cliente.activo !== false,
                 tiene_ctacte: cliente.tiene_ctacte || false
             });
         } else {
             reset({
                 condicion_fiscal: 'CF',
                 lista_precio: '1',
-                limit_credito: 0,
+                limite_credito: 0,
                 activo: true,
                 tiene_ctacte: false
             });

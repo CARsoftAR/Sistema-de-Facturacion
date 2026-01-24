@@ -2481,67 +2481,96 @@ def api_cliente_detalle(request, id):
 
 @csrf_exempt
 def api_cliente_nuevo(request):
+
     if request.method != "POST":
         return JsonResponse({"error": "Método inválido"}, status=400)
 
-    data = request.POST
-    errors = {}
+    # Soporte para JSON o POST
+    if request.content_type == 'application/json':
+        try:
+            data = json.loads(request.body)
+        except:
+            data = request.POST
+    else:
+        data = request.POST
 
+
+
+    errors = {}
     nombre = data.get("nombre", "").strip()
     if not nombre:
         errors["nombre"] = "El nombre es obligatorio."
 
     email = data.get("email", "").strip()
-    telefono = data.get("telefono", "").strip()
-    cuit = data.get("cuit", "").strip()
+    # Limpiamos el CUIT de guiones y espacios para guardar solo nÃºmeros
+    raw_cuit = data.get("cuit", "").strip()
+    cuit = re.sub(r'\D', '', raw_cuit) if raw_cuit else ""
+    
+    # ValidaciÃ³n
+    if cuit and not re.match(r"^\d{7,11}$", cuit):
+         # Si el raw tenÃ­a algo pero al limpiar no queda vÃ¡lido
+        errors["cuit"] = "El CUIT/DNI debe tener entre 7 y 11 números."
 
-    if cuit and not re.match(r"^\d{2}-?\d{8}-?\d$", cuit):
-        errors["cuit"] = "El CUIT debe tener formato válido (20-12345678-3)."
-
-    if email and not re.match(r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,4}$', email):
+    if email and not re.match(r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$', email):
         errors["email"] = "Email inválido."
 
     if errors:
+
         return JsonResponse({"ok": False, "errors": errors}, status=400)
 
-    c = Cliente.objects.create(
-        nombre=nombre,
-        tipo_cliente=data.get("tipo_cliente", "P"),
-        cuit=cuit,
-        condicion_fiscal=data.get("condicion_fiscal", "CF"),
-        domicilio=data.get("domicilio", "").strip(),
-        provincia_id=data.get("provincia") or None,
-        localidad_id=data.get("localidad") or None,
-        telefono=telefono,
-        email=email,
-        lista_precio=data.get("lista_precio", "1"),
-        tipo_factura_preferida=data.get("tipo_factura_preferida", "B"),
-        descuento_predeterminado=data.get("descuento_predeterminado") or 0,
-        tiene_ctacte=data.get("tiene_ctacte") == "on",
-        limite_credito=data.get("limite_credito") or 0,
-        permitir_superar_limite=data.get("permitir_superar_limite") == "on",
-        contacto_nombre=data.get("contacto_nombre", "").strip(),
-        contacto_telefono=data.get("contacto_telefono", "").strip(),
-        contacto_email=data.get("contacto_email", "").strip(),
-        rubro_cliente=data.get("rubro_cliente", "").strip(),
-        canal=data.get("canal", ""),
-        origen=data.get("origen", ""),
-        notas=data.get("notas", "").strip(),
-        activo=data.get("activo") == "on",
-    )
+    def to_decimal(val, default=0):
+        try:
+            if val in [None, "", "undefined", "null"]: return Decimal(str(default))
+            return Decimal(str(val).replace(',', '.'))
+        except:
+            return Decimal(str(default))
 
-    return JsonResponse({
-        "ok": True,
-        "cliente": {
-            "id": c.id,
-            "nombre": c.nombre,
-            "cuit": c.cuit,
-            "telefono": c.telefono,
-            "condicion_fiscal_display": c.get_condicion_fiscal_display(),
-            "lista_precio_display": c.get_lista_precio_display(),
-            "tiene_ctacte": c.tiene_ctacte,
-        }
-    })
+    def as_bool(val):
+        if isinstance(val, bool): return val
+        return str(val).lower() in ['on', 'true', '1', 'yes']
+
+    try:
+        c = Cliente.objects.create(
+            nombre=nombre,
+            tipo_cliente=data.get("tipo_cliente", "P"),
+            cuit=cuit, # Guardamos el CUIT limpio
+            condicion_fiscal=data.get("condicion_fiscal", "CF"),
+            domicilio=data.get("domicilio", "").strip(),
+            provincia_id=data.get("provincia") if data.get("provincia") not in [None, "", "undefined"] else None,
+            localidad_id=data.get("localidad") if data.get("localidad") not in [None, "", "undefined"] else None,
+            telefono=data.get("telefono", "").strip(),
+            email=email,
+            lista_precio=data.get("lista_precio", "1"),
+            tipo_factura_preferida=data.get("tipo_factura_preferida", "B"),
+            descuento_predeterminado=to_decimal(data.get("descuento_predeterminado"), 0),
+            tiene_ctacte=as_bool(data.get("tiene_ctacte")),
+            limite_credito=to_decimal(data.get("limite_credito"), 0),
+            permitir_superar_limite=as_bool(data.get("permitir_superar_limite")),
+            contacto_nombre=data.get("contacto_nombre", "").strip(),
+            contacto_telefono=data.get("contacto_telefono", "").strip(),
+            contacto_email=data.get("contacto_email", "").strip(),
+            rubro_cliente=data.get("rubro_cliente", "").strip(),
+            canal=data.get("canal", ""),
+            origen=data.get("origen", ""),
+            notas=data.get("notas", "").strip(),
+            activo=as_bool(data.get("activo") if "activo" in data else True),
+        )
+
+        print(f"--- [DEBUG] CLIENTE CREADO EXITOSAMENTE: ID {c.id} ---")
+
+        return JsonResponse({
+            "ok": True,
+            "cliente": {
+                "id": c.id,
+                "nombre": c.nombre,
+                "cuit": c.cuit,
+            }
+        })
+    except Exception as e:
+        import traceback
+        print("ERROR AL CREAR CLIENTE:", str(e))
+        print(traceback.format_exc())
+        return JsonResponse({"ok": False, "error": f"Error interno: {str(e)}"}, status=500)
 
 
 @csrf_exempt
@@ -2554,64 +2583,107 @@ def api_cliente_editar(request, id):
     except Cliente.DoesNotExist:
         return JsonResponse({"ok": False, "error": "Cliente no encontrado."}, status=404)
 
-    data = request.POST
-    errors = {}
+    # Soporte para JSON o POST
+    if request.content_type == 'application/json':
+        try:
+            data = json.loads(request.body)
+        except:
+            data = request.POST
+    else:
+        data = request.POST
 
+
+
+
+    errors = {}
     nombre = data.get("nombre", "").strip()
     if not nombre:
         errors["nombre"] = "El nombre es obligatorio."
 
-    email = data.get("email", "").strip()
-    cuit = data.get("cuit", "").strip()
-    telefono = data.get("telefono", "").strip()
-
-    if cuit and not re.match(r"^\d{2}-?\d{8}-?\d$", cuit):
-        errors["cuit"] = "El CUIT debe tener un formato válido (20-12345678-3)."
-
-    if email and not re.match(r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,4}$', email):
-        errors["email"] = "Email inválido."
-
     if errors:
         return JsonResponse({"ok": False, "errors": errors}, status=400)
 
-    c.nombre = nombre
-    c.tipo_cliente = data.get("tipo_cliente", "P")
-    c.cuit = cuit
-    c.condicion_fiscal = data.get("condicion_fiscal", "CF")
-    c.domicilio = data.get("domicilio", "").strip()
-    c.provincia_id = data.get("provincia") or None
-    c.localidad_id = data.get("localidad") or None
-    c.telefono = telefono
-    c.email = email
-    c.lista_precio = data.get("lista_precio", "1")
-    c.tipo_factura_preferida = data.get("tipo_factura_preferida", "B")
-    c.descuento_predeterminado = data.get("descuento_predeterminado") or 0
-    c.tiene_ctacte = data.get("tiene_ctacte") == "on"
-    c.limite_credito = data.get("limite_credito") or 0
-    c.permitir_superar_limite = data.get("permitir_superar_limite") == "on"
-    c.contacto_nombre = data.get("contacto_nombre", "").strip()
-    c.contacto_telefono = data.get("contacto_telefono", "").strip()
-    c.contacto_email = data.get("contacto_email", "").strip()
-    c.rubro_cliente = data.get("rubro_cliente", "").strip()
-    c.canal = data.get("canal", "")
-    c.origen = data.get("origen", "")
-    c.notas = data.get("notas", "").strip()
-    c.activo = data.get("activo") == "on"
+    def to_decimal(val, default_val):
+        if val in [None, "", "undefined", "null"]: return Decimal(str(default_val))
+        try:
+            return Decimal(str(val).replace(',', '.'))
+        except:
+            return Decimal(str(default_val))
 
-    c.save()
+    def as_bool(val, default_val):
+        if val is None: return default_val
+        if isinstance(val, bool): return val
+        return str(val).lower() in ['on', 'true', '1', 'yes']
 
-    return JsonResponse({
-        "ok": True,
-        "cliente": {
-            "id": c.id,
-            "nombre": c.nombre,
-            "cuit": c.cuit,
-            "telefono": c.telefono,
-            "condicion_fiscal_display": c.get_condicion_fiscal_display(),
-            "lista_precio_display": f"Lista {c.lista_precio}",
-            "tiene_ctacte": c.tiene_ctacte,
-        }
-    })
+    try:
+        c.nombre = nombre
+        c.tipo_cliente= data.get("tipo_cliente", c.tipo_cliente)
+        
+        # Limpieza de CUIT
+        raw_cuit = data.get("cuit", "").strip()
+        if raw_cuit:
+             c.cuit = re.sub(r'\D', '', raw_cuit)
+        else:
+             c.cuit = ""
+             
+        c.condicion_fiscal = data.get("condicion_fiscal", c.condicion_fiscal)
+        c.domicilio = data.get("domicilio", c.domicilio).strip()
+        
+        # Gestón de FKs (evitar wipe si viene vacío/undefined pero el JS mandó algo inválido)
+        prov = data.get("provincia")
+        if prov not in [None, "undefined"]:
+            c.provincia_id = prov if prov != "" else None
+            
+        loc = data.get("localidad")
+        if loc not in [None, "undefined"]:
+            c.localidad_id = loc if loc != "" else None
+
+        c.telefono = data.get("telefono", c.telefono).strip()
+        c.email = data.get("email", c.email).strip()
+        c.lista_precio = data.get("lista_precio", c.lista_precio)
+        c.tipo_factura_preferida = data.get("tipo_factura_preferida", c.tipo_factura_preferida)
+        
+        # Solo actualizar si el campo viene en el request (evitar reset de campos no presentes en el form)
+        if "descuento_predeterminado" in data:
+            c.descuento_predeterminado = to_decimal(data.get("descuento_predeterminado"), c.descuento_predeterminado)
+        
+        if "tiene_ctacte" in data:
+            c.tiene_ctacte = as_bool(data.get("tiene_ctacte"), c.tiene_ctacte)
+            
+        if "limite_credito" in data:
+            c.limite_credito = to_decimal(data.get("limite_credito"), c.limite_credito)
+            
+        if "permitir_superar_limite" in data:
+            c.permitir_superar_limite = as_bool(data.get("permitir_superar_limite"), c.permitir_superar_limite)
+
+        c.contacto_nombre = data.get("contacto_nombre", c.contacto_nombre).strip()
+        c.contacto_telefono = data.get("contacto_telefono", c.contacto_telefono).strip()
+        c.contacto_email = data.get("contacto_email", c.contacto_email).strip()
+        c.rubro_cliente = data.get("rubro_cliente", c.rubro_cliente).strip()
+        c.canal = data.get("canal", c.canal)
+        c.origen = data.get("origen", c.origen)
+        c.notas = data.get("notas", c.notas).strip()
+        
+        if "activo" in data:
+            c.activo = as_bool(data.get("activo"), c.activo)
+
+        c.save()
+        
+        print(f"--- [DEBUG] CLIENTE {id} ACTUALIZADO EXITOSAMENTE ---")
+
+        return JsonResponse({
+            "ok": True,
+            "cliente": {
+                "id": c.id,
+                "nombre": c.nombre,
+                "cuit": c.cuit,
+            }
+        })
+    except Exception as e:
+        import traceback
+        print("ERROR AL EDITAR CLIENTE:", str(e))
+        print(traceback.format_exc())
+        return JsonResponse({"ok": False, "error": f"Error interno: {str(e)}"}, status=500)
 
 
 @csrf_exempt

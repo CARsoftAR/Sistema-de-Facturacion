@@ -1,164 +1,129 @@
 import Swal from 'sweetalert2';
-import withReactContent from 'sweetalert2-react-content';
-import React from 'react';
-
-import { Trash2, AlertCircle, Check } from 'lucide-react';
-// ... existing imports ...
-
-// ... existing code ...
-
-export const showWarningAlert = async (title, text, confirmText = 'Entendido', options = {}) => {
-    const warningIcon = (
-        <div className="flex justify-center mb-2">
-            <div className="p-3 bg-orange-50 rounded-full">
-                <AlertCircle size={40} className="text-orange-500" strokeWidth={2} />
-            </div>
-        </div>
-    );
-
-    return showConfirmationAlert(title, text, confirmText, 'primary', {
-        iconComponent: warningIcon,
-        ...options,
-        showCancelButton: false,
-        customClass: {
-            ...options.customClass,
-            cancelButton: 'hidden display-none',
-            actions: 'w-full flex justify-center !mt-4 !mb-4',
-            confirmButton: 'px-8 py-2.5 rounded-xl font-bold text-sm bg-blue-600 text-white shadow-lg hover:bg-blue-700 border-0 outline-none'
-        }
-    });
-};
-
-const MySwal = withReactContent(Swal);
 
 /**
- * Muestra una alerta de confirmación con estilo Premium.
- * @param {string} title - Título de la alerta
- * @param {string} text - Texto descriptivo
- * @param {string} confirmText - Texto del botón confirmar
- * @param {string} variant - 'danger' | 'primary' | 'success' (default: 'danger')
- * @param {object} options - opciones extra { iconComponent: ReactNode }
+ * Alertas con diseño Premium EXACTAMENTE como el de Compras.
+ * Esta versión usa HTML nativo puro (string) para evitar errores de React/Vite.
  */
-export const showConfirmationAlert = async (title, text, confirmText = 'Confirmar', variant = 'danger', options = {}) => {
-    const { iconComponent, ...rest } = options;
+const firePremium = (options) => {
+    const {
+        title,
+        text,
+        iconHtml = '',
+        confirmText = 'Aceptar',
+        confirmColor = '#2563eb',
+        showCancel = false,
+        cancelText = 'Cancelar',
+        timer = undefined,
+        showConfirmButton = true
+    } = options;
 
-    // Define colors based on variant
-    // Tailwind colors
-    const confirmBtnClass = {
-        danger: 'bg-red-500 hover:bg-red-600 text-white shadow-md shadow-red-200',
-        primary: 'bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-200',
-        success: 'bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-200' // Success also uses Blue to match standard
-    }[variant] || 'bg-red-500 hover:bg-red-600 text-white';
-
-    // Base config assuming simple text icon if no component
-    const iconConfig = iconComponent ? {
-        icon: undefined,
-        iconHtml: iconComponent,
-        customClass: {
-            icon: 'border-0 bg-transparent shadow-none mb-4',
-            htmlContainer: 'text-slate-500 text-base mb-8',
-            popup: 'rounded-[2rem] shadow-xl border-0 p-10 w-full max-w-md',
-            actions: 'w-full flex gap-6 px-4 !mt-0 justify-center',
-            confirmButton: `flex-1 py-3.5 rounded-2xl font-bold text-base transition-all outline-none border-0 shadow-none hover:shadow-md ${confirmBtnClass.replace('shadow-md', '')}`,
-            cancelButton: 'flex-1 py-3.5 rounded-2xl font-bold text-base text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all outline-none border-0',
-            title: 'text-2xl font-bold text-slate-800 mb-2'
-        }
-    } : {
-        icon: 'warning',
-        customClass: {
-            icon: 'border-0 mb-3 !text-sm',
-            htmlContainer: 'text-slate-500 text-sm mb-6', // Removed px-2 to match Facturar
-            popup: 'rounded-2xl shadow-2xl border-0 p-6 w-full max-w-sm', // Match Pedidos classes
-            actions: 'w-full flex gap-3 !mt-0', // Remove default Swal spacing, rely on mb-6 from content
-            confirmButton: `w-full py-2.5 rounded-xl font-bold text-sm transition-all outline-none border-0 shadow-lg ${confirmBtnClass.replace('shadow-md', '')}`, // Force shadow-lg, remove lower shadow if present
-            cancelButton: 'w-full py-2.5 rounded-xl font-bold text-sm text-slate-500 bg-slate-100 hover:bg-slate-200 transition-all outline-none border-0',
-            title: 'text-xl font-bold text-slate-800 mb-2' // Removed mt-2
-        }
-    };
-
-    // Merge customClass manually to avoid overwrite
-    const finalCustomClass = {
-        ...(iconConfig.customClass || {}),
-        ...(rest.customClass || {})
-    };
-
-    // Remove customClass from rest so it doesn't overwrite our manual merge
-    const { customClass, ...finalRest } = rest;
-
-    return MySwal.fire({
-        title: title,
-        text: text,
-        showCancelButton: true,
+    return Swal.fire({
+        html: `
+            <div style="display: flex; flex-direction: column; align-items: center; font-family: 'Inter', sans-serif;">
+                <div style="margin-bottom: 20px;">
+                    ${iconHtml}
+                </div>
+                <h3 style="font-size: 1.5rem; font-weight: 900; color: #1e293b; margin-bottom: 8px; margin-top: 0;">${title}</h3>
+                <p style="color: #64748b; font-weight: 500; font-size: 0.875rem; padding: 0 10px; line-height: 1.5; margin: 0;">
+                    ${text || ''}
+                </p>
+            </div>
+        `,
+        showConfirmButton: showConfirmButton,
         confirmButtonText: confirmText,
-        cancelButtonText: 'Cancelar',
-        reverseButtons: true, // Cancel top (if vertical) or left
+        showCancelButton: showCancel,
+        cancelButtonText: cancelText,
         buttonsStyling: false,
-        padding: '0', // handled by custom classes
-        focusCancel: true,
-        ...iconConfig,
-        customClass: finalCustomClass,
-        ...finalRest
+        reverseButtons: true,
+        backdrop: 'rgba(15, 23, 42, 0.6)',
+        padding: '2rem',
+        timer: timer,
+        customClass: {
+            popup: 'rounded-premium-alert shadow-2xl border border-slate-200 overflow-hidden w-full max-w-sm',
+            actions: 'w-full flex gap-3 mt-8',
+            confirmButton: 'flex-1 py-3.5 bg-blue-600 text-white rounded-xl font-bold shadow-lg hover:bg-blue-700 transition-all text-sm uppercase tracking-wide border-0 outline-none',
+            cancelButton: 'flex-1 py-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-500 hover:bg-slate-50 transition-all text-sm uppercase tracking-wide bg-transparent'
+        },
+        didOpen: (popup) => {
+            // Inyectar clase de redondeado masivo si no existiera
+            popup.style.borderRadius = '2rem';
+            const confirmBtn = popup.querySelector('.swal2-confirm');
+            if (confirmBtn) {
+                confirmBtn.style.backgroundColor = confirmColor;
+                if (confirmColor === '#ef4444') {
+                    confirmBtn.style.boxShadow = '0 10px 15px -3px rgba(239, 68, 68, 0.3)';
+                } else {
+                    confirmBtn.style.boxShadow = '0 10px 15px -3px rgba(59, 130, 246, 0.3)';
+                }
+                confirmBtn.style.flex = '1';
+                confirmBtn.style.display = showConfirmButton ? 'block' : 'none';
+            }
+            const cancelBtn = popup.querySelector('.swal2-cancel');
+            if (cancelBtn) {
+                cancelBtn.style.flex = '1';
+            }
+        }
     });
 };
 
-export const showDeleteAlert = async (title, text, confirmText = 'Eliminar', options = {}) => {
-    const trashIcon = (
-        <div className="flex justify-center mb-2">
-            <div className="p-3 bg-red-50 rounded-full">
-                <Trash2 size={40} className="text-red-500" strokeWidth={2} />
-            </div>
-        </div>
-    );
-
-
-    return showConfirmationAlert(title, text, confirmText, 'danger', {
-        iconComponent: trashIcon,
-        customClass: {
-            actions: 'w-full flex gap-6 px-8 !mt-4 !mb-6'
-        },
+export const showConfirmationAlert = async (title, text, confirmText = 'Confirmar', variant = 'danger', options = {}) => {
+    return firePremium({
+        title,
+        text,
+        confirmText,
+        confirmColor: variant === 'danger' ? '#ef4444' : '#2563eb',
+        showCancel: true,
         ...options
     });
 };
 
-
-
-
 export const showSuccessAlert = async (title, text, confirmText = 'Aceptar', options = {}) => {
-    const successIcon = options.iconComponent ? options.iconComponent : (
-        <div className="flex justify-center mb-2">
-            <div className="p-3 bg-green-50 rounded-full">
-                <Check size={40} className="text-green-500" strokeWidth={3} />
-            </div>
+    const icon = `
+        <div style="width: 80px; height: 80px; background-color: #f0fdf4; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 1px solid #dcfce7; color: #16a34a;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
         </div>
-    );
+    `;
+    return firePremium({
+        title,
+        text,
+        iconHtml: icon,
+        confirmText,
+        variant: 'success',
+        confirmColor: '#2563eb',
+        ...options
+    });
+};
 
-    const shouldShowCancel = !!options.showCancelButton;
+export const showWarningAlert = async (title, text, confirmText = 'Entendido', options = {}) => {
+    const icon = `
+        <div style="width: 80px; height: 80px; background-color: #fff7ed; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 1px solid #ffedd5; color: #f97316;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+        </div>
+    `;
+    return firePremium({
+        title,
+        text,
+        iconHtml: icon,
+        confirmText,
+        showCancel: false,
+        ...options
+    });
+};
 
-    // Si queremos el botón cancelar, necesitamos asegurarnos de que el layout sea el correcto 
-    // (similar a showDeleteAlert con gap-6 y padding)
-    const standardActionsClass = shouldShowCancel ? 'w-full flex gap-6 px-8 !mt-4 !mb-6' : undefined;
-
-    const baseCustomClass = {
-        ...options.customClass,
-        // Only overwrite actions if we need the specific 2-button layout and user didn't provide one
-        actions: (options.customClass?.actions) || standardActionsClass || (options.customClass?.actions),
-    };
-
-    // IMPORTANT: Only add cancelButton key if we want to OVERRIDE the default.
-    // If shouldShowCancel is TRUE, we want the default style (so do NOT add key).
-    // If shouldShowCancel is FALSE, we want to HIDE it (add key 'hidden').
-    if (!shouldShowCancel) {
-        baseCustomClass.cancelButton = 'hidden display-none';
-    } else if (options.customClass?.cancelButton) {
-        // If user provided a specific class, use it
-        baseCustomClass.cancelButton = options.customClass.cancelButton;
-    }
-
-    return showConfirmationAlert(title, text, confirmText, 'success', {
-        iconComponent: successIcon,
-        showCancelButton: shouldShowCancel,
-        ...options,
-        customClass: baseCustomClass
+export const showDeleteAlert = async (title, text, confirmText = 'Eliminar', options = {}) => {
+    const icon = `
+        <div style="width: 80px; height: 80px; background-color: #fef2f2; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 1px solid #fee2e2; color: #dc2626;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+        </div>
+    `;
+    return firePremium({
+        title,
+        text,
+        iconHtml: icon,
+        confirmText,
+        confirmColor: '#ef4444',
+        showCancel: true,
+        ...options
     });
 };
 
@@ -169,24 +134,6 @@ export const showToast = (title, icon = 'success') => {
         showConfirmButton: false,
         timer: 3000,
         timerProgressBar: true,
-        didOpen: (toast) => {
-            toast.onmouseenter = Swal.stopTimer;
-            toast.onmouseleave = Swal.resumeTimer;
-        },
-        customClass: {
-            popup: 'colored-toast'
-        }
     });
-
-    Toast.fire({
-        icon: icon,
-        title: title
-    });
-    Toast.fire({
-        icon: icon,
-        title: title
-    });
+    Toast.fire({ icon, title });
 };
-
-
-

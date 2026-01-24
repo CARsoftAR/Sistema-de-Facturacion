@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Plus, Trash2, User, ShoppingCart, CreditCard, DollarSign, FileText, Check, X } from 'lucide-react';
 import { BtnSave, BtnBack } from '../components/CommonButtons';
+import { showWarningAlert, showSuccessAlert, showToast } from '../utils/alerts';
 import { useProductSearch } from '../hooks/useProductSearch';
 import PaymentModal from '../components/common/PaymentModal';
 import Swal from 'sweetalert2';
@@ -47,13 +48,9 @@ const NuevaVenta = () => {
     const [generarRemito, setGenerarRemito] = useState(false);
     const [discriminarIVA, setDiscriminarIVA] = useState(false);
     const [guardando, setGuardando] = useState(false);
-    const [mensaje, setMensaje] = useState(null);
 
     // Modal de pago state
     const [mostrarModalPago, setMostrarModalPago] = useState(false);
-
-    // Alertas
-    const [alertaStock, setAlertaStock] = useState(null);
 
     // Configuración
     const [cargandoConfig, setCargandoConfig] = useState(true);
@@ -101,10 +98,7 @@ const NuevaVenta = () => {
 
         // Validar Stock
         if (producto.stock <= 0) {
-            setAlertaStock({
-                titulo: 'Producto sin Stock',
-                mensaje: `El producto "${producto.descripcion}" no tiene stock disponible.`
-            });
+            showWarningAlert('Producto sin Stock', `El producto "${producto.descripcion}" no tiene stock disponible.`);
             return;
         }
 
@@ -112,10 +106,7 @@ const NuevaVenta = () => {
         const cantidadTotal = existe ? existe.cantidad + cantidad : cantidad;
 
         if (cantidadTotal > producto.stock) {
-            setAlertaStock({
-                titulo: 'Stock Insuficiente',
-                mensaje: `No se puede agregar esa cantidad. Stock disponible: ${producto.stock}`
-            });
+            showWarningAlert('Stock Insuficiente', `No se puede agregar esa cantidad. Stock disponible: ${producto.stock}`);
             return;
         }
 
@@ -314,7 +305,7 @@ const NuevaVenta = () => {
 
     const abrirModalPago = () => {
         if (items.length === 0) {
-            setMensaje({ tipo: 'error', texto: 'Debe agregar al menos un producto.' });
+            showWarningAlert('Atención', 'Debe agregar al menos un producto.');
             return;
         }
         setMostrarModalPago(true);
@@ -327,7 +318,6 @@ const NuevaVenta = () => {
 
     const guardarVenta = async (paymentData) => {
         setGuardando(true);
-        setMensaje(null);
 
         // Map PaymentModal data to existing backend structure
         const finalMedioPago = paymentData.metodo_pago;
@@ -382,37 +372,19 @@ const NuevaVenta = () => {
                 setGenerarRemito(false);
                 limpiarCamposEntrada();
 
-                Swal.fire({
-                    title: '<span class="text-2xl font-black text-slate-800">¡Venta Registrada!</span>',
-                    html: `<p class="text-slate-500 font-medium">Venta #${data.venta_id} guardada con éxito.</p>`,
-                    iconHtml: `
-                        <div class="w-24 h-24 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-white shadow-sm">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="20 6 9 17 4 12"></polyline>
-                            </svg>
-                        </div>
-                    `,
-                    showConfirmButton: true,
-                    confirmButtonText: 'Entendido',
-                    confirmButtonColor: '#2563eb',
-                    customClass: {
-                        popup: 'rounded-3xl p-10',
-                        confirmButton: 'rounded-xl px-12 py-3 font-bold text-lg shadow-lg hover:shadow-blue-500/30 transition-all',
-                        icon: 'border-0 bg-transparent'
-                    }
-                });
+                showSuccessAlert(
+                    'Venta Registrada',
+                    `Venta #${data.venta_id} guardada con éxito.`,
+                    undefined,
+                    { timer: 2000, showConfirmButton: false }
+                );
 
                 setTimeout(() => clienteInputRef.current?.focus(), 100);
             } else {
-                Swal.fire({
-                    title: 'Error',
-                    text: data.error || 'Error al guardar la venta.',
-                    icon: 'error',
-                    confirmButtonColor: '#ef4444'
-                });
+                showWarningAlert('Error', data.error || 'Error al guardar la venta.');
             }
         } catch (err) {
-            setMensaje({ tipo: 'error', texto: 'Error de conexión. Intente nuevamente.' });
+            showWarningAlert('Error', 'Error de conexión. Intente nuevamente.');
         } finally {
             setGuardando(false);
         }
@@ -723,25 +695,6 @@ const NuevaVenta = () => {
                         />
                     </div>
                 </div>
-
-                {/* ==================== SCREEN OVERLAY ALERT STOCK ==================== */}
-                {alertaStock && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
-                        <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden text-center p-6 border border-slate-200">
-                            <div className="mx-auto bg-red-50 w-12 h-12 rounded-full flex items-center justify-center mb-4 text-red-600">
-                                <X size={24} />
-                            </div>
-                            <h3 className="text-lg font-bold text-slate-800 mb-2">{alertaStock.titulo}</h3>
-                            <p className="text-slate-600 mb-6">{alertaStock.mensaje}</p>
-                            <button
-                                onClick={cerrarAlertaStock}
-                                className="w-full py-2.5 bg-slate-800 text-white font-bold rounded-xl hover:bg-slate-900 transition-colors"
-                            >
-                                Entendido
-                            </button>
-                        </div>
-                    </div>
-                )}
 
                 {/* ==================== MODAL DE PAGO ==================== */}
                 <PaymentModal

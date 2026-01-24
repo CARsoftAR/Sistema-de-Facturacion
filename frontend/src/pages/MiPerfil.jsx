@@ -111,7 +111,7 @@ const MiPerfil = () => {
         try {
             const response = await axios.post('/api/mi-perfil/info/', profile);
             if (response.data.ok) {
-                showModal('success', '¡Guardado!', 'Perfil actualizado correctamente');
+                showModal('success', 'Guardado', 'Perfil actualizado correctamente');
                 if (refreshUser) refreshUser();
             } else {
                 showModal('error', 'Error', response.data.error || 'Error al guardar');

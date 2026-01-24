@@ -105,62 +105,41 @@ const Cheques = () => {
     const formatCurrency = (val) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(val);
 
     const getEstadoBadge = (estado) => {
-        switch (estado) {
-            case 'CARTERA': return <span className="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2 py-1 rounded-2">CARTERA</span>;
-            case 'DEPOSITADO': return <span className="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1 rounded-2">DEPOSITADO</span>;
-            case 'COBRADO': return <span className="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1 rounded-2">COBRADO</span>;
-            case 'ENTREGADO': return <span className="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-2 py-1 rounded-2">ENTREGADO</span>;
-            case 'RECHAZADO': return <span className="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2 py-1 rounded-2">RECHAZADO</span>;
-            case 'ANULADO': return <span className="badge bg-dark bg-opacity-10 text-dark border border-dark border-opacity-25 px-2 py-1 rounded-2">ANULADO</span>;
-            default: return <span className="badge bg-light text-dark border px-2 py-1 rounded-2">{estado}</span>;
-        }
+        const styles = {
+            'CARTERA': 'bg-blue-100 text-blue-700 border-blue-200',
+            'DEPOSITADO': 'bg-emerald-100 text-emerald-700 border-emerald-200',
+            'COBRADO': 'bg-green-100 text-green-700 border-green-200',
+            'ENTREGADO': 'bg-slate-100 text-slate-700 border-slate-200',
+            'RECHAZADO': 'bg-rose-100 text-rose-700 border-rose-200',
+            'ANULADO': 'bg-slate-200 text-slate-800 border-slate-300'
+        };
+        const style = styles[estado] || 'bg-slate-50 text-slate-600 border-slate-100';
+        return <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border shadow-sm ${style}`}>{estado}</span>;
     };
 
     const getTipoBadge = (tipo) => {
-        if (tipo === 'PROPIO') return <span className="badge bg-warning bg-opacity-10 text-warning-emphasis border border-warning border-opacity-25 px-2 py-1 rounded-2">PROPIO</span>;
-        return <span className="badge bg-light text-dark border px-2 py-1 rounded-2">TERCERO</span>;
+        if (tipo === 'PROPIO') return <span className="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border shadow-sm bg-indigo-100 text-indigo-700 border-indigo-200">PROPIO</span>;
+        return <span className="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border shadow-sm bg-slate-50 text-slate-600 border-slate-100">TERCERO</span>;
     };
 
     const [openDropdownId, setOpenDropdownId] = useState(null);
 
     const toggleDropdown = (id) => {
-        if (openDropdownId === id) {
-            setOpenDropdownId(null);
-        } else {
-            setOpenDropdownId(id);
-        }
+        setOpenDropdownId(openDropdownId === id ? null : id);
     };
 
-    // Close dropdown when clicking outside (simple implementation using a invisible backdrop)
-    const CloseBackdrop = () => (
-        openDropdownId ? (
-            <div
-                className="position-fixed top-0 start-0 w-100 h-100"
-                style={{ zIndex: 998 }}
-                onClick={() => setOpenDropdownId(null)}
-            />
-        ) : null
-    );
-
+    // Confirm Change Status
     const handleEstadoChange = async (cheque, nuevoEstado) => {
-        setOpenDropdownId(null); // Close dropdown
-
+        setOpenDropdownId(null);
         let cuentaDestinoId = null;
 
-        // Special handling for Deposit: Select Bank
         if (nuevoEstado === 'DEPOSITADO') {
             try {
-                // Fetch banks first
                 const respBancos = await fetch('/api/bancos/listar/');
                 const dataBancos = await respBancos.json();
 
                 if (!dataBancos.ok || !dataBancos.cuentas || dataBancos.cuentas.length === 0) {
-                    const ErrorIcon = (
-                        <div className='d-inline-flex justify-content-center align-items-center rounded-circle mb-3' style={{ width: '80px', height: '80px', backgroundColor: 'rgba(220, 53, 69, 0.1)', color: '#dc3545' }}>
-                            <div className="fw-bold fs-1">×</div>
-                        </div>
-                    );
-                    showConfirmationAlert('Error', 'No hay cuentas bancarias activas para depositar', 'Entendido', 'danger', { iconComponent: ErrorIcon });
+                    Swal.fire('Error', 'No hay cuentas bancarias activas para depositar', 'error');
                     return;
                 }
 
@@ -169,109 +148,119 @@ const Cheques = () => {
                     options[c.id] = `${c.banco} (${c.moneda})`;
                 });
 
-                const DepositIcon = (
-                    <div
-                        className='d-inline-flex justify-content-center align-items-center rounded-circle mb-3'
-                        style={{
-                            width: '80px',
-                            height: '80px',
-                            backgroundColor: 'rgba(13, 110, 253, 0.1)',
-                            color: '#0d6efd'
-                        }}
-                    >
-                        <Banknote size={40} strokeWidth={1.5} />
-                    </div>
-                );
+                const { value: selectedBankId } = await Swal.fire({
+                    title: '<span class="text-2xl font-black text-slate-800">Seleccionar Cuenta</span>',
+                    text: `¿Dónde depositar el cheque #${cheque.numero}?`,
+                    input: 'select',
+                    inputOptions: options,
+                    inputPlaceholder: 'Seleccione un banco',
+                    confirmButtonText: 'Confirmar Depósito',
+                    confirmButtonColor: '#2563eb',
+                    showCancelButton: true,
+                    cancelButtonText: 'Cancelar',
+                    customClass: {
+                        popup: 'rounded-3xl p-10',
+                        confirmButton: 'rounded-xl px-8 py-3 font-bold',
+                        cancelButton: 'rounded-xl px-8 py-3 font-bold',
+                        input: 'rounded-xl border-slate-200 text-slate-800 font-medium'
+                    },
+                    inputValidator: (value) => !value && 'Debe seleccionar una cuenta'
+                });
 
-                const { value: selectedBankId } = await showConfirmationAlert(
-                    'Seleccione Cuenta',
-                    `¿Dónde depositar el cheque ${cheque.numero}?`,
-                    'Depositar',
-                    'primary',
-                    {
-                        iconComponent: DepositIcon,
-                        input: 'select',
-                        inputOptions: options,
-                        inputPlaceholder: 'Seleccione un banco',
-                        inputValidator: (value) => {
-                            return !value && 'Debe seleccionar una cuenta';
-                        }
-                    }
-                );
-
-                if (!selectedBankId) return; // User cancelled
+                if (!selectedBankId) return;
                 cuentaDestinoId = selectedBankId;
-
             } catch (error) {
                 console.error(error);
-                const ErrorIcon = (
-                    <div className='d-inline-flex justify-content-center align-items-center rounded-circle mb-3' style={{ width: '80px', height: '80px', backgroundColor: 'rgba(220, 53, 69, 0.1)', color: '#dc3545' }}>
-                        <div className="fw-bold fs-1">×</div>
-                    </div>
-                );
-                showConfirmationAlert('Error', 'Error cargando bancos', 'Entendido', 'danger', { iconComponent: ErrorIcon });
+                Swal.fire('Error', 'Error cargando bancos', 'error');
                 return;
             }
         } else {
-            // Standard confirmation for other states with aligned Premium style
-            const MyIcon = (
-                <div
-                    className='d-inline-flex justify-content-center align-items-center rounded-circle mb-3'
-                    style={{
-                        width: '80px',
-                        height: '80px',
-                        backgroundColor: 'rgba(13, 110, 253, 0.1)',
-                        color: '#0d6efd'
-                    }}
-                >
-                    <RotateCcw size={40} strokeWidth={1.5} />
-                </div>
-            );
-
-            const result = await showConfirmationAlert(
-                '¿Confirmar cambio?',
-                `El cheque ${cheque.numero} pasará a estado ${nuevoEstado}`,
-                'Sí, cambiar',
-                'primary',
-                { iconComponent: MyIcon }
-            );
-
+            const result = await Swal.fire({
+                title: '<span class="text-2xl font-black text-slate-800">¿Confirmar cambio?</span>',
+                html: `<p class="text-slate-500">El cheque <b>#${cheque.numero}</b> pasará a estado <b>${nuevoEstado}</b></p>`,
+                icon: 'question',
+                confirmButtonText: 'Sí, cambiar',
+                confirmButtonColor: '#2563eb',
+                showCancelButton: true,
+                cancelButtonText: 'Cancelar',
+                customClass: {
+                    popup: 'rounded-3xl p-10',
+                    confirmButton: 'rounded-xl px-8 py-3 font-bold',
+                    cancelButton: 'rounded-xl px-8 py-3 font-bold'
+                }
+            });
             if (!result.isConfirmed) return;
         }
 
-        // Proceed with update
         try {
             const body = { estado: nuevoEstado };
             if (cuentaDestinoId) body.cuenta_destino_id = cuentaDestinoId;
 
             const response = await fetch(`/api/cheques/${cheque.id}/cambiar-estado/`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body)
             });
             const data = await response.json();
 
             if (data.ok) {
-                Swal.fire('Actualizado', `El estado se actualizó a ${nuevoEstado}`, 'success');
+                Swal.fire({
+                    title: '¡Actualizado!',
+                    text: `Estado cambiado a ${nuevoEstado}`,
+                    icon: 'success',
+                    timer: 1500,
+                    showConfirmButton: false,
+                    customClass: { popup: 'rounded-2xl' }
+                });
                 fetchCheques();
             } else {
-                const ErrorIcon = (
-                    <div className='d-inline-flex justify-content-center align-items-center rounded-circle mb-3' style={{ width: '80px', height: '80px', backgroundColor: 'rgba(220, 53, 69, 0.1)', color: '#dc3545' }}>
-                        <div className="fw-bold fs-1">×</div>
-                    </div>
-                );
-                showConfirmationAlert('Error', data.error || 'No se pudo actualizar el estado', 'Entendido', 'danger', { iconComponent: ErrorIcon });
+                Swal.fire('Error', data.error || 'No se pudo actualizar', 'error');
             }
         } catch (error) {
             console.error(error);
-            const ErrorIcon = (
-                <div className='d-inline-flex justify-content-center align-items-center rounded-circle mb-3' style={{ width: '80px', height: '80px', backgroundColor: 'rgba(220, 53, 69, 0.1)', color: '#dc3545' }}>
-                    <div className="fw-bold fs-1">×</div>
-                </div>
-            );
-            showConfirmationAlert('Error', 'Error de conexión', 'Entendido', 'danger', { iconComponent: ErrorIcon });
+            Swal.fire('Error', 'Error de conexión', 'error');
+        }
+    };
+
+    const handleDelete = async (cheque) => {
+        setOpenDropdownId(null);
+        const result = await Swal.fire({
+            title: '<span class="text-2xl font-black text-slate-800">¿Eliminar Cheque?</span>',
+            html: `<p class="text-slate-500">Esta acción no se puede deshacer. Se eliminará el cheque <b>#${cheque.numero}</b>.</p>`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#ef4444',
+            customClass: {
+                popup: 'rounded-3xl p-10',
+                confirmButton: 'rounded-xl px-8 py-3 font-bold',
+                cancelButton: 'rounded-xl px-8 py-3 font-bold'
+            }
+        });
+
+        if (!result.isConfirmed) return;
+
+        try {
+            const response = await fetch(`/api/cheques/${cheque.id}/eliminar/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await response.json();
+            if (data.ok) {
+                Swal.fire({
+                    title: '¡Eliminado!',
+                    icon: 'success',
+                    timer: 1500,
+                    showConfirmButton: false,
+                    customClass: { popup: 'rounded-2xl' }
+                });
+                fetchCheques();
+            } else {
+                Swal.fire('Error', data.error || 'No se pudo eliminar', 'error');
+            }
+        } catch (error) {
+            Swal.fire('Error', 'Error de conexión', 'error');
         }
     };
 
@@ -293,279 +282,292 @@ const Cheques = () => {
     };
 
     return (
-        <div className="container-fluid px-4 pt-4 pb-0 h-100 d-flex flex-column bg-light fade-in">
-            <CloseBackdrop />
-            {/* Header */}
-            <div className="d-flex justify-content-between align-items-center mb-4">
+        <div className="p-6 pb-10 max-w-7xl mx-auto min-h-[calc(100vh-120px)] flex flex-col fade-in space-y-6">
+
+            {/* Header Premium */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h2 className="text-primary fw-bold mb-0" style={{ fontSize: '2rem' }}>
-                        <Banknote className="me-2 inline-block" size={32} />
-                        Gestión de Cheques V4
-                    </h2>
-                    <p className="text-muted mb-0 ps-1" style={{ fontSize: '1rem' }}>
-                        Control de cartera de cheques propios y de terceros
-                    </p>
+                    <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
+                        <Banknote className="text-blue-600" size={32} strokeWidth={2.5} />
+                        Cartera de Cheques
+                    </h1>
+                    <p className="text-slate-500 font-medium ml-10">Control total de pagos propios y de terceros</p>
                 </div>
-                <div className="d-flex gap-2">
+                <div className="flex items-center gap-3 w-full md:w-auto">
                     <button
-                        className={`btn d-flex align-items-center gap-2 border shadow-sm ${showStats ? 'btn-white text-muted' : 'btn-primary text-white'}`}
                         onClick={() => setShowStats(!showStats)}
-                        title={showStats ? "Ocultar Estadísticas" : "Mostrar Estadísticas"}
+                        className={`p-3 rounded-xl border transition-all flex items-center gap-2 font-bold text-sm ${showStats ? 'bg-white border-slate-200 text-slate-600 shadow-sm' : 'bg-slate-800 border-slate-700 text-white shadow-lg'
+                            }`}
                     >
-                        {showStats ? <div className="d-flex align-items-center gap-2"><Filter size={18} className="text-primary" /> Ocultar Resumen</div> : <div className="d-flex align-items-center gap-2"><Filter size={18} /> Ver Resumen</div>}
+                        <RotateCcw size={18} className={!showStats ? 'animate-spin-slow' : ''} />
+                        {showStats ? 'Ocultar Resumen' : 'Ver Resumen'}
                     </button>
                     <BtnAdd
                         label="Nuevo Cheque"
                         icon={Banknote}
-                        className="btn-lg shadow-sm"
+                        className="px-6 py-3.5 rounded-xl shadow-xl shadow-blue-500/20"
                         onClick={handleCreate}
                     />
                 </div>
             </div>
 
-            {/* KPI Cards (Collapsible) */}
+            {/* KPI Cards Glassmorphism */}
             {showStats && (
-                <div className="row g-3 mb-4 animate-in slide-in-from-top-4 fade-in duration-300">
-                    {/* En Cartera (Terceros) - Blue (Primary) */}
-                    <div className="col-12 col-md-6 col-xl-3">
-                        <div className="card shadow-sm h-100 border-0" style={{ background: 'linear-gradient(145deg, #dbeafe 0%, #ffffff 100%)' }}>
-                            <div className="card-body p-3 d-flex flex-column justify-content-between">
-                                <div className="d-flex justify-content-between align-items-center mb-2">
-                                    <div className="text-muted xsmall fw-bold" style={{ fontSize: '0.7rem' }}>EN CARTERA (TERCEROS)</div>
-                                    <div className="p-2 bg-primary bg-opacity-10 rounded text-primary"><ArrowDownLeft size={18} /></div>
-                                </div>
-                                <h3 className="mb-0 fw-bold text-primary">{formatCurrency(kpis?.cartera_terceros?.total || 0)}</h3>
-                                <div className="text-muted mt-1" style={{ fontSize: '0.8rem' }}>{kpis?.cartera_terceros?.count || 0} cheques</div>
-                            </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-in slide-in-from-top-4 duration-500">
+                    <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm flex flex-col gap-3 relative overflow-hidden group">
+                        <div className="absolute -right-4 -top-4 w-20 h-20 bg-blue-50 rounded-full group-hover:scale-150 transition-transform duration-700 opacity-50"></div>
+                        <div className="flex justify-between items-start relative z-10">
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">En Cartera</span>
+                            <div className="p-2 bg-blue-50 text-blue-600 rounded-xl"><ArrowDownLeft size={20} /></div>
+                        </div>
+                        <div className="relative z-10">
+                            <h3 className="text-2xl font-black text-slate-800">{formatCurrency(kpis?.cartera_terceros?.total || 0)}</h3>
+                            <p className="text-xs text-slate-500 font-bold mt-1">{kpis?.cartera_terceros?.count || 0} cheques registrados</p>
                         </div>
                     </div>
 
-                    {/* A Pagar (Propios) - Yellow (Warning) */}
-                    <div className="col-12 col-md-6 col-xl-3">
-                        <div className="card shadow-sm h-100 border-0" style={{ background: 'linear-gradient(145deg, #fef9c3 0%, #ffffff 100%)' }}>
-                            <div className="card-body p-3 d-flex flex-column justify-content-between">
-                                <div className="d-flex justify-content-between align-items-center mb-2">
-                                    <div className="text-muted xsmall fw-bold" style={{ fontSize: '0.7rem' }}>A PAGAR (PROPIOS)</div>
-                                    <div className="p-2 bg-warning bg-opacity-10 rounded text-warning"><ArrowUpRight size={18} /></div>
-                                </div>
-                                <h3 className="mb-0 fw-bold text-warning" style={{ color: '#d97706' }}>{formatCurrency(kpis?.apagar_propios?.total || 0)}</h3>
-                                <div className="text-muted mt-1" style={{ fontSize: '0.8rem' }}>Pendientes de cobro</div>
-                            </div>
+                    <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm flex flex-col gap-3 relative overflow-hidden group">
+                        <div className="absolute -right-4 -top-4 w-20 h-20 bg-indigo-50 rounded-full group-hover:scale-150 transition-transform duration-700 opacity-50"></div>
+                        <div className="flex justify-between items-start relative z-10">
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Propios a Pagar</span>
+                            <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl"><ArrowUpRight size={20} /></div>
+                        </div>
+                        <div className="relative z-10">
+                            <h3 className="text-2xl font-black text-slate-800">{formatCurrency(kpis?.apagar_propios?.total || 0)}</h3>
+                            <p className="text-xs text-slate-500 font-bold mt-1">Pendientes de cobro</p>
                         </div>
                     </div>
 
-                    {/* Depositados (Mes) - Green (Success) */}
-                    <div className="col-12 col-md-6 col-xl-3">
-                        <div className="card shadow-sm h-100 border-0" style={{ background: 'linear-gradient(145deg, #dcfce7 0%, #ffffff 100%)' }}>
-                            <div className="card-body p-3 d-flex flex-column justify-content-between">
-                                <div className="d-flex justify-content-between align-items-center mb-2">
-                                    <div className="text-muted xsmall fw-bold" style={{ fontSize: '0.7rem' }}>DEPOSITADOS (MES)</div>
-                                    <div className="p-2 bg-success bg-opacity-10 rounded text-success"><CheckCircle2 size={18} /></div>
-                                </div>
-                                <h3 className="mb-0 fw-bold text-success">{formatCurrency(kpis?.depositados_mes?.total || 0)}</h3>
-                                <div className="text-muted mt-1" style={{ fontSize: '0.8rem' }}>Este mes</div>
-                            </div>
+                    <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm flex flex-col gap-3 relative overflow-hidden group">
+                        <div className="absolute -right-4 -top-4 w-20 h-20 bg-emerald-50 rounded-full group-hover:scale-150 transition-transform duration-700 opacity-50"></div>
+                        <div className="flex justify-between items-start relative z-10">
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Depositados Mes</span>
+                            <div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl"><CheckCircle2 size={20} /></div>
+                        </div>
+                        <div className="relative z-10">
+                            <h3 className="text-2xl font-black text-slate-800">{formatCurrency(kpis?.depositados_mes?.total || 0)}</h3>
+                            <p className="text-xs text-slate-500 font-bold mt-1">Ingresados en bancos</p>
                         </div>
                     </div>
 
-                    {/* Rechazados - Red (Danger) */}
-                    <div className="col-12 col-md-6 col-xl-3">
-                        <div className="card shadow-sm h-100 border-0" style={{ background: 'linear-gradient(145deg, #fee2e2 0%, #ffffff 100%)' }}>
-                            <div className="card-body p-3 d-flex flex-column justify-content-between">
-                                <div className="d-flex justify-content-between align-items-center mb-2">
-                                    <div className="text-muted xsmall fw-bold" style={{ fontSize: '0.7rem' }}>RECHAZADOS</div>
-                                    <div className="p-2 bg-danger bg-opacity-10 rounded text-danger"><AlertCircle size={18} /></div>
-                                </div>
-                                <h3 className="mb-0 fw-bold text-danger">{formatCurrency(kpis?.rechazados?.total || 0)}</h3>
-                                <div className="text-muted mt-1" style={{ fontSize: '0.8rem' }}>Total histórico</div>
-                            </div>
+                    <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm flex flex-col gap-3 relative overflow-hidden group">
+                        <div className="absolute -right-4 -top-4 w-20 h-20 bg-rose-50 rounded-full group-hover:scale-150 transition-transform duration-700 opacity-50"></div>
+                        <div className="flex justify-between items-start relative z-10">
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Rechazados</span>
+                            <div className="p-2 bg-rose-50 text-rose-600 rounded-xl"><AlertCircle size={20} /></div>
+                        </div>
+                        <div className="relative z-10">
+                            <h3 className="text-2xl font-black text-slate-800">{formatCurrency(kpis?.rechazados?.total || 0)}</h3>
+                            <p className="text-xs text-slate-500 font-bold mt-1">Total histórico alertas</p>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* Filters */}
-            <div className="card border-0 shadow-sm rounded-3 mb-3">
-                <div className="card-body p-2 d-flex flex-wrap gap-2 align-items-center">
-                    <div className="position-relative flex-grow-1" style={{ minWidth: '200px' }}>
-                        <Search className="position-absolute top-50 start-0 translate-middle-y ms-3 text-muted" size={18} />
-                        <input
-                            type="text"
-                            name="busqueda"
-                            className="form-control ps-5 border-0 bg-light"
-                            placeholder="Buscar por número, banco o cliente..."
-                            value={filters.busqueda}
-                            onChange={handleFilterChange}
-                        />
-                    </div>
-
+            {/* Filtros Card */}
+            <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm flex flex-wrap items-center gap-4">
+                <div className="flex-1 min-w-[300px] relative group">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" size={20} />
+                    <input
+                        type="text"
+                        name="busqueda"
+                        placeholder="Buscar por banco, número o firmante..."
+                        value={filters.busqueda}
+                        onChange={handleFilterChange}
+                        className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium text-slate-700"
+                    />
+                </div>
+                <div className="flex gap-3 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
                     <select
                         name="tipo"
-                        className="form-select border-0 bg-light"
-                        style={{ width: 'auto', minWidth: '150px' }}
                         value={filters.tipo}
                         onChange={handleFilterChange}
+                        className="bg-slate-50 border border-slate-100 px-4 py-3 rounded-2xl font-bold text-slate-600 text-sm focus:bg-white focus:ring-4 focus:ring-blue-500/10 outline-none transition-all cursor-pointer"
                     >
                         <option value="">Todos los Tipos</option>
                         <option value="TERCERO">Terceros</option>
                         <option value="PROPIO">Propios</option>
                     </select>
-
                     <select
                         name="estado"
-                        className="form-select border-0 bg-light"
-                        style={{ width: 'auto', minWidth: '160px' }}
                         value={filters.estado}
                         onChange={handleFilterChange}
+                        className="bg-slate-50 border border-slate-100 px-4 py-3 rounded-2xl font-bold text-slate-600 text-sm focus:bg-white focus:ring-4 focus:ring-blue-500/10 outline-none transition-all cursor-pointer"
                     >
-                        <option value="">Todos los Estados</option>
+                        <option value="">Cualquier Estado</option>
                         <option value="CARTERA">En Cartera</option>
-                        <option value="DEPOSITADO">Depositado</option>
-                        <option value="COBRADO">Cobrado</option>
-                        <option value="ENTREGADO">Entregado</option>
-                        <option value="RECHAZADO">Rechazado</option>
+                        <option value="DEPOSITADO">Depositados</option>
+                        <option value="COBRADO">Cobrados</option>
+                        <option value="ENTREGADO">Entregados</option>
+                        <option value="RECHAZADO">Rechazados</option>
                     </select>
-
                     <button
-                        className="btn btn-white border px-4 d-flex align-items-center gap-2 text-muted fw-bold hover:bg-light"
                         onClick={fetchCheques}
+                        className="p-3 bg-blue-600 text-white rounded-xl shadow-lg shadow-blue-600/20 hover:scale-105 active:scale-95 transition-all"
                     >
-                        <Search size={16} /> Buscar
+                        <Search size={20} strokeWidth={3} />
                     </button>
                 </div>
             </div>
 
-            {/* Table */}
-            <div className="card border-0 shadow mb-0 flex-grow-1 overflow-hidden d-flex flex-column">
-                <div className="card-body p-0 d-flex flex-column overflow-hidden">
-                    <div className="table-responsive flex-grow-1 table-container-fixed">
-                        <table className="table align-middle mb-0">
-                            <thead className="table-dark" style={{ backgroundColor: '#212529', color: '#fff' }}>
+            {/* Table Area */}
+            <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden flex flex-col flex-1">
+                <div className="overflow-x-auto flex-1 custom-scrollbar">
+                    <table className="w-full text-left border-collapse">
+                        <thead>
+                            <tr className="bg-slate-50/80 border-b border-slate-100">
+                                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Vencimiento</th>
+                                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Banco / Firmante</th>
+                                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Número</th>
+                                <th className="px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Monto</th>
+                                <th className="px-6 py-4 text-center text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Tipo</th>
+                                <th className="px-6 py-4 text-center text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Estado</th>
+                                <th className="px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-50">
+                            {loading ? (
                                 <tr>
-                                    <th className="ps-4 py-3 fw-bold">Fecha Pago</th>
-                                    <th className="py-3 fw-bold">Banco</th>
-                                    <th className="py-3 fw-bold">N° Cheque</th>
-                                    <th className="py-3 fw-bold">Origen/Destino</th>
-                                    <th className="text-end py-3 fw-bold">Importe</th>
-                                    <th className="text-center py-3 fw-bold">Tipo</th>
-                                    <th className="text-center py-3 fw-bold">Estado</th>
-                                    <th className="text-end pe-4 py-3 fw-bold">Acciones</th>
+                                    <td colSpan="7" className="px-6 py-20 text-center">
+                                        <div className="flex flex-col items-center gap-3">
+                                            <div className="w-12 h-12 border-4 border-blue-600/20 border-t-blue-600 rounded-full animate-spin"></div>
+                                            <span className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">Cargando cheques...</span>
+                                        </div>
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                {loading ? (
-                                    <tr>
-                                        <td colSpan="8" className="text-center py-5">
-                                            <div className="spinner-border text-primary" role="status">
-                                                <span className="visually-hidden">Cargando...</span>
+                            ) : cheques.length === 0 ? (
+                                <tr>
+                                    <td colSpan="7" className="px-6 py-20 text-center">
+                                        <EmptyState title="No hay cheques" description="No se encontraron cheques con los filtros aplicados." icon={Banknote} />
+                                    </td>
+                                </tr>
+                            ) : (
+                                cheques.map((c) => (
+                                    <tr key={c.id} className="hover:bg-slate-50/50 transition-colors group">
+                                        <td className="px-6 py-4">
+                                            <div className="flex flex-col">
+                                                <span className="text-sm font-black text-slate-800">{c.fecha_pago}</span>
+                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Emisión: {c.fecha_emision}</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex flex-col">
+                                                <span className="text-sm font-bold text-slate-700">{c.banco}</span>
+                                                <span className="text-xs text-slate-500 truncate max-w-[200px]">{c.firmante || 'Sin firmante'}</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className="font-mono text-sm font-bold bg-slate-100 text-slate-600 px-2 py-1 rounded-lg">#{c.numero}</span>
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            <span className="text-base font-black text-slate-900">{formatCurrency(c.monto)}</span>
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            {getTipoBadge(c.tipo)}
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            {getEstadoBadge(c.estado)}
+                                        </td>
+                                        <td className="px-6 py-4 text-right relative">
+                                            <div className="flex justify-end items-center gap-2">
+                                                <button
+                                                    onClick={() => toggleDropdown(c.id)}
+                                                    className={`p-2.5 rounded-xl border transition-all ${openDropdownId === c.id
+                                                            ? 'bg-slate-800 border-slate-700 text-white shadow-lg'
+                                                            : 'bg-white border-slate-200 text-slate-400 hover:text-slate-700 hover:border-slate-300 shadow-sm'
+                                                        }`}
+                                                >
+                                                    <ChevronDown size={18} className={`transition-transform duration-300 ${openDropdownId === c.id ? 'rotate-180' : ''}`} />
+                                                </button>
+
+                                                {openDropdownId === c.id && (
+                                                    <>
+                                                        <div className="fixed inset-0 z-40" onClick={() => setOpenDropdownId(null)}></div>
+                                                        <div className="absolute right-6 top-full mt-2 w-52 bg-white rounded-2xl shadow-2xl border border-slate-100 p-2 z-50 animate-in fade-in zoom-in-95 duration-200 origin-top-right">
+                                                            <div className="px-3 py-2 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-50 mb-1">Acciones Rápidas</div>
+                                                            {c.estado === 'CARTERA' && (
+                                                                <>
+                                                                    <button onClick={() => handleEstadoChange(c, 'DEPOSITADO')} className="w-full flex items-center gap-3 px-3 py-2.5 text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 rounded-xl transition-colors font-bold text-xs uppercase tracking-wider">
+                                                                        <CheckCircle2 size={16} /> Depositar
+                                                                    </button>
+                                                                    <button onClick={() => handleEstadoChange(c, 'COBRADO')} className="w-full flex items-center gap-3 px-3 py-2.5 text-slate-600 hover:bg-green-50 hover:text-green-700 rounded-xl transition-colors font-bold text-xs uppercase tracking-wider">
+                                                                        <CheckCircle2 size={16} /> Cobrar
+                                                                    </button>
+                                                                    <button onClick={() => handleEstadoChange(c, 'ENTREGADO')} className="w-full flex items-center gap-3 px-3 py-2.5 text-slate-600 hover:bg-slate-50 hover:text-slate-800 rounded-xl transition-colors font-bold text-xs uppercase tracking-wider">
+                                                                        <ArrowUpRight size={16} /> Entregar
+                                                                    </button>
+                                                                </>
+                                                            )}
+                                                            {(c.estado === 'DEPOSITADO' || c.estado === 'ENTREGADO' || c.estado === 'COBRADO') && (
+                                                                <>
+                                                                    <button onClick={() => handleEstadoChange(c, 'CARTERA')} className="w-full flex items-center gap-3 px-3 py-2.5 text-slate-600 hover:bg-amber-50 hover:text-amber-700 rounded-xl transition-colors font-bold text-xs uppercase tracking-wider">
+                                                                        <ArrowDownLeft size={16} /> Volver a Cartera
+                                                                    </button>
+                                                                    {c.estado === 'DEPOSITADO' && (
+                                                                        <button onClick={() => handleEstadoChange(c, 'RECHAZADO')} className="w-full flex items-center gap-3 px-3 py-2.5 text-slate-600 hover:bg-rose-50 hover:text-rose-700 rounded-xl transition-colors font-bold text-xs uppercase tracking-wider">
+                                                                            <AlertCircle size={16} /> Rechazado
+                                                                        </button>
+                                                                    )}
+                                                                </>
+                                                            )}
+                                                            {c.estado === 'RECHAZADO' && (
+                                                                <button onClick={() => handleEstadoChange(c, 'CARTERA')} className="w-full flex items-center gap-3 px-3 py-2.5 text-slate-600 hover:bg-blue-50 hover:text-blue-700 rounded-xl transition-colors font-bold text-xs uppercase tracking-wider">
+                                                                    <RotateCcw size={16} /> Recuperar
+                                                                </button>
+                                                            )}
+                                                            <div className="h-px bg-slate-50 my-1 mx-2"></div>
+                                                            <button onClick={() => handleEdit(c)} className="w-full flex items-center gap-3 px-3 py-2.5 text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-xl transition-colors font-bold text-xs uppercase tracking-wider">
+                                                                Editar
+                                                            </button>
+                                                            <button onClick={() => handleDelete(c)} className="w-full flex items-center gap-3 px-3 py-2.5 text-rose-500 hover:bg-rose-50 rounded-xl transition-colors font-bold text-xs uppercase tracking-wider">
+                                                                <Trash2 size={16} /> Eliminar
+                                                            </button>
+                                                        </div>
+                                                    </>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>
-                                ) : cheques.length === 0 ? (
-                                    <tr>
-                                        <td colSpan="8" className="text-center py-5">
-                                            <EmptyState
-                                                title="No hay cheques registrados"
-                                                description="Los cheques aparecerán aquí."
-                                            />
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    cheques.map((c) => (
-                                        <tr key={c.id}>
-                                            <td className="ps-4 fw-medium text-dark-emphasis">
-                                                {c.fecha_pago}
-                                            </td>
-                                            <td>
-                                                <span className="fw-medium text-dark">{c.banco}</span>
-                                            </td>
-                                            <td>
-                                                <span className="font-monospace text-primary fw-bold" style={{ fontSize: '0.9rem' }}>{c.numero}</span>
-                                            </td>
-                                            <td>
-                                                <span className="small text-muted fw-medium">{c.origen_destino}</span>
-                                            </td>
-                                            <td className="text-end fw-bold text-dark">
-                                                {formatCurrency(c.monto)}
-                                            </td>
-                                            <td className="text-center">
-                                                {getTipoBadge(c.tipo)}
-                                            </td>
-                                            <td className="text-center">
-                                                {getEstadoBadge(c.estado)}
-                                            </td>
-                                            <td className="text-end pe-4">
-                                                <div className="position-relative d-inline-block">
-                                                    <button
-                                                        className={`btn btn-sm border shadow-sm d-flex align-items-center gap-1 ${openDropdownId === c.id ? 'btn-primary text-white' : 'btn-light'}`}
-                                                        onClick={(e) => { e.stopPropagation(); toggleDropdown(c.id); }}
-                                                    >
-                                                        Acciones <ChevronDown size={14} />
-                                                    </button>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
 
-                                                    {openDropdownId === c.id && (
-                                                        <div
-                                                            className="position-absolute end-0 mt-1 bg-white border shadow rounded-3 py-2 fade-in"
-                                                            style={{ zIndex: 1000, minWidth: '180px' }}
-                                                        >
-                                                            <ul className="list-unstyled mb-0">
-                                                                {c.estado === 'CARTERA' && (
-                                                                    <>
-                                                                        <li><button className="dropdown-item d-flex align-items-center py-2 px-3 text-success" onClick={() => handleEstadoChange(c, 'DEPOSITADO')}><CheckCircle2 size={16} className="me-2" />Depositar</button></li>
-                                                                        <li><button className="dropdown-item d-flex align-items-center py-2 px-3 text-primary" onClick={() => handleEstadoChange(c, 'COBRADO')}><CheckCircle2 size={16} className="me-2" />Cobrar</button></li>
-                                                                        <li><button className="dropdown-item d-flex align-items-center py-2 px-3 text-secondary" onClick={() => handleEstadoChange(c, 'ENTREGADO')}><ArrowUpRight size={16} className="me-2" />Entregar</button></li>
-                                                                        <li><hr className="dropdown-divider mx-2" /></li>
-                                                                    </>
-                                                                )}
-                                                                {(c.estado === 'DEPOSITADO' || c.estado === 'ENTREGADO' || c.estado === 'COBRADO') && (
-                                                                    <>
-                                                                        <li><button className="dropdown-item d-flex align-items-center py-2 px-3 text-warning" onClick={() => handleEstadoChange(c, 'CARTERA')}><ArrowDownLeft size={16} className="me-2" />Volver a Cartera</button></li>
-                                                                        {c.estado === 'DEPOSITADO' && (
-                                                                            <li><button className="dropdown-item d-flex align-items-center py-2 px-3 text-danger" onClick={() => handleEstadoChange(c, 'RECHAZADO')}><AlertCircle size={16} className="me-2" />Marcar Rechazado</button></li>
-                                                                        )}
-                                                                        <li><hr className="dropdown-divider mx-2" /></li>
-                                                                    </>
-                                                                )}
-                                                                {c.estado === 'RECHAZADO' && (
-                                                                    <li><button className="dropdown-item d-flex align-items-center py-2 px-3 text-primary" onClick={() => handleEstadoChange(c, 'CARTERA')}><RotateCcw size={16} className="me-2" />Recuperar (Cartera)</button></li>
-                                                                )}
-
-                                                                <li><button className="dropdown-item d-flex align-items-center py-2 px-3" onClick={() => handleEdit(c)}>Editar</button></li>
-                                                                <li><button className="dropdown-item d-flex align-items-center py-2 px-3 text-danger" onClick={() => {
-                                                                    const DeleteIcon = (
-                                                                        <div className='d-inline-flex justify-content-center align-items-center rounded-circle mb-3' style={{ width: '80px', height: '80px', backgroundColor: 'rgba(220, 53, 69, 0.1)', color: '#dc3545' }}>
-                                                                            <div className="fw-bold fs-3">×</div>
-                                                                        </div>
-                                                                    );
-                                                                    showConfirmationAlert('Eliminar', 'Funcionalidad de eliminar pendiente', 'Eliminar', 'danger', { iconComponent: DeleteIcon });
-                                                                }}>Eliminar</button></li>
-                                                            </ul>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
+                {/* Dark Bar Pagination */}
+                <div className="p-6 bg-slate-900 text-white flex flex-col md:flex-row justify-between items-center shadow-2xl ring-1 ring-white/10 shrink-0 gap-4 mt-auto">
+                    <div className="flex items-center gap-8">
+                        <div className="space-y-0.5">
+                            <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">Total en Moneda</p>
+                            <p className="text-2xl font-black text-slate-200">
+                                {formatCurrency(totalItems > 0 ? cheques.reduce((acc, c) => acc + parseFloat(c.monto), 0) : 0)}
+                            </p>
+                        </div>
+                        <div className="hidden md:block w-px h-8 bg-slate-700"></div>
+                        <div className="space-y-0.5">
+                            <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">Registros</p>
+                            <p className="text-2xl font-black text-slate-200">{totalItems}</p>
+                        </div>
                     </div>
 
-                    {/* Pagination */}
-                    <TablePagination
-                        currentPage={page}
-                        totalPages={totalPages}
-                        totalItems={totalItems}
-                        itemsPerPage={itemsPerPage}
-                        onPageChange={setPage}
-                        onItemsPerPageChange={(newVal) => {
-                            setItemsPerPage(newVal);
-                            setPage(1);
-                        }}
-                    />
+                    <div className="w-full md:w-auto overflow-x-auto">
+                        <TablePagination
+                            currentPage={page}
+                            totalPages={totalPages}
+                            totalItems={totalItems}
+                            itemsPerPage={itemsPerPage}
+                            onPageChange={setPage}
+                            onItemsPerPageChange={(newVal) => {
+                                setItemsPerPage(newVal);
+                                setPage(1);
+                            }}
+                            className="bg-transparent border-0 text-white pagination-dark"
+                        />
+                    </div>
                 </div>
             </div>
-            {/* Modal Form Overlay */}
+
+            {/* Modal Form */}
             {showForm && (
                 <ChequeForm
                     cheque={editingCheque}
