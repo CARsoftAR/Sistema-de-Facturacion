@@ -424,6 +424,7 @@ urlpatterns = [
     path("api/ctacte/proveedores/<int:id>/movimientos/", views.api_cc_proveedor_movimientos, name="api_cc_proveedor_movimientos"),
     path("api/ctacte/proveedores/nuevo/", views.api_cc_proveedor_nuevo_movimiento, name="api_cc_proveedor_nuevo_movimiento"),
     path("api/ctacte/proveedores/<int:id>/registrar-pago/", views.api_cc_proveedor_registrar_pago, name="api_cc_proveedor_registrar_pago"),
+    path("ctacte/proveedores/<int:id>/imprimir/", views.cc_proveedor_imprimir, name="cc_proveedor_imprimir"),
     
     # API Recibos
     path("api/recibos/crear/", views.api_recibo_crear, name="api_recibo_crear"),

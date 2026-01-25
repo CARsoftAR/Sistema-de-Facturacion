@@ -1,4 +1,4 @@
-{% load static %}
+﻿{% load static %}
 <!DOCTYPE html>
 <html lang="es">
 
@@ -6,19 +6,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Remito {{ remito.numero_formateado }}</title>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Playfair+Display:wght@400;600;700&display=swap"
-        rel="stylesheet">
     <style>
-        :root {
-            /* Industrial Gray/Red Theme */
-            --primary-red: #d32f2f;
-            --light-red: #f5f5f5;
-            /* Light Gray instead of Light Red */
-            --text-dark: #212121;
-            --text-grey: #757575;
-            --wave-color: #424242;
-            /* Gray wave for industrial feel */
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap');
+
+        @page {
+            size: A4;
+            margin: 0;
         }
 
         * {
@@ -28,190 +21,169 @@
         }
 
         body {
-            font-family: 'Inter', sans-serif;
-            font-size: 11px;
-            color: var(--text-dark);
-            background: #525659;
-            /* Screen background */
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 12px;
+            color: #1e293b;
+            background-color: #f1f5f9;
+            line-height: 1.4;
         }
 
         .page {
             background: white;
             width: 210mm;
             min-height: 297mm;
-            padding: 0;
-            /* Full bleed for waves */
-            margin: 20px auto;
+            margin: 0 auto;
             position: relative;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             overflow: hidden;
             display: flex;
             flex-direction: column;
         }
 
-        .content-container {
-            padding: 15mm 15mm 10mm 15mm;
-            flex: 1;
-            position: relative;
-            z-index: 10;
+        .content-body {
+            padding: 30px 45px;
+            flex-grow: 1;
         }
 
-        /* --- HEADER --- */
-        .header-row {
+        .brand-section {
             display: flex;
             justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 40px;
-        }
-
-        .company-branding h1 {
-            font-family: 'Playfair Display', serif;
-            font-size: 28px;
-            color: var(--primary-red);
-            margin-bottom: 5px;
-            font-weight: 400;
-        }
-
-        .company-address {
-            font-size: 10px;
-            color: var(--text-dark);
-            line-height: 1.4;
-        }
-
-        .logo-container {
-            max-width: 200px;
-            height: auto;
-            max-height: 150px;
-            display: flex;
-            justify-content: flex-end;
             align-items: center;
+            margin-bottom: 30px;
         }
 
-        .logo-container img {
-            max-width: 100%;
-            max-height: 150px;
-            width: auto;
-            height: auto;
-            object-fit: contain;
-        }
-
-        /* --- INFO COLUMNS --- */
-        .info-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 40px;
-        }
-
-        .info-col h3 {
-            color: var(--primary-red);
-            font-size: 11px;
-            font-weight: 700;
-            margin-bottom: 8px;
-            text-transform: capitalize;
-        }
-
-        .info-col p {
-            font-size: 10px;
-            margin-bottom: 3px;
-            color: var(--text-dark);
-        }
-
-        .invoice-data-row {
+        .logo-box {
             display: flex;
-            justify-content: space-between;
-            margin-bottom: 4px;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo-glyph {
+            width: 48px;
+            height: 48px;
+            background: #0f172a;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 800;
+            font-size: 24px;
+        }
+
+        .company-meta h1 {
+            font-size: 20px;
+            font-weight: 800;
+            margin: 0;
+            color: #0f172a;
+            letter-spacing: -0.02em;
+        }
+
+        .company-meta p {
+            margin: 2px 0 0;
             font-size: 10px;
+            color: #64748b;
         }
 
-        .invoice-data-label {
-            color: var(--primary-red);
-            font-weight: 600;
-        }
-
-        .invoice-data-value {
-            font-weight: 600;
+        .doc-identity {
             text-align: right;
         }
 
-        /* --- TABLE --- */
-        .items-table {
+        .doc-identity h2 {
+            font-size: 18px;
+            font-weight: 800;
+            margin: 0;
+            color: #0f172a;
+        }
+
+        .tag {
+            display: inline-block;
+            margin-top: 5px;
+            padding: 3px 12px;
+            background: #0f172a;
+            color: white;
+            border-radius: 99px;
+            font-weight: 700;
+            font-size: 10px;
+            text-transform: uppercase;
+        }
+
+        .overview-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stats-card {
+            background: #f8fafc;
+            border: 1px solid #f1f5f9;
+            border-radius: 20px;
+            padding: 22px;
+        }
+
+        .stats-card h3 {
+            margin: 0 0 10px;
+            font-size: 10px;
+            font-weight: 700;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .entidad-link {
+            font-size: 16px;
+            font-weight: 800;
+            color: #0f172a;
+        }
+
+        .table-wrap {
+            width: 100%;
+            border-top: 1px solid #f1f5f9;
+            margin-bottom: 30px;
+        }
+
+        table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 30px;
         }
 
-        .items-table th {
-            background-color: var(--primary-red);
-            color: white;
-            padding: 8px 10px;
+        th {
             text-align: left;
+            padding: 12px;
+            font-size: 10px;
+            font-weight: 700;
+            color: #94a3b8;
+            text-transform: uppercase;
+            border-bottom: 2px solid #f1f5f9;
+        }
+
+        td {
+            padding: 14px 12px;
+            border-bottom: 1px solid #f8fafc;
+            font-size: 13px;
+        }
+
+        .col-mono {
             font-weight: 600;
-            font-size: 10px;
-            text-transform: capitalize;
+            font-size: 12px;
         }
 
-        .items-table td {
-            padding: 10px;
-            border-bottom: 1px solid #f0f0f0;
-            font-size: 10px;
+        .doc-footer {
+            padding: 30px 45px;
+            background: #f8fafc;
+            border-top: 1px solid #f1f5f9;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
         }
 
-        .items-table tr:last-child td {
-            border-bottom: none;
-        }
-
-        /* --- SIGNATURE --- */
-        .signature-area {
-            text-align: right;
-            margin-top: 50px;
-            margin-right: 20px;
-            font-family: 'Playfair Display', serif;
-            font-size: 24px;
-            color: var(--text-dark);
-        }
-
-        .received-area {
-            border-top: 1px solid #ddd;
-            width: 200px;
+        .signature-box {
             text-align: center;
-            padding-top: 5px;
-            font-size: 10px;
-            margin-top: 40px;
+            border-top: 2px solid #0f172a;
+            padding-top: 8px;
+            width: 140px;
         }
 
-        /* --- FOOTER INFO --- */
-        .footer-info {
-            font-size: 9px;
-            color: var(--text-dark);
-            margin-top: auto;
-            margin-bottom: 30px;
-        }
-
-        .footer-info h4 {
-            color: var(--primary-red);
-            margin-bottom: 5px;
-            font-size: 10px;
-        }
-
-        /* --- WAVES --- */
-        .waves-container {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            line-height: 0;
-            pointer-events: none;
-            z-index: 1;
-        }
-
-        .waves-svg {
-            display: block;
-            width: 100%;
-            height: auto;
-        }
-
-        /* Print Settings */
         @media print {
             body {
                 background: white;
@@ -219,15 +191,8 @@
 
             .page {
                 margin: 0;
+                width: 100%;
                 box-shadow: none;
-                width: auto;
-                height: 100%;
-                page-break-after: always;
-            }
-
-            .waves-container {
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
             }
 
             .no-print {
@@ -238,127 +203,81 @@
 </head>
 
 <body>
-    <div class="no-print" style="margin-bottom: 10px;">
-        <button onclick="window.print()">IMPRIMIR</button>
-        <button onclick="window.close()">CERRAR</button>
-    </div>
-
     <div class="page">
-        <div class="content-container">
-            <!-- HEADER -->
-            <div class="header-row">
-                <div class="company-branding">
-                    <h1>{{ empresa.nombre }}</h1>
-                    <div class="company-address">
-                        {{ empresa.direccion }}<br>
-                        {{ empresa.email }}<br>
-                        Tel: {{ empresa.telefono }}
+        <div class="content-body">
+            <div class="brand-section">
+                <div class="logo-box">
+                    <div class="logo-glyph">{{ empresa.nombre|slice:":1"|default:"G" }}</div>
+                    <div class="company-meta">
+                        <h1>{{ empresa.nombre|default:"Distribuidora GANY" }}</h1>
+                        <p>{{ empresa.direccion|default:"" }} | CUIT: {{ empresa.cuit|default:"---" }}</p>
                     </div>
                 </div>
-                <div class="logo-container">
-                    {% if empresa.logo %}
-                    <img src="{{ empresa.logo.url }}" alt="Logo">
-                    {% else %}
-                    <span style="font-family: 'Playfair Display', serif; color: var(--primary-red); font-size: 24px;">{{
-                        empresa.nombre }}</span>
-                    {% endif %}
+                <div class="doc-identity">
+                    <h2>REMITO DE ENTREGA</h2>
+                    <span class="tag">{{ remito.numero_formateado }}</span>
+                    <div style="font-size: 10px; margin-top: 5px; color: #94a3b8; font-weight: 700;">Fecha: {{
+                        remito.fecha|date:"d/m/Y" }}</div>
                 </div>
             </div>
 
-            <!-- INFO COLUMNS -->
-            <div class="info-grid">
-                <!-- COL 1: Cliente -->
-                <div class="info-col">
-                    <h3>Cliente</h3>
-                    <p><strong>{{ remito.cliente.nombre }}</strong></p>
-                    <p>{{ remito.cliente.domicilio }}</p>
-                    <p>{{ remito.cliente.localidad.nombre }}</p>
-                    <p>CUIT: {{ remito.cliente.cuit }}</p>
+            <div class="overview-grid">
+                <div class="stats-card">
+                    <h3>Destinatario</h3>
+                    <span class="entidad-link">{{ remito.cliente.nombre }}</span>
+                    <p style="color: #475569; font-size: 11px;">{{
+                        remito.direccion_entrega|default:remito.cliente.domicilio }}</p>
+                    <p style="font-size: 11px;">CUIT: {{ remito.cliente.cuit|default:"---" }}</p>
                 </div>
-
-                <!-- COL 2: Entregar en -->
-                <div class="info-col">
-                    <h3>Entregar en</h3>
-                    <p><strong>{{ remito.cliente.nombre }}</strong></p>
-                    <p>{{ remito.direccion_entrega|default:remito.cliente.domicilio }}</p>
-                    <p>Transporte: {{ remito.transportista|default:"Del Cliente" }}</p>
-                </div>
-
-                <!-- COL 3: Remito Details -->
-                <div class="info-col">
-                    <div class="invoice-data-row">
-                        <span class="invoice-data-label">N° de Remito</span>
-                        <span class="invoice-data-value">{{ remito.numero_formateado }}</span>
-                    </div>
-                    <div class="invoice-data-row">
-                        <span class="invoice-data-label">Fecha</span>
-                        <span class="invoice-data-value">{{ remito.fecha|date:"d/m/Y" }}</span>
-                    </div>
-                    <div class="invoice-data-row">
-                        <span class="invoice-data-label">OC / Proyecto</span>
-                        <span class="invoice-data-value">{{ remito.orden_compra|default:"-" }}</span>
-                    </div>
+                <div class="stats-card">
+                    <h3>Logística</h3>
+                    <p style="font-size: 11px;"><strong>Transporte:</strong> {{ remito.transportista|default:"Propio /
+                        Del Cliente" }}</p>
+                    <p style="font-size: 11px;"><strong>Referencia:</strong> {{ remito.orden_compra|default:"---" }}</p>
+                    <div class="tag" style="background: #e2e8f0; color: #1e293b; margin-top: 5px; font-size: 9px;">No
+                        válido como factura</div>
                 </div>
             </div>
 
-            <!-- ITEMS TABLE -->
-            <table class="items-table">
-                <thead>
-                    <tr>
-                        <th style="width: 15%; text-align: center;">Cantidad</th>
-                        <th style="width: 60%;">Descripción</th>
-                        <th style="width: 25%; text-align: right;">Código</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for item in remito.detalles.all %}
-                    <tr>
-                        <td style="text-align: center;">{{ item.cantidad }}</td>
-                        <td>{{ item.producto.descripcion }} {{ item.producto.descripcion_larga|default:"" }}</td>
-                        <td style="text-align: right;">{{ item.producto.codigo }}</td>
-                    </tr>
-                    {% endfor %}
-                    <!-- Spacing -->
-                    {% if remito.detalles.count < 5 %} <tr>
-                        <td colspan="3" style="height: 50px;"></td>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 80px; text-align: center;">Cant.</th>
+                            <th>Descripción del Producto</th>
+                            <th style="width: 130px; text-align: right;">Código</th>
                         </tr>
-                        {% endif %}
-                </tbody>
-            </table>
-
-            <!-- SIGNATURE -->
-            <div style="display: flex; justify-content: space-between; margin-top: 50px;">
-                <div class="received-area">
-                    Recibí Conforme
-                </div>
-                <div class="signature-area">
-                    Firma Autorizada
-                </div>
+                    </thead>
+                    <tbody>
+                        {% for item in remito.detalles.all %}
+                        <tr>
+                            <td class="col-mono" style="text-align: center; font-weight: 700; color: #3b82f6;">{{
+                                item.cantidad }}</td>
+                            <td style="font-weight: 600;">{{ item.producto.descripcion }}</td>
+                            <td class="col-mono" style="text-align: right; color: #64748b;">{{ item.producto.codigo }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
 
-            <div style="flex: 1;"></div>
-
-            <!-- FOOTER INFO -->
-            <div class="footer-info">
-                <h4>Observaciones</h4>
-                <p>{{ remito.observaciones|default:"Sin observaciones." }}</p>
-                <p>Documento no válido como factura.</p>
+            <div style="margin-top: 20px;">
+                <h3 style="font-size: 10px; color: #94a3b8; text-transform: uppercase;">Observaciones</h3>
+                <p style="color: #475569; font-style: italic; font-size: 11px;">{{ remito.observaciones|default:"Sin
+                    observaciones adicionales." }}</p>
             </div>
         </div>
 
-        <!-- WAVES SVG BOTTOM (Red Variant) -->
-        <div class="waves-container">
-            <svg class="waves-svg" viewBox="0 0 1440 320" xmlns="http://www.w3.org/2000/svg">
-                <path fill="#bdbdbd" fill-opacity="0.3"
-                    d="M0,192L48,197.3C96,203,192,213,288,229.3C384,245,480,267,576,250.7C672,235,768,181,864,181.3C960,181,1056,235,1152,234.7C1248,235,1344,181,1392,154.7L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z">
-                </path>
-                <path fill="#757575" fill-opacity="0.6"
-                    d="M0,160L48,170.7C96,181,192,203,288,202.7C384,203,480,181,576,165.3C672,149,768,139,864,154.7C960,171,1056,213,1152,218.7C1248,224,1344,192,1392,176L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z">
-                </path>
-                <path fill="#424242" fill-opacity="1"
-                    d="M0,192L48,186.7C96,181,192,171,288,176C384,181,480,203,576,213.3C672,224,768,224,864,202.7C960,181,1056,139,1152,138.7C1248,139,1344,181,1392,202.7L1440,224L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z">
-                </path>
-            </svg>
+        <div class="doc-footer">
+            <div class="signature-box">
+                <b style="font-size: 11px; display: block;">Recibí Conforme</b>
+                <span style="font-size: 9px; color: #64748b;">Nombre y Firma</span>
+            </div>
+            <div class="signature-box">
+                <b style="font-size: 11px; display: block;">Firma Autorizada</b>
+                <span style="font-size: 9px; color: #64748b;">{{ empresa.nombre|default:"Administración" }}</span>
+            </div>
         </div>
     </div>
 </body>

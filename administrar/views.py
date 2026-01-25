@@ -7198,29 +7198,48 @@ def api_cc_clientes_listar(request):
 @login_required
 def api_cc_cliente_movimientos(request, id):
     from .models import Cliente, MovimientoCuentaCorriente
+    from decimal import Decimal
     
     try:
         cliente = Cliente.objects.get(id=id)
         fecha_desde = request.GET.get('desde')
         fecha_hasta = request.GET.get('hasta')
         
-        movs = MovimientoCuentaCorriente.objects.filter(cliente=cliente).order_by('-fecha')
+        # 1. Obtener TODOS los movimientos ordenados por fecha antigua -> nueva para recalcular
+        movs = MovimientoCuentaCorriente.objects.filter(cliente=cliente).order_by('fecha', 'id')
         
-        if fecha_desde:
-            movs = movs.filter(fecha__date__gte=fecha_desde)
-        if fecha_hasta:
-            movs = movs.filter(fecha__date__lte=fecha_hasta)
-            
-        data = []
-        for m in movs[:100]:
-            data.append({
+        # 2. Recalcular saldos "al vuelo" para asegurar consistencia
+        saldo_acumulado = Decimal('0')
+        movimientos_procesados = []
+        
+        for m in movs:
+            monto = m.monto if m.monto else Decimal('0')
+            if m.tipo == 'VENTA' or m.tipo == 'DEBE':  # Factura o ND (Aumenta Deuda)
+                saldo_acumulado += monto
+            else:  # Pago o NC (Disminuye Deuda)
+                saldo_acumulado -= monto
+                
+            movimientos_procesados.append({
                 'id': m.id,
-                'fecha': m.fecha.strftime('%Y-%m-%d %H:%M'),
+                'fecha_obj': m.fecha, # Guardar objeto fecha para filtrar después
+                'fecha': m.fecha.strftime('%d/%m/%Y'), # Formato frontend
                 'tipo': m.tipo,
                 'descripcion': m.descripcion,
-                'monto': float(m.monto),
-                'saldo': float(m.saldo)
+                'debe': float(monto) if (m.tipo == 'VENTA' or m.tipo == 'DEBE') else 0,
+                'haber': float(monto) if (m.tipo != 'VENTA' and m.tipo != 'DEBE') else 0,
+                'saldo': float(saldo_acumulado),
+                'comprobante_tipo': 'venta' if m.venta else ('pago' if m.recibo else 'otro'),
+                'comprobante_id': m.venta.id if m.venta else (m.recibo.id if m.recibo else None)
             })
+            
+        # 3. Aplicar Filtros de Fecha sobre la lista procesada
+        if fecha_desde:
+            movimientos_procesados = [m for m in movimientos_procesados if m['fecha_obj'].strftime('%Y-%m-%d') >= fecha_desde]
+        if fecha_hasta:
+            movimientos_procesados = [m for m in movimientos_procesados if m['fecha_obj'].strftime('%Y-%m-%d') <= fecha_hasta]
+
+        # 4. Ordenar descendente (más nuevo primero) para el frontend
+        movimientos_procesados.reverse()
             
         return JsonResponse({
             'ok': True, 
@@ -7229,13 +7248,16 @@ def api_cc_cliente_movimientos(request, id):
                 'nombre': cliente.nombre,
                 'cuit': cliente.cuit,
                 'telefono': cliente.telefono,
-                'saldo_actual': float(cliente.saldo_actual),
-                'limite_credito': float(cliente.limite_credito)
+                'saldo_actual': float(saldo_acumulado), # Usar el recalculado o cliente.saldo_actual
+                'limite_credito': float(cliente.limite_credito or 0)
             },
-            'movimientos': data
+            'movimientos': movimientos_procesados # Retornamos todos (frontend pagina)
         })
     except Cliente.DoesNotExist:
         return JsonResponse({'ok': False, 'error': 'Cliente no encontrado'})
+    except Exception as e:
+        print(f"Error CtaCte: {e}")
+        return JsonResponse({'ok': False, 'error': str(e)})
 
 
 @csrf_exempt
@@ -8839,12 +8861,22 @@ def api_presupuesto_convertir_a_pedido(request, id):
 
 @login_required
 def presupuesto_pdf(request, id):
-    # Stub para PDF (Podemos reutilizar la lógica de Factura PDF si existe)
-    # Por ahora devolvemos un mensaje o un HTML simple
-    p = get_object_or_404(Presupuesto, id=id)
-    # Renderizamos mismo template de factura pero con título Presupuesto?
-    # Para simplicidad, uso un template stub
-    return HttpResponse(f"Generación de PDF para Presupuesto #{p.id} pendiente de implementación visual.", content_type="text/plain")
+    """Genera la visualización premium de un presupuesto"""
+    from .models import Presupuesto, Empresa
+    
+    try:
+        presupuesto = Presupuesto.objects.prefetch_related('detalles__producto').select_related('cliente').get(id=id)
+        empresa = Empresa.objects.first()
+        
+        context = {
+            'presupuesto': presupuesto,
+            'empresa': empresa,
+        }
+        
+        return render(request, 'administrar/comprobantes/pre_modern.html', context)
+        
+    except Presupuesto.DoesNotExist:
+        return HttpResponse("Presupuesto no encontrado", status=404)
 
 
 # API - Provincias y Localidades
@@ -9809,126 +9841,7 @@ def api_dashboard_stats(request):
 
 
 
-# =======================================
-# 🔹 API CUENTA CORRIENTE CLIENTES
-# =======================================
 
-@login_required
-@verificar_permiso('ctacte')
-def api_cc_cliente_movimientos(request, id):
-    """API para obtener todos los movimientos de cuenta corriente de un cliente"""
-    from django.db.models import Q
-    from datetime import datetime
-    
-    try:
-        cliente = Cliente.objects.get(id=id)
-        print(f"DEBUG: Cliente encontrado: {cliente.nombre} (ID: {cliente.id})")
-    except Cliente.DoesNotExist:
-        print(f"DEBUG: Cliente con ID {id} no encontrado")
-        return JsonResponse({'ok': False, 'error': 'Cliente no encontrado'}, status=404)
-    
-    # Obtener todos los movimientos
-    movimientos = []
-    
-    # 1. VENTAS (aumentan deuda - DEBE)
-    try:
-        ventas = Venta.objects.filter(cliente=cliente).select_related('cliente')
-        print(f"DEBUG: Ventas encontradas: {ventas.count()}")
-        for v in ventas:
-            print(f"DEBUG: Venta #{v.id} - Total: {v.total} - Fecha: {v.fecha}")
-            movimientos.append({
-                'id': f'V-{v.id}',
-                'fecha': v.fecha,
-                'tipo': 'VENTA',
-                'descripcion': f'Factura #{v.id} - {v.tipo_comprobante or ""}',
-                'debe': float(v.total),
-                'haber': 0,
-                'comprobante_id': v.id,
-                'comprobante_tipo': 'venta'
-            })
-    except Exception as e:
-        print(f"Error al obtener ventas: {e}")
-        import traceback
-        traceback.print_exc()
-    
-    # 2. PAGOS (disminuyen deuda - HABER)
-    try:
-        # Buscamos 'PAGO' (legacy?) o 'HABER' (estándar) que representen pagos
-        pagos = MovimientoCuentaCorriente.objects.filter(cliente=cliente).filter(Q(tipo='PAGO') | Q(tipo='HABER'))
-        for p in pagos:
-            movimientos.append({
-                'id': f'P-{p.id}',
-                'fecha': p.fecha,
-                'tipo': 'PAGO', # Lo visualizamos como PAGO
-                'descripcion': p.descripcion or 'Pago recibido',
-                'debe': 0,
-                'haber': float(p.monto),
-                'comprobante_id': p.id,
-                'comprobante_tipo': 'pago'
-            })
-    except Exception as e:
-        print(f"Error al obtener pagos: {e}")
-    
-    # 3. NOTAS DE CRÉDITO (disminuyen deuda - HABER)
-    try:
-        notas_credito = NotaCredito.objects.filter(venta__cliente=cliente).select_related('venta')
-        for nc in notas_credito:
-            movimientos.append({
-                'id': f'NC-{nc.id}',
-                'fecha': nc.fecha,
-                'tipo': 'NOTA_CREDITO',
-                'descripcion': f'Nota de Crédito #{nc.id} - Venta #{nc.venta.id}',
-                'debe': 0,
-                'haber': float(nc.total),
-                'comprobante_id': nc.id,
-                'comprobante_tipo': 'nota_credito'
-            })
-    except Exception as e:
-        print(f"Error al obtener notas de crédito: {e}")
-    
-    # 4. NOTAS DE DÉBITO (aumentan deuda - DEBE)
-    try:
-        notas_debito = NotaDebito.objects.filter(venta__cliente=cliente).select_related('venta')
-        for nd in notas_debito:
-            movimientos.append({
-                'id': f'ND-{nd.id}',
-                'fecha': nd.fecha,
-                'tipo': 'NOTA_DEBITO',
-                'descripcion': f'Nota de Débito #{nd.id} - {nd.motivo}',
-                'debe': float(nd.monto),
-                'haber': 0,
-                'comprobante_id': nd.id,
-                'comprobante_tipo': 'nota_debito'
-            })
-    except Exception as e:
-        print(f"Error al obtener notas de débito: {e}")
-    
-    # Ordenar por fecha (más antiguo primero para calcular saldo acumulado)
-    movimientos.sort(key=lambda x: x['fecha'])
-    
-    # Calcular saldo acumulado
-    saldo = Decimal('0')
-    for mov in movimientos:
-        saldo += Decimal(str(mov['debe'])) - Decimal(str(mov['haber']))
-        mov['saldo'] = float(saldo)
-        # Convertir fecha a string
-        mov['fecha'] = mov['fecha'].strftime('%d/%m/%Y')
-    
-    # Invertir para mostrar más reciente primero
-    movimientos.reverse()
-    
-    print(f"DEBUG: Total movimientos procesados: {len(movimientos)}")
-    print(f"DEBUG: Saldo final: {saldo}")
-    
-    return JsonResponse({
-        'ok': True,
-        'cliente': {
-            'id': cliente.id,
-            'nombre': cliente.nombre,
-            'saldo_actual': float(saldo)
-        },
-        'movimientos': movimientos
-    })
 
 
 # Placeholder functions for legacy routes (if needed)
@@ -10079,7 +9992,7 @@ def api_cc_proveedor_movimientos(request, id):
                 'descripcion': p.descripcion,
                 'debe': debe,
                 'haber': haber,
-                'comprobante_id': p.id,
+                'comprobante_id': p.recibo.id if p.recibo else p.id,
                 'comprobante_tipo': 'pago'
             })
     except Exception as e:
@@ -10217,7 +10130,8 @@ def api_cc_proveedor_registrar_pago(request, id):
                 tipo='DEBE', # Pago decreases Liability
                 descripcion=descripcion or f'Pago a proveedor - {metodo_pago}',
                 monto=monto,
-                saldo=nuevo_saldo
+                saldo=nuevo_saldo,
+                recibo=recibo
             )
             
             proveedor.saldo_actual = nuevo_saldo
@@ -10449,64 +10363,184 @@ def api_cc_cliente_registrar_pago(request, id):
 @login_required
 @verificar_permiso('ctacte')
 def cc_cliente_imprimir(request, id):
-    """Vista para imprimir estado de cuenta del cliente"""
+    """Vista para imprimir estado de cuenta del cliente con cálculo dinámico de saldos"""
+    from datetime import datetime
+    from .models import Cliente, MovimientoCuentaCorriente, Empresa
+    from decimal import Decimal
+    from django.template.loader import get_template
+    from xhtml2pdf import pisa
+    from io import BytesIO
+
+    def render_to_pdf(template_src, context_dict={}):
+        template = get_template(template_src)
+        html  = template.render(context_dict)
+        result = BytesIO()
+        pdf = pisa.pisaDocument(BytesIO(html.encode("UTF-8")), result)
+        if not pdf.err:
+            return HttpResponse(result.getvalue(), content_type='application/pdf')
+        return None
+
     try:
         cliente = Cliente.objects.get(id=id)
     except Cliente.DoesNotExist:
         return HttpResponse("Cliente no encontrado", status=404)
     
-    # Reutilizar la lógica de api_cc_cliente_movimientos
-    movimientos = []
+    # 1. Obtener TODOS los movimientos ordenados por fecha antigua -> nueva
+    movs = MovimientoCuentaCorriente.objects.filter(cliente=cliente).order_by('fecha', 'id')
     
-    # Obtener ventas
-    try:
-        ventas = Venta.objects.filter(cliente=cliente).select_related('cliente')
-        for v in ventas:
-            movimientos.append({
-                'fecha': v.fecha,
-                'tipo': 'VENTA',
-                'descripcion': f'Factura #{v.id} - {v.tipo_comprobante or ""}',
-                'debe': float(v.total),
-                'haber': 0,
-            })
-    except Exception as e:
-        print(f"Error al obtener ventas: {e}")
+    # 2. Recalcular saldos "al vuelo"
+    saldo_acumulado = Decimal('0')
+    movimientos_procesados = []
     
-    # Obtener pagos
-    try:
-        pagos = MovimientoCuentaCorriente.objects.filter(cliente=cliente, tipo='PAGO')
-        for p in pagos:
-            movimientos.append({
-                'fecha': p.fecha,
-                'tipo': 'PAGO',
-                'descripcion': p.descripcion or f'Pago - {p.metodo_pago}',
-                'debe': 0,
-                'haber': float(p.haber),
-            })
-    except Exception as e:
-        print(f"Error al obtener pagos: {e}")
+    for m in movs:
+        monto = m.monto if m.monto else Decimal('0')
+        if m.tipo == 'VENTA' or m.tipo == 'DEBE':
+            saldo_acumulado += monto
+        else:
+            saldo_acumulado -= monto
+            
+        movimientos_procesados.append({
+            'fecha': m.fecha.strftime('%d/%m/%Y'),
+            'tipo': m.tipo,
+            'descripcion': m.descripcion,
+            'debe': float(monto) if (m.tipo == 'VENTA' or m.tipo == 'DEBE') else 0,
+            'haber': float(monto) if (m.tipo != 'VENTA' and m.tipo != 'DEBE') else 0,
+            'saldo': float(saldo_acumulado)
+        })
+        
+    # 3. Invertir para mostrar más reciente primero en el PDF
+    movimientos_procesados.reverse()
     
-    # Ordenar por fecha
-    movimientos.sort(key=lambda x: x['fecha'])
-    
-    # Calcular saldo acumulado
-    saldo = Decimal('0')
-    for mov in movimientos:
-        saldo += Decimal(str(mov['debe'])) - Decimal(str(mov['haber']))
-        mov['saldo'] = float(saldo)
-        mov['fecha'] = mov['fecha'].strftime('%d/%m/%Y')
-    
-    # Invertir para mostrar más reciente primero
-    movimientos.reverse()
+    # 4. Obtener info empresa
+    empresa = Empresa.objects.first()
     
     context = {
         'cliente': cliente,
-        'movimientos': movimientos,
-        'saldo_actual': float(saldo),
+        'movimientos': movimientos_procesados,
+        'saldo_actual': float(saldo_acumulado),
+        'empresa': empresa,
         'fecha_impresion': datetime.now().strftime('%d/%m/%Y %H:%M')
     }
     
-    return render(request, 'administrar/ctacte/cliente_imprimir.html', context)
+    # Generar PDF
+    # DEBUG: Forzando uso de template final
+    print("DEBUG: Generando PDF con cliente_imprimir_final.html")
+    pdf = render_to_pdf('administrar/ctacte/cliente_imprimir_final.html', context)
+    if pdf:
+        response = HttpResponse(pdf.content, content_type='application/pdf')
+        filename = f"Estado_Cuenta_{cliente.nombre.replace(' ', '_')}.pdf"
+        response['Content-Disposition'] = f'inline; filename="{filename}"'
+        return response
+        
+    return HttpResponse("Error generando PDF", status=500)
+
+
+@login_required
+@verificar_permiso('ctacte')
+def cc_proveedor_imprimir(request, id):
+    """Vista para imprimir estado de cuenta del proveedor con diseño premium PDF"""
+    from .models import Proveedor, Compra, MovimientoCuentaCorrienteProveedor, Empresa
+    from decimal import Decimal
+    from datetime import datetime
+    from django.template.loader import get_template
+    from xhtml2pdf import pisa
+    from io import BytesIO
+
+    def render_to_pdf(template_src, context_dict={}):
+        template = get_template(template_src)
+        html = template.render(context_dict)
+        result = BytesIO()
+        pdf = pisa.pisaDocument(BytesIO(html.encode("UTF-8")), result)
+        if not pdf.err:
+            return HttpResponse(result.getvalue(), content_type='application/pdf')
+        return None
+
+    try:
+        proveedor = Proveedor.objects.get(id=id)
+    except Proveedor.DoesNotExist:
+        return HttpResponse("Proveedor no encontrado", status=404)
+    
+    # 1. Obtener movimientos
+    movimientos_raw = []
+    
+    # Compras
+    try:
+        compras = Compra.objects.filter(proveedor=proveedor, estado='REGISTRADA').order_by('fecha', 'id')
+        for c in compras:
+            movimientos_raw.append({
+                'fecha': c.fecha,
+                'tipo': 'COMPRA',
+                'descripcion': f'Compra #{c.nro_comprobante or c.id}',
+                'monto': c.total,
+                'is_debt': True # En proveedores, Compra aumenta lo que debemos (Liability)
+            })
+    except Exception as e:
+        print(f"Error al obtener compras PDF: {e}")
+        
+    # Pagos y Ajustes
+    try:
+        pagos = MovimientoCuentaCorrienteProveedor.objects.filter(proveedor=proveedor).order_by('fecha', 'id')
+        for p in pagos:
+            movimientos_raw.append({
+                'fecha': p.fecha,
+                'tipo': p.tipo, # PAGO, DEBE, HABER
+                'descripcion': p.descripcion,
+                'monto': p.monto,
+                'is_debt': (p.tipo == 'HABER') # HABER aumenta deuda, PAGO/DEBE disminuye
+            })
+    except Exception as e:
+        print(f"Error al obtener pagos PDF: {e}")
+        
+    # Ordenar por fecha para calcular saldo
+    movimientos_raw.sort(key=lambda x: (x['fecha'], x.get('id', 0)))
+    
+    saldo_acumulado = Decimal('0')
+    movimientos_procesados = []
+    
+    for m in movimientos_raw:
+        monto = m['monto'] if m['monto'] else Decimal('0')
+        if m['is_debt']:
+            saldo_acumulado += monto
+            debe = 0
+            haber = float(monto)
+        else:
+            saldo_acumulado -= monto
+            debe = float(monto)
+            haber = 0
+            
+        movimientos_procesados.append({
+            'fecha': m['fecha'].strftime('%d/%m/%Y') if m['fecha'] else '',
+            'tipo': m['tipo'],
+            'descripcion': m['descripcion'],
+            'debe': debe,
+            'haber': haber,
+            'saldo': float(saldo_acumulado)
+        })
+        
+    # Invertir para mostrar más reciente primero
+    movimientos_procesados.reverse()
+    
+    # Obtener info empresa
+    empresa = Empresa.objects.first()
+    
+    context = {
+        'proveedor': proveedor,
+        'movimientos': movimientos_procesados,
+        'saldo_actual': float(saldo_acumulado),
+        'empresa': empresa,
+        'fecha_impresion': datetime.now().strftime('%d/%m/%Y %H:%M')
+    }
+    
+    # Generar PDF
+    pdf = render_to_pdf('administrar/ctacte/proveedor_imprimir_final.html', context)
+    if pdf:
+        response = HttpResponse(pdf.content, content_type='application/pdf')
+        filename = f"Estado_Cuenta_Prov_{proveedor.nombre.replace(' ', '_')}.pdf"
+        response['Content-Disposition'] = f'inline; filename="{filename}"'
+        return response
+        
+    return HttpResponse("Error generando PDF", status=500)
+
 
 @login_required
 @verificar_permiso('ctacte')
@@ -10558,38 +10592,94 @@ def api_cc_cliente_exportar_excel(request, id):
 @login_required
 @verificar_permiso('ctacte')
 def api_cc_cliente_exportar_pdf(request, id):
-    """Exportar estado de cuenta a PDF"""
+    """Exportar estado de cuenta a PDF usando xhtml2pdf"""
     try:
         from django.template.loader import render_to_string
-        from weasyprint import HTML
+        from xhtml2pdf import pisa
         from django.http import HttpResponse
-        
+        from .models import Cliente, Venta, MovimientoCuentaCorriente, Empresa
+        from decimal import Decimal
+        from datetime import datetime
+        from django.db.models import Q
+        import io
+
         cliente = Cliente.objects.get(id=id)
-        
-        # Reutilizar lógica de movimientos
         movimientos = []
-        # ... (similar a imprimir)
         
-        # Renderizar HTML
-        html_string = render_to_string('administrar/ctacte/cliente_pdf.html', {
+        # 1. Ventas
+        try:
+            ventas = Venta.objects.filter(cliente=cliente).select_related('cliente')
+            for v in ventas:
+                total_v = v.total if v.total is not None else Decimal('0')
+                movimientos.append({
+                    'fecha': v.fecha,
+                    'tipo': 'VENTA',
+                    'descripcion': f'Factura #{v.id} - {v.tipo_comprobante or ""}',
+                    'debe': float(total_v),
+                    'haber': 0,
+                })
+        except Exception as e:
+            print(f"Error ventas PDF: {e}")
+
+        # 2. Pagos
+        try:
+            pagos = MovimientoCuentaCorriente.objects.filter(cliente=cliente).filter(Q(tipo='PAGO') | Q(tipo='HABER'))
+            for p in pagos:
+                monto_p = p.monto if p.monto is not None else Decimal('0')
+                movimientos.append({
+                    'fecha': p.fecha,
+                    'tipo': 'PAGO',
+                    'descripcion': p.descripcion or 'Pago recibido',
+                    'debe': 0,
+                    'haber': float(monto_p),
+                })
+        except Exception as e:
+            print(f"Error pagos PDF: {e}")
+
+        # Ordenar y saldo
+        movimientos.sort(key=lambda x: x['fecha'] if x['fecha'] else datetime.now())
+        saldo = Decimal('0')
+        for mov in movimientos:
+            try:
+                debe = Decimal(str(mov['debe'] or 0))
+                haber = Decimal(str(mov['haber'] or 0))
+                saldo += debe - haber
+                mov['saldo'] = float(saldo)
+            except:
+                mov['saldo'] = 0.0
+        
+        movimientos.reverse()
+        empresa = Empresa.objects.first()
+
+        context = {
             'cliente': cliente,
             'movimientos': movimientos,
-            'fecha': datetime.now().strftime('%d/%m/%Y')
-        })
+            'saldo_actual': float(saldo),
+            'empresa': empresa,
+            'fecha_impresion': datetime.now().strftime('%d/%m/%Y %H:%M')
+        }
+
+        # Renderizar HTML
+        print("DEBUG: Exportando PDF con cliente_imprimir_final.html")
+        html_string = render_to_string('administrar/ctacte/cliente_imprimir_final.html', context)
         
-        # Generar PDF
-        pdf_file = HTML(string=html_string).write_pdf()
-        
-        response = HttpResponse(pdf_file, content_type='application/pdf')
-        response['Content-Disposition'] = f'attachment; filename="estado_cuenta_{cliente.id}.pdf"'
-        return response
-        
-    except ImportError:
-        return JsonResponse({'ok': False, 'error': 'weasyprint no está instalado'}, status=500)
+        # Crear PDF
+        result = io.BytesIO()
+        pdf = pisa.pisaDocument(io.BytesIO(html_string.encode("UTF-8")), result)
+
+        if not pdf.err:
+            response = HttpResponse(result.getvalue(), content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="estado_cuenta_{cliente.id}.pdf"'
+            return response
+        else:
+            return JsonResponse({'ok': False, 'error': 'Error al generar PDF'})
+
     except Cliente.DoesNotExist:
         return JsonResponse({'ok': False, 'error': 'Cliente no encontrado'}, status=404)
     except Exception as e:
-        return JsonResponse({'ok': False, 'error': str(e)}, status=500)
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'ok': False, 'error': str(e), 'traceback': traceback.format_exc()}, status=500)
 
 # ==========================
 # API CATEGORIAS

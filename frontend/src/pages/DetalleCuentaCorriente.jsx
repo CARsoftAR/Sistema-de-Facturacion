@@ -109,8 +109,12 @@ const DetalleCuentaCorriente = () => {
             case 'nota_debito':
                 navigate(`/comprobantes/nd/${mov.comprobante_id}`, { state: { from: referrer } });
                 break;
+            case 'pago':
+                navigate(`/recibos/${mov.comprobante_id}`, { state: { from: referrer } });
+                break;
             default:
                 console.log('Tipo de comprobante no soportado:', mov.comprobante_tipo);
+
         }
     };
 
@@ -296,13 +300,10 @@ const DetalleCuentaCorriente = () => {
                         </div>
                     </div>
 
-                    {/* Export Actions (Mini Card) */}
+                    {/* Export Actions (Mini Card) - PDF Button Removed */}
                     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-3 flex gap-2">
                         <button onClick={() => window.open(`/api/ctacte/clientes/${id}/exportar/excel/`, '_blank')} className="flex-1 py-1.5 bg-emerald-50 text-emerald-700 font-bold text-[10px] rounded-lg border border-emerald-100 hover:bg-emerald-100 transition-colors flex flex-col items-center gap-0.5">
                             <Download size={14} /> Excel
-                        </button>
-                        <button onClick={() => window.open(`/api/ctacte/clientes/${id}/exportar/pdf/`, '_blank')} className="flex-1 py-1.5 bg-red-50 text-red-700 font-bold text-[10px] rounded-lg border border-red-100 hover:bg-red-100 transition-colors flex flex-col items-center gap-0.5">
-                            <FileText size={14} /> PDF
                         </button>
                         <button onClick={handleImprimir} className="flex-1 py-1.5 bg-slate-50 text-slate-700 font-bold text-[10px] rounded-lg border border-slate-200 hover:bg-slate-100 transition-colors flex flex-col items-center gap-0.5">
                             <Download size={14} /> Imprimir

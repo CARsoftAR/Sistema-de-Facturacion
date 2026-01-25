@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Estado de Cuenta - {{ cliente.nombre }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 1cm;
+            margin-top: 1.5cm;
+            margin-bottom: 2cm;
+
+            @frame footer_frame {
+                -pdf-frame-content: footerContent;
+                bottom: 0.5cm;
+                margin-left: 1cm;
+                margin-right: 1cm;
+                height: 1cm;
+            }
+        }
+
+        body {
+            font-family: Helvetica, sans-serif;
+            font-size: 10px;
+            color: #334155;
+            background-color: white;
+        }
+
+        /* Utils */
+        .text-right {
+            text-align: right;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .text-left {
+            text-align: left;
+        }
+
+        .font-bold {
+            font-weight: bold;
+        }
+
+        .uppercase {
+            text-transform: uppercase;
+        }
+
+        /* Colors */
+        .bg-blue {
+            background-color: #2563eb;
+            color: white;
+        }
+
+        .bg-slate {
+            background-color: #f8fafc;
+        }
+
+        .text-primary {
+            color: #2563eb;
+        }
+
+        .text-secondary {
+            color: #64748b;
+        }
+
+        .text-danger {
+            color: #ef4444;
+        }
+
+        .text-success {
+            color: #22c55e;
+        }
+
+        /* Components */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        td {
+            vertical-align: top;
+            padding: 4px;
+        }
+
+        .header-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1e293b;
+            margin-bottom: 2px;
+        }
+
+        .header-subtitle {
+            font-size: 10px;
+            color: #64748b;
+        }
+
+        .doc-label {
+            font-size: 16px;
+            font-weight: bold;
+            color: #2563eb;
+            text-transform: uppercase;
+            text-align: right;
+            border-bottom: 2px solid #2563eb;
+            padding-bottom: 5px;
+            display: inline-block;
+        }
+
+        /* Client Card */
+        .client-section {
+            margin-top: 15px;
+            margin-bottom: 15px;
+        }
+
+        .info-label {
+            font-size: 8px;
+            color: #94a3b8;
+            text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+        }
+
+        .info-text {
+            font-size: 12px;
+            font-weight: bold;
+            color: #0f172a;
+            margin-top: 2px;
+        }
+
+        /* Summary Box */
+        .summary-box {
+            background-color: #eff6ff;
+            border-left: 4px solid #2563eb;
+            padding: 15px;
+        }
+
+        .summary-amt {
+            font-size: 22px;
+            font-weight: bold;
+            color: #1e40af;
+        }
+
+        /* Table */
+        .table-container {
+            margin-top: 20px;
+        }
+
+        .main-table th {
+            background-color: #1e293b;
+            color: #ffffff;
+            font-size: 9px;
+            font-weight: bold;
+            text-transform: uppercase;
+            padding: 10px 8px;
+            text-align: left;
+        }
+
+        .main-table td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 10px;
+            color: #334155;
+        }
+
+        .row-even {
+            background-color: #f8fafc;
+        }
+
+        /* Badges */
+        .badge {
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 8px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .badge-sale {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+
+        .badge-pay {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+
+        /* Total Section */
+        .total-section {
+            margin-top: 20px;
+            text-align: right;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Header -->
+    <table style="border-bottom: 2px solid #334155; padding-bottom: 10px;">
+        <tr>
+            <td width="60%" style="vertical-align: middle;">
+                <div style="color: #334155;">
+                    {% if empresa.logo %}
+                    <img src="{{ empresa.logo.path }}" style="height: 50px; margin-bottom: 5px;">
+                    {% endif %}
+                    <div class="header-title" style="font-size: 16px; margin-top: 5px; text-transform: uppercase;">{{
+                        empresa.nombre|default:"NOMBRE EMPRESA" }}</div>
+                </div>
+                <div class="header-subtitle" style="font-size: 9px; margin-top: 2px; color: #64748b;">
+                    {{ empresa.direccion|default:"Dirección Comercial" }}<br>
+                    {% if empresa.telefono %}Tel: {{ empresa.telefono }}{% endif %}
+                    {% if empresa.email %} | {{ empresa.email }}{% endif %}
+                </div>
+            </td>
+            <td width="40%" class="text-right" style="vertical-align: bottom;">
+                <div class="doc-label"
+                    style="font-size: 14px; border-bottom: 2px solid #334155; padding-bottom: 2px; color: #334155;">
+                    ESTADO DE CUENTA
+                </div>
+                <div style="font-size: 8px; color: #64748b; margin-top: 4px;">
+                    EMISIÓN: {{ fecha_impresion }}
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    <!-- Info Section -->
+    <table class="client-section" style="margin-top: 10px; margin-bottom: 10px;">
+        <tr>
+            <!-- Client Details -->
+            <td width="60%" style="padding-right: 15px;">
+                <div style="margin-bottom: 8px;">
+                    <span class="info-label" style="display:inline-block; width:60px;">CLIENTE:</span>
+                    <span class="info-text" style="font-size: 14px;">{{ cliente.nombre }}</span>
+                </div>
+
+                <table style="width: 100%;">
+                    <tr>
+                        <td width="50%" style="padding: 2px;">
+                            <span class="info-label">CUIT:</span> <span style="font-size: 10px; font-weight: bold;">{{
+                                cliente.cuit|default:"--" }}</span>
+                        </td>
+                        <td width="50%" style="padding: 2px;">
+                            <span class="info-label">TEl:</span> <span style="font-size: 10px;">{{
+                                cliente.telefono|default:"--" }}</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2" style="padding: 2px;">
+                            <span class="info-label">DIR:</span> <span style="font-size: 10px;">{{
+                                cliente.direccion|default:"No registrada" }}</span>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+
+            <!-- Balance Box -->
+            <td width="40%">
+                <div class="summary-box" style="padding: 8px; border-left-width: 3px;">
+                    <table style="width: 100%;">
+                        <tr>
+                            <td style="padding: 0;">
+                                <div class="info-label" style="color: #60a5fa; font-size: 7px;">SALDO ACTUAL</div>
+                                <div class="summary-amt" style="font-size: 18px; margin-top: 2px;">$ {{
+                                    saldo_actual|floatformat:2 }}</div>
+                            </td>
+                            <td style="padding: 0; text-align: right; vertical-align: middle;">
+                                <div style="font-size: 9px;">
+                                    {% if saldo_actual > 0 %} <span
+                                        style="color: #dc2626; font-weight: bold;">DEUDA</span>
+                                    {% elif saldo_actual < 0 %} <span style="color: #16a34a; font-weight: bold;">A
+                                        FAVOR</span>
+                                        {% else %} <span style="color: #64748b;">AL DÍA</span> {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <div style="margin-top: 5px; text-align: right; font-size: 7px; color: #94a3b8;">
+                    Histórico Completo
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    <!-- Data Table -->
+    <div class="table-container">
+        <table class="main-table">
+            <thead>
+                <tr>
+                    <th width="12%">Fecha</th>
+                    <th width="12%">Tipo</th>
+                    <th width="36%">Descripción</th>
+                    <th width="13%" class="text-right">Debe</th>
+                    <th width="13%" class="text-right">Haber</th>
+                    <th width="14%" class="text-right">Saldo</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for mov in movimientos %}
+                <tr class="{% cycle 'row-odd' 'row-even' %}">
+                    <td>{{ mov.fecha }}</td>
+                    <td>
+                        {% if mov.tipo == 'VENTA' %} <span class="badge badge-sale">Factura</span>
+                        {% elif mov.tipo == 'NOTA_DEBITO' %} <span class="badge badge-sale">ND</span>
+                        {% elif mov.tipo == 'NOTA_CREDITO' %} <span class="badge badge-pay">NC</span>
+                        {% else %} <span class="badge badge-pay">Pago</span> {% endif %}
+                    </td>
+                    <td>{{ mov.descripcion|truncatechars:50 }}</td>
+                    <td class="text-right">
+                        {% if mov.debe > 0 %}{{ mov.debe|floatformat:2 }}{% else %}-{% endif %}
+                    </td>
+                    <td class="text-right">
+                        {% if mov.haber > 0 %}{{ mov.haber|floatformat:2 }}{% else %}-{% endif %}
+                    </td>
+                    <td class="text-right font-bold">
+                        {{ mov.saldo|floatformat:2 }}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center" style="padding: 30px; font-style: italic;">
+                        Sin movimientos registrados.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Final Stats -->
+    <table style="margin-top: 30px;">
+        <tr>
+            <td width="60%"></td>
+            <td width="40%">
+                <table style="border-top: 2px solid #1e293b;">
+                    <tr>
+                        <td style="padding: 10px 0; font-size: 14px; font-weight: bold; color: #1e293b;">SALDO TOTAL
+                        </td>
+                        <td class="text-right"
+                            style="padding: 10px 0; font-size: 18px; font-weight: bold; color: #2563eb;">
+                            $ {{ saldo_actual|floatformat:2 }}
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+
+    <!-- Static Footer Content -->
+    <div id="footerContent">
+        <table style="border-top: 1px solid #cbd5e1; margin-top: 10px;">
+            <tr>
+                <td width="70%" style="font-size: 8px; color: #94a3b8; padding: 5px;">
+                    Este documento detalla los movimientos de la cuenta corriente. Verifique los comprobantes
+                    originales.
+                </td>
+                <td width="30%" class="text-right" style="font-size: 8px; color: #94a3b8; padding: 5px;">
+                    Pag. <pdf:pagenumber> / <pdf:pagecount>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+</body>
+
+</html>

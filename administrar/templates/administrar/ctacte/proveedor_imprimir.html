@@ -1,0 +1,166 @@
+﻿{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Estado de Cuenta - {{ proveedor.nombre }}</title>
+    <style>
+        @page { size: A4; margin: 0; }
+        body { font-family: Helvetica, Arial, sans-serif; font-size: 11px; color: #1e293b; background-color: #f1f5f9; margin: 0; padding: 0; line-height: 1.4; }
+        .app-container { padding: 40px 0; }
+        .document-card { background-color: #ffffff; width: 190mm; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 24px; overflow: hidden; }
+        .content-body { padding: 30px 40px; }
+        
+        /* Tables for Layout */
+        .w-100 { width: 100%; border-collapse: collapse; }
+        .v-top { vertical-align: top; }
+        
+        /* Header */
+        .logo-box { width: 42px; height: 42px; background-color: #2563eb; border-radius: 10px; text-align: center; }
+        .logo-txt { color: #ffffff; font-size: 24px; font-weight: bold; line-height: 42px; }
+        .company-name { font-size: 18px; font-weight: 800; color: #0f172a; margin: 0; }
+        .meta-txt { font-size: 10px; color: #64748b; margin: 0; }
+        .doc-title { font-size: 18px; font-weight: 800; color: #0f172a; text-align: right; margin: 0; }
+        .tag-pill { background-color: #f1f5f9; color: #2563eb; font-size: 10px; font-weight: bold; padding: 3px 10px; border-radius: 99px; text-transform: uppercase; }
+
+        /* Overview */
+        .stats-card { background-color: #f8fafc; border: 1px solid #f1f5f9; border-radius: 16px; padding: 15px; }
+        .stats-title { font-size: 9px; font-weight: bold; color: #94a3b8; text-transform: uppercase; margin-bottom: 5px; }
+        .stats-val { font-size: 15px; font-weight: bold; color: #0f172a; }
+        .balance-hero { background-color: #ffffff; border: 1px solid #e2e8f0; text-align: center; }
+        .hero-amt { font-size: 32px; font-weight: 800; color: #0f172a; margin: 0; }
+        .status-pill { font-size: 10px; font-weight: bold; text-transform: uppercase; padding: 4px 12px; border-radius: 8px; margin-top: 5px; display: inline-block; }
+
+        /* Table */
+        .mov-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .mov-table th { text-align: left; padding: 10px 8px; font-size: 9px; font-weight: bold; color: #94a3b8; text-transform: uppercase; border-bottom: 2px solid #f1f5f9; }
+        .mov-table td { padding: 12px 8px; border-bottom: 1px solid #f8fafc; font-size: 11px; }
+
+        /* Footer */
+        .tot-banner { background-color: #0f172a; color: #ffffff; padding: 20px 30px; border-radius: 20px; text-align: right; }
+        .doc-footer { padding: 25px 40px; background-color: #f8fafc; border-top: 1px solid #f1f5f9; }
+
+        @media print {
+            body { background-color: #ffffff; }
+            .app-container { padding: 0; }
+            .document-card { border: none; border-radius: 0; width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="document-card">
+            <div class="content-body">
+                <!-- Top Header -->
+                <table class="w-100">
+                    <tr>
+                        <td width="60%" class="v-top">
+                            <table border="0" cellpadding="0" cellspacing="0">
+                                <tr>
+                                    <td width="55" class="v-top">
+                                        <div class="logo-box"><span class="logo-txt">{{ empresa.nombre|slice:":1"|default:"G" }}</span></div>
+                                    </td>
+                                    <td class="v-top">
+                                        <div class="company-name">{{ empresa.nombre|default:"Distribuidora GANY" }}</div>
+                                        <div class="meta-txt">CUIT: {{ empresa.cuit|default:"---" }}</div>
+                                        <div class="meta-txt">{{ empresa.direccion|default:"" }} | {{ empresa.telefono|default:"" }}</div>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                        <td width="40%" class="v-top" style="text-align: right;">
+                            <div class="doc-title">ESTADO DE CUENTA</div>
+                            <span class="tag-pill">proveedors</span>
+                            <div class="meta-txt" style="margin-top: 5px;">Emisión: {{ fecha_impresion }}</div>
+                        </td>
+                    </tr>
+                </table>
+
+                <!-- Main Overview -->
+                <table class="w-100" style="margin-top: 25px;">
+                    <tr>
+                        <td width="48%" class="v-top">
+                            <div class="stats-card">
+                                <div class="stats-title">proveedor Seleccionado</div>
+                                <div class="stats-val">{{ proveedor.nombre }}</div>
+                                <div class="meta-txt" style="margin-top: 5px;">ID: #{{ proveedor.id }} | CUIT: {{ proveedor.cuit|default:"---" }}</div>
+                            </div>
+                        </td>
+                        <td width="4%"></td>
+                        <td width="48%" class="v-top">
+                            <div class="stats-card balance-hero">
+                                <div class="stats-title">Balance Total al Día</div>
+                                <div class="hero-amt">$ {{ saldo_actual|floatformat:2|default:"0,00" }}</div>
+                                {% if saldo_actual > 0 %}<div class="status-pill" style="background-color:#fee2e2; color:#b91c1c;">Deuda Pendiente</div>{% elif saldo_actual < 0 %}<div class="status-pill" style="background-color:#dcfce7; color:#166534;">Saldo a Favor</div>{% else %}<div class="status-pill" style="background-color:#f1f5f9; color:#64748b;">Saldado</div>{% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+
+                <!-- Movements Table -->
+                <table class="mov-table">
+                    <thead>
+                        <tr>
+                            <th width="100">Fecha</th>
+                            <th width="80" style="text-align: center;">Tipo</th>
+                            <th>Descripción</th>
+                            <th width="100" style="text-align: right;">Compras (+)</th>
+                            <th width="100" style="text-align: right;">Compras (+)</th>
+                            <th width="110" style="text-align: right;">Saldo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for mov in movimientos %}
+                        <tr>
+                            <td style="color: #64748b;">{{ mov.fecha_formateada|default:"" }}</td>
+                            <td style="text-align: center;">
+                                {% if mov.tipo == 'COMPRA' %}<span style="color: #e11d48; font-weight: bold;">COMPRA</span>{% else %}<span style="color: #16a34a; font-weight: bold;">PAGO</span>{% endif %}
+                            </td>
+                            <td style="font-weight: bold;">{{ mov.descripcion }}</td>
+                            <td style="text-align: right;">{% if mov.debe > 0 %}$ {{ mov.debe|floatformat:2 }}{% else %}-{% endif %}</td>
+                            <td style="text-align: right;">{% if mov.haber > 0 %}$ {{ mov.haber|floatformat:2 }}{% else %}-{% endif %}</td>
+                            <td style="text-align: right; font-weight: bold; color: #0f172a;">$ {{ mov.saldo|floatformat:2 }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="6" style="text-align: center; padding: 40px; color: #94a3b8;">No se registran movimientos en el historial.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                
+                <!-- Totals Banner -->
+                <table class="w-100" style="margin-top: 35px;">
+                    <tr>
+                        <td width="55%" class="v-top" style="padding-top: 30px;">
+                            <div class="meta-txt" style="font-style: italic;">Documento resumen interno sin validez legal de factura fiscal.</div>
+                        </td>
+                        <td width="45%" class="v-top">
+                            <div class="tot-banner">
+                                <div class="stats-title" style="color: #94a3b8;">Saldo Final Acumulado</div>
+                                <div style="font-size: 28px; font-weight: bold; margin-top: 5px;">$ {{ saldo_actual|floatformat:2|default:"0,00" }}</div>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- Card Footer -->
+            <div class="doc-footer">
+                <table class="w-100">
+                    <tr>
+                        <td width="60%">
+                            <div style="border-top: 2px solid #0f172a; width: 160px; padding-top: 8px; text-align: center;">
+                                <div style="font-weight: bold; font-size: 11px; color: #0f172a;">Firma Autorizada</div>
+                                <div class="meta-txt">{{ empresa.nombre|default:"Administración" }}</div>
+                            </div>
+                        </td>
+                        <td style="text-align: right;">
+                            <div class="meta-txt" style="font-weight: bold;">{{ empresa.nombre|upper }}</div>
+                            <div class="meta-txt">Sistema de Gestión CARsoft AR</div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

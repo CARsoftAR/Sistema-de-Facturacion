@@ -104,11 +104,11 @@ const DetalleCuentaCorrienteProveedor = () => {
                 navigate(`/compras/${mov.comprobante_id}`, { state: { from: referrer } });
                 break;
             case 'pago':
-                // navigate(`/recibos/${mov.comprobante_id}`, { state: { from: referrer } }); 
-                // TODO: View detail of receipt if implemented
+                navigate(`/recibos/${mov.comprobante_id}`, { state: { from: referrer } });
                 break;
             default:
                 console.log('Tipo de comprobante no soportado para detalle:', mov.comprobante_tipo);
+
         }
     };
 
@@ -298,9 +298,6 @@ const DetalleCuentaCorrienteProveedor = () => {
                         {/* TODO: Implement export endpoints if needed */}
                         <button disabled className="flex-1 py-1.5 bg-emerald-50 text-emerald-400 font-bold text-xs rounded-lg border border-emerald-100 flex flex-col items-center gap-0.5 opacity-50 cursor-not-allowed">
                             <Download size={14} /> Excel
-                        </button>
-                        <button disabled className="flex-1 py-1.5 bg-red-50 text-red-400 font-bold text-xs rounded-lg border border-red-100 flex flex-col items-center gap-0.5 opacity-50 cursor-not-allowed">
-                            <FileText size={14} /> PDF
                         </button>
                         <button onClick={handleImprimir} className="flex-1 py-1.5 bg-slate-50 text-slate-700 font-bold text-xs rounded-lg border border-slate-200 hover:bg-slate-100 transition-colors flex flex-col items-center gap-0.5">
                             <Download size={14} /> Imprimir

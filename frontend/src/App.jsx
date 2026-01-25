@@ -38,6 +38,7 @@ import NuevoProducto from './pages/NuevoProducto'
 import NuevoCliente from './pages/NuevoCliente'
 import AjusteStock from './pages/AjusteStock'
 import MovimientosStock from './pages/MovimientosStock'
+import NuevoProveedor from './pages/NuevoProveedor'
 
 import Parametros from './pages/Parametros'
 import Reportes from './pages/Reportes'
@@ -56,11 +57,11 @@ import ReportesContables from './pages/ReportesContables'
 import MiPerfil from './pages/MiPerfil'
 import { useAuth } from './context/AuthContext'
 
-// Lazy load component to safely handle build errors
-const CuentasCorrientesClientes = React.lazy(() => import('./pages/CuentasCorrientesClientes'));
-const DetalleCuentaCorriente = React.lazy(() => import('./pages/DetalleCuentaCorriente'));
-const CuentasCorrientesProveedores = React.lazy(() => import('./pages/CuentasCorrientesProveedores'));
-const DetalleCuentaCorrienteProveedor = React.lazy(() => import('./pages/DetalleCuentaCorrienteProveedor'));
+import CuentasCorrientesClientes from './pages/CuentasCorrientesClientes';
+import DetalleCuentaCorriente from './pages/DetalleCuentaCorriente';
+import CuentasCorrientesProveedores from './pages/CuentasCorrientesProveedores';
+import DetalleCuentaCorrienteProveedor from './pages/DetalleCuentaCorrienteProveedor';
+import DetalleRecibo from './pages/DetalleRecibo';
 
 const ProtectedRoute = ({ children, permission, isHome }) => {
   const { user, loading, hasPermission } = useAuth();
@@ -136,14 +137,17 @@ function App() {
               }
             `}
           </style>
-          <div className="flex-grow-1 overflow-auto custom-scrollbar">
+
+          <div className="main-content-container flex-grow-1 overflow-auto bg-white/50 backdrop-blur-sm">
             <Routes>
-              <Route path="/" element={<ProtectedRoute permission="reportes" isHome={true}><Dashboard /></ProtectedRoute>} />
-              <Route path="/dashboard" element={<ProtectedRoute permission="reportes" isHome={true}><Dashboard /></ProtectedRoute>} />
-              <Route path="/clientes/" element={<ProtectedRoute permission="clientes"><Clientes /></ProtectedRoute>} />
+              <Route path="/" element={<ProtectedRoute isHome={true}><Dashboard /></ProtectedRoute>} />
+              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
               <Route path="/clientes" element={<ProtectedRoute permission="clientes"><Clientes /></ProtectedRoute>} />
               <Route path="/clientes/nuevo" element={<ProtectedRoute permission="clientes"><NuevoCliente /></ProtectedRoute>} />
               <Route path="/clientes/editar/:id" element={<ProtectedRoute permission="clientes"><NuevoCliente /></ProtectedRoute>} />
+              <Route path="/proveedores" element={<ProtectedRoute permission="proveedores"><Proveedores /></ProtectedRoute>} />
+              <Route path="/proveedores/nuevo" element={<ProtectedRoute permission="proveedores"><NuevoProveedor /></ProtectedRoute>} />
+              <Route path="/proveedores/editar/:id" element={<ProtectedRoute permission="proveedores"><NuevoProveedor /></ProtectedRoute>} />
               <Route path="/productos" element={<ProtectedRoute permission="productos"><Productos /></ProtectedRoute>} />
               <Route path="/productos/nuevo" element={<ProtectedRoute permission="productos"><NuevoProducto /></ProtectedRoute>} />
               <Route path="/productos/editar/:id" element={<ProtectedRoute permission="productos"><NuevoProducto /></ProtectedRoute>} />
@@ -196,9 +200,6 @@ function App() {
               <Route path="/remitos" element={<ProtectedRoute permission="ventas"><Remitos /></ProtectedRoute>} />
               <Route path="/remitos/" element={<ProtectedRoute permission="ventas"><Remitos /></ProtectedRoute>} />
               <Route path="/remitos/nuevo" element={<ProtectedRoute permission="ventas"><NuevoRemito /></ProtectedRoute>} />
-              <Route path="/remitos/nuevo/" element={<ProtectedRoute permission="ventas"><NuevoRemito /></ProtectedRoute>} />
-              <Route path="/remitos/:id" element={<ProtectedRoute permission="ventas"><DetalleRemito /></ProtectedRoute>} />
-              <Route path="/remitos/:id/" element={<ProtectedRoute permission="ventas"><DetalleRemito /></ProtectedRoute>} />
               <Route path="/comprobantes/remito/:id" element={<ProtectedRoute permission="ventas"><DetalleRemito /></ProtectedRoute>} />
 
               <Route path="/notas-credito" element={<ProtectedRoute permission="ventas"><NotasCredito /></ProtectedRoute>} />
@@ -223,34 +224,19 @@ function App() {
               <Route path="/cheques" element={<ProtectedRoute permission="bancos"><Cheques /></ProtectedRoute>} />
               <Route path="/bancos/conciliacion" element={<ProtectedRoute permission="bancos"><ConciliacionBancaria /></ProtectedRoute>} />
 
-              <Route path="/ctas-corrientes/clientes" element={
-                <Suspense fallback={<div className="p-5 text-center text-muted"><h2>Cargando Módulo...</h2></div>}>
-                  <ProtectedRoute permission="ctacte"><CuentasCorrientesClientes /></ProtectedRoute>
-                </Suspense>
-              } />
-              <Route path="/ctas-corrientes/clientes/:id" element={
-                <Suspense fallback={<div className="p-5 text-center text-muted"><h2>Cargando...</h2></div>}>
-                  <ProtectedRoute permission="ctacte"><DetalleCuentaCorriente /></ProtectedRoute>
-                </Suspense>
-              } />
-              <Route path="/ctas-corrientes/proveedores" element={
-                <Suspense fallback={<div className="p-5 text-center text-muted"><h2>Cargando...</h2></div>}>
-                  <ProtectedRoute permission="ctacte"><CuentasCorrientesProveedores /></ProtectedRoute>
-                </Suspense>
-              } />
-              <Route path="/ctas-corrientes/proveedores/:id" element={
-                <Suspense fallback={<div className="p-5 text-center text-muted"><h2>Cargando...</h2></div>}>
-                  <ProtectedRoute permission="ctacte"><DetalleCuentaCorrienteProveedor /></ProtectedRoute>
-                </Suspense>
-              } />
+              <Route path="/ctas-corrientes/clientes" element={<ProtectedRoute permission="ctacte"><CuentasCorrientesClientes /></ProtectedRoute>} />
+              <Route path="/ctas-corrientes/clientes/:id" element={<ProtectedRoute permission="ctacte"><DetalleCuentaCorriente /></ProtectedRoute>} />
+              <Route path="/ctas-corrientes/proveedores" element={<ProtectedRoute permission="ctacte"><CuentasCorrientesProveedores /></ProtectedRoute>} />
+              <Route path="/ctas-corrientes/proveedores/:id" element={<ProtectedRoute permission="ctacte"><DetalleCuentaCorrienteProveedor /></ProtectedRoute>} />
+              <Route path="/recibos/:id" element={<ProtectedRoute permission="ctacte"><DetalleRecibo /></ProtectedRoute>} />
 
               <Route path="/perfil" element={<ProtectedRoute><MiPerfil /></ProtectedRoute>} />
               <Route path="/mi-perfil" element={<ProtectedRoute><MiPerfil /></ProtectedRoute>} />
 
-              <Route path="*" element={<div className="p-5" style={{ zIndex: 9999, position: 'relative' }}><h1>REACT 404</h1><p>Pathname: {window.location.pathname}</p></div>} />
-
               <Route path="/usuarios" element={<ProtectedRoute permission="usuarios"><Usuarios /></ProtectedRoute>} />
+              <Route path="*" element={<div className="p-5" style={{ zIndex: 9999, position: 'relative' }}><h1>REACT 404</h1><p>Pathname: {window.location.pathname}</p></div>} />
             </Routes>
+
           </div>
         </main>
       </div>
@@ -258,5 +244,4 @@ function App() {
   );
 }
 
-// Build trigger v21 - FULL RESTORE
 export default App

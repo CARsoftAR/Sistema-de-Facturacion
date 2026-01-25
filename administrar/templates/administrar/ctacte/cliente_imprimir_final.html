@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Estado de Cuenta</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 1cm;
+            margin-top: 1.5cm;
+            margin-bottom: 2cm;
+
+            @frame footer_frame {
+                -pdf-frame-content: footerContent;
+                bottom: 0.5cm;
+                margin-left: 1cm;
+                margin-right: 1cm;
+                height: 1cm;
+            }
+        }
+
+        body {
+            font-family: Helvetica, sans-serif;
+            font-size: 10px;
+            color: #334155;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .font-bold {
+            font-weight: bold;
+        }
+
+        .doc-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #2563eb;
+            text-transform: uppercase;
+        }
+
+        .main-table th {
+            background-color: #1e293b;
+            color: #ffffff;
+            font-size: 9px;
+            font-weight: bold;
+            text-transform: uppercase;
+            padding: 10px 8px;
+            text-align: left;
+        }
+
+        .main-table td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 10px;
+            color: #334155;
+        }
+
+        .row-even {
+            background-color: #f8fafc;
+        }
+
+        .badge {
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 8px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .badge-sale {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+
+        .badge-pay {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+
+        .summary-card {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+        }
+
+        .summary-header {
+            background-color: #f1f5f9;
+            padding: 6px 10px;
+            border-bottom: 1px solid #e2e8f0;
+            text-align: right;
+            font-size: 8px;
+            font-weight: bold;
+            color: #64748b;
+        }
+
+        .summary-body {
+            padding: 12px 10px;
+            text-align: right;
+        }
+
+        .summary-footer {
+            padding: 6px 10px;
+            border-top: 1px solid #e2e8f0;
+            text-align: right;
+            font-weight: bold;
+            font-size: 9px;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Top Header -->
+    <table style="width: 100%; border-bottom: 2px solid #1e293b; padding-bottom: 10px; margin-bottom: 20px;">
+        <tr>
+            <td width="60%">
+                {% if empresa.logo %}
+                <img src="{{ empresa.logo.path }}" style="height: 45px; margin-bottom: 5px;">
+                {% endif %}
+                <div style="font-size: 16px; font-weight: bold; color: #1e293b;">
+                    {{ empresa.nombre|default:"NOMBRE EMPRESA" }}
+                </div>
+                <div style="font-size: 8px; color: #64748b; margin-top: 4px;">
+                    {{ empresa.direccion|default:"Dirección" }} |
+                    {% if empresa.telefono %}Tel: {{ empresa.telefono }}{% endif %}
+                </div>
+            </td>
+            <td width="40%" class="text-right">
+                <div class="doc-title">ESTADO DE CUENTA</div>
+                <div style="font-size: 8px; color: #64748b; margin-top: 5px;">
+                    EMISIÓN: {{ fecha_impresion }}
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    <!-- Client & Balance -->
+    <table style="width: 100%; margin-bottom: 20px;">
+        <tr>
+            <td width="60%" style="vertical-align: top;">
+                <div style="margin-bottom: 10px;">
+                    <span style="font-size: 8px; color: #94a3b8; font-weight: bold;">CLIENTE:</span><br>
+                    <span style="font-size: 14px; font-weight: bold; color: #0f172a;">{{ cliente.nombre }}</span>
+                </div>
+                <table style="width: 100%; font-size: 9px;">
+                    <tr>
+                        <td width="15%" style="color: #94a3b8; font-weight: bold;">CUIT:</td>
+                        <td>{{ cliente.cuit|default:"--" }}</td>
+                    </tr>
+                    <tr>
+                        <td style="color: #94a3b8; font-weight: bold;">TEL:</td>
+                        <td>{{ cliente.telefono|default:"--" }}</td>
+                    </tr>
+                    <tr>
+                        <td style="color: #94a3b8; font-weight: bold;">DIR:</td>
+                        <td>{{ cliente.direccion|default:"No registrada" }}</td>
+                    </tr>
+                </table>
+            </td>
+            <td width="40%" style="vertical-align: top;">
+                <div class="summary-card">
+                    <div class="summary-header">SALDO ACTUAL</div>
+                    <div class="summary-body">
+                        {% if saldo_actual > 0 %}
+                        <div style="font-size: 22px; font-weight: bold; color: #dc2626;">
+                            $ {{ saldo_actual|floatformat:2 }}
+                        </div>
+                        {% elif saldo_actual < 0 %} <div style="font-size: 22px; font-weight: bold; color: #16a34a;">
+                            $ {{ saldo_actual|floatformat:2 }}
+                    </div>
+                    {% else %}
+                    <div style="font-size: 22px; font-weight: bold; color: #1e293b;">
+                        $ {{ saldo_actual|floatformat:2 }}
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="summary-footer">
+                    {% if saldo_actual > 0 %}
+                    <span style="color: #dc2626;">DEUDA</span>
+                    {% elif saldo_actual < 0 %} <span style="color: #16a34a;">A FAVOR</span>
+                        {% else %}
+                        <span style="color: #64748b;">AL DÍA</span>
+                        {% endif %}
+                </div>
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    <!-- Table -->
+    <table class="main-table" style="width: 100%;">
+        <thead>
+            <tr>
+                <th width="12%">Fecha</th>
+                <th width="12%">Tipo</th>
+                <th width="36%">Descripción</th>
+                <th width="13%" class="text-right">Debe</th>
+                <th width="13%" class="text-right">Haber</th>
+                <th width="14%" class="text-right">Saldo</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for mov in movimientos %}
+            <tr class="{% cycle 'row-odd' 'row-even' %}">
+                <td>{{ mov.fecha }}</td>
+                <td>
+                    {% if mov.tipo == 'VENTA' %}<span class="badge badge-sale">Factura</span>
+                    {% elif mov.tipo == 'NOTA_DEBITO' %}<span class="badge badge-sale">ND</span>
+                    {% elif mov.tipo == 'NOTA_CREDITO' %}<span class="badge badge-pay">NC</span>
+                    {% else %}<span class="badge badge-pay">Pago</span>{% endif %}
+                </td>
+                <td>{{ mov.descripcion|truncatechars:50 }}</td>
+                <td class="text-right">
+                    {% if mov.debe > 0 %}
+                    {{ mov.debe|floatformat:2 }}
+                    {% else %}
+                    -
+                    {% endif %}
+                </td>
+                <td class="text-right">
+                    {% if mov.haber > 0 %}
+                    {{ mov.haber|floatformat:2 }}
+                    {% else %}
+                    -
+                    {% endif %}
+                </td>
+                <td class="text-right font-bold">
+                    {{ mov.saldo|floatformat:2 }}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" class="text-center" style="padding: 30px;">Sin movimientos.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Footer Stats -->
+    <table style="width: 100%; margin-top: 30px;">
+        <tr>
+            <td width="60%"></td>
+            <td width="40%">
+                <table style="width: 100%; border-top: 2px solid #1e293b; padding-top: 10px;">
+                    <tr>
+                        <td style="font-size: 12px; font-weight: bold; color: #1e293b;">TOTAL SALDO:</td>
+                        <td class="text-right" style="font-size: 16px; font-weight: bold; color: #2563eb;">
+                            $ {{ saldo_actual|floatformat:2 }}
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+
+    <div id="footerContent">
+        <table style="width: 100%; border-top: 1px solid #cbd5e1; padding-top: 5px;">
+            <tr>
+                <td style="font-size: 8px; color: #94a3b8;">Comprobante no fiscal.</td>
+                <td class="text-right" style="font-size: 8px; color: #94a3b8;">
+                    Pág. <pdf:pagenumber> / <pdf:pagecount>
+                </td>
+            </tr>
+        </table>
+    </div>
+</body>
+
+</html>

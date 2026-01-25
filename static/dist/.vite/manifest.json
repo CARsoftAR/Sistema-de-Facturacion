@@ -1,53 +1,11 @@
 {
   "index.html": {
-    "file": "assets/main-C6kvCmOK.js",
+    "file": "assets/main-BxpsTYwz.js",
     "name": "main",
     "src": "index.html",
     "isEntry": true,
-    "dynamicImports": [
-      "src/pages/CuentasCorrientesClientes.jsx",
-      "src/pages/DetalleCuentaCorriente.jsx",
-      "src/pages/CuentasCorrientesProveedores.jsx",
-      "src/pages/DetalleCuentaCorrienteProveedor.jsx"
-    ],
     "css": [
-      "assets/main-C5dtAg4I.css"
-    ]
-  },
-  "src/pages/CuentasCorrientesClientes.jsx": {
-    "file": "assets/CuentasCorrientesClientes-CulJlwyQ.js",
-    "name": "CuentasCorrientesClientes",
-    "src": "src/pages/CuentasCorrientesClientes.jsx",
-    "isDynamicEntry": true,
-    "imports": [
-      "index.html"
-    ]
-  },
-  "src/pages/CuentasCorrientesProveedores.jsx": {
-    "file": "assets/CuentasCorrientesProveedores-DzSaB51M.js",
-    "name": "CuentasCorrientesProveedores",
-    "src": "src/pages/CuentasCorrientesProveedores.jsx",
-    "isDynamicEntry": true,
-    "imports": [
-      "index.html"
-    ]
-  },
-  "src/pages/DetalleCuentaCorriente.jsx": {
-    "file": "assets/DetalleCuentaCorriente-Co4ZfgTS.js",
-    "name": "DetalleCuentaCorriente",
-    "src": "src/pages/DetalleCuentaCorriente.jsx",
-    "isDynamicEntry": true,
-    "imports": [
-      "index.html"
-    ]
-  },
-  "src/pages/DetalleCuentaCorrienteProveedor.jsx": {
-    "file": "assets/DetalleCuentaCorrienteProveedor-B7Jvu8Wl.js",
-    "name": "DetalleCuentaCorrienteProveedor",
-    "src": "src/pages/DetalleCuentaCorrienteProveedor.jsx",
-    "isDynamicEntry": true,
-    "imports": [
-      "index.html"
+      "assets/main-bbOu4sSO.css"
     ]
   }
 }

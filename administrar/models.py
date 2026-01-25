@@ -547,6 +547,9 @@ class MovimientoCuentaCorrienteProveedor(models.Model):
     descripcion = models.CharField(max_length=200)
     monto = models.DecimalField(max_digits=12, decimal_places=2)
     saldo = models.DecimalField(max_digits=12, decimal_places=2)  # saldo luego del mov.
+    
+    # Referencias opcionales para trazabilidad
+    recibo = models.ForeignKey('Recibo', on_delete=models.SET_NULL, null=True, blank=True, related_name='movimientos_cc_proveedor')
 
     def __str__(self):
         return f"{self.fecha.date()} - {self.tipo} ${self.monto} ({self.proveedor.nombre})"
