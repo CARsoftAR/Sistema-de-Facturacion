@@ -1,0 +1,82 @@
+{% extends "administrar/comprobantes/base_pdf.html" %}
+{% load static %}
+
+{% block header %}
+<table class="header-table">
+    <tr>
+        <td style="width: 50%;">
+            {% if empresa.logo %}
+            <img src="{{ empresa.logo.url }}" class="logo">
+            {% else %}
+            <div class="company-name">{{ empresa.nombre }}</div>
+            {% endif %}
+            <div class="text-muted" style="font-size: 9pt; margin-top: 5pt;">
+                {{ empresa.direccion }}<br>
+                {{ empresa.email }} | Tel: {{ empresa.telefono }}
+            </div>
+        </td>
+        <td style="width: 50%; text-align: right;">
+            <div class="invoice-type" style="font-size: 18pt;">RECIBO</div>
+            <div style="margin-top: 10pt;">
+                <span class="text-bold">NÚMERO:</span> {{ recibo.numero_formateado }}<br>
+                <span class="text-bold">FECHA:</span> {{ recibo.fecha|date:"d/m/Y" }}
+            </div>
+        </td>
+    </tr>
+</table>
+{% endblock %}
+
+{% block content %}
+<div class="info-box">
+    <table style="border: none;">
+        <tr>
+            <td style="width: 100%; border: none;">
+                <span class="text-bold">RECIBIMOS DE:</span> {{ entidad.nombre }}<br>
+                <span class="text-bold">CONCEPTO:</span> {{ recibo.concepto|default:"Pago a cuenta" }}
+            </td>
+        </tr>
+    </table>
+</div>
+
+<div style="margin-top: 20pt; padding: 10pt; background-color: #f8fafc; border: 1px solid #e2e8f0; font-size: 14pt;">
+    <span class="text-bold">LA SUMA DE:</span> $ {{ recibo.monto|floatformat:2 }}
+</div>
+
+<div style="margin-top: 20pt;">
+    <h3 style="font-size: 10pt; border-bottom: 1px solid #ddd; padding-bottom: 2pt;">DETALLE DE IMPUTACIÓN</h3>
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th style="width: 70%; text-align: left;">COMPROBANTE</th>
+                <th style="width: 30%; text-align: right;">IMPORTE</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in recibo.items.all %}
+            <tr>
+                <td>{{ item.descripcion|default:"Pago parcial" }}</td>
+                <td style="text-align: right;">$ {{ item.monto|floatformat:2 }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td>Pago a cuenta general</td>
+                <td style="text-align: right;">$ {{ recibo.monto|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div style="margin-top: 50pt;">
+    <table style="border: none;">
+        <tr>
+            <td style="width: 45%; border: none;"></td>
+            <td style="width: 10%; border: none;"></td>
+            <td
+                style="width: 45%; border-top: 1px solid #333; text-align: center; padding-top: 5pt; border-bottom: none;">
+                Firma y Sello
+            </td>
+        </tr>
+    </table>
+</div>
+{% endblock %}

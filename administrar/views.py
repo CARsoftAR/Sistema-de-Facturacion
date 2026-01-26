@@ -4185,7 +4185,7 @@ def invoice_print(request, venta_id):
     
     response = render_to_pdf('administrar/comprobantes/inv_pdf.html', context)
     if response:
-        filename = f"Factura_{venta.numero_factura_formateado.replace('-', '_')}.pdf"
+        filename = f"Factura_{venta.numero_factura_formateado().replace('-', '_')}.pdf"
         response['Content-Disposition'] = f'inline; filename="{filename}"'
         return response
         
@@ -7787,6 +7787,7 @@ def api_recibo_imprimir(request, id):
         model = 'modern'
         
     try:
+        from .utils_pdf import render_to_pdf
         recibo = Recibo.objects.prefetch_related('items').select_related('cliente', 'proveedor').get(id=id)
         empresa = Empresa.objects.first()
         
@@ -7798,11 +7799,14 @@ def api_recibo_imprimir(request, id):
             'empresa': empresa,
         }
         
-        template_name = f'administrar/comprobantes/rec_{model}.html'
-        try:
-            return render(request, template_name, context)
-        except:
-            return render(request, 'administrar/comprobantes/rec_modern.html', context)
+        response = render_to_pdf('administrar/comprobantes/rec_pdf.html', context)
+        if response:
+            filename = f"Recibo_{recibo.numero_formateado().replace('-', '_')}.pdf"
+            response['Content-Disposition'] = f'inline; filename="{filename}"'
+            return response
+            
+        return render(request, 'administrar/comprobantes/rec_modern.html', context)
+
             
     except Recibo.DoesNotExist:
         return render(request, 'administrar/error.html', {'mensaje': 'Recibo no encontrado'})

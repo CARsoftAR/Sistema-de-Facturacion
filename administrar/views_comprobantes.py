@@ -119,7 +119,7 @@ def imprimir_remito(request, id):
     
     response = render_to_pdf('administrar/comprobantes/rem_pdf.html', context)
     if response:
-        filename = f"Remito_{remito.numero_formateado.replace('-', '_')}.pdf"
+        filename = f"Remito_{remito.numero_formateado().replace('-', '_')}.pdf"
         response['Content-Disposition'] = f'inline; filename="{filename}"'
         return response
         
@@ -140,7 +140,7 @@ def imprimir_nc(request, id):
     
     response = render_to_pdf('administrar/comprobantes/nc_nd_pdf.html', context)
     if response:
-        filename = f"NotaCredito_{nc.numero_formateado.replace('-', '_')}.pdf"
+        filename = f"NotaCredito_{nc.numero_formateado().replace('-', '_')}.pdf"
         response['Content-Disposition'] = f'inline; filename="{filename}"'
         return response
         
@@ -160,7 +160,7 @@ def imprimir_nd(request, id):
     
     response = render_to_pdf('administrar/comprobantes/nc_nd_pdf.html', context)
     if response:
-        filename = f"NotaDebito_{nd.numero_formateado.replace('-', '_')}.pdf"
+        filename = f"NotaDebito_{nd.numero_formateado().replace('-', '_')}.pdf"
         response['Content-Disposition'] = f'inline; filename="{filename}"'
         return response
         
