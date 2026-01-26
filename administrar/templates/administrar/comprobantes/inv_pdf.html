@@ -4,7 +4,7 @@
 {% block header %}
 <table class="header-table">
     <tr>
-        <td class="issuer-data">
+        <td class="issuer-data" style="width: 40%;">
             <h2 class="issuer-title">{{ empresa.nombre|upper }}</h2>
             <p class="m-0"><strong>Razón Social:</strong> {{ empresa.nombre }}</p>
             <p class="m-0">{{ empresa.direccion }}</p>
@@ -17,7 +17,7 @@
                     'B' %}006{% else %}011{% endif %}</span>
             </div>
         </td>
-        <td class="text-right" style="font-size: 13px; width: 40%;">
+        <td class="text-right" style="width: 40%;">
             <h3 class="m-0">FACTURA</h3>
             <p class="m-0"><strong>N°:</strong> {{ venta.numero_factura_formateado }}</p>
             <p class="m-0"><strong>Fecha:</strong> {{ venta.fecha|date:"d/m/Y" }}</p>
