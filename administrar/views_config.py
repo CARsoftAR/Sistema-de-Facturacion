@@ -33,6 +33,20 @@ def api_config_obtener(request):
         )
         
         return JsonResponse({
+            'nombre': empresa.nombre,
+            'nombre_fantasia': empresa.nombre_fantasia,
+            'cuit': empresa.cuit,
+            'direccion': empresa.direccion,
+            'localidad': empresa.localidad,
+            'provincia': empresa.provincia,
+            'telefono': empresa.telefono,
+            'email': empresa.email,
+            'condicion_fiscal': empresa.condicion_fiscal,
+            'iibb': empresa.iibb,
+            'inicio_actividades': empresa.inicio_actividades.strftime('%Y-%m-%d') if empresa.inicio_actividades else '',
+            'punto_venta': empresa.punto_venta,
+            'moneda_predeterminada': empresa.moneda_predeterminada,
+            'logo': empresa.logo.url if empresa.logo else None,
             'habilita_remitos': empresa.habilita_remitos,
             'actualizar_precios_compra': empresa.actualizar_precios_compra,
             'permitir_stock_negativo': empresa.permitir_stock_negativo,

@@ -302,6 +302,11 @@ const NuevaVenta = () => {
     };
 
     const totalGeneral = items.reduce((acc, i) => acc + i.subtotal, 0);
+    const totalNeto = items.reduce((acc, i) => {
+        const alicuota = i.iva_alicuota || 21;
+        return acc + (i.subtotal / (1 + (alicuota / 100)));
+    }, 0);
+    const totalIVA = totalGeneral - totalNeto;
 
     const abrirModalPago = () => {
         if (items.length === 0) {
@@ -354,12 +359,14 @@ const NuevaVenta = () => {
                         iva_amount: discriminarIVA ? (i.subtotal - (i.subtotal / (1 + (i.iva_alicuota || 21) / 100))) : 0,
                         discriminado: discriminarIVA
                     })),
-                    total_general: totalGeneral,
+                    total_general: totalGeneral + (paymentData.percepcion_iva || 0) + (paymentData.percepcion_iibb || 0),
                     medio_pago: finalMedioPago,
                     generar_remito: generarRemito,
                     datos_pago: datosPago,
+                    percepcion_iva: paymentData.percepcion_iva || 0,
+                    percepcion_iibb: paymentData.percepcion_iibb || 0,
                     discriminar_iva: discriminarIVA,
-                    tipo_comprobante: discriminarIVA && cliente?.condicion_fiscal === 'RI' ? 'A' : 'B'
+                    tipo_comprobante: (discriminarIVA || (paymentData.percepcion_iva > 0 || paymentData.percepcion_iibb > 0)) && cliente?.condicion_fiscal === 'RI' ? 'A' : 'B'
                 })
             });
 
@@ -673,12 +680,12 @@ const NuevaVenta = () => {
                             <div className="flex items-center gap-8">
                                 <div className="space-y-0.5">
                                     <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">Subtotal Neto</p>
-                                    <p className="text-xl font-bold text-slate-200">${(totalGeneral / 1.21).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</p>
+                                    <p className="text-xl font-bold text-slate-200">${totalNeto.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</p>
                                 </div>
                                 <div className="space-y-0.5 relative">
                                     <div className="absolute -left-4 top-1/2 -translate-y-1/2 w-px h-8 bg-slate-700"></div>
-                                    <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">IVA (21%)</p>
-                                    <p className="text-xl font-bold text-slate-200">${(totalGeneral - (totalGeneral / 1.21)).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</p>
+                                    <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">IVA Estimado</p>
+                                    <p className="text-xl font-bold text-slate-200">${totalIVA.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</p>
                                     <div className="absolute -right-4 top-1/2 -translate-y-1/2 w-px h-8 bg-slate-700"></div>
                                 </div>
                                 <div className="space-y-0.5">

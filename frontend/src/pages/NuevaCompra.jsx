@@ -5,6 +5,7 @@ import { BtnSave, BtnBack } from '../components/CommonButtons';
 import { useProductSearch } from '../hooks/useProductSearch';
 import Swal from 'sweetalert2';
 import { showToast, showWarningAlert, showSuccessAlert } from '../utils/alerts';
+import PaymentModal from '../components/common/PaymentModal';
 
 // CSRF Helper
 function getCookie(name) {
@@ -60,6 +61,7 @@ const NuevaCompra = () => {
     // Config (Auto focus / Barcode Behavior)
     const [autoFoco, setAutoFoco] = useState(false);
     const [barcodeMode, setBarcodeMode] = useState('DEFAULT'); // DEFAULT, CANTIDAD, DIRECTO
+    const [recepcionarInmediatamente, setRecepcionarInmediatamente] = useState(false);
     const [triggerDirectAdd, setTriggerDirectAdd] = useState(null);
 
     // ==================== PRODUCT SEARCH HOOK ====================
@@ -215,8 +217,13 @@ const NuevaCompra = () => {
     };
 
     const totalGeneral = items.reduce((acc, i) => acc + i.subtotal, 0);
+    const totalNeto = items.reduce((acc, i) => {
+        const alicuota = i.iva_alicuota || 21;
+        return acc + (i.subtotal / (1 + (alicuota / 100)));
+    }, 0);
+    const totalIVA = totalGeneral - totalNeto;
 
-    const guardarCompra = async () => {
+    const guardarCompra = async (dataPago) => {
         if (!proveedor) {
             showWarningAlert('Atención', 'Debe seleccionar un proveedor');
             return;
@@ -227,6 +234,9 @@ const NuevaCompra = () => {
         }
 
         setGuardando(true);
+        // dataPago comes from PaymentModal
+        const finalMedioPago = dataPago.metodo_pago;
+
         try {
             const response = await fetch('/api/compras/orden/guardar/', {
                 method: 'POST',
@@ -242,16 +252,17 @@ const NuevaCompra = () => {
                         precio: i.costo,
                         iva_alicuota: i.iva_alicuota
                     })),
-                    // If creating a direct purchase (received), we might need extra flags?
-                    // Assuming this creates an Order first. If we want direct purchase, we typically auto-receive.
-                    // For now, let's keep it consistent with the "Nueva Compra" flow which creates an Order.
-                    observaciones: `Compra directa (Web) - ${medioPago}`,
+                    observaciones: `Compra directa (Web) - ${finalMedioPago}`,
                     nro_comprobante: nroComprobante || 'S/N',
-                    condicion_pago: medioPago, // This might need to map to medio_pago expected by backend
-                    total_estimado: totalGeneral,
-                    recepcionar: true // We want to receive it immediately normally in this view? Or maybe just create order?
-                    // Based on "Nueva Compra" name, it often implies receiving stock.
-                    // Let's check backend: api_orden_compra_guardar accepts 'recepcionar'
+                    condicion_pago: finalMedioPago,
+                    neto_estimado: totalNeto,
+                    iva_estimado: totalIVA,
+                    percepcion_iva: dataPago.percepcion_iva || 0,
+                    percepcion_iibb: dataPago.percepcion_iibb || 0,
+                    retencion_iva: dataPago.retencion_iva || 0,
+                    retencion_iibb: dataPago.retencion_iibb || 0,
+                    total_estimado: totalGeneral + (dataPago.percepcion_iva || 0) + (dataPago.percepcion_iibb || 0) - (dataPago.retencion_iva || 0) - (dataPago.retencion_iibb || 0),
+                    recepcionar: recepcionarInmediatamente
                 })
             });
 
@@ -434,6 +445,16 @@ const NuevaCompra = () => {
                                 />
                                 <label htmlFor="discriminarIVA" className="text-sm text-slate-600 font-medium cursor-pointer">Discriminar IVA</label>
                             </div>
+                            <div className="flex items-center gap-2 pt-2">
+                                <input
+                                    type="checkbox"
+                                    id="recepcionarInmediatamente"
+                                    checked={recepcionarInmediatamente}
+                                    onChange={(e) => setRecepcionarInmediatamente(e.target.checked)}
+                                    className="w-4 h-4 text-indigo-600 rounded"
+                                />
+                                <label htmlFor="recepcionarInmediatamente" className="text-sm text-indigo-700 font-bold cursor-pointer">Recibir mercadería ahora</label>
+                            </div>
                         </div>
                     </div>
 
@@ -587,12 +608,12 @@ const NuevaCompra = () => {
                             <div className="flex items-center gap-8">
                                 <div className="space-y-0.5">
                                     <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">Subtotal Neto</p>
-                                    <p className="text-xl font-bold text-slate-200">${(totalGeneral / 1.21).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</p>
+                                    <p className="text-xl font-bold text-slate-200">${totalNeto.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</p>
                                 </div>
                                 <div className="space-y-0.5 relative">
                                     <div className="absolute -left-4 top-1/2 -translate-y-1/2 w-px h-8 bg-slate-700"></div>
                                     <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">IVA Estimado</p>
-                                    <p className="text-xl font-bold text-slate-200">${(totalGeneral - (totalGeneral / 1.21)).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</p>
+                                    <p className="text-xl font-bold text-slate-200">${totalIVA.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</p>
                                     <div className="absolute -right-4 top-1/2 -translate-y-1/2 w-px h-8 bg-slate-700"></div>
                                 </div>
                                 <div className="space-y-0.5">
@@ -619,30 +640,17 @@ const NuevaCompra = () => {
                 </div>
             </div>
 
-            {/* Modal Confirmacion */}
-            {mostrarModalPago && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm">
-                    <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full text-center">
-                        <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <Check size={32} strokeWidth={3} />
-                        </div>
-                        <h3 className="text-xl font-bold text-slate-800 mb-2">Confirmar Compra</h3>
-                        <p className="text-slate-600 mb-6">
-                            Se generará una orden de compra por <b>${totalGeneral.toLocaleString('es-AR')}</b> para <b>{proveedor?.nombre}</b>.
-                        </p>
-                        <div className="flex gap-3">
-                            <button onClick={() => setMostrarModalPago(false)} className="flex-1 py-3 border border-slate-200 rounded-xl font-bold text-slate-500 hover:bg-slate-50">Cancelar</button>
-                            <button
-                                onClick={guardarCompra}
-                                disabled={guardando}
-                                className="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-500/30"
-                            >
-                                {guardando ? 'Guardando...' : 'Confirmar'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            {/* Modal de Pago / Confirmación */}
+            <PaymentModal
+                isOpen={mostrarModalPago}
+                onClose={() => setMostrarModalPago(false)}
+                onConfirm={guardarCompra}
+                total={totalGeneral}
+                mode="purchase"
+                clientName={proveedor?.nombre}
+                initialMethod={medioPago}
+                onMethodChange={setMedioPago}
+            />
         </div>
     );
 };

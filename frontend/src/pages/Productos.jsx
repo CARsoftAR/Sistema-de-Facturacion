@@ -238,6 +238,7 @@ const Productos = () => {
                                     <th className="py-3 fw-bold">Descripción</th>
                                     <th className="py-3 fw-bold">Marca / Rubro</th>
                                     <th className="py-3 fw-bold">Precio</th>
+                                    <th className="text-center py-3 fw-bold">IVA</th>
                                     <th className="text-center py-3 fw-bold">Stock</th>
                                     <th className="text-end pe-4 py-3 fw-bold">Acciones</th>
                                 </tr>
@@ -245,13 +246,13 @@ const Productos = () => {
                             <tbody>
                                 {loading ? (
                                     <tr>
-                                        <td colSpan="6" className="text-center py-5">
+                                        <td colSpan="7" className="text-center py-5">
                                             <div className="spinner-border text-primary" role="status"></div>
                                         </td>
                                     </tr>
                                 ) : productos.length === 0 ? (
                                     <tr>
-                                        <td colSpan="6" className="py-5">
+                                        <td colSpan="7" className="py-5">
                                             <EmptyState
                                                 icon={Package}
                                                 title="No hay productos"
@@ -268,19 +269,24 @@ const Productos = () => {
                                                 <span className="font-monospace small bg-light border px-2 py-1 rounded text-dark fw-medium">{p.codigo || '-'}</span>
                                             </td>
                                             <td className="py-3">
-                                                <div className="fw-bold text-dark">{p.nombre}</div>
+                                                <div className="fw-bold text-dark">{p.nombre || p.descripcion}</div>
                                                 <div className="text-muted small fw-medium">{p.descripcion || 'Sin descripción'}</div>
                                             </td>
                                             <td className="py-3">
-                                                <div className="badge bg-light text-dark border me-1 fw-medium">{p.marca_nombre || 'Sin Marca'}</div>
-                                                <div className="badge bg-light text-secondary border fw-medium">{p.rubro_nombre || 'Sin Rubro'}</div>
+                                                <div className="badge bg-light text-dark border me-1 fw-medium">{p.marca_nombre || p.marca || 'Sin Marca'}</div>
+                                                <div className="badge bg-light text-secondary border fw-medium">{p.rubro_nombre || p.rubro || 'Sin Rubro'}</div>
                                             </td>
                                             <td className="fw-bold text-success py-3">
-                                                $ {parseFloat(p.precio_venta).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                                                $ {parseFloat(p.precio_venta || p.precio_efectivo).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
                                             </td>
                                             <td className="text-center py-3">
-                                                <span className={`badge rounded-pill fw-medium px-3 py-2 ${(!alertaStockMinimo || p.stock_actual > p.stock_minimo) ? 'bg-success-subtle text-success border border-success' : 'bg-danger-subtle text-danger border border-danger'}`}>
-                                                    {p.stock_actual}
+                                                <span className="badge bg-slate-100 text-slate-600 border fw-bold">
+                                                    {p.iva_alicuota}%
+                                                </span>
+                                            </td>
+                                            <td className="text-center py-3">
+                                                <span className={`badge rounded-pill fw-medium px-3 py-2 ${(!alertaStockMinimo || p.stock_actual > p.stock_minimo || p.stock > p.stock_minimo) ? 'bg-success-subtle text-success border border-success' : 'bg-danger-subtle text-danger border border-danger'}`}>
+                                                    {p.stock_actual !== undefined ? p.stock_actual : p.stock}
                                                 </span>
                                             </td>
                                             <td className="text-end pe-4 py-3">

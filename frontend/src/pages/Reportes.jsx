@@ -233,6 +233,9 @@ const Reportes = () => {
         if (!reportData) return null;
         const { headers, data } = reportData;
 
+        const totals = {};
+        const numericColumns = [];
+
         // Calcular totales para columnas numéricas
         headers.forEach(h => {
             const hLower = h.toLowerCase();

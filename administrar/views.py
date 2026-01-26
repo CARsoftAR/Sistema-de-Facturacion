@@ -86,6 +86,8 @@ def login_view(request):
         next_url = request.GET.get('next') or '/'
         return redirect(next_url)
 
+    empresa = Empresa.objects.first()
+    
     if request.method == 'POST':
         username = request.POST.get('username')
         password = request.POST.get('password')
@@ -94,12 +96,6 @@ def login_view(request):
         user = authenticate(request, username=username, password=password)
         
         if user is not None:
-            # --- BYPASS TEMPORAL DE SESIÓN ÚNICA ---
-            # Deshabilitamos la verificación estricta para permitir el ingreso
-            # existing_sessions = ActiveSession.objects.filter(user=user)
-            # if existing_sessions.exists() and not force_logout:
-            #     ... (código comentado) ...
-            
             # Login normal
             login(request, user)
             
@@ -108,10 +104,11 @@ def login_view(request):
         else:
             return render(request, 'administrar/login.html', {
                 'form': {'errors': True}, 
-                'username_value': username
+                'username_value': username,
+                'empresa': empresa
             })
     
-    return render(request, 'administrar/login.html')
+    return render(request, 'administrar/login.html', {'empresa': empresa})
 
 def register_view(request):
     from django.contrib.auth.forms import UserCreationForm
@@ -1824,7 +1821,8 @@ def api_buscar_productos(request):
                 "2": float(p.precio_ctacte),
                 "3": float(p.precio_tarjeta),
                 "4": float(p.precio_lista4) if p.precio_lista4 is not None else float(p.precio_efectivo),
-            }
+            },
+            "iva_alicuota": float(p.iva_alicuota) if p.iva_alicuota is not None else 21.0
         })
 
     return JsonResponse(data, safe=False)
@@ -2058,7 +2056,7 @@ def api_orden_compra_guardar(request):
     observaciones = data.get("observaciones", "").strip()
     items = data.get("items", [])
     recepcionar = data.get("recepcionar", False)
-    medio_pago = data.get("medio_pago", "CONTADO")
+    medio_pago = data.get("medio_pago") or data.get("condicion_pago") or "CONTADO"
     datos_cheque = data.get("datos_cheque", None)
 
     if not proveedor_id:
@@ -2083,25 +2081,37 @@ def api_orden_compra_guardar(request):
             )
 
             # Crear los detalles y calcular totales
-            neto_total = 0
+            neto_total_acumulado = 0
+            iva_total_acumulado = 0
+            
             for item in items:
                 producto_id = item.get("producto_id")
-                cantidad = item.get("cantidad", 0)
-                precio = item.get("precio", 0)
+                cantidad = Decimal(str(item.get("cantidad", 0)))
+                precio_bruto = Decimal(str(item.get("precio", 0)))
 
                 try:
                     producto = Producto.objects.get(id=producto_id)
                 except Producto.DoesNotExist:
                      raise Exception(f"Producto {producto_id} no encontrado")
 
-                subtotal = cantidad * precio
-                neto_total += subtotal
+                subtotal = cantidad * precio_bruto
+                
+                # Calcular neto e iva del item
+                alicuota = Decimal(str(producto.iva_alicuota)) if producto.iva_alicuota is not None else Decimal("21.0")
+                divisor = 1 + (alicuota / 100)
+                neto_item = subtotal / divisor
+                iva_item = subtotal - neto_item
+                
+                neto_total_acumulado += neto_item
+                iva_total_acumulado += iva_item
 
                 DetalleOrdenCompra.objects.create(
                     orden=orden,
                     producto=producto,
                     cantidad=cantidad,
-                    precio=precio,
+                    precio=precio_bruto,
+                    neto=neto_item,
+                    iva_amount=iva_item,
                     subtotal=subtotal
                 )
 
@@ -2110,16 +2120,23 @@ def api_orden_compra_guardar(request):
             neto_enviado = data.get('neto_estimado')
 
             if neto_enviado is not None:
-                orden.neto_estimado = neto_enviado
+                orden.neto_estimado = Decimal(str(neto_enviado))
             else:
-                orden.neto_estimado = neto_total
+                orden.neto_estimado = neto_total_acumulado
 
             if iva_enviado is not None:
-                orden.iva_estimado = iva_enviado
+                orden.iva_estimado = Decimal(str(iva_enviado))
             else:
-                orden.iva_estimado = 0
+                orden.iva_estimado = iva_total_acumulado
             
             orden.total_estimado = orden.neto_estimado + orden.iva_estimado
+            
+            # Soporte para percepciones y retenciones en la orden
+            orden.percepcion_iva = Decimal(str(data.get("percepcion_iva", 0)))
+            orden.percepcion_iibb = Decimal(str(data.get("percepcion_iibb", 0)))
+            orden.retencion_iva = Decimal(str(data.get("retencion_iva", 0)))
+            orden.retencion_iibb = Decimal(str(data.get("retencion_iibb", 0)))
+            
             orden.save()
 
             # Si se solicita la recepción inmediata
@@ -2141,6 +2158,10 @@ def recepcionar_orden_interna(oc, medio_pago, datos_cheque=None, user=None):
         nro_comprobante=oc.nro_orden or f"OC-{oc.id}",
         neto=oc.neto_estimado,
         iva=oc.iva_estimado,
+        percepcion_iva=oc.percepcion_iva,
+        percepcion_iibb=oc.percepcion_iibb,
+        retencion_iva=oc.retencion_iva,
+        retencion_iibb=oc.retencion_iibb,
         total=oc.total_estimado,
         estado="REGISTRADA",
         observaciones=f"Recepción automática de OC {oc.id}",
@@ -2153,6 +2174,8 @@ def recepcionar_orden_interna(oc, medio_pago, datos_cheque=None, user=None):
             producto=det.producto,
             cantidad=det.cantidad,
             precio=det.precio,
+            neto=det.neto,
+            iva_amount=det.iva_amount,
             subtotal=det.subtotal,
         )
 
@@ -2777,6 +2800,7 @@ def api_productos_lista(request):
                 "precio_efectivo": float(p.precio_efectivo),
                 "costo": float(p.costo) if p.costo else 0,
                 "stock": p.stock,
+                "iva_alicuota": float(p.iva_alicuota) if p.iva_alicuota is not None else 21.0
             })
 
         return JsonResponse({
@@ -2894,6 +2918,7 @@ def api_productos_detalle(request, id):
         "precio_ctacte": float(p.precio_ctacte),
         "precio_lista4": float(p.precio_lista4 or 0),
 
+        "iva_alicuota": float(p.iva_alicuota or 21),
         "imagen_url": p.imagen.url if p.imagen else ""
     })
 
@@ -2950,6 +2975,7 @@ def api_productos_nuevo(request):
             stock_maximo=int(request.POST.get("stock_maximo", 0) or 0),
 
             costo=float(request.POST.get("costo", 0) or 0),
+            iva_alicuota=float(request.POST.get("iva_alicuota", 21) or 21),
             precio_efectivo=float(request.POST.get("precio_efectivo", 0) or 0),
             precio_tarjeta=float(request.POST.get("precio_tarjeta", 0) or 0),
             precio_ctacte=float(request.POST.get("precio_ctacte", 0) or 0),
@@ -3021,6 +3047,7 @@ def api_productos_editar(request, id):
     p.stock_maximo = num(data.get("stock_maximo"))
 
     p.costo = num(data.get("costo"))
+    p.iva_alicuota = num(data.get("iva_alicuota")) or 21
     p.precio_efectivo = num(data.get("precio_efectivo"))
     p.precio_tarjeta = num(data.get("precio_tarjeta"))
     p.precio_ctacte = num(data.get("precio_ctacte"))
@@ -3210,7 +3237,8 @@ def buscar_productos(request):
         "precio_efectivo",
         "precio_tarjeta",
         "precio_ctacte",
-        "stock"
+        "stock",
+        "iva_alicuota"
     )[:10]
 
     return JsonResponse(list(productos), safe=False)
@@ -3353,7 +3381,9 @@ def api_venta_guardar(request):
                 tipo_comprobante=tipo_comprobante,
                 total=total_general,
                 estado="Emitida",
-                medio_pago=medio_pago
+                medio_pago=medio_pago,
+                percepcion_iva=Decimal(str(data.get("percepcion_iva", 0))),
+                percepcion_iibb=Decimal(str(data.get("percepcion_iibb", 0)))
             )
 
             total_neto_acumulado = Decimal('0')
@@ -3381,15 +3411,17 @@ def api_venta_guardar(request):
                 item_neto = Decimal(str(item.get("neto", subtotal))) # Default to subtotal if undefined
                 item_iva = Decimal(str(item.get("iva_amount", 0)))
                 
-                # Si el frontend mandó discriminado:
-                if item.get("discriminado", False):
-                     # Confiar en los valores
-                     pass
-                else: 
-                     # Lógica legacy o simple: si es A, calculamos la inversa? 
-                     # Mejor NO, dejemos que el frontend decida.
-                     # Si no mandaron IVA, es 0.
-                     pass
+                # Si el frontend mandó discriminado, confiamos. 
+                # Si no, calculamos para reportes internos (Libro IVA) ya que el total SIEMPRE incluye IVA.
+                if not item.get("discriminado", False):
+                     alicuota = Decimal(str(producto.iva_alicuota)) if producto.iva_alicuota is not None else Decimal("21.0")
+                     if alicuota > 0:
+                         divisor = 1 + (alicuota / 100)
+                         item_neto = subtotal / divisor
+                         item_iva = subtotal - item_neto
+                     else:
+                         item_neto = subtotal
+                         item_iva = Decimal('0')
 
                 DetalleVenta.objects.create(
                     venta=venta,
@@ -3561,7 +3593,7 @@ def api_productos_buscar(request):
             "precio_tarjeta": float(p.precio_tarjeta),
             "costo": float(p.costo) if p.costo else 0,
             "stock": p.stock,
-            "iva_alicuota": float(p.iva_alicuota),
+            "iva_alicuota": float(p.iva_alicuota) if p.iva_alicuota is not None else 21.0
         })
     
     return JsonResponse({"data": data})

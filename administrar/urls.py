@@ -8,7 +8,9 @@ from . import views_backup
 from . import views_comprobantes
 from . import views_stock
 from . import views_config
-from django.shortcuts import render
+from . import views_afip
+import os
+from datetime import datetime
 from .views import (
     api_buscar_productos,
     api_producto_info,
@@ -456,5 +458,9 @@ urlpatterns = [
     path("api/config/obtener/", views_config.api_config_obtener, name="api_config_obtener"),
     path("api/config/guardar/", views_config.api_config_guardar, name="api_config_guardar"),
     path("api/config/seleccionar_carpeta/", views_config.api_seleccionar_carpeta, name="api_seleccionar_carpeta"),
+
+    # AFIP
+    path("api/afip/test-conexion/", views_afip.api_afip_test_conexion, name="api_afip_test_conexion"),
+    path("api/afip/ultimo-comprobante/", views_afip.api_afip_consultar_ultimo, name="api_afip_ultimo_comprobante"),
 
 ]

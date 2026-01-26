@@ -30,14 +30,17 @@ const PaymentModal = ({
         paymentDate: new Date().toISOString().split('T')[0], // a.k.a Fecha Vto
         signer: ''
     });
+    const [perceptions, setPerceptions] = useState({ iva: 0, iibb: 0 });
+    const [retentions, setRetentions] = useState({ iva: 0, iibb: 0 });
 
     const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
             setMethod(initialMethod);
+            const finalTotal = total + perceptions.iva + perceptions.iibb - retentions.iva - retentions.iibb;
             if (mode === 'sale' || mode === 'purchase') {
-                setAmount(total);
+                setAmount(finalTotal);
             } else {
                 setAmount('');
             }
@@ -52,9 +55,19 @@ const PaymentModal = ({
                 paymentDate: new Date().toISOString().split('T')[0],
                 signer: ''
             });
+            setPerceptions({ iva: 0, iibb: 0 });
+            setRetentions({ iva: 0, iibb: 0 });
             setDescription('');
         }
     }, [isOpen, total, mode, initialMethod]);
+
+    // Update amount when taxes change ONLY IF it's a new operation
+    useEffect(() => {
+        if (isOpen && (mode === 'sale' || mode === 'purchase')) {
+            const finalTotal = total + perceptions.iva + perceptions.iibb - retentions.iva - retentions.iibb;
+            setAmount(finalTotal);
+        }
+    }, [perceptions, retentions]);
 
     const handleConfirm = async (e) => {
         e.preventDefault();
@@ -68,8 +81,12 @@ const PaymentModal = ({
             referencia: transferRef,
             tarjeta: cardDetails,
             cheque: chequeDetails,
-            total_operacion: total,
-            vuelto: (method === 'EFECTIVO' && parseFloat(amount) > total && mode !== 'purchase') ? Math.max(0, parseFloat(amount) - total) : 0
+            percepcion_iva: perceptions.iva,
+            percepcion_iibb: perceptions.iibb,
+            retencion_iva: retentions.iva,
+            retencion_iibb: retentions.iibb,
+            total_operacion: total + perceptions.iva + perceptions.iibb - retentions.iva - retentions.iibb,
+            vuelto: (method === 'EFECTIVO' && parseFloat(amount) > (total + perceptions.iva + perceptions.iibb - retentions.iva - retentions.iibb) && mode !== 'purchase') ? Math.max(0, parseFloat(amount) - (total + perceptions.iva + perceptions.iibb - retentions.iva - retentions.iibb)) : 0
         };
 
         await onConfirm(paymentData);
@@ -136,8 +153,73 @@ const PaymentModal = ({
                                 {mode === 'payment' ? 'DEUDA TOTAL' : 'TOTAL A PAGAR'}
                             </p>
                             <div className="text-4xl font-black text-slate-800 tracking-tight">
-                                {formatMoney(total)}
+                                {formatMoney(total + perceptions.iva + perceptions.iibb - retentions.iva - retentions.iibb)}
                             </div>
+                        </div>
+                    )}
+
+                    {/* Impuestos Section (Expandable/Optional) */}
+                    {(mode === 'sale' || mode === 'purchase') && (
+                        <div className="mb-4 space-y-3">
+                            {/* Percepciones */}
+                            <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">Percepciones (Suman al total)</label>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="relative">
+                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">IVA $</span>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            className="w-full pl-12 pr-2 py-1.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white"
+                                            value={perceptions.iva || ''}
+                                            onChange={(e) => setPerceptions({ ...perceptions, iva: parseFloat(e.target.value) || 0 })}
+                                            placeholder="0.00"
+                                        />
+                                    </div>
+                                    <div className="relative">
+                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">IIBB $</span>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            className="w-full pl-14 pr-2 py-1.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white"
+                                            value={perceptions.iibb || ''}
+                                            onChange={(e) => setPerceptions({ ...perceptions, iibb: parseFloat(e.target.value) || 0 })}
+                                            placeholder="0.00"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Retenciones (Solo Compras) */}
+                            {mode === 'purchase' && (
+                                <div className="bg-amber-50/50 p-3 rounded-xl border border-amber-100">
+                                    <label className="text-xs font-bold text-amber-700 uppercase tracking-wider mb-2 block">Retenciones (Restan al total a pagar)</label>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="relative">
+                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-amber-400 text-xs font-bold">IVA $</span>
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                className="w-full pl-12 pr-2 py-1.5 text-sm border border-amber-200 rounded-lg focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 bg-white"
+                                                value={retentions.iva || ''}
+                                                onChange={(e) => setRetentions({ ...retentions, iva: parseFloat(e.target.value) || 0 })}
+                                                placeholder="0.00"
+                                            />
+                                        </div>
+                                        <div className="relative">
+                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-amber-400 text-xs font-bold">IIBB $</span>
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                className="w-full pl-14 pr-2 py-1.5 text-sm border border-amber-200 rounded-lg focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 bg-white"
+                                                value={retentions.iibb || ''}
+                                                onChange={(e) => setRetentions({ ...retentions, iibb: parseFloat(e.target.value) || 0 })}
+                                                placeholder="0.00"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
 

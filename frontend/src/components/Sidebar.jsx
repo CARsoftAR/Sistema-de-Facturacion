@@ -138,6 +138,7 @@ const Sidebar = ({ standalone = false }) => {
     const { hasPermission } = useAuth();
     const [openSection, setOpenSection] = useState(null);
     const [mobileOpen, setMobileOpen] = useState(false);
+    const [empresa, setEmpresa] = useState({ nombre: 'Sistema', logo: null });
     const [hideScroll, setHideScroll] = useState(true);
 
     useEffect(() => {
@@ -145,6 +146,10 @@ const Sidebar = ({ standalone = false }) => {
             try {
                 const response = await axios.get('/api/config/obtener/');
                 if (response.data) {
+                    setEmpresa({
+                        nombre: response.data.nombre || 'Sistema',
+                        logo: response.data.logo
+                    });
                     // Default to true if undefined, otherwise use the actual boolean value
                     const scrollValue = response.data.ocultar_barra_scroll ?? true;
                     console.log('Sidebar: Configuración cargada desde servidor - ocultar_barra_scroll:', scrollValue);
@@ -159,13 +164,19 @@ const Sidebar = ({ standalone = false }) => {
 
         const handleConfigUpdate = (event) => {
             // If event has detail (instant preview), use it directly
-            if (event.detail && 'ocultar_barra_scroll' in event.detail) {
-                const newValue = event.detail.ocultar_barra_scroll ?? true;
-                console.log('Sidebar: Preview instantáneo - ocultar_barra_scroll:', newValue);
-                setHideScroll(newValue);
+            if (event.detail) {
+                if ('ocultar_barra_scroll' in event.detail) {
+                    const newValue = event.detail.ocultar_barra_scroll ?? true;
+                    setHideScroll(newValue);
+                }
+                if ('nombre' in event.detail || 'logo' in event.detail) {
+                    setEmpresa(prev => ({
+                        ...prev,
+                        nombre: event.detail.nombre || prev.nombre,
+                        logo: event.detail.logo_url || event.detail.logo || prev.logo
+                    }));
+                }
             } else {
-                // Otherwise fetch from server (after save)
-                console.log('Sidebar: Recargando configuración desde servidor');
                 fetchConfig();
             }
         };
@@ -203,10 +214,16 @@ const Sidebar = ({ standalone = false }) => {
             >
                 {/* Logo Area */}
                 <div className="d-flex align-items-center gap-3 px-2 mb-4 pb-3 border-bottom border-light border-opacity-25">
-                    <div className="bg-primary rounded d-flex align-items-center justify-content-center shadow-sm" style={{ width: '32px', height: '32px' }}>
-                        <span className="text-white fw-bold fs-5">G</span>
-                    </div>
-                    <span className="fs-5 fw-bold tracking-tight text-white">Distribuidora GANY</span>
+                    {empresa.logo ? (
+                        <div className="rounded overflow-hidden d-flex align-items-center justify-content-center shadow-sm" style={{ width: '40px', height: '40px', background: 'white' }}>
+                            <img src={empresa.logo} alt="Logo" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                        </div>
+                    ) : (
+                        <div className="bg-primary rounded d-flex align-items-center justify-content-center shadow-sm" style={{ width: '40px', height: '40px' }}>
+                            <span className="text-white fw-bold fs-5">{empresa.nombre.charAt(0).toUpperCase()}</span>
+                        </div>
+                    )}
+                    <span className="fs-5 fw-bold tracking-tight text-white text-truncate">{empresa.nombre}</span>
                 </div>
 
                 {/* Scrollable Menu Area */}

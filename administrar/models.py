@@ -289,6 +289,8 @@ class Venta(models.Model):
     tipo_comprobante = models.CharField(max_length=2, choices=[('A','Factura A'), ('B','Factura B'), ('C','Factura C')])
     neto = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     iva_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    percepcion_iva = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    percepcion_iibb = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     total = models.DecimalField(max_digits=12, decimal_places=2)
     cae = models.CharField(max_length=20, blank=True, null=True)
     estado = models.CharField(max_length=20, default="Emitida")
@@ -396,6 +398,10 @@ class OrdenCompra(models.Model):
     observaciones = models.TextField(blank=True)
     neto_estimado = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     iva_estimado = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    percepcion_iva = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    percepcion_iibb = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    retencion_iva = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    retencion_iibb = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     total_estimado = models.DecimalField(max_digits=12, decimal_places=2, default=0)
 
     def __str__(self):
@@ -407,6 +413,8 @@ class DetalleOrdenCompra(models.Model):
     producto = models.ForeignKey(Producto, on_delete=models.PROTECT)
     cantidad = models.DecimalField(max_digits=10, decimal_places=2)
     precio = models.DecimalField(max_digits=10, decimal_places=2)
+    neto = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    iva_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     subtotal = models.DecimalField(max_digits=12, decimal_places=2)
 
     def __str__(self):
@@ -430,6 +438,10 @@ class Compra(models.Model):
     tipo_comprobante = models.CharField(max_length=2, blank=True)  # FA/FB/FC, etc.
     neto = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     iva = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    percepcion_iva = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    percepcion_iibb = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    retencion_iva = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    retencion_iibb = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     estado = models.CharField(max_length=10, choices=ESTADO_COMPRA, default="REGISTRADA")
     observaciones = models.TextField(blank=True)
@@ -443,6 +455,8 @@ class DetalleCompra(models.Model):
     producto = models.ForeignKey(Producto, on_delete=models.PROTECT)
     cantidad = models.DecimalField(max_digits=10, decimal_places=2)
     precio = models.DecimalField(max_digits=10, decimal_places=2)
+    neto = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    iva_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     subtotal = models.DecimalField(max_digits=12, decimal_places=2)
 
     def __str__(self):

@@ -112,18 +112,21 @@ def api_reportes_generar(request):
                 
                 for d in v.detalles.all():
                     alicuota = d.producto.iva_alicuota if d.producto else 21
+                    n_item = float(d.neto or 0)
+                    i_item = float(d.iva_amount or 0)
+
                     if alicuota == 21:
-                        neto_gravado += float(d.neto or 0)
-                        iva_21 += float(d.iva_amount or 0)
+                        neto_gravado += n_item
+                        iva_21 += i_item
                     elif alicuota == 10.5:
-                        neto_gravado += float(d.neto or 0)
-                        iva_105 += float(d.iva_amount or 0)
+                        neto_gravado += n_item
+                        iva_105 += i_item
                     elif alicuota == 0:
                         exento += float(d.subtotal or 0)
                     else:
-                        # Otros casos (ej 27%) los sumamos al general por ahora
-                        neto_gravado += float(d.neto or 0)
-                        # Podríamos agregar más columnas si fuera necesario
+                        neto_gravado += n_item
+                        # Por ahora sumamos otros IVAs al de 21% o podríamos sumar a una columna general
+                        iva_21 += i_item
                 
                 data.append({
                     'Fecha': v.fecha.strftime('%d/%m/%Y'),
@@ -134,7 +137,7 @@ def api_reportes_generar(request):
                     'Neto Gravado': neto_gravado,
                     'IVA 21%': iva_21,
                     'IVA 10.5%': iva_105,
-                    'Percepciones': 0.0, # Placeholder si no hay modelo de percepciones aún
+                    'Percepciones': float((v.percepcion_iva or 0) + (v.percepcion_iibb or 0)),
                     'Exento': exento,
                     'Total': float(v.total or 0)
                 })
@@ -239,7 +242,7 @@ def api_reportes_generar(request):
             if fecha_desde: compras = compras.filter(fecha__gte=fecha_desde)
             if fecha_hasta: compras = compras.filter(fecha__lte=fecha_hasta)
             
-            headers = ['Fecha', 'Tipo', 'Nro', 'Proveedor', 'CUIT', 'Neto Gravado', 'IVA 21%', 'IVA 10.5%', 'Percepciones', 'Exento', 'Total']
+            headers = ['Fecha', 'Tipo', 'Nro', 'Proveedor', 'CUIT', 'Neto Gravado', 'IVA 21%', 'IVA 10.5%', 'Percepciones', 'Retenciones', 'Exento', 'Total']
             
             for c in compras.order_by('fecha'):
                 # Calculamos desgloses por alícuota
@@ -253,16 +256,20 @@ def api_reportes_generar(request):
                 if detalles:
                     for d in detalles:
                         alicuota = d.producto.iva_alicuota if d.producto else 21
+                        n_item = float(d.neto or 0)
+                        i_item = float(d.iva_amount or 0)
+
                         if alicuota == 21:
-                            neto_gravado += float(d.precio * d.cantidad / Decimal('1.21')) # No todos los sistemas guardan neto en detalle compra igual
-                            iva_21 += float(d.subtotal) - (float(d.precio * d.cantidad / Decimal('1.21')))
+                            neto_gravado += n_item
+                            iva_21 += i_item
                         elif alicuota == 10.5:
-                            neto_gravado += float(d.precio * d.cantidad / Decimal('1.105'))
-                            iva_105 += float(d.subtotal) - (float(d.precio * d.cantidad / Decimal('1.105')))
+                            neto_gravado += n_item
+                            iva_105 += i_item
                         elif alicuota == 0:
                             exento += float(d.subtotal or 0)
                         else:
-                            neto_gravado += float(d.precio * d.cantidad / Decimal('1.21')) # Default 21
+                            neto_gravado += n_item
+                            iva_21 += i_item 
                 else:
                     # Fallback si no hay detalles específicos
                     neto_gravado = float(c.neto or 0)
@@ -277,7 +284,8 @@ def api_reportes_generar(request):
                     'Neto Gravado': neto_gravado,
                     'IVA 21%': iva_21,
                     'IVA 10.5%': iva_105,
-                    'Percepciones': 0.0,
+                    'Percepciones': float((c.percepcion_iva or 0) + (c.percepcion_iibb or 0)),
+                    'Retenciones': float((c.retencion_iva or 0) + (c.retencion_iibb or 0)),
                     'Exento': exento,
                     'Total': float(c.total or 0)
                 })

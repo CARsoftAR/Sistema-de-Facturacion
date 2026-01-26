@@ -64,7 +64,8 @@ const NuevoProducto = () => {
                         stock_maximo: 0,
                         stock_inicial: 0,
                         precio_efectivo: 0,
-                        costo: 0
+                        costo: 0,
+                        iva_alicuota: 21
                     });
                     setLoading(false);
                 }
@@ -115,7 +116,8 @@ const NuevoProducto = () => {
                 precio_tarjeta: producto.precio_tarjeta || 0,
                 precio_ctacte: producto.precio_ctacte || 0,
                 precio_lista4: producto.precio_lista4 || 0,
-                tipo_bulto: producto.tipo_bulto || 'UN'
+                tipo_bulto: producto.tipo_bulto || 'UN',
+                iva_alicuota: producto.iva_alicuota || 21
             });
         } catch (e) {
             showWarningAlert("Error", "No se pudo cargar el producto.");
@@ -373,7 +375,19 @@ const NuevoProducto = () => {
                                                 )}
                                             />
                                         </div>
-                                        <div className="col-span-12 md:col-span-6">
+                                        <div className="col-span-12 md:col-span-3">
+                                            <label className="block text-[10px] font-bold text-slate-400 mb-1 ml-1 uppercase">Alícuota IVA (%)</label>
+                                            <select
+                                                className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 bg-slate-50 text-slate-800 text-sm font-semibold transition-all appearance-none cursor-pointer"
+                                                {...register('iva_alicuota')}
+                                            >
+                                                <option value="21">21.0%</option>
+                                                <option value="10.5">10.5%</option>
+                                                <option value="0">0% (Exento)</option>
+                                                <option value="27">27.0%</option>
+                                            </select>
+                                        </div>
+                                        <div className="col-span-12 md:col-span-3">
                                             <label className="block text-[10px] font-bold text-slate-400 mb-1 ml-1 uppercase">Notas</label>
                                             <input
                                                 type="text"
