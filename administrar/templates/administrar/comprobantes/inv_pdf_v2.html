@@ -1,0 +1,118 @@
+{% extends "administrar/comprobantes/base_pdf.html" %}
+{% load static %}
+
+{% block header %}
+<table class="header-table">
+    <tr>
+        <td class="issuer-data" style="width: 40%;">
+            <h2 class="issuer-title">{{ empresa.nombre|upper }}</h2>
+            <p class="m-0"><strong>Razón Social:</strong> {{ empresa.nombre }}</p>
+            <p class="m-0">{{ empresa.direccion }}</p>
+            <p class="m-0">{{ empresa.condicion_fiscal|default:"IVA Responsable Inscripto" }}</p>
+        </td>
+        <td class="text-center" style="vertical-align: top; width: 20%;">
+            <div class="type-box">
+                <span class="type-letter">{{ venta.tipo_comprobante|default:"X" }}</span>
+                <span class="type-code">Cod. {% if venta.tipo_comprobante == 'A' %}001{% elif venta.tipo_comprobante ==
+                    'B' %}006{% else %}011{% endif %}</span>
+            </div>
+        </td>
+        <td class="text-right" style="width: 40%;">
+            <h3 class="m-0">FACTURA</h3>
+            <p class="m-0"><strong>N°:</strong> {{ venta.numero_factura_formateado }}</p>
+            <p class="m-0"><strong>Fecha:</strong> {{ venta.fecha|date:"d/m/Y" }}</p>
+            <p class="m-0"><strong>CUIT:</strong> {{ empresa.cuit|default:"30-00000000-0" }}</p>
+            <p class="m-0"><strong>Ing. Brutos:</strong> {{ empresa.cuit|default:"30-00000000-0" }}</p>
+            <p class="m-0"><strong>Inicio Act:</strong> 01/01/2020</p>
+        </td>
+    </tr>
+</table>
+{% endblock %}
+
+{% block content %}
+<div class="client-section">
+    <table style="border: none;">
+        <tr>
+            <td style="border: none; width: 60%;">
+                <p class="m-0"><strong>CUIT:</strong> {{ cliente.cuit|default:"-" }}</p>
+                <p class="m-0"><strong>Cliente:</strong> {{ cliente.nombre }}</p>
+                <p class="m-0"><strong>Dirección:</strong> {{ cliente.domicilio|default:"-" }}, {{
+                    cliente.localidad.nombre|default:"" }}</p>
+            </td>
+            <td style="border: none; width: 40%; text-align: right;">
+                <p class="m-0"><strong>Cond. IVA:</strong> {{ cliente.get_condicion_fiscal_display|default:"Consumidor
+                    Final" }}</p>
+                <p class="m-0"><strong>Cond. Venta:</strong> {{ venta.condicion_venta }}</p>
+            </td>
+        </tr>
+    </table>
+</div>
+
+<table class="items-table">
+    <thead>
+        <tr>
+            <th>Cod.</th>
+            <th>Descripción</th>
+            <th class="text-center">Cant.</th>
+            <th class="text-right">Precio Unit.</th>
+            <th class="text-center">% Bon.</th>
+            <th class="text-right">Subtotal</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in detalles %}
+        <tr>
+            <td>{{ item.id }}</td>
+            <td>{{ item.producto.descripcion }}</td>
+            <td class="text-center">{{ item.cantidad|floatformat:2 }}</td>
+            <td class="text-right">{{ item.precio_unitario|floatformat:2 }}</td>
+            <td class="text-center">0.00</td>
+            <td class="text-right">{{ item.subtotal|floatformat:2 }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<table style="margin-top: 20pt; border: none;">
+    <tr>
+        <td style="border: none; width: 50%; vertical-align: bottom;">
+            <div class="text-center" style="width: 100pt;">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https://www.afip.gob.ar/generico/formulario-8011/declaracion.asp?id={{ venta.id }}"
+                    style="width: 70pt; height: 70pt;">
+                <p style="font-size: 7pt; margin-top: 5pt;">Comprobante Autorizado por AFIP</p>
+            </div>
+        </td>
+        <td style="border: none; width: 50%; text-align: right;">
+            <table class="totals-box" align="right">
+                <tr>
+                    <td style="border: none;">Importe Neto Gravado:</td>
+                    <td style="border: none;" class="text-right">$ {{ venta.subtotal|floatformat:2 }}</td>
+                </tr>
+                {% if venta.tipo_comprobante == 'A' %}
+                <tr>
+                    <td style="border: none;">IVA 21%:</td>
+                    <td style="border: none;" class="text-right">$ {{ venta.iva_amount|default:0|floatformat:2 }}</td>
+                </tr>
+                {% endif %}
+                <tr>
+                    <td colspan="2" class="grand-total">
+                        <table style="border: none;">
+                            <tr>
+                                <td style="border: none; font-size: 14pt;" class="text-bold">TOTAL:</td>
+                                <td style="border: none; font-size: 14pt;" class="text-right text-bold">$ {{
+                                    venta.total|floatformat:2 }}</td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+
+<div class="cae-section">
+    <p class="m-0">CAE N°: {{ venta.cae|default:"76041234567890" }}</p>
+    <p class="m-0">Fecha de Vto. de CAE: {{ venta.fecha_vencimiento_cae|date:"d/m/Y"|default:venta.fecha|date:"d/m/Y" }}
+    </p>
+</div>
+{% endblock %}

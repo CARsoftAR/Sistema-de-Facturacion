@@ -4183,7 +4183,7 @@ def invoice_print(request, venta_id):
         'is_preview': request.GET.get('preview') == 'true'
     }
     
-    response = render_to_pdf('administrar/comprobantes/inv_pdf.html', context)
+    response = render_to_pdf('administrar/comprobantes/inv_pdf_v2.html', context)
     if response:
         filename = f"Factura_{venta.numero_factura_formateado().replace('-', '_')}.pdf"
         response['Content-Disposition'] = f'inline; filename="{filename}"'
