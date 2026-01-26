@@ -4183,10 +4183,14 @@ def invoice_print(request, venta_id):
         'is_preview': request.GET.get('preview') == 'true'
     }
     
-    response = render_to_pdf('administrar/comprobantes/inv_pdf_v2.html', context)
+    print(f"--- GENERANDO PDF V4 (REDISEÑO) para Venta #{venta.id} ---")
+    response = render_to_pdf('administrar/comprobantes/factura_a_v4.html', context)
     if response:
         filename = f"Factura_{venta.numero_factura_formateado().replace('-', '_')}.pdf"
         response['Content-Disposition'] = f'inline; filename="{filename}"'
+        # Force no-cache headers
+        response['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        response['Pragma'] = 'no-cache'
         return response
         
     # Fallback to HTML if PDF fails
