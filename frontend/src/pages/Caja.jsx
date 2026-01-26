@@ -22,7 +22,7 @@ import {
 import Swal from 'sweetalert2';
 import { BtnClear, BtnEdit, BtnDelete, BtnAction } from '../components/CommonButtons';
 import TablePagination from '../components/common/TablePagination';
-import { showDeleteAlert } from '../utils/alerts';
+import { showDeleteAlert, showSuccessAlert, showErrorAlert, showWarningAlert } from '../utils/alerts';
 
 const STORAGE_KEY = 'table_prefs_caja_items';
 
@@ -54,7 +54,10 @@ const Caja = () => {
                 .then(data => {
                     if (data.items_por_pagina) setItemsPerPage(data.items_por_pagina);
                 })
-                .catch(console.error);
+                .catch(error => {
+                    console.error("Error fetching config:", error);
+                    showErrorAlert('Error', 'No se pudo cargar la configuración de la tabla.');
+                });
         }
     }, []);
 
@@ -117,7 +120,7 @@ const Caja = () => {
             setSaldoFiltrado(data.saldo_filtrado !== undefined ? data.saldo_filtrado : (data.saldo_actual || 0));
         } catch (error) {
             console.error("Error cargando caja:", error);
-            Swal.fire('Error', 'No se pudieron cargar los movimientos', 'error');
+            showErrorAlert('Error', 'No se pudieron cargar los movimientos');
         } finally {
             setLoading(false);
         }
@@ -152,16 +155,16 @@ const Caja = () => {
             const data = await response.json();
 
             if (data.ok || !data.error) {
-                Swal.fire('Éxito', id ? 'Movimiento actualizado' : 'Movimiento creado', 'success');
+                await showSuccessAlert('Éxito', id ? 'Movimiento actualizado' : 'Movimiento creado');
                 setShowMovimientoModal(false);
                 setEditingMovimiento(null);
                 setMovimientoForm({ tipo: 'Ingreso', descripcion: '', monto: '' });
                 fetchCajaData();
             } else {
-                Swal.fire('Error', data.error, 'error');
+                showErrorAlert('Error', data.error);
             }
         } catch (error) {
-            Swal.fire('Error', 'No se pudo guardar el movimiento', 'error');
+            showErrorAlert('Error', 'No se pudo guardar el movimiento');
         }
     };
 
@@ -176,13 +179,13 @@ const Caja = () => {
                 const response = await fetch(`/api/caja/movimiento/${id}/eliminar/`, { method: 'POST' });
                 const data = await response.json();
                 if (data.ok || !data.error) {
-                    Swal.fire('Eliminado', 'El movimiento ha sido eliminado', 'success');
+                    await showSuccessAlert('Eliminado', 'El movimiento ha sido eliminado');
                     fetchCajaData();
                 } else {
-                    Swal.fire('Error', data.error, 'error');
+                    showErrorAlert('Error', data.error);
                 }
             } catch (error) {
-                Swal.fire('Error', 'Ocurrió un error al eliminar', 'error');
+                showErrorAlert('Error', 'Ocurrió un error al eliminar');
             }
         }
     };
@@ -197,15 +200,15 @@ const Caja = () => {
             });
             const data = await response.json();
             if (data.ok) {
-                Swal.fire('Caja Abierta', 'Se inició la jornada correctamente', 'success');
+                await showSuccessAlert('Caja Abierta', 'Se inició la jornada correctamente');
                 setShowAperturaModal(false);
                 setMontoApertura('');
                 fetchCajaData();
             } else {
-                Swal.fire('Error', data.error, 'error');
+                showErrorAlert('Error', data.error);
             }
         } catch (error) {
-            Swal.fire('Error', 'Error de conexión', 'error');
+            showErrorAlert('Error', 'Error de conexión');
         }
     };
 
@@ -220,7 +223,7 @@ const Caja = () => {
             }
         } catch (error) {
             console.error(error);
-            Swal.fire('Error', 'No se pudo cargar el historial', 'error');
+            showErrorAlert('Error', 'No se pudo cargar el historial');
         } finally {
             setLoadingHistory(false);
         }
@@ -239,7 +242,7 @@ const Caja = () => {
             }
         } catch (error) {
             console.error(error);
-            Swal.fire('Error', 'No se pudo cargar el detalle', 'error');
+            showErrorAlert('Error', 'No se pudo cargar el detalle');
         }
     };
 
@@ -251,7 +254,7 @@ const Caja = () => {
     const submitCierre = async (e) => {
         e.preventDefault();
         if (!montoCierreReal) {
-            Swal.fire('Error', 'Debes ingresar un monto', 'warning');
+            showWarningAlert('Atención', 'Debes ingresar un monto');
             return;
         }
 
@@ -274,8 +277,7 @@ const Caja = () => {
                         </div>
                     `;
                 }
-                Swal.fire({
-                    title: 'Cierre Exitoso',
+                await showSuccessAlert('Cierre Exitoso', '', 'Entendido', {
                     html: `
                         <div class="text-start p-2">
                             <p className="mb-2"><strong>Saldo Final:</strong> $${data.saldo_total.toLocaleString('es-AR')}</p>
@@ -283,20 +285,14 @@ const Caja = () => {
                             <p className="mb-2 text-danger"><strong>Egresos:</strong> $${data.egresos_dia.toLocaleString('es-AR')}</p>
                             ${diffHtml}
                         </div>
-                    `,
-                    icon: 'success',
-                    confirmButtonText: 'Entendido',
-                    confirmButtonColor: '#0d6efd',
-                    customClass: {
-                        popup: 'rounded-4 border-0 shadow'
-                    }
+                    `
                 });
                 fetchCajaData();
             } else {
-                Swal.fire('Error', data.error, 'error');
+                showErrorAlert('Error', data.error);
             }
         } catch (error) {
-            Swal.fire('Error', 'Error de conexión', 'error');
+            showErrorAlert('Error', 'Error de conexión');
         }
     };
 

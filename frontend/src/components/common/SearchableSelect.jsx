@@ -9,7 +9,8 @@ const SearchableSelect = ({ options = [], value, onChange, placeholder = "Selecc
     const inputRef = useRef(null);
 
     // Find selected item to display its label
-    const selectedItem = options.find(opt => String(opt.id) === String(value));
+    const safeOptions = Array.isArray(options) ? options : [];
+    const selectedItem = safeOptions.find(opt => String(opt.id) === String(value));
 
     // Update search term when value changes externally
     useEffect(() => {
@@ -21,15 +22,25 @@ const SearchableSelect = ({ options = [], value, onChange, placeholder = "Selecc
     }, [selectedItem, value]);
 
     // Filter options based on search term
-    // If searchTerm matches the selected item exactly, show all options (user is just viewing)
-    // Otherwise, filter.
-    const filteredOptions = options.filter(opt => {
+    const filteredOptions = safeOptions.filter(opt => {
         const label = (opt.nombre || opt.label || '').toString().toLowerCase();
         const term = searchTerm.toLowerCase();
         // If the current term exactly matches the selected item, don't filter (show all context)
         if (selectedItem && (selectedItem.nombre || selectedItem.label).toLowerCase() === term) return true;
         return label.includes(term);
     });
+
+    // Sync highlighted index when dropdown opens or options change
+    useEffect(() => {
+        if (isOpen && filteredOptions.length > 0) {
+            const index = filteredOptions.findIndex(opt => String(opt.id) === String(value));
+            if (index !== -1) {
+                setHighlightedIndex(index);
+            } else if (highlightedIndex >= filteredOptions.length) {
+                setHighlightedIndex(0);
+            }
+        }
+    }, [isOpen, filteredOptions.length, value]);
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -52,8 +63,6 @@ const SearchableSelect = ({ options = [], value, onChange, placeholder = "Selecc
         onChange(option.id);
         setSearchTerm(option.nombre || option.label);
         setIsOpen(false);
-        // Focus back to input but keep it closed usually, 
-        // strictly speaking we might want to move focus to next field but that's parent responsibility
     };
 
     const handleKeyDown = (e) => {
@@ -61,19 +70,30 @@ const SearchableSelect = ({ options = [], value, onChange, placeholder = "Selecc
 
         if (e.key === 'ArrowDown') {
             e.preventDefault();
-            setIsOpen(true);
-            setHighlightedIndex(prev => (prev < filteredOptions.length - 1 ? prev + 1 : prev));
+            if (!isOpen) {
+                setIsOpen(true);
+            } else {
+                setHighlightedIndex(prev => (prev < filteredOptions.length - 1 ? prev + 1 : prev));
+            }
         } else if (e.key === 'ArrowUp') {
             e.preventDefault();
-            setIsOpen(true);
-            setHighlightedIndex(prev => (prev > 0 ? prev - 1 : 0));
-        } else if (e.key === 'Enter') {
-            if (isOpen && filteredOptions.length > 0) {
-                e.preventDefault();
-                e.stopPropagation(); // Stop form from submitting or moving to next field
-                handleSelect(filteredOptions[highlightedIndex]);
+            if (!isOpen) {
+                setIsOpen(true);
+            } else {
+                setHighlightedIndex(prev => (prev > 0 ? prev - 1 : 0));
             }
-            // If closed, let event bubble so parent form can handle moving to next field
+        } else if (e.key === 'Enter') {
+            if (isOpen) {
+                // If the dropdown is open, we consume the ENTER to select
+                e.preventDefault();
+                e.stopPropagation();
+                if (filteredOptions.length > 0) {
+                    handleSelect(filteredOptions[highlightedIndex]);
+                } else {
+                    setIsOpen(false);
+                }
+            }
+            // If closed, let event bubble so parent form can handle moving focus
         } else if (e.key === 'Escape') {
             setIsOpen(false);
         } else if (e.key === 'Tab') {
@@ -83,12 +103,8 @@ const SearchableSelect = ({ options = [], value, onChange, placeholder = "Selecc
 
     const handleInputChange = (e) => {
         setSearchTerm(e.target.value);
-        setIsOpen(true);
+        if (!isOpen) setIsOpen(true);
         setHighlightedIndex(0);
-        // Verify if cleared. Optional: onChange(null) if clear allowed.
-        if (e.target.value === '') {
-            // onChange(null); // Uncomment if you want live clearing
-        }
     };
 
     return (
@@ -103,7 +119,13 @@ const SearchableSelect = ({ options = [], value, onChange, placeholder = "Selecc
                     onChange={handleInputChange}
                     onFocus={() => {
                         setIsOpen(true);
-                        inputRef.current.select();
+                        // Ensure highlighted index is correct even before useEffect triggers
+                        const index = filteredOptions.findIndex(opt => String(opt.id) === String(value));
+                        if (index !== -1) setHighlightedIndex(index);
+
+                        setTimeout(() => {
+                            if (inputRef.current) inputRef.current.select();
+                        }, 50);
                     }}
                     onKeyDown={handleKeyDown}
                     disabled={disabled}

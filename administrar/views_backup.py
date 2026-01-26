@@ -87,10 +87,19 @@ def api_crear_backup(request):
         tipo = data.get('tipo', 'DB') # DB o SISTEMA
         ubicacion = data.get('ubicacion', 'LOCAL')
         
-        # Directorios
-        base_backup_dir = os.path.join(settings.BASE_DIR, 'backups')
-        local_backup_dir = os.path.join(base_backup_dir, 'local')
+        # Directorios - usar ruta configurada o la por defecto
+        from .models import Empresa
+        try:
+            empresa = Empresa.objects.get(id=1)
+            if empresa.backup_local_path and empresa.backup_local_path.strip():
+                local_backup_dir = empresa.backup_local_path.strip()
+            else:
+                local_backup_dir = os.path.join(settings.BASE_DIR, 'backups', 'local')
+        except Empresa.DoesNotExist:
+            local_backup_dir = os.path.join(settings.BASE_DIR, 'backups', 'local')
+        
         os.makedirs(local_backup_dir, exist_ok=True)
+
         
         timestamp = datetime.datetime.now().strftime('%d%m%Y_%H%M%S')
         
@@ -173,6 +182,28 @@ def api_crear_backup(request):
             os.remove(file_path)
             nombre_backup = f"Backup Datos JSON {timestamp}"
             
+        elif tipo == 'SOLO_SISTEMA':
+            # Backup solo de archivos del sistema (sin BD)
+            zip_filename = f"backup_solo_sistema_{timestamp}.zip"
+            final_zip_path = os.path.join(local_backup_dir, zip_filename)
+            
+            project_root = settings.BASE_DIR
+            
+            with zipfile.ZipFile(final_zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+                for root, dirs, files in os.walk(project_root):
+                    # Excluir directorios pesados o innecesarios
+                    dirs[:] = [d for d in dirs if d not in ['venv', '.git', '__pycache__', 'backups', 'node_modules', 'dist', '.idea', '.vscode']]
+                    
+                    for file in files:
+                        if file.endswith('.pyc') or file.endswith('.zip') or file.endswith('.rar'):
+                            continue
+                            
+                        file_path = os.path.join(root, file)
+                        arcname = os.path.relpath(file_path, project_root)
+                        zipf.write(file_path, arcname=arcname)
+            
+            nombre_backup = f"Backup Solo Sistema {timestamp}"
+            
         elif tipo == 'SISTEMA':
             # Backup de archivos del sistema
             zip_filename = f"backup_sistema_{timestamp}.zip"
@@ -182,8 +213,8 @@ def api_crear_backup(request):
             
             with zipfile.ZipFile(final_zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
                 for root, dirs, files in os.walk(project_root):
-                    # Excluir directorios (venv, git, pycache, backups)
-                    dirs[:] = [d for d in dirs if d not in ['venv', '.git', '__pycache__', 'backups']]
+                    # Excluir directorios pesados o innecesarios
+                    dirs[:] = [d for d in dirs if d not in ['venv', '.git', '__pycache__', 'backups', 'node_modules', 'dist', '.idea', '.vscode']]
                     
                     for file in files:
                         if file.endswith('.pyc') or file.endswith('.zip') or file.endswith('.rar'):
@@ -201,7 +232,7 @@ def api_crear_backup(request):
         # Calcular tamaño
         file_size = os.path.getsize(final_zip_path)
         
-        # Guardar registro en BD
+        # Guardar registro en BD (solo LOCAL)
         backup = Backup.objects.create(
             nombre=nombre_backup,
             tipo=tipo,
@@ -306,10 +337,8 @@ def api_descargar_backup(request, id):
     backup = get_object_or_404(Backup, pk=id)
     
     if os.path.exists(backup.archivo):
-        with open(backup.archivo, 'rb') as fh:
-            response = HttpResponse(fh.read(), content_type="application/zip")
-            response['Content-Disposition'] = 'attachment; filename=' + os.path.basename(backup.archivo)
-            return response
+        from django.http import FileResponse
+        return FileResponse(open(backup.archivo, 'rb'), as_attachment=True, filename=os.path.basename(backup.archivo))
     else:
         return HttpResponse("Archivo no encontrado", status=404)
 

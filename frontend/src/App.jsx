@@ -39,6 +39,7 @@ import NuevoCliente from './pages/NuevoCliente'
 import AjusteStock from './pages/AjusteStock'
 import MovimientosStock from './pages/MovimientosStock'
 import NuevoProveedor from './pages/NuevoProveedor'
+import Backups from './pages/Backups'
 
 import Parametros from './pages/Parametros'
 import Reportes from './pages/Reportes'
@@ -233,6 +234,7 @@ function App() {
               <Route path="/perfil" element={<ProtectedRoute><MiPerfil /></ProtectedRoute>} />
               <Route path="/mi-perfil" element={<ProtectedRoute><MiPerfil /></ProtectedRoute>} />
 
+              <Route path="/backups" element={<ProtectedRoute permission="configuracion"><Backups /></ProtectedRoute>} />
               <Route path="/usuarios" element={<ProtectedRoute permission="usuarios"><Usuarios /></ProtectedRoute>} />
               <Route path="*" element={<div className="p-5" style={{ zIndex: 9999, position: 'relative' }}><h1>REACT 404</h1><p>Pathname: {window.location.pathname}</p></div>} />
             </Routes>

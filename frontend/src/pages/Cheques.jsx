@@ -11,9 +11,7 @@ import {
     RotateCcw,
     ChevronDown
 } from 'lucide-react';
-import Swal from 'sweetalert2';
-import { BtnEdit, BtnDelete, BtnAdd } from '../components/CommonButtons';
-import { showConfirmationAlert } from '../utils/alerts';
+import { showConfirmationAlert, showSuccessAlert, showErrorAlert, showDeleteAlert } from '../utils/alerts';
 import ChequeForm from '../components/cheques/ChequeForm';
 import EmptyState from '../components/EmptyState';
 import TablePagination from '../components/common/TablePagination';
@@ -72,21 +70,11 @@ const Cheques = () => {
                 setTotalItems(data.total || 0);
                 if (data.kpis) setKpis(data.kpis);
             } else {
-                const ErrorIcon = (
-                    <div className='d-inline-flex justify-content-center align-items-center rounded-circle mb-3' style={{ width: '80px', height: '80px', backgroundColor: 'rgba(220, 53, 69, 0.1)', color: '#dc3545' }}>
-                        <div className="fw-bold fs-1">×</div>
-                    </div>
-                );
-                showConfirmationAlert('Error', data.error || 'No se pudieron cargar los cheques', 'Entendido', 'danger', { iconComponent: ErrorIcon });
+                showErrorAlert('Error', data.error || 'No se pudieron cargar los cheques');
             }
         } catch (error) {
             console.error("Error cargando cheques:", error);
-            const ErrorIcon = (
-                <div className='d-inline-flex justify-content-center align-items-center rounded-circle mb-3' style={{ width: '80px', height: '80px', backgroundColor: 'rgba(220, 53, 69, 0.1)', color: '#dc3545' }}>
-                    <div className="fw-bold fs-1">×</div>
-                </div>
-            );
-            showConfirmationAlert('Error', 'Error de conexión', 'Entendido', 'danger', { iconComponent: ErrorIcon });
+            showErrorAlert('Error', 'Error de conexión');
         } finally {
             setLoading(false);
         }
@@ -139,7 +127,7 @@ const Cheques = () => {
                 const dataBancos = await respBancos.json();
 
                 if (!dataBancos.ok || !dataBancos.cuentas || dataBancos.cuentas.length === 0) {
-                    Swal.fire('Error', 'No hay cuentas bancarias activas para depositar', 'error');
+                    showErrorAlert('Error', 'No hay cuentas bancarias activas para depositar');
                     return;
                 }
 
@@ -155,14 +143,17 @@ const Cheques = () => {
                     inputOptions: options,
                     inputPlaceholder: 'Seleccione un banco',
                     confirmButtonText: 'Confirmar Depósito',
-                    confirmButtonColor: '#2563eb',
+                    confirmButtonColor: '#0d6efd',
                     showCancelButton: true,
                     cancelButtonText: 'Cancelar',
                     customClass: {
-                        popup: 'rounded-3xl p-10',
+                        popup: 'rounded-premium-alert shadow-2xl border-0 p-10',
                         confirmButton: 'rounded-xl px-8 py-3 font-bold',
                         cancelButton: 'rounded-xl px-8 py-3 font-bold',
                         input: 'rounded-xl border-slate-200 text-slate-800 font-medium'
+                    },
+                    didOpen: (popup) => {
+                        popup.style.borderRadius = '2.5rem';
                     },
                     inputValidator: (value) => !value && 'Debe seleccionar una cuenta'
                 });
@@ -171,24 +162,16 @@ const Cheques = () => {
                 cuentaDestinoId = selectedBankId;
             } catch (error) {
                 console.error(error);
-                Swal.fire('Error', 'Error cargando bancos', 'error');
+                showErrorAlert('Error', 'Error cargando bancos');
                 return;
             }
         } else {
-            const result = await Swal.fire({
-                title: '<span class="text-2xl font-black text-slate-800">¿Confirmar cambio?</span>',
-                html: `<p class="text-slate-500">El cheque <b>#${cheque.numero}</b> pasará a estado <b>${nuevoEstado}</b></p>`,
-                icon: 'question',
-                confirmButtonText: 'Sí, cambiar',
-                confirmButtonColor: '#2563eb',
-                showCancelButton: true,
-                cancelButtonText: 'Cancelar',
-                customClass: {
-                    popup: 'rounded-3xl p-10',
-                    confirmButton: 'rounded-xl px-8 py-3 font-bold',
-                    cancelButton: 'rounded-xl px-8 py-3 font-bold'
-                }
-            });
+            const result = await showConfirmationAlert(
+                '¿Confirmar cambio?',
+                `El cheque #${cheque.numero} pasará a estado ${nuevoEstado}`,
+                'primary',
+                { icon: 'question', confirmText: 'Sí, cambiar' }
+            );
             if (!result.isConfirmed) return;
         }
 
@@ -204,40 +187,23 @@ const Cheques = () => {
             const data = await response.json();
 
             if (data.ok) {
-                Swal.fire({
-                    title: '¡Actualizado!',
-                    text: `Estado cambiado a ${nuevoEstado}`,
-                    icon: 'success',
-                    timer: 1500,
-                    showConfirmButton: false,
-                    customClass: { popup: 'rounded-2xl' }
-                });
+                await showSuccessAlert('¡Actualizado!', `Estado cambiado a ${nuevoEstado}`, 'Aceptar', { timer: 1500, showConfirmButton: false });
                 fetchCheques();
             } else {
-                Swal.fire('Error', data.error || 'No se pudo actualizar', 'error');
+                showErrorAlert('Error', data.error || 'No se pudo actualizar');
             }
         } catch (error) {
             console.error(error);
-            Swal.fire('Error', 'Error de conexión', 'error');
+            showErrorAlert('Error', 'Error de conexión');
         }
     };
 
     const handleDelete = async (cheque) => {
         setOpenDropdownId(null);
-        const result = await Swal.fire({
-            title: '<span class="text-2xl font-black text-slate-800">¿Eliminar Cheque?</span>',
-            html: `<p class="text-slate-500">Esta acción no se puede deshacer. Se eliminará el cheque <b>#${cheque.numero}</b>.</p>`,
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Sí, eliminar',
-            cancelButtonText: 'Cancelar',
-            confirmButtonColor: '#ef4444',
-            customClass: {
-                popup: 'rounded-3xl p-10',
-                confirmButton: 'rounded-xl px-8 py-3 font-bold',
-                cancelButton: 'rounded-xl px-8 py-3 font-bold'
-            }
-        });
+        const result = await showDeleteAlert(
+            '¿Eliminar Cheque?',
+            `Esta acción no se puede deshacer. Se eliminará el cheque #${cheque.numero}.`
+        );
 
         if (!result.isConfirmed) return;
 
@@ -248,19 +214,13 @@ const Cheques = () => {
             });
             const data = await response.json();
             if (data.ok) {
-                Swal.fire({
-                    title: '¡Eliminado!',
-                    icon: 'success',
-                    timer: 1500,
-                    showConfirmButton: false,
-                    customClass: { popup: 'rounded-2xl' }
-                });
+                await showSuccessAlert('¡Eliminado!', '', 'Aceptar', { timer: 1500, showConfirmButton: false });
                 fetchCheques();
             } else {
-                Swal.fire('Error', data.error || 'No se pudo eliminar', 'error');
+                showErrorAlert('Error', data.error || 'No se pudo eliminar');
             }
         } catch (error) {
-            Swal.fire('Error', 'Error de conexión', 'error');
+            showErrorAlert('Error', 'Error de conexión');
         }
     };
 
@@ -473,8 +433,8 @@ const Cheques = () => {
                                                 <button
                                                     onClick={() => toggleDropdown(c.id)}
                                                     className={`p-2.5 rounded-xl border transition-all ${openDropdownId === c.id
-                                                            ? 'bg-slate-800 border-slate-700 text-white shadow-lg'
-                                                            : 'bg-white border-slate-200 text-slate-400 hover:text-slate-700 hover:border-slate-300 shadow-sm'
+                                                        ? 'bg-slate-800 border-slate-700 text-white shadow-lg'
+                                                        : 'bg-white border-slate-200 text-slate-400 hover:text-slate-700 hover:border-slate-300 shadow-sm'
                                                         }`}
                                                 >
                                                     <ChevronDown size={18} className={`transition-transform duration-300 ${openDropdownId === c.id ? 'rotate-180' : ''}`} />

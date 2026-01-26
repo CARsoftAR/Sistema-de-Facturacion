@@ -15,3 +15,7 @@ sqlparse==0.5.1
 tzdata==2024.2
 xhtml2pdf==0.2.16
 whitenoise==6.7.0
+google-auth==2.27.0
+google-auth-oauthlib==1.2.0
+google-auth-httplib2==0.2.0
+google-api-python-client==2.116.0

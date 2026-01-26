@@ -207,6 +207,12 @@ class Empresa(models.Model):
     # Configuracion UI
     items_por_pagina = models.IntegerField(default=10, verbose_name="Items por Página")
 
+    # Configuración de Backups
+    backup_local_path = models.CharField(max_length=500, blank=True, verbose_name="Ruta de Backups Locales")
+    backup_google_drive_enabled = models.BooleanField(default=False, verbose_name="Habilitar Google Drive")
+    backup_google_drive_folder_id = models.CharField(max_length=100, blank=True, verbose_name="ID Carpeta Google Drive")
+    backup_google_drive_credentials = models.TextField(blank=True, verbose_name="Credenciales Google Drive (JSON)")
+
     def __str__(self):
         return self.nombre
 
@@ -791,11 +797,12 @@ class Backup(models.Model):
     
     TIPO_CHOICES = [
         ('DB', 'Base de Datos'),
+        ('SOLO_SISTEMA', 'Solo Archivos de Sistema'),
         ('SISTEMA', 'Archivos de Sistema'),
     ]
     
     nombre = models.CharField(max_length=255, help_text="Nombre del backup")
-    tipo = models.CharField(max_length=10, choices=TIPO_CHOICES, default='DB')
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, default='DB')
     archivo = models.CharField(max_length=500, help_text="Ruta del archivo de backup")
     tamanio = models.BigIntegerField(help_text="TamaÃ±o en bytes")
     ubicacion = models.CharField(max_length=10, choices=UBICACION_CHOICES, default='LOCAL')

@@ -378,7 +378,7 @@ const Sidebar = ({ standalone = false }) => {
                             { label: 'Datos de Empresa', href: '/configuracion/empresa', permission: 'configuracion' },
                             { label: 'Parámetros', href: '/parametros', permission: 'configuracion' },
                             { label: 'Usuarios', href: '/usuarios', permission: 'usuarios' },
-                            { label: 'Respaldos', href: '/backups', permission: 'configuracion' },
+                            { label: 'Respaldos (Backups)', href: '/backups', permission: 'configuracion' },
                         ]}
                     />
 

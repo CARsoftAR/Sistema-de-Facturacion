@@ -2,8 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Package, Plus, Minus, Search, X, Check, ArrowRight } from 'lucide-react';
 import { BtnSave, BtnBack } from '../components/CommonButtons';
-import Swal from 'sweetalert2';
 import axios from 'axios';
+import { showSuccessAlert, showWarningAlert } from '../utils/alerts';
 
 const AjusteStock = () => {
     const navigate = useNavigate();
@@ -84,17 +84,17 @@ const AjusteStock = () => {
         if (e) e.preventDefault();
 
         if (!selectedProducto) {
-            Swal.fire('Error', 'Debe seleccionar un producto', 'error');
+            showWarningAlert('Error', 'Debe seleccionar un producto');
             return;
         }
 
         if (!cantidad || parseFloat(cantidad) <= 0) {
-            Swal.fire('Error', 'La cantidad debe ser mayor a 0', 'error');
+            showWarningAlert('Error', 'La cantidad debe ser mayor a 0');
             return;
         }
 
         if (!observaciones.trim()) {
-            Swal.fire('Error', 'Debe ingresar un motivo para el ajuste', 'error');
+            showWarningAlert('Error', 'Debe ingresar un motivo para el ajuste');
             return;
         }
 
@@ -109,23 +109,10 @@ const AjusteStock = () => {
             });
 
             if (response.data.success) {
-                await Swal.fire({
-                    title: '<span class="text-2xl font-black text-slate-800">¡Ajuste Realizado!</span>',
-                    html: `
-                        <div class="text-left space-y-2 text-slate-600 mt-2">
-                            <p><strong>Producto:</strong> ${selectedProducto.descripcion}</p>
-                            <p><strong>Stock Anterior:</strong> ${response.data.stock_anterior}</p>
-                            <p><strong>Stock Nuevo:</strong> <span class="text-blue-600 font-bold">${response.data.stock_nuevo}</span></p>
-                        </div>
-                    `,
-                    icon: 'success',
-                    confirmButtonText: 'Aceptar',
-                    confirmButtonColor: '#2563eb',
-                    customClass: {
-                        popup: 'rounded-3xl p-10',
-                        confirmButton: 'rounded-xl px-12 py-3 font-bold text-lg'
-                    }
-                });
+                await showSuccessAlert(
+                    '¡Ajuste Realizado!',
+                    `Producto: ${selectedProducto.descripcion}\nStock Anterior: ${response.data.stock_anterior}\nStock Nuevo: ${response.data.stock_nuevo}`
+                );
 
                 // Limpiar formulario
                 setSelectedProducto(null);
@@ -134,7 +121,7 @@ const AjusteStock = () => {
                 setTipo('IN');
             }
         } catch (error) {
-            Swal.fire('Error', error.response?.data?.error || 'Error al realizar el ajuste', 'error');
+            showWarningAlert('Error', error.response?.data?.error || 'Error al realizar el ajuste');
         } finally {
             setLoading(false);
         }
@@ -275,8 +262,8 @@ const AjusteStock = () => {
                                         type="button"
                                         onClick={() => setTipo('IN')}
                                         className={`flex-1 flex items-center justify-center gap-3 py-4 rounded-xl font-black text-sm transition-all ${tipo === 'IN'
-                                                ? 'bg-white text-emerald-600 shadow-md scale-[1.02]'
-                                                : 'text-slate-400 hover:text-slate-600'
+                                            ? 'bg-white text-emerald-600 shadow-md scale-[1.02]'
+                                            : 'text-slate-400 hover:text-slate-600'
                                             }`}
                                     >
                                         <Plus size={20} strokeWidth={3} />
@@ -286,8 +273,8 @@ const AjusteStock = () => {
                                         type="button"
                                         onClick={() => setTipo('OUT')}
                                         className={`flex-1 flex items-center justify-center gap-3 py-4 rounded-xl font-black text-sm transition-all ${tipo === 'OUT'
-                                                ? 'bg-white text-rose-600 shadow-md scale-[1.02]'
-                                                : 'text-slate-400 hover:text-slate-600'
+                                            ? 'bg-white text-rose-600 shadow-md scale-[1.02]'
+                                            : 'text-slate-400 hover:text-slate-600'
                                             }`}
                                     >
                                         <Minus size={20} strokeWidth={3} />
@@ -308,8 +295,8 @@ const AjusteStock = () => {
                                         onChange={(e) => setCantidad(e.target.value)}
                                         disabled={!selectedProducto}
                                         className={`w-full px-6 py-4 border-2 rounded-2xl text-2xl font-black transition-all outline-none ${!selectedProducto
-                                                ? 'bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed'
-                                                : 'bg-white border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 text-slate-800'
+                                            ? 'bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed'
+                                            : 'bg-white border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 text-slate-800'
                                             }`}
                                     />
                                     <div className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-300 font-black uppercase text-xs pointer-events-none">Unidades</div>
@@ -327,8 +314,8 @@ const AjusteStock = () => {
                                 placeholder="Ej: Mercadería dañada, Error de carga inicial, Merma por vencimiento..."
                                 rows="4"
                                 className={`w-full px-6 py-4 border-2 rounded-3xl text-base font-medium transition-all outline-none resize-none ${!selectedProducto
-                                        ? 'bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed'
-                                        : 'bg-white border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 text-slate-800'
+                                    ? 'bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed'
+                                    : 'bg-white border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 text-slate-800'
                                     }`}
                             />
                         </div>

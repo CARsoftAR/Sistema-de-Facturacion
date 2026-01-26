@@ -7,6 +7,7 @@ from . import views
 from . import views_backup
 from . import views_comprobantes
 from . import views_stock
+from . import views_config
 from django.shortcuts import render
 from .views import (
     api_buscar_productos,
@@ -45,9 +46,6 @@ urlpatterns = [
     path("api/dashboard/stats/", views.api_dashboard_stats, name="api_dashboard_stats"),
     path("estado/", views.estado_sistema, name="estado"),
     path("parametros/", login_required(TemplateView.as_view(template_name="react_app.html")), name="parametros"),
-    path("api/config/obtener/", views.api_empresa_config, name="api_empresa_config"),
-    path("api/config/guardar/", views.api_empresa_config_guardar, name="api_empresa_config_guardar"),
-
 
     # ==========================
     # MÓDULOS COMERCIALES
@@ -249,6 +247,7 @@ urlpatterns = [
     path("api/productos/<int:id>/editar/", views.api_productos_editar, name="api_productos_editar"),
     path("api/productos/<int:id>/eliminar/", api_productos_eliminar, name="api_productos_eliminar"),
     path("api/productos/verificar_codigo/", api_productos_verificar_codigo, name="api_productos_verificar_codigo"),
+    path("api/productos/generar_codigo/", views.api_productos_generar_codigo, name="api_productos_generar_codigo"),
 
     # ==========================
     # API STOCK MANAGEMENT
@@ -452,5 +451,10 @@ urlpatterns = [
     path("api/cheques/<int:id>/editar/", views.api_cheques_editar, name="api_cheques_editar"),
     path("api/cheques/<int:id>/eliminar/", views.api_cheques_eliminar, name="api_cheques_eliminar"),
     path("api/cheques/<int:id>/cambiar-estado/", views.api_cheque_cambiar_estado, name="api_cheque_cambiar_estado"),
+
+    # CONFIGURACIÓN
+    path("api/config/obtener/", views_config.api_config_obtener, name="api_config_obtener"),
+    path("api/config/guardar/", views_config.api_config_guardar, name="api_config_guardar"),
+    path("api/config/seleccionar_carpeta/", views_config.api_seleccionar_carpeta, name="api_seleccionar_carpeta"),
 
 ]

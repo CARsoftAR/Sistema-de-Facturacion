@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { ShoppingCart, Plus, Search, Printer, XCircle, AlertCircle, CheckCircle, Trash2, Filter, RotateCcw, Eye } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
-import { showDeleteAlert } from '../utils/alerts';
+import { showDeleteAlert, showSuccessAlert, showErrorAlert } from '../utils/alerts';
 import { BtnAdd, BtnDelete, BtnAction, BtnClear, BtnView, BtnPrint, BtnTableAction } from '../components/CommonButtons';
 import EmptyState from '../components/EmptyState';
 import TablePagination from '../components/common/TablePagination';
@@ -102,26 +102,19 @@ const Ventas = () => {
             const data = await response.json();
 
             if (data.ok) {
-                Swal.fire(
+                await showSuccessAlert(
                     '¡Anulada!',
                     `Venta anulada correctamente.<br>Nota de Crédito generada: <b>${data.message || '#' + data.id}</b>`,
-                    'success'
+                    'Entendido',
+                    { html: true }
                 );
                 fetchVentas(); // Refresh list
             } else {
-                Swal.fire(
-                    'Error',
-                    `No se pudo anular la venta: ${data.error}`,
-                    'error'
-                );
+                showErrorAlert('Error', `No se pudo anular la venta: ${data.error}`);
             }
         } catch (error) {
             console.error("Error anular:", error);
-            Swal.fire(
-                'Error',
-                'Error de conexión al intentar anular la venta.',
-                'error'
-            );
+            showErrorAlert('Error', 'Error de conexión al intentar anular la venta.');
         }
     };
 
@@ -164,14 +157,14 @@ const Ventas = () => {
                 const data = await response.json();
 
                 if (data.ok) {
-                    Swal.fire('¡Creada!', data.message, 'success');
+                    await showSuccessAlert('¡Creada!', data.message);
                     fetchVentas();
                 } else {
-                    Swal.fire('Error', data.error, 'error');
+                    showErrorAlert('Error', data.error);
                 }
             } catch (error) {
                 console.error(error);
-                Swal.fire('Error', 'No se pudo crear la Nota de Débito', 'error');
+                showErrorAlert('Error', 'No se pudo crear la Nota de Débito');
             }
         }
     };

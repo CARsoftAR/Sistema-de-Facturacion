@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Save, Monitor, Zap, CheckCircle2, Settings, Loader2, ShoppingCart, Printer, Laptop, Package, Calculator, FileText, Mail, Lock, Server, Shield } from 'lucide-react';
+import { Save, Monitor, Zap, CheckCircle2, Settings, Loader2, ShoppingCart, Printer, Laptop, Package, Calculator, FileText, Mail, Lock, Server, Shield, HardDrive, Cloud, Folder } from 'lucide-react';
 
 // Estilos base según directrices de la USER_REQUEST
 const s = {
@@ -56,6 +56,13 @@ const Parametros = () => {
     const [smtpPassword, setSmtpPassword] = useState('');
     const [hasSmtpPassword, setHasSmtpPassword] = useState(false);
 
+    // Estados de Backups
+    const [backupLocalPath, setBackupLocalPath] = useState('');
+    const [backupGoogleDriveEnabled, setBackupGoogleDriveEnabled] = useState(false);
+    const [backupGoogleDriveFolderId, setBackupGoogleDriveFolderId] = useState('');
+    const [backupGoogleDriveCredentials, setBackupGoogleDriveCredentials] = useState(null);
+    const [hasGoogleDriveCredentials, setHasGoogleDriveCredentials] = useState(false);
+
     useEffect(() => {
         fetchConfig();
     }, []);
@@ -87,6 +94,12 @@ const Parametros = () => {
                 setSmtpUser(response.data.smtp_user || '');
                 setSmtpSecurity(response.data.smtp_security || 'STARTTLS');
                 setHasSmtpPassword(response.data.has_smtp_password || false);
+
+                // Backups
+                setBackupLocalPath(response.data.backup_local_path || '');
+                setBackupGoogleDriveEnabled(response.data.backup_google_drive_enabled || false);
+                setBackupGoogleDriveFolderId(response.data.backup_google_drive_folder_id || '');
+                setHasGoogleDriveCredentials(response.data.has_google_drive_credentials || false);
             }
         } catch (error) {
             console.error("Error cargando configuración:", error);
@@ -119,8 +132,22 @@ const Parametros = () => {
                 smtp_port: smtpPort,
                 smtp_user: smtpUser,
                 smtp_security: smtpSecurity,
-                smtp_password: smtpPassword // Solo se envía si se editó
+                smtp_password: smtpPassword, // Solo se envía si se editó
+
+                // Backups
+                backup_local_path: backupLocalPath,
+                backup_google_drive_enabled: backupGoogleDriveEnabled,
+                backup_google_drive_folder_id: backupGoogleDriveFolderId,
+                backup_google_drive_credentials: backupGoogleDriveCredentials
             };
+
+            // Debug: ver qué se está enviando
+            console.log('=== PAYLOAD A ENVIAR ===');
+            console.log('backup_local_path:', payload.backup_local_path);
+            console.log('backup_google_drive_enabled:', payload.backup_google_drive_enabled);
+            console.log('backup_google_drive_folder_id:', payload.backup_google_drive_folder_id);
+            console.log('backup_google_drive_credentials:', payload.backup_google_drive_credentials);
+
             const response = await axios.post('/api/config/guardar/', payload);
             if (response.data.ok) {
                 setShowSuccess(true);
@@ -135,6 +162,17 @@ const Parametros = () => {
         }
     };
 
+    const handleSelectFolder = async () => {
+        try {
+            const response = await axios.get('/api/config/seleccionar_carpeta/');
+            if (response.data.ok) {
+                setBackupLocalPath(response.data.path);
+            }
+        } catch (error) {
+            console.error("Error seleccionando carpeta:", error);
+        }
+    };
+
     const [activeTab, setActiveTab] = useState('general');
 
     const tabs = [
@@ -145,6 +183,7 @@ const Parametros = () => {
         { id: 'facturacion', label: 'Facturación', icon: Printer },
         { id: 'compras', label: 'Compras y Costos', icon: ShoppingCart },
         { id: 'email', label: 'Correo Electrónico', icon: Mail },
+        { id: 'backups', label: 'Backups', icon: HardDrive },
     ];
 
     if (loading) return (
@@ -766,6 +805,42 @@ const Parametros = () => {
                                             Para Gmail, debes usar una "Contraseña de Aplicación" si tienes 2FA activado.
                                         </p>
                                     </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* TAB 8: BACKUPS */}
+                        {activeTab === 'backups' && (
+                            <div className="fade-in">
+                                <div style={s.sectionTitle}>
+                                    <HardDrive size={20} /> Configuración de Backups
+                                </div>
+                                <p style={{ ...s.subtitle, marginBottom: '24px' }}>
+                                    Configure las ubicaciones donde se guardarán las copias de seguridad del sistema.
+                                </p>
+
+                                {/* RUTA LOCAL */}
+                                <div style={s.fieldGroup}>
+                                    <label style={s.label}>RUTA DE BACKUPS LOCALES</label>
+                                    <div style={s.inputWrapper}>
+                                        <input
+                                            type="text"
+                                            value={backupLocalPath}
+                                            onChange={(e) => setBackupLocalPath(e.target.value)}
+                                            style={s.input}
+                                            placeholder="Ej: C:\\Backups\\Sistema"
+                                        />
+                                        <span
+                                            style={{ ...s.inputBadge, cursor: 'pointer', backgroundColor: '#eff6ff', padding: '4px 8px', borderRadius: '8px', right: '8px', display: 'flex', alignItems: 'center', gap: '4px', color: '#2563eb', fontWeight: 'bold' }}
+                                            onClick={handleSelectFolder}
+                                            title="Seleccionar carpeta"
+                                        >
+                                            <Folder size={14} /> Seleccionar
+                                        </span>
+                                    </div>
+                                    <p style={{ ...s.subtitle, marginTop: '8px' }}>
+                                        Ruta absoluta donde se guardarán los archivos de backup en el servidor local.
+                                    </p>
                                 </div>
                             </div>
                         )}

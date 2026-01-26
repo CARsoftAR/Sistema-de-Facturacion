@@ -2898,6 +2898,27 @@ def api_productos_detalle(request, id):
     })
 
 
+@login_required
+def api_productos_generar_codigo(request):
+    """Genera un código de barras único para un nuevo producto"""
+    import random
+    import string
+    
+    intentos = 0
+    max_intentos = 100
+    
+    while intentos < max_intentos:
+        # Generar un código numérico de 10 dígitos
+        codigo = ''.join(random.choices(string.digits, k=10))
+        
+        # Verificar si ya existe un producto con ese código
+        if not Producto.objects.filter(codigo=codigo).exists():
+            return JsonResponse({'ok': True, 'codigo': codigo})
+        
+        intentos += 1
+    
+    return JsonResponse({'ok': False, 'error': 'No se pudo generar un código único después de varios intentos'}, status=500)
+
 @csrf_exempt
 def api_productos_nuevo(request):
     if request.method != "POST":

@@ -8,6 +8,7 @@ const firePremium = (options) => {
     const {
         title,
         text,
+        html,
         iconHtml = '',
         confirmText = 'Aceptar',
         confirmColor = '#2563eb',
@@ -17,16 +18,20 @@ const firePremium = (options) => {
         showConfirmButton = true
     } = options;
 
+    const content = html || `
+        <p style="color: #64748b; font-weight: 500; font-size: 0.875rem; padding: 0 10px; line-height: 1.5; margin: 0;">
+            ${text || ''}
+        </p>
+    `;
+
     return Swal.fire({
         html: `
             <div style="display: flex; flex-direction: column; align-items: center; font-family: 'Inter', sans-serif;">
                 <div style="margin-bottom: 20px;">
                     ${iconHtml}
                 </div>
-                <h3 style="font-size: 1.5rem; font-weight: 900; color: #1e293b; margin-bottom: 8px; margin-top: 0;">${title}</h3>
-                <p style="color: #64748b; font-weight: 500; font-size: 0.875rem; padding: 0 10px; line-height: 1.5; margin: 0;">
-                    ${text || ''}
-                </p>
+                <h3 style="font-size: 1.5rem; font-weight: 900; color: #1e293b; margin-bottom: 12px; margin-top: 0;">${title}</h3>
+                ${content}
             </div>
         `,
         showConfirmButton: showConfirmButton,
@@ -35,31 +40,30 @@ const firePremium = (options) => {
         cancelButtonText: cancelText,
         buttonsStyling: false,
         reverseButtons: true,
-        backdrop: 'rgba(15, 23, 42, 0.6)',
+        backdrop: 'rgba(15, 23, 42, 0.4)',
         padding: '2rem',
         timer: timer,
+        icon: undefined,
         customClass: {
-            popup: 'rounded-premium-alert shadow-2xl border border-slate-200 overflow-hidden w-full max-w-sm',
+            popup: 'rounded-premium-alert shadow-2xl border-0 overflow-hidden w-full max-w-sm',
             actions: 'w-full flex gap-3 mt-8',
-            confirmButton: 'flex-1 py-3.5 bg-blue-600 text-white rounded-xl font-bold shadow-lg hover:bg-blue-700 transition-all text-sm uppercase tracking-wide border-0 outline-none',
-            cancelButton: 'flex-1 py-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-500 hover:bg-slate-50 transition-all text-sm uppercase tracking-wide bg-transparent'
+            confirmButton: 'flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold shadow-lg hover:bg-blue-700 transition-all text-sm uppercase tracking-wide border-0 outline-none',
+            cancelButton: 'flex-1 py-3 border border-slate-200 rounded-xl font-bold text-slate-500 hover:bg-slate-50 transition-all text-sm uppercase tracking-wide bg-transparent'
         },
         didOpen: (popup) => {
-            // Inyectar clase de redondeado masivo si no existiera
-            popup.style.borderRadius = '2rem';
+            popup.style.borderRadius = '2.5rem';
             const confirmBtn = popup.querySelector('.swal2-confirm');
             if (confirmBtn) {
                 confirmBtn.style.backgroundColor = confirmColor;
-                if (confirmColor === '#ef4444') {
-                    confirmBtn.style.boxShadow = '0 10px 15px -3px rgba(239, 68, 68, 0.3)';
-                } else {
-                    confirmBtn.style.boxShadow = '0 10px 15px -3px rgba(59, 130, 246, 0.3)';
-                }
+                confirmBtn.style.boxShadow = 'none';
+                confirmBtn.style.outline = 'none';
                 confirmBtn.style.flex = '1';
                 confirmBtn.style.display = showConfirmButton ? 'block' : 'none';
             }
             const cancelBtn = popup.querySelector('.swal2-cancel');
             if (cancelBtn) {
+                cancelBtn.style.boxShadow = 'none';
+                cancelBtn.style.outline = 'none';
                 cancelBtn.style.flex = '1';
             }
         }
@@ -77,49 +81,71 @@ export const showConfirmationAlert = async (title, text, confirmText = 'Confirma
     });
 };
 
-export const showSuccessAlert = async (title, text, confirmText = 'Aceptar', options = {}) => {
-    const icon = `
-        <div style="width: 80px; height: 80px; background-color: #f0fdf4; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 1px solid #dcfce7; color: #16a34a;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-        </div>
+export const showSuccessAlert = async (title, text, confirmText = 'OK', options = {}) => {
+    // Icono con círculo de fondo verde claro Y borde circular verde
+    const iconHtml = `
+        <svg width="84" height="84" viewBox="0 0 84 84" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: block;">
+            <circle cx="42" cy="42" r="40" fill="#d1fae5"/>
+            <circle cx="42" cy="42" r="40" stroke="#86efac" stroke-width="4" fill="none"/>
+            <path d="M56 32L35.375 52.625L28 45.25" stroke="#10b981" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
     `;
     return firePremium({
         title,
         text,
-        iconHtml: icon,
+        iconHtml: iconHtml,
         confirmText,
-        variant: 'success',
+        confirmColor: '#2563eb',
+        ...options
+    });
+};
+
+export const showErrorAlert = async (title, text, confirmText = 'Entendido', options = {}) => {
+    const iconHtml = `
+        <svg width="84" height="84" viewBox="0 0 84 84" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="42" cy="42" r="42" fill="#fee2e2"/>
+            <path d="M52 32L32 52M32 32L52 52" stroke="#ef4444" stroke-width="7" stroke-linecap="round"/>
+        </svg>
+    `;
+    return firePremium({
+        title,
+        text,
+        iconHtml: iconHtml,
+        confirmText,
         confirmColor: '#2563eb',
         ...options
     });
 };
 
 export const showWarningAlert = async (title, text, confirmText = 'Entendido', options = {}) => {
-    const icon = `
-        <div style="width: 80px; height: 80px; background-color: #fff7ed; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 1px solid #ffedd5; color: #f97316;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-        </div>
+    const iconHtml = `
+        <svg width="84" height="84" viewBox="0 0 84 84" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="42" cy="42" r="42" fill="#fef3c7"/>
+            <path d="M42 28V46M42 56H42.02" stroke="#f59e0b" stroke-width="7" stroke-linecap="round"/>
+        </svg>
     `;
     return firePremium({
         title,
         text,
-        iconHtml: icon,
+        iconHtml: iconHtml,
         confirmText,
         showCancel: false,
+        confirmColor: '#2563eb',
         ...options
     });
 };
 
 export const showDeleteAlert = async (title, text, confirmText = 'Eliminar', options = {}) => {
-    const icon = `
-        <div style="width: 80px; height: 80px; background-color: #fef2f2; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 1px solid #fee2e2; color: #dc2626;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-        </div>
+    const iconHtml = `
+        <svg width="84" height="84" viewBox="0 0 84 84" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="42" cy="42" r="42" fill="#fee2e2"/>
+            <path d="M54 30H30M32 30V54C32 55.1046 32.8954 56 34 56H50C51.1046 56 52 55.1046 52 54V30M38 30V26C38 24.8954 38.8954 24 40 24H44C45.1046 24 46 24.8954 46 26V30" stroke="#ef4444" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
     `;
     return firePremium({
         title,
         text,
-        iconHtml: icon,
+        iconHtml: iconHtml,
         confirmText,
         confirmColor: '#ef4444',
         showCancel: true,
