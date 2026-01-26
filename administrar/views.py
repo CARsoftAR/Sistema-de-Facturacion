@@ -4157,51 +4157,41 @@ def invoice_template_edit(request, template_id=None):
 
 @login_required
 def invoice_print(request, venta_id):
+    from .utils_pdf import render_to_pdf
     venta = get_object_or_404(Venta, pk=venta_id)
     
     # Obtener el modelo solicitado
     model_param = request.GET.get('model')
-    
     empresa = Empresa.objects.first()
     
-    # Si no se especifica modelo, usar el configurado en la empresa
-    if not model_param:
-        if empresa and empresa.papel_impresion in ['T80', 'T58']:
-            model = 'ticket'
-        else:
-            model = 'modern'
-    else:
-        model = model_param
+    # Si es ticket, mantenemos el renderizado HTML por ahora (impresora térmica)
+    if model_param == 'ticket' or (not model_param and empresa and empresa.papel_impresion in ['T80', 'T58']):
+        context = {
+            'venta': venta,
+            'cliente': venta.cliente,
+            'detalles': venta.detalles.all(),
+            'empresa': empresa,
+        }
+        return render(request, 'administrar/comprobantes/inv_ticket.html', context)
 
-    # Lista de modelos válidos (catálogo de 10 + ticket)
-    modelos_validos = ['modern', 'minimal', 'classic', 'elegant', 'tech', 'industrial', 'eco', 'compact', 'luxury', 'bold', 'ticket']
-    if model not in modelos_validos:
-        model = 'modern'
-        
-    # Construir el nombre de la plantilla
-    template_name = f'administrar/comprobantes/inv_{model}.html'
-    
-    # Obtener la plantilla activa (fallback para datos extra si es necesario)
-    template_config = InvoiceTemplate.objects.filter(active=True).first()
-    if not template_config:
-        template_config = InvoiceTemplate.objects.first()
-    
-    # Contexto para la factura
+    # Para facturas A4, generamos PDF profesional
     context = {
         'venta': venta,
         'cliente': venta.cliente,
         'detalles': venta.detalles.all(),
-        'template': template_config,
         'empresa': empresa,
-        'fecha_actual': venta.fecha,
         'is_preview': request.GET.get('preview') == 'true'
     }
     
-    try:
-        return render(request, template_name, context)
-    except:
-        # Fallback a modern si la específica no existe
-        return render(request, 'administrar/comprobantes/inv_modern.html', context)
+    response = render_to_pdf('administrar/comprobantes/inv_pdf.html', context)
+    if response:
+        filename = f"Factura_{venta.numero_factura_formateado.replace('-', '_')}.pdf"
+        response['Content-Disposition'] = f'inline; filename="{filename}"'
+        return response
+        
+    # Fallback to HTML if PDF fails
+    return render(request, 'administrar/comprobantes/inv_modern.html', context)
+
 
 from django.views.decorators.clickjacking import xframe_options_exempt
 
@@ -8917,8 +8907,9 @@ def api_presupuesto_convertir_a_pedido(request, id):
 
 @login_required
 def presupuesto_pdf(request, id):
-    """Genera la visualización premium de un presupuesto"""
+    """Genera la visualización premium de un presupuesto en PDF"""
     from .models import Presupuesto, Empresa
+    from .utils_pdf import render_to_pdf
     
     try:
         presupuesto = Presupuesto.objects.prefetch_related('detalles__producto').select_related('cliente').get(id=id)
@@ -8929,7 +8920,14 @@ def presupuesto_pdf(request, id):
             'empresa': empresa,
         }
         
+        response = render_to_pdf('administrar/comprobantes/pre_pdf.html', context)
+        if response:
+            filename = f"Presupuesto_{presupuesto.id}.pdf"
+            response['Content-Disposition'] = f'inline; filename="{filename}"'
+            return response
+            
         return render(request, 'administrar/comprobantes/pre_modern.html', context)
+
         
     except Presupuesto.DoesNotExist:
         return HttpResponse("Presupuesto no encontrado", status=404)

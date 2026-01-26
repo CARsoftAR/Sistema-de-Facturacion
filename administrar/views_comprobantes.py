@@ -111,34 +111,26 @@ def detalle_remito(request, id):
 
 @login_required
 def imprimir_remito(request, id):
+    from .utils_pdf import render_to_pdf
     remito = get_object_or_404(Remito, pk=id)
     empresa = Empresa.objects.first()
     
-    model = request.GET.get('model', 'modern')
-    modelos_validos = ['modern', 'minimal', 'classic', 'elegant', 'tech', 'industrial', 'eco', 'compact', 'luxury', 'bold']
-    if model not in modelos_validos:
-        model = 'modern'
-        
     context = {'remito': remito, 'empresa': empresa}
-    template_name = f'administrar/comprobantes/rem_{model}.html'
     
-    try:
-        return render(request, template_name, context)
-    except:
-        return render(request, 'administrar/comprobantes/rem_modern.html', context)
+    response = render_to_pdf('administrar/comprobantes/rem_pdf.html', context)
+    if response:
+        filename = f"Remito_{remito.numero_formateado.replace('-', '_')}.pdf"
+        response['Content-Disposition'] = f'inline; filename="{filename}"'
+        return response
+        
+    return render(request, 'administrar/comprobantes/rem_modern.html', context)
+
 
 @login_required
 def imprimir_nc(request, id):
+    from .utils_pdf import render_to_pdf
     nc = get_object_or_404(NotaCredito, pk=id)
     empresa = Empresa.objects.first()
-    
-    model = request.GET.get('model', 'modern')
-    modelos_validos = ['modern', 'minimal', 'classic', 'elegant', 'tech', 'industrial', 'eco', 'compact', 'luxury', 'bold']
-    
-    if model not in modelos_validos:
-        model = 'modern'
-        
-    template_name = f'administrar/comprobantes/nc_{model}.html'
     
     context = {
         'nota': nc,
@@ -146,23 +138,19 @@ def imprimir_nc(request, id):
         'detalles': nc.detalles.all()
     }
     
-    try:
-        return render(request, template_name, context)
-    except:
-        return render(request, 'administrar/comprobantes/nc_modern.html', context)
+    response = render_to_pdf('administrar/comprobantes/nc_nd_pdf.html', context)
+    if response:
+        filename = f"NotaCredito_{nc.numero_formateado.replace('-', '_')}.pdf"
+        response['Content-Disposition'] = f'inline; filename="{filename}"'
+        return response
+        
+    return render(request, 'administrar/comprobantes/nc_modern.html', context)
 
 @login_required
 def imprimir_nd(request, id):
+    from .utils_pdf import render_to_pdf
     nd = get_object_or_404(NotaDebito, pk=id)
     empresa = Empresa.objects.first()
-    
-    model = request.GET.get('model', 'modern')
-    modelos_validos = ['modern', 'minimal', 'classic', 'elegant', 'tech', 'industrial', 'eco', 'compact', 'luxury', 'bold']
-    
-    if model not in modelos_validos:
-        model = 'modern'
-        
-    template_name = f'administrar/comprobantes/nd_{model}.html'
     
     context = {
         'nota': nd,
@@ -170,10 +158,13 @@ def imprimir_nd(request, id):
         'detalles': nd.detalles.all()
     }
     
-    try:
-        return render(request, template_name, context)
-    except:
-        return render(request, 'administrar/comprobantes/nd_modern.html', context)
+    response = render_to_pdf('administrar/comprobantes/nc_nd_pdf.html', context)
+    if response:
+        filename = f"NotaDebito_{nd.numero_formateado.replace('-', '_')}.pdf"
+        response['Content-Disposition'] = f'inline; filename="{filename}"'
+        return response
+        
+    return render(request, 'administrar/comprobantes/nd_modern.html', context)
 
 @login_required
 def api_nota_credito_detalle(request, id):

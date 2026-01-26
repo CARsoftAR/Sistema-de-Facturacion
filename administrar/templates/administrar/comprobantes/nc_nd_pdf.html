@@ -1,0 +1,82 @@
+{% extends "administrar/comprobantes/base_pdf.html" %}
+{% load static %}
+
+{% block header %}
+<table class="header-table">
+    <tr>
+        <td style="width: 50%;">
+            {% if empresa.logo %}
+            <img src="{{ empresa.logo.url }}" class="logo">
+            {% else %}
+            <div class="company-name">{{ empresa.nombre }}</div>
+            {% endif %}
+            <div class="text-muted" style="font-size: 9pt; margin-top: 5pt;">
+                {{ empresa.direccion }}<br>
+                {{ empresa.email }} | Tel: {{ empresa.telefono }}
+            </div>
+        </td>
+        <td style="width: 50%; text-align: right;">
+            <div class="invoice-type" style="font-size: 18pt;">
+                {% if nota.tipo_comprobante|slice:":2" == "NC" %}NOTA DE CRÉDITO{% else %}NOTA DE DÉBITO{% endif %}
+            </div>
+            <div style="margin-top: 10pt;">
+                <span class="text-bold">NÚMERO:</span> {{ nota.numero_formateado }}<br>
+                <span class="text-bold">FECHA:</span> {{ nota.fecha|date:"d/m/Y" }}<br>
+                {% if nota.venta_asociada %}
+                <span class="text-bold">FACTURA REF:</span> {{ nota.venta_asociada.numero_factura_formateado }}
+                {% endif %}
+            </div>
+        </td>
+    </tr>
+</table>
+{% endblock %}
+
+{% block content %}
+<div class="info-box">
+    <table style="border: none;">
+        <tr>
+            <td style="width: 50%; border: none;">
+                <span class="text-bold">CLIENTE:</span> {{ nota.cliente.nombre }}<br>
+                <span class="text-bold">CUIT:</span> {{ nota.cliente.cuit|default:"-" }}
+            </td>
+            <td style="width: 50%; border: none; text-align: right;">
+                <span class="text-bold">COND. FISCAL:</span> {{
+                nota.cliente.get_condicion_fiscal_display|default:"Consumidor Final" }}
+            </td>
+        </tr>
+    </table>
+</div>
+
+<div style="margin-bottom: 20pt; padding: 5pt; background-color: #fcfcfc; border-left: 3px solid #eee;">
+    <span class="text-bold">MOTIVO:</span> {{ nota.motivo|default:"Ajuste de facturación" }}
+</div>
+
+<table class="items-table">
+    <thead>
+        <tr>
+            <th style="width: 10%; text-align: center;">CANT.</th>
+            <th style="width: 70%; text-align: left;">CONCEPTO</th>
+            <th style="width: 20%; text-align: right;">TOTAL</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in detalles %}
+        <tr>
+            <td style="text-align: center;">{{ item.cantidad|floatformat:0 }}</td>
+            <td>{{ item.producto.descripcion }}</td>
+            <td style="text-align: right;">$ {{ item.subtotal|floatformat:2 }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div class="total-box">
+    <table style="border: none;">
+        <tr>
+            <td style="border: none; font-size: 14pt;" class="text-bold">TOTAL COMPROBANTE:</td>
+            <td style="border: none; font-size: 14pt; text-align: right;" class="text-bold">$ {{
+                nota.total|floatformat:2 }}</td>
+        </tr>
+    </table>
+</div>
+{% endblock %}
