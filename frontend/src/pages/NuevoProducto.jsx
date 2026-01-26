@@ -40,7 +40,7 @@ const NuevoProducto = () => {
 
                 setMarcas(dataMarcas.data || []);
                 setRubros(dataRubros.data || []);
-                setProveedores(dataProveedores.proveedores || []);
+                setProveedores(dataProveedores.data || dataProveedores.proveedores || []);
 
                 // Config
                 const resConfig = await fetch('/api/config/obtener/');

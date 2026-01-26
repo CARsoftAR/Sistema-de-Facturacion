@@ -31,8 +31,8 @@ const ProductoForm = ({ producto, onClose, onSave }) => {
                 const dataProveedores = await resProveedores.json();
 
                 setMarcas(dataMarcas.data || []);
-                setRubros(dataRubros.length ? dataRubros : []);
-                setProveedores(dataProveedores || []);
+                setRubros(dataRubros.length ? dataRubros : (dataRubros.data || []));
+                setProveedores(dataProveedores.data || dataProveedores.proveedores || (Array.isArray(dataProveedores) ? dataProveedores : []));
 
                 // Cargar margen por defecto
                 const resConfig = await fetch('/api/config/obtener/');

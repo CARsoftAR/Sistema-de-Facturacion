@@ -1736,9 +1736,12 @@ def api_proveedores_lista(request):
         "cuit": p.cuit,
         "telefono": p.telefono,
         "email": p.email,
+        "direccion": p.direccion,
+        "condicion_fiscal": p.condicion_fiscal,
+        "saldo_actual": float(p.saldo_actual or 0),
     } for p in proveedores]
 
-    return JsonResponse({"ok": True, "proveedores": data})
+    return JsonResponse({"ok": True, "data": data})
 
 
 @csrf_exempt

@@ -114,9 +114,9 @@ const Reportes = () => {
             const dataPr = await resPr.json();
             console.log('Respuesta proveedores API:', dataPr);
 
-            if (dataPr.ok && dataPr.proveedores) {
-                setProveedores(dataPr.proveedores);
-                console.log('Proveedores cargados (formato ok):', dataPr.proveedores.length);
+            if (dataPr.ok && (dataPr.data || dataPr.proveedores)) {
+                setProveedores(dataPr.data || dataPr.proveedores);
+                console.log('Proveedores cargados (formato ok):', (dataPr.data || dataPr.proveedores).length);
             } else if (Array.isArray(dataPr)) {
                 setProveedores(dataPr); // Fallback por si acaso
                 console.log('Proveedores cargados (formato array):', dataPr.length);
