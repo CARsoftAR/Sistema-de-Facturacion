@@ -4,41 +4,39 @@
 {% block header %}
 <table class="header-table">
     <tr>
-        <td style="width: 50%;">
-            {% if empresa.logo %}
-            <img src="{{ empresa.logo.url }}" class="logo">
-            {% else %}
-            <div class="company-name">{{ empresa.nombre }}</div>
-            {% endif %}
-            <div class="text-muted" style="font-size: 9pt; margin-top: 5pt;">
-                {{ empresa.direccion }}<br>
-                {{ empresa.email }} | Tel: {{ empresa.telefono }}<br>
-                CUIT: {{ empresa.cuit|default:"-" }}
+        <td class="issuer-data">
+            <h2 class="issuer-title" style="color: #2e7d32;">{{ empresa.nombre|upper }}</h2>
+            <p class="m-0"><strong>Razón Social:</strong> {{ empresa.nombre }}</p>
+            <p class="m-0">{{ empresa.direccion }}</p>
+            <p class="m-0">Tel: {{ empresa.telefono }}</p>
+        </td>
+        <td class="text-center" style="vertical-align: top; width: 20%;">
+            <div class="type-box" style="border-color: #2e7d32;">
+                <span class="type-letter" style="color: #2e7d32;">P</span>
+                <span class="type-code" style="color: #2e7d32;">PRESUP.</span>
             </div>
         </td>
-        <td style="width: 50%; text-align: right;">
-            <div class="invoice-type" style="font-size: 18pt;">PRESUPUESTO</div>
-            <div style="margin-top: 10pt;">
-                <span class="text-bold">NÚMERO:</span> #{{ presupuesto.id }}<br>
-                <span class="text-bold">FECHA:</span> {{ presupuesto.fecha|date:"d/m/Y" }}<br>
-                <span class="text-bold">VALIDEZ:</span> {{ presupuesto.validez_dias|default:"10" }} días
-            </div>
+        <td class="text-right" style="font-size: 13px; width: 40%;">
+            <h3 class="m-0">PRESUPUESTO</h3>
+            <p class="m-0"><strong>N°:</strong> #{{ presupuesto.id }}</p>
+            <p class="m-0"><strong>Fecha:</strong> {{ presupuesto.fecha|date:"d/m/Y" }}</p>
+            <p class="m-0"><strong>Validez:</strong> {{ presupuesto.validez_dias|default:"10" }} días</p>
         </td>
     </tr>
 </table>
 {% endblock %}
 
 {% block content %}
-<div class="info-box">
+<div class="client-section">
     <table style="border: none;">
         <tr>
-            <td style="width: 50%; border: none;">
-                <span class="text-bold">SOLICITANTE:</span> {{ presupuesto.cliente.nombre }}<br>
-                <span class="text-bold">DOMICILIO:</span> {{ presupuesto.cliente.domicilio|default:"-" }}
+            <td style="border: none; width: 60%;">
+                <p class="m-0"><strong>Solicitante:</strong> {{ presupuesto.cliente.nombre }}</p>
+                <p class="m-0"><strong>Dirección:</strong> {{ presupuesto.cliente.domicilio|default:"-" }}</p>
             </td>
-            <td style="width: 50%; border: none; text-align: right;">
-                <span class="text-bold">CUIT:</span> {{ presupuesto.cliente.cuit|default:"-" }}<br>
-                <span class="text-bold">TELEFONO:</span> {{ presupuesto.cliente.telefono|default:"-" }}
+            <td style="border: none; width: 40%; text-align: right;">
+                <p class="m-0"><strong>CUIT:</strong> {{ presupuesto.cliente.cuit|default:"-" }}</p>
+                <p class="m-0"><strong>Tel:</strong> {{ presupuesto.cliente.telefono|default:"-" }}</p>
             </td>
         </tr>
     </table>
@@ -47,36 +45,49 @@
 <table class="items-table">
     <thead>
         <tr>
-            <th style="width: 10%; text-align: center;">CANT.</th>
-            <th style="width: 55%; text-align: left;">DESCRIPCIÓN</th>
-            <th style="width: 15%; text-align: right;">P. UNIT.</th>
-            <th style="width: 20%; text-align: right;">SUBTOTAL</th>
+            <th>Cod.</th>
+            <th>Descripción</th>
+            <th class="text-center">Cant.</th>
+            <th class="text-right">Precio Unit.</th>
+            <th class="text-right">Subtotal</th>
         </tr>
     </thead>
     <tbody>
         {% for item in presupuesto.detalles.all %}
         <tr>
-            <td style="text-align: center;">{{ item.cantidad|floatformat:0 }}</td>
+            <td>{{ item.producto.id }}</td>
             <td>{{ item.producto.descripcion }}</td>
-            <td style="text-align: right;">$ {{ item.precio_unitario|floatformat:2 }}</td>
-            <td style="text-align: right;">$ {{ item.subtotal|floatformat:2 }}</td>
+            <td class="text-center">{{ item.cantidad|floatformat:2 }}</td>
+            <td class="text-right">{{ item.precio_unitario|floatformat:2 }}</td>
+            <td class="text-right">{{ item.subtotal|floatformat:2 }}</td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
 
-<div class="total-box">
-    <table style="border: none;">
-        <tr>
-            <td style="border: none; font-size: 14pt;" class="text-bold">TOTAL ESTIMADO:</td>
-            <td style="border: none; font-size: 14pt; text-align: right;" class="text-bold">$ {{
-                presupuesto.total|floatformat:2 }}</td>
-        </tr>
-    </table>
-</div>
-
-<div style="margin-top: 30pt; font-size: 9pt; color: #666; border: 1px dashed #ccc; padding: 10pt;">
-    <span class="text-bold">Nota:</span> Este documento no representa una factura legal y los precios están sujetos a
-    cambios sin previo aviso hasta la confirmación del pedido.
-</div>
+<table style="margin-top: 20pt; border: none;">
+    <tr>
+        <td style="border: none; width: 50%;">
+            <div style="font-size: 8pt; color: #666; border: 1px dashed #ccc; padding: 5pt;">
+                <strong>Nota:</strong> Este documento es una estimación de precios y no tiene valor legal como factura.
+                Los precios pueden variar hasta la confirmación de la orden.
+            </div>
+        </td>
+        <td style="border: none; width: 50%; text-align: right;">
+            <table class="totals-box" align="right">
+                <tr>
+                    <td colspan="2" class="grand-total">
+                        <table style="border: none;">
+                            <tr>
+                                <td style="border: none; font-size: 14pt;" class="text-bold">TOTAL ESTIMADO:</td>
+                                <td style="border: none; font-size: 14pt;" class="text-right text-bold">$ {{
+                                    presupuesto.total|floatformat:2 }}</td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
 {% endblock %}

@@ -4,43 +4,42 @@
 {% block header %}
 <table class="header-table">
     <tr>
-        <td style="width: 50%;">
-            {% if empresa.logo %}
-            <img src="{{ empresa.logo.url }}" class="logo">
-            {% else %}
-            <div class="company-name">{{ empresa.nombre }}</div>
-            {% endif %}
-            <div class="text-muted" style="font-size: 9pt; margin-top: 5pt;">
-                {{ empresa.direccion }}<br>
-                {{ empresa.email }} | Tel: {{ empresa.telefono }}
+        <td class="issuer-data">
+            <h2 class="issuer-title" style="color: #455a64;">{{ empresa.nombre|upper }}</h2>
+            <p class="m-0"><strong>Razón Social:</strong> {{ empresa.nombre }}</p>
+            <p class="m-0">{{ empresa.direccion }}</p>
+            <p class="m-0">Tel: {{ empresa.telefono }}</p>
+        </td>
+        <td class="text-center" style="vertical-align: top; width: 20%;">
+            <div class="type-box" style="border-color: #455a64;">
+                <span class="type-letter" style="color: #455a64;">R</span>
+                <span class="type-code" style="color: #455a64;">REMITO</span>
             </div>
         </td>
-        <td style="width: 50%; text-align: right;">
-            <div class="invoice-type" style="font-size: 18pt;">REMITO</div>
-            <div style="margin-top: 10pt;">
-                <span class="text-bold">NÚMERO:</span> {{ remito.numero_formateado }}<br>
-                <span class="text-bold">FECHA:</span> {{ remito.fecha|date:"d/m/Y" }}<br>
-                {% if remito.venta_asociada %}
-                <span class="text-bold">VENTA REF:</span> {{ remito.venta_asociada.numero_factura_formateado }}
-                {% endif %}
-            </div>
+        <td class="text-right" style="font-size: 13px; width: 40%;">
+            <h3 class="m-0">REMITO</h3>
+            <p class="m-0"><strong>N°:</strong> {{ remito.numero_formateado }}</p>
+            <p class="m-0"><strong>Fecha:</strong> {{ remito.fecha|date:"d/m/Y" }}</p>
+            {% if remito.venta_asociada %}
+            <p class="m-0"><strong>Venta Ref:</strong> {{ remito.venta_asociada.numero_factura_formateado }}</p>
+            {% endif %}
         </td>
     </tr>
 </table>
 {% endblock %}
 
 {% block content %}
-<div class="info-box">
+<div class="client-section">
     <table style="border: none;">
         <tr>
-            <td style="width: 50%; border: none;">
-                <span class="text-bold">DESTINATARIO:</span> {{ remito.cliente.nombre }}<br>
-                <span class="text-bold">DIRECCIÓN DE ENTREGA:</span> {{
-                remito.direccion_entrega|default:remito.cliente.domicilio }}
+            <td style="border: none; width: 60%;">
+                <p class="m-0"><strong>Destinatario:</strong> {{ remito.cliente.nombre }}</p>
+                <p class="m-0"><strong>Dirección Entrega:</strong> {{
+                    remito.direccion_entrega|default:remito.cliente.domicilio }}</p>
             </td>
-            <td style="width: 50%; border: none; text-align: right;">
-                <span class="text-bold">CUIT:</span> {{ remito.cliente.cuit|default:"-" }}<br>
-                <span class="text-bold">LOCALIDAD:</span> {{ remito.cliente.localidad.nombre|default:"-" }}
+            <td style="border: none; width: 40%; text-align: right;">
+                <p class="m-0"><strong>CUIT:</strong> {{ remito.cliente.cuit|default:"-" }}</p>
+                <p class="m-0"><strong>Localidad:</strong> {{ remito.cliente.localidad.nombre|default:"-" }}</p>
             </td>
         </tr>
     </table>
@@ -49,45 +48,41 @@
 <table class="items-table">
     <thead>
         <tr>
-            <th style="width: 15%; text-align: center;">CANTIDAD</th>
-            <th style="width: 85%; text-align: left;">DESCRIPCIÓN DE MERCADERÍA</th>
+            <th style="width: 20%;">Cod.</th>
+            <th style="width: 60%;">Descripción de Mercadería</th>
+            <th style="width: 20%;" class="text-center">Cantidad</th>
         </tr>
     </thead>
     <tbody>
         {% for item in remito.detalles.all %}
         <tr>
-            <td style="text-align: center;">{{ item.cantidad|floatformat:0 }}</td>
+            <td>{{ item.producto.id }}</td>
             <td>{{ item.producto.descripcion }}</td>
+            <td class="text-center">{{ item.cantidad|floatformat:2 }}</td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
 
 {% if remito.observaciones %}
-<div style="margin-top: 15pt; font-size: 9pt;">
-    <span class="text-bold">OBSERVACIONES:</span> {{ remito.observaciones }}
+<div style="margin-top: 15pt; font-size: 10pt; border: 1px solid #eee; padding: 5pt;">
+    <strong>OBSERVACIONES:</strong> {{ remito.observaciones }}
 </div>
 {% endif %}
 
-<div style="margin-top: 50pt;">
-    <table style="border: none;">
-        <tr>
-            <td
-                style="width: 45%; border-top: 1px solid #333; text-align: center; padding-top: 5pt; border-bottom: none;">
-                Firma y Aclaración Receptor
-            </td>
-            <td style="width: 10%; border: none;"></td>
-            <td
-                style="width: 45%; border-top: 1px solid #333; text-align: center; padding-top: 5pt; border-bottom: none;">
-                DNI / Documento
-            </td>
-        </tr>
-    </table>
-</div>
-{% endblock %}
+<table style="margin-top: 60pt; border: none;">
+    <tr>
+        <td style="width: 45%; border-top: 1px solid #333; text-align: center; padding-top: 5pt; border-bottom: none;">
+            Firma y Aclaración Receptor
+        </td>
+        <td style="width: 10%; border: none;"></td>
+        <td style="width: 45%; border-top: 1px solid #333; text-align: center; padding-top: 5pt; border-bottom: none;">
+            DNI / Documento
+        </td>
+    </tr>
+</table>
 
-{% block footer %}
-<div style="border-top: 1px solid #eee; padding-top: 5pt; font-size: 8pt; color: #999; text-align: center;">
+<div style="margin-top: 30pt; text-align: center; font-size: 9pt; color: #666;">
     MERCADERÍA RECIBIDA EN CONFORMIDAD
 </div>
 {% endblock %}

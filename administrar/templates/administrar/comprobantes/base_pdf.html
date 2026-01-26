@@ -6,26 +6,27 @@
     <style>
         @page {
             size: a4 portrait;
+            margin: 1cm;
 
             @frame header_frame {
                 -pdf-frame-content: header_content;
-                left: 1.5cm;
-                width: 18cm;
+                left: 1cm;
+                width: 19cm;
                 top: 1cm;
-                height: 3cm;
+                height: 3.5cm;
             }
 
             @frame content_frame {
-                left: 1.5cm;
-                width: 18cm;
-                top: 4.5cm;
-                height: 18cm;
+                left: 1cm;
+                width: 19cm;
+                top: 4.8cm;
+                height: 21cm;
             }
 
             @frame footer_frame {
                 -pdf-frame-content: footer_content;
-                left: 1.5cm;
-                width: 18cm;
+                left: 1cm;
+                width: 19cm;
                 top: 26cm;
                 height: 2.7cm;
             }
@@ -37,8 +38,10 @@
             color: #333;
             margin: 0;
             padding: 0;
+            background-color: white;
         }
 
+        /* Utilidades generales */
         .text-right {
             text-align: right;
         }
@@ -55,63 +58,87 @@
             color: #666;
         }
 
+        .m-0 {
+            margin: 0;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
         }
 
-        th {
-            background-color: #f0f0f0;
-            border-bottom: 2px solid #ddd;
-            padding: 5pt;
-        }
-
-        td {
-            padding: 5pt;
-            border-bottom: 1px solid #eee;
-        }
-
-        /* Utilidades para los comprobantes */
+        /* Estilos estilo Gani/AFIP */
         .header-table {
-            border: none;
-            margin-bottom: 20pt;
+            border-bottom: 2px solid #000;
         }
 
         .header-table td {
-            border: none;
-            padding: 0;
             vertical-align: top;
+            padding: 5pt 0;
         }
 
-        .logo {
-            max-width: 250px;
-            max-height: 80px;
-        }
-
-        .company-name {
+        .issuer-title {
+            color: #d32f2f;
             font-size: 18pt;
             font-weight: bold;
-            color: #2563eb;
+            margin: 0;
         }
 
-        .invoice-type {
+        .type-box {
+            border: 2px solid #000;
+            width: 40pt;
+            height: 40pt;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .type-letter {
             font-size: 24pt;
             font-weight: bold;
-            border: 1px solid #333;
-            padding: 5pt 10pt;
-            display: inline-block;
+            display: block;
+            line-height: normal;
         }
 
-        .info-box {
+        .type-code {
+            font-size: 7pt;
+            font-weight: bold;
+            display: block;
+        }
+
+        .client-section {
+            border: 1px solid #000;
+            padding: 5pt;
+            margin-bottom: 15pt;
+        }
+
+        .items-table th {
+            background-color: #eee;
+            border: 1px solid #000;
+            padding: 5pt;
+            font-size: 9pt;
+        }
+
+        .items-table td {
             border: 1px solid #ddd;
-            padding: 10pt;
-            margin-bottom: 20pt;
+            padding: 5pt;
+            font-size: 8pt;
         }
 
-        .total-box {
-            background-color: #f8fafc;
-            border: 1px solid #e2e8f0;
-            padding: 10pt;
+        .totals-box {
+            width: 200pt;
+        }
+
+        .grand-total {
+            font-size: 14pt;
+            font-weight: bold;
+            border-top: 2px solid #000;
+            padding-top: 5pt;
+        }
+
+        .cae-section {
+            text-align: right;
+            font-size: 10pt;
+            font-weight: bold;
             margin-top: 20pt;
         }
     </style>
@@ -131,7 +158,7 @@
         <div style="border-top: 1px solid #eee; padding-top: 5pt; font-size: 8pt; color: #999;">
             <table style="border: none;">
                 <tr>
-                    <td style="border: none;">{{ empresa.nombre }} - {{ empresa.direccion }}</td>
+                    <td style="border: none;">{{ empresa.nombre }} - Generado por Sistema CARsoft</td>
                     <td style="border: none; text-align: right;">Página <pdf:pagenumber> de <pdf:pagecount>
                     </td>
                 </tr>

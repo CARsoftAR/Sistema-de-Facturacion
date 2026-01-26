@@ -4,79 +4,83 @@
 {% block header %}
 <table class="header-table">
     <tr>
-        <td style="width: 50%;">
-            {% if empresa.logo %}
-            <img src="{{ empresa.logo.url }}" class="logo">
-            {% else %}
-            <div class="company-name">{{ empresa.nombre }}</div>
-            {% endif %}
-            <div class="text-muted" style="font-size: 9pt; margin-top: 5pt;">
-                {{ empresa.direccion }}<br>
-                {{ empresa.email }} | Tel: {{ empresa.telefono }}
+        <td class="issuer-data">
+            <h2 class="issuer-title" style="color: #00897b;">{{ empresa.nombre|upper }}</h2>
+            <p class="m-0"><strong>Razón Social:</strong> {{ empresa.nombre }}</p>
+            <p class="m-0">{{ empresa.direccion }}</p>
+            <p class="m-0">Tel: {{ empresa.telefono }}</p>
+        </td>
+        <td class="text-center" style="vertical-align: top; width: 20%;">
+            <div class="type-box" style="border-color: #00897b;">
+                <span class="type-letter" style="color: #00897b;">X</span>
+                <span class="type-code" style="color: #00897b;">RECIBO</span>
             </div>
         </td>
-        <td style="width: 50%; text-align: right;">
-            <div class="invoice-type" style="font-size: 18pt;">RECIBO</div>
-            <div style="margin-top: 10pt;">
-                <span class="text-bold">NÚMERO:</span> {{ recibo.numero_formateado }}<br>
-                <span class="text-bold">FECHA:</span> {{ recibo.fecha|date:"d/m/Y" }}
-            </div>
+        <td class="text-right" style="font-size: 13px; width: 40%;">
+            <h3 class="m-0">RECIBO</h3>
+            <p class="m-0"><strong>N°:</strong> {{ recibo.numero_formateado }}</p>
+            <p class="m-0"><strong>Fecha:</strong> {{ recibo.fecha|date:"d/m/Y" }}</p>
         </td>
     </tr>
 </table>
 {% endblock %}
 
 {% block content %}
-<div class="info-box">
+<div class="client-section" style="border-color: #00897b;">
     <table style="border: none;">
         <tr>
-            <td style="width: 100%; border: none;">
-                <span class="text-bold">RECIBIMOS DE:</span> {{ entidad.nombre }}<br>
-                <span class="text-bold">CONCEPTO:</span> {{ recibo.concepto|default:"Pago a cuenta" }}
+            <td style="border: none; width: 100%;">
+                <p class="m-0"><strong>Recibimos de:</strong> {{ entidad.nombre }}</p>
             </td>
         </tr>
     </table>
 </div>
 
-<div style="margin-top: 20pt; padding: 10pt; background-color: #f8fafc; border: 1px solid #e2e8f0; font-size: 14pt;">
+<div
+    style="margin-top: 15pt; padding: 10pt; background-color: #e0f2f1; border: 1px solid #00897b; font-size: 14pt; color: #00695c;">
     <span class="text-bold">LA SUMA DE:</span> $ {{ recibo.monto|floatformat:2 }}
 </div>
 
 <div style="margin-top: 20pt;">
-    <h3 style="font-size: 10pt; border-bottom: 1px solid #ddd; padding-bottom: 2pt;">DETALLE DE IMPUTACIÓN</h3>
+    <h3 style="font-size: 10pt; border-bottom: 2px solid #00897b; color: #00897b; padding-bottom: 2pt;">DETALLE DE
+        IMPUTACIÓN</h3>
     <table class="items-table">
         <thead>
             <tr>
-                <th style="width: 70%; text-align: left;">COMPROBANTE</th>
-                <th style="width: 30%; text-align: right;">IMPORTE</th>
+                <th style="width: 70%; background-color: #e0f2f1; border-color: #00897b; color: #00695c;">COMPROBANTE
+                </th>
+                <th style="width: 30%; background-color: #e0f2f1; border-color: #00897b; color: #00695c;"
+                    class="text-right">IMPORTE</th>
             </tr>
         </thead>
         <tbody>
             {% for item in recibo.items.all %}
             <tr>
                 <td>{{ item.descripcion|default:"Pago parcial" }}</td>
-                <td style="text-align: right;">$ {{ item.monto|floatformat:2 }}</td>
+                <td class="text-right">$ {{ item.monto|floatformat:2 }}</td>
             </tr>
             {% empty %}
             <tr>
                 <td>Pago a cuenta general</td>
-                <td style="text-align: right;">$ {{ recibo.monto|floatformat:2 }}</td>
+                <td class="text-right">$ {{ recibo.monto|floatformat:2 }}</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
 </div>
 
-<div style="margin-top: 50pt;">
-    <table style="border: none;">
-        <tr>
-            <td style="width: 45%; border: none;"></td>
-            <td style="width: 10%; border: none;"></td>
-            <td
-                style="width: 45%; border-top: 1px solid #333; text-align: center; padding-top: 5pt; border-bottom: none;">
-                Firma y Sello
-            </td>
-        </tr>
-    </table>
+<div style="margin-top: 20pt; font-size: 10pt;">
+    <p><strong>CONCEPTO:</strong> {{ recibo.concepto|default:"Pago a cuenta" }}</p>
 </div>
+
+<table style="margin-top: 60pt; border: none;">
+    <tr>
+        <td style="width: 45%; border: none;"></td>
+        <td style="width: 10%; border: none;"></td>
+        <td
+            style="width: 45%; border-top: 1px solid #00897b; text-align: center; padding-top: 5pt; border-bottom: none; color: #00695c;">
+            Firma y Sello
+        </td>
+    </tr>
+</table>
 {% endblock %}
