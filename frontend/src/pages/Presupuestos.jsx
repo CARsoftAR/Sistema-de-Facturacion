@@ -65,7 +65,7 @@ const Presupuestos = () => {
                 estado: filters.estado
             });
 
-            const response = await fetch(`/ api / presupuestos / listar /? ${params} `);
+            const response = await fetch(`/api/presupuestos/listar/?${params}`);
             const data = await response.json();
 
             if (data.ok) {

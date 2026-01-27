@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-    Printer, ArrowLeft, ShoppingCart, Truck, Calendar, DollarSign, FileText, CheckCircle2, Clock, AlertCircle, XCircle
+    Printer, ArrowLeft, ShoppingCart, Truck, Calendar, DollarSign, FileText, CheckCircle2, Clock, AlertCircle, XCircle, User, Receipt
 } from 'lucide-react';
 import { BtnPrint, BtnBack } from '../components/CommonButtons';
+import Swal from 'sweetalert2';
 
 const DetalleCompra = () => {
     const { id } = useParams();
@@ -45,23 +46,61 @@ const DetalleCompra = () => {
     }, [id]);
 
     const handlePrint = () => {
-        // Assuming there is a print view for purchases similar to sales
-        // If not, we might need to implement it or disable this button
         window.open(`/compras/imprimir/${id}/`, '_blank');
     };
 
+    const handleRecibir = async (orderId) => {
+        try {
+            const result = await Swal.fire({
+                title: '¿Recibir mercadería?',
+                text: "Esto ingresará el stock de los productos al sistema.",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#10b981',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Sí, recibir',
+                cancelButtonText: 'Cancelar'
+            });
+
+            if (result.isConfirmed) {
+                const response = await fetch(`/api/compras/orden/${orderId}/recibir/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+                    }
+                });
+
+                if (response.ok) {
+                    Swal.fire('¡Éxito!', 'Mercadería recibida correctamente.', 'success');
+                    // Refresh data
+                    const updatedResponse = await fetch(`/api/compras/orden/${id}/detalle/`);
+                    const updatedData = await updatedResponse.json();
+                    setCompra(updatedData);
+                } else {
+                    const errorMsg = await response.json();
+                    Swal.fire('Error', errorMsg.error || 'No se pudo procesar la recepción.', 'error');
+                }
+            }
+        } catch (error) {
+            console.error("Error receiving order:", error);
+            Swal.fire('Error de Conexión', 'No se pudo contactar con el servidor.', 'error');
+        }
+    };
+
     const getEstadoBadge = (estado) => {
-        switch (estado) {
-            case 'Recibida':
-            case 'Registrada':
-                return <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-bold flex items-center gap-2 w-fit"><CheckCircle2 size={16} /> Recibida</span>;
-            case 'Cancelada':
-            case 'Anulada':
-                return <span className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-bold flex items-center gap-2 w-fit"><XCircle size={16} /> Cancelada</span>;
-            case 'Pendiente':
-                return <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-bold flex items-center gap-2 w-fit"><Clock size={16} /> Pendiente</span>;
+        const est = estado?.toUpperCase();
+        switch (est) {
+            case 'RECIBIDA':
+                return <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-bold flex items-center gap-2 w-fit uppercase tracking-tighter"><CheckCircle2 size={16} /> Recibida</span>;
+            case 'CANCELADA':
+                return <span className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-bold flex items-center gap-2 w-fit uppercase tracking-tighter"><XCircle size={16} /> Cancelada</span>;
+            case 'PENDIENTE':
+                return <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-bold flex items-center gap-2 w-fit uppercase tracking-tighter"><Clock size={16} /> Pendiente</span>;
+            case 'APROBADA':
+                return <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-bold flex items-center gap-2 w-fit uppercase tracking-tighter"><CheckCircle2 size={16} /> Aprobada</span>;
             default:
-                return <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-bold">{estado}</span>;
+                return <span className="bg-slate-100 text-slate-800 px-3 py-1 rounded-full text-sm font-bold uppercase tracking-tighter">{estado}</span>;
         }
     };
 
@@ -70,134 +109,183 @@ const DetalleCompra = () => {
     if (!compra) return null;
 
     return (
-        <div className="container-fluid px-4 py-6 max-w-7xl mx-auto fade-in">
-            {/* Header */}
-            <div className="flex justify-between items-start mb-6">
-                <div className="flex items-center gap-4">
-                    <BtnBack onClick={() => navigate('/compras')} />
-                    <div>
-                        <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                            Orden de Compra <span className="text-blue-600">#{compra.id}</span>
-                        </h1>
-                        <p className="text-gray-500 flex items-center gap-2 mt-1">
-                            <Calendar size={14} /> Fecha: {compra.fecha}
-                        </p>
-                    </div>
-                </div>
-                {/* 
-                <div className="flex gap-2">
-                    <BtnPrint onClick={handlePrint} />
-                </div>
-                */}
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
+        <div className="p-6 pb-0 max-w-7xl mx-auto min-h-[calc(100vh-120px)] flex flex-col fade-in">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-0">
                 {/* Columna Izquierda: Info */}
-                <div className="lg:col-span-1 space-y-6">
-                    {/* Estado y Total Card */}
-                    <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-                        <div className="flex justify-between items-start mb-4">
-                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Estado</h3>
+                <div className="lg:col-span-4 space-y-6">
+                    {/* Header */}
+                    <div className="flex justify-between items-start">
+                        <div className="flex items-center gap-4">
+                            <BtnBack onClick={() => navigate('/compras')} />
+                            <div>
+                                <h1 className="text-3xl font-black text-slate-800 flex items-center gap-3">
+                                    <span className="bg-blue-600 p-2 rounded-xl text-white shadow-lg shadow-blue-200">
+                                        <Receipt size={24} />
+                                    </span>
+                                    Orden de Compra <span className="text-blue-600">#{compra.id}</span>
+                                </h1>
+                                <p className="text-slate-500 font-medium mt-1 flex items-center gap-2">
+                                    <Calendar size={14} className="text-slate-400" /> Fecha: {compra.fecha}
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex gap-3">
+                            {compra.estado?.toUpperCase() === 'PENDIENTE' && (
+                                <button
+                                    onClick={() => handleRecibir(compra.id)}
+                                    className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-xl font-bold shadow-lg shadow-green-200 transition-all flex items-center gap-2"
+                                >
+                                    <CheckCircle2 size={18} /> Recibir Mercadería
+                                </button>
+                            )}
+                            <BtnPrint onClick={handlePrint} className="shadow-md hover:shadow-lg transition-all" />
+                        </div>
+                    </div>
+
+                    {/* Estado Card */}
+                    <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 ring-1 ring-slate-200/50 transition-all hover:shadow-md">
+                        <div className="flex justify-between items-start mb-6">
+                            <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Estado</h3>
                             {getEstadoBadge(compra.estado)}
                         </div>
-                        <div className="mt-2 pt-4 border-t border-gray-100">
-                            <h4 className="text-xs text-gray-400 font-bold mb-1">TOTAL</h4>
-                            <p className="text-3xl font-black text-gray-800">$ {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(compra.total)}</p>
+                        <div className="mt-4 pt-4 border-t border-slate-50">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-1">TOTAL TRANSACCIÓN</label>
+                            <div className="flex items-baseline gap-2">
+                                <span className="text-3xl font-black text-slate-900 leading-tight">$ {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(compra.total)}</span>
+                                <span className="text-slate-400 font-light text-sm">ARS</span>
+                            </div>
                         </div>
                     </div>
 
                     {/* Proveedor Card */}
-                    <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-                        <div className="flex items-center gap-2 mb-4 text-blue-600">
-                            <Truck size={20} />
-                            <h3 className="text-lg font-bold text-gray-800">Proveedor</h3>
-                        </div>
-                        <div className="space-y-3">
-                            <div>
-                                <h4 className="text-xl font-bold text-gray-900">{compra.proveedor}</h4>
+                    <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 ring-1 ring-slate-200/50 transition-all hover:shadow-md">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
+                                <User size={20} />
                             </div>
-                            {compra.proveedor_cuit && (
-                                <p className="text-sm text-gray-600"><span className="font-semibold">CUIT:</span> {compra.proveedor_cuit}</p>
-                            )}
-                            {compra.proveedor_telefono && (
-                                <p className="text-sm text-gray-600"><span className="font-semibold">Tel:</span> {compra.proveedor_telefono}</p>
-                            )}
-                            {compra.proveedor_email && (
-                                <p className="text-sm text-gray-600"><span className="font-semibold">Email:</span> {compra.proveedor_email}</p>
-                            )}
+                            <h3 className="text-lg font-bold text-slate-800">Proveedor</h3>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-1">Nombre / Razón Social</label>
+                                <p className="text-xl font-bold text-slate-900 leading-tight">{compra.proveedor}</p>
+                                <p className="text-xs text-slate-500 font-mono mt-1">{compra.proveedor_cuit}</p>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-50">
+                                {compra.proveedor_telefono && (
+                                    <div>
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-1">Teléfono</label>
+                                        <p className="text-sm font-medium text-slate-600">{compra.proveedor_telefono}</p>
+                                    </div>
+                                )}
+                                {compra.proveedor_email && (
+                                    <div>
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-1">Email</label>
+                                        <p className="text-sm font-medium text-slate-600 truncate">{compra.proveedor_email}</p>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
 
-                    {/* Observaciones Card - Only if exists */}
-                    {compra.observaciones && (
-                        <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-                            <div className="flex items-center gap-2 mb-4 text-orange-500">
+                    {/* Observaciones Card */}
+                    <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 ring-1 ring-slate-200/50 transition-all hover:shadow-md">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600">
                                 <FileText size={20} />
-                                <h3 className="text-lg font-bold text-gray-800">Observaciones</h3>
                             </div>
-                            <p className="text-gray-600 text-sm italic">
-                                {compra.observaciones}
-                            </p>
+                            <h3 className="text-lg font-bold text-slate-800">Observaciones</h3>
                         </div>
-                    )}
+                        <p className="text-sm text-slate-600 leading-relaxed italic">
+                            {compra.observaciones || "Sin observaciones registradas."}
+                        </p>
+                    </div>
                 </div>
 
                 {/* Columna Derecha: Items */}
-                <div className="lg:col-span-2">
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                        <div className="p-4 bg-gray-50/50 border-b border-gray-100 flex justify-between items-center">
-                            <h3 className="font-bold text-gray-700 flex items-center gap-2">
-                                <ShoppingCart size={18} className="text-indigo-500" />
-                                Items de la Orden
+                <div className="lg:col-span-8">
+                    <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 ring-1 ring-slate-200/50 overflow-hidden flex flex-col h-full transition-all hover:shadow-md">
+                        {/* Header del Panel */}
+                        <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                            <h3 className="font-black text-slate-700 flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 shadow-sm">
+                                    <ShoppingCart size={20} />
+                                </div>
+                                Detalle de Productos
                             </h3>
-                            <span className="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded text-xs font-bold">
-                                {items.length} Items
+                            <span className="text-[10px] font-black bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-full uppercase tracking-widest shadow-sm border border-indigo-200/50">
+                                {items.length} {items.length === 1 ? 'Item' : 'Items'}
                             </span>
                         </div>
 
-                        <div className="overflow-auto" style={{ height: '700px' }}>
-                            <table className="w-full text-sm text-left relative min-h-full">
-                                <thead className="bg-gray-900 text-white uppercase font-semibold sticky top-0 z-10">
+                        {/* Tabla de Items */}
+                        <div className="overflow-y-auto flex-grow px-2">
+                            <table className="w-full text-sm text-left border-separate border-spacing-0">
+                                <thead className="bg-white sticky top-0 z-10">
                                     <tr>
-                                        <th className="px-6 py-3">Producto</th>
-                                        <th className="px-6 py-3 text-center">Cant</th>
-                                        <th className="px-6 py-3 text-right">Costo Unit.</th>
-                                        <th className="px-6 py-3 text-right">Subtotal</th>
+                                        <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100">Producto</th>
+                                        <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100 text-center">Cant.</th>
+                                        <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100 text-right">Costo Unit.</th>
+                                        <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100 text-right">Subtotal</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-100">
+                                <tbody className="divide-y divide-slate-50">
                                     {items.map((item) => (
-                                        <tr key={item.id} className="hover:bg-gray-50/50">
-                                            <td className="px-6 py-4">
-                                                <div className="font-medium text-gray-900">{item.producto_descripcion}</div>
-                                                <div className="text-xs text-gray-400 font-mono mt-0.5">{item.producto_codigo}</div>
+                                        <tr key={item.id} className="hover:bg-blue-50/40 transition-all duration-200 group">
+                                            <td className="px-6 py-3">
+                                                <p className="font-bold text-slate-800 text-base leading-tight group-hover:text-blue-700 transition-colors uppercase">{item.producto_descripcion}</p>
+                                                <p className="text-[10px] text-slate-400 font-mono mt-1 uppercase tracking-tighter">{item.producto_codigo}</p>
                                             </td>
-                                            <td className="px-6 py-4 text-center font-medium">
-                                                {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(item.cantidad)}
+                                            <td className="px-4 py-3 text-center">
+                                                <span className="inline-flex items-center justify-center w-12 h-8 rounded-xl bg-slate-100 font-black text-slate-700 text-xs group-hover:bg-white group-hover:shadow-sm transition-all">
+                                                    {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(item.cantidad)}
+                                                </span>
                                             </td>
-                                            <td className="px-6 py-4 text-right text-gray-600">
+                                            <td className="px-4 py-3 text-right text-slate-500 font-medium whitespace-nowrap">
                                                 $ {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(item.precio)}
                                             </td>
-                                            <td className="px-6 py-4 text-right font-bold text-gray-800">
-                                                $ {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(item.subtotal)}
+                                            <td className="px-6 py-3 text-right">
+                                                <span className="font-black text-slate-900 text-lg">$ {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(item.subtotal)}</span>
                                             </td>
                                         </tr>
                                     ))}
-                                    <tr style={{ height: '100%' }}><td colSpan="4"></td></tr>
                                 </tbody>
-                                <tfoot className="bg-gray-900 border-t border-gray-700 sticky bottom-0 z-10 shadow-[0_-2px_4px_rgba(0,0,0,0.2)]">
-                                    <tr>
-                                        <td colSpan="3" className="px-6 py-4 text-right text-gray-400 font-bold uppercase tracking-wider">Total</td>
-                                        <td className="px-6 py-4 text-right">
-                                            <div className="text-2xl font-black text-white flex items-baseline justify-end gap-1">
-                                                <span>$</span>
-                                                {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(compra.total)}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                </tfoot>
                             </table>
+                        </div>
+
+                        {/* Footer Flotante (Totales) */}
+                        <div className="p-4 bg-white border-t border-slate-50">
+                            <div className="bg-slate-900 rounded-[1.5rem] p-4 shadow-2xl shadow-slate-900/20 ring-1 ring-white/10 overflow-hidden relative">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full -mr-16 -mt-16 blur-3xl"></div>
+
+                                <div className="flex flex-col md:flex-row justify-between items-center gap-6 relative z-10">
+                                    {/* Desglose (Izquierda) */}
+                                    <div className="flex gap-8">
+                                        <div className="space-y-1">
+                                            <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Subtotal Neto</p>
+                                            <p className="text-sm font-bold text-white/90 font-mono">$ {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(compra.subtotal)}</p>
+                                        </div>
+                                        <div className="space-y-1 border-l border-white/10 pl-8">
+                                            <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">IVA (21%)</p>
+                                            <p className="text-sm font-bold text-white/90 font-mono">$ {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(compra.iva)}</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Total (Derecha) */}
+                                    <div className="text-right">
+                                        <p className="text-[10px] font-black text-blue-400 uppercase tracking-[0.3em] mb-1">Total a Pagar</p>
+                                        <div className="flex items-baseline justify-end gap-2">
+                                            <span className="text-slate-500 text-lg font-light">$</span>
+                                            <span className="text-4xl font-black text-white tracking-tighter">
+                                                {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(compra.total)}
+                                            </span>
+                                            <span className="text-slate-500 text-[10px] font-bold uppercase ml-1">ARS</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

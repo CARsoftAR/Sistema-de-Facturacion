@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @page {
+            size: a4 portrait;
+            margin: 1cm;
+
+            @frame header_frame {
+                -pdf-frame-content: header_content;
+                left: 1cm;
+                width: 19cm;
+                top: 1cm;
+                height: 5cm;
+            }
+
+            @frame content_frame {
+                left: 1cm;
+                width: 19cm;
+                top: 6cm;
+                height: 20cm;
+            }
+
+            @frame footer_frame {
+                -pdf-frame-content: footer_content;
+                left: 1cm;
+                width: 19cm;
+                top: 27cm;
+                height: 1cm;
+            }
+        }
+
+        body {
+            font-family: Helvetica, Arial, sans-serif;
+            font-size: 10pt;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        td {
+            padding: 2px;
+            vertical-align: top;
+        }
+
+        .header-table {
+            border-bottom: 2px solid #000;
+            margin-bottom: 10px;
+        }
+
+        .title {
+            color: #d32f2f;
+            font-size: 18pt;
+            font-weight: bold;
+        }
+
+        .box {
+            border: 1px solid #000;
+            padding: 5px;
+        }
+
+        .type-box {
+            border: 2px solid #000;
+            width: 40pt;
+            height: 40pt;
+            text-align: center;
+            font-weight: bold;
+            font-size: 24pt;
+        }
+
+        .items th {
+            background: #eee;
+            border: 1px solid #000;
+            padding: 5px;
+            font-size: 9pt;
+        }
+
+        .items td {
+            border: 1px solid #ddd;
+            padding: 4px;
+            font-size: 9pt;
+        }
+
+        .totals {
+            width: 100%;
+            font-size: 10pt;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .bold {
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="header_content">
+        <table class="header-table">
+            <tr>
+                <td width="40%">
+                    <div class="title">{{ empresa.nombre|upper }}</div>
+                    <div><strong>Razón Social:</strong> {{ empresa.nombre }}</div>
+                    <div>{{ empresa.direccion }}</div>
+                    <div>{{ empresa.condicion_fiscal|default:"IVA Responsable Inscripto" }}</div>
+                </td>
+                <td width="20%" align="center">
+                    <div class="type-box">
+                        {{ venta.tipo_comprobante|default:"X" }}
+                        <div style="font-size: 8pt;">
+                            Cod. {% if venta.tipo_comprobante == 'A' %}001{% elif venta.tipo_comprobante == 'B' %}006{%
+                            else %}011{% endif %}
+                        </div>
+                    </div>
+                </td>
+                <td width="40%" align="right">
+                    <h3>FACTURA</h3>
+                    <div><strong>N°:</strong> {{ venta.numero_factura_formateado }}</div>
+                    <div><strong>Fecha:</strong> {{ venta.fecha|date:"d/m/Y" }}</div>
+                    <div><strong>CUIT:</strong> {{ empresa.cuit|default:"30-00000000-0" }}</div>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div id="footer_content">
+        <div style="border-top: 1px solid #ccc; padding-top: 5px; font-size: 8pt; color: #666;">
+            Página <pdf:pagenumber> de <pdf:pagecount> - Generado por Sistema CARsoft
+        </div>
+    </div>
+
+    <div class="box">
+        <table>
+            <tr>
+                <td width="60%">
+                    <div><strong>Cliente:</strong> {{ cliente.nombre }}</div>
+                    <div><strong>CUIT:</strong> {{ cliente.cuit|default:"-" }}</div>
+                    <div><strong>Dirección:</strong> {{ cliente.domicilio|default:"-" }}</div>
+                </td>
+                <td width="40%" align="right">
+                    <div><strong>Cond. IVA:</strong> {{ cliente.get_condicion_fiscal_display|default:"Consumidor Final"
+                        }}</div>
+                    <div><strong>Cond. Venta:</strong> {{ venta.condicion_venta }}</div>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <br />
+
+    <table class="items">
+        <thead>
+            <tr>
+                <th width="10%">Cod.</th>
+                <th width="50%">Descripción</th>
+                <th width="10%">Cant.</th>
+                <th width="15%">Precio Unit.</th>
+                <th width="15%">Subtotal</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in detalles %}
+            <tr>
+                <td>{{ item.id }}</td>
+                <td>{{ item.producto.descripcion }}</td>
+                <td class="text-center">{{ item.cantidad|floatformat:2 }}</td>
+                <td class="text-right">{{ item.precio_unitario|floatformat:2 }}</td>
+                <td class="text-right">{{ item.subtotal|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <br />
+
+    <table>
+        <tr>
+            <td width="60%" valign="bottom">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https://www.afip.gob.ar/generico/formulario-8011/declaracion.asp?id={{ venta.id }}"
+                    width="80" height="80">
+                <div style="font-size: 8pt; margin-top: 5px;">Comprobante Autorizado</div>
+                <div class="bold" style="margin-top: 10px;">CAE: {{ venta.cae|default:"-" }}</div>
+                <div class="bold">Vto CAE: {{ venta.fecha_vencimiento_cae|date:"d/m/Y"|default:"-" }}</div>
+            </td>
+            <td width="40%">
+                <table class="totals">
+                    <tr>
+                        <td>Subtotal:</td>
+                        <td class="text-right">$ {{ venta.subtotal|floatformat:2 }}</td>
+                    </tr>
+                    {% if venta.tipo_comprobante == 'A' %}
+                    <tr>
+                        <td>IVA 21%:</td>
+                        <td class="text-right">$ {{ venta.iva_amount|default:0|floatformat:2 }}</td>
+                    </tr>
+                    {% endif %}
+                    <tr>
+                        <td colspan="2">
+                            <hr />
+                        </td>
+                    </tr>
+                    <tr style="font-size: 14pt;">
+                        <td class="bold">TOTAL:</td>
+                        <td class="text-right bold">$ {{ venta.total|floatformat:2 }}</td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+
+</body>
+
+</html>

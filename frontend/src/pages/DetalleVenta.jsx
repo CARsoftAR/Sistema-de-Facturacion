@@ -71,89 +71,109 @@ const DetalleVenta = () => {
     if (!venta) return null;
 
     return (
-        <div className="container-fluid px-4 py-6 max-w-7xl mx-auto fade-in">
-            {/* Header */}
-            <div className="flex justify-between items-start mb-6">
-                <div className="flex items-center gap-4">
-                    <BtnBack onClick={() => navigate(location.state?.from || '/ventas')} />
-                    <div>
-                        <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                            Venta <span className="text-blue-600">#{venta.numero_factura_formateado || venta.id}</span>
-                        </h1>
-                        <p className="text-gray-500 flex items-center gap-2 mt-1">
-                            <Calendar size={14} /> Fecha: {venta.fecha}
-                        </p>
-                    </div>
-                </div>
-                <div className="flex gap-2">
-                    <BtnPrint onClick={handlePrint} />
-                </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
+        <div className="p-6 pb-0 max-w-7xl mx-auto min-h-[calc(100vh-120px)] flex flex-col fade-in">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-0">
                 {/* Columna Izquierda: Info */}
-                <div className="lg:col-span-1 space-y-6">
+                <div className="lg:col-span-4 space-y-6">
+                    {/* Header */}
+                    <div className="flex justify-between items-start">
+                        <div className="flex items-center gap-4">
+                            <BtnBack onClick={() => navigate(location.state?.from || '/ventas')} />
+                            <div>
+                                <h1 className="text-3xl font-black text-slate-800 flex items-center gap-3">
+                                    <span className="bg-blue-600 p-2 rounded-xl text-white shadow-lg shadow-blue-200">
+                                        <Receipt size={24} />
+                                    </span>
+                                    Venta <span className="text-blue-600">#{venta.numero_factura_formateado || venta.id}</span>
+                                </h1>
+                                <p className="text-slate-500 font-medium mt-1 flex items-center gap-2">
+                                    <Calendar size={14} className="text-slate-400" /> Fecha: {venta.fecha}
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex gap-3">
+                            <BtnPrint onClick={handlePrint} className="shadow-md hover:shadow-lg transition-all" />
+                        </div>
+                    </div>
+
                     {/* Estado y Total Card */}
-                    <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-                        <div className="flex justify-between items-start mb-4">
-                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Estado</h3>
+                    <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 ring-1 ring-slate-200/50 transition-all hover:shadow-md">
+                        <div className="flex justify-between items-start mb-6">
+                            <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Estado</h3>
                             {getEstadoBadge(venta.estado)}
                         </div>
-                        <div className="mt-2 pt-4 border-t border-gray-100">
-                            <h4 className="text-xs text-gray-400 font-bold mb-1">TOTAL</h4>
-                            <p className="text-3xl font-black text-gray-800">$ {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(venta.total)}</p>
+                        <div className="mt-4 pt-4 border-t border-slate-50">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-1">TOTAL TRANSACCIÓN</label>
+                            <div className="flex items-baseline gap-2">
+                                <span className="text-3xl font-black text-slate-900 leading-tight">$ {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(venta.total)}</span>
+                                <span className="text-slate-400 font-light text-sm">ARS</span>
+                            </div>
                         </div>
                     </div>
 
                     {/* Cliente Card */}
-                    <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-                        <div className="flex items-center gap-2 mb-4 text-blue-600">
-                            <User size={20} />
-                            <h3 className="text-lg font-bold text-gray-800">Cliente</h3>
-                        </div>
-                        <div className="space-y-3">
-                            <div>
-                                <h4 className="text-xl font-bold text-gray-900">{venta.cliente_nombre}</h4>
+                    <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 ring-1 ring-slate-200/50 transition-all hover:shadow-md">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
+                                <User size={20} />
                             </div>
-                            {venta.cliente_telefono && (
-                                <p className="text-sm text-gray-600"><span className="font-semibold">Tel:</span> {venta.cliente_telefono}</p>
-                            )}
-                            {venta.cliente_email && (
-                                <p className="text-sm text-gray-600"><span className="font-semibold">Email:</span> {venta.cliente_email}</p>
-                            )}
+                            <h3 className="text-lg font-bold text-slate-800">Cliente</h3>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-1">Nombre / Razón Social</label>
+                                <p className="text-xl font-bold text-slate-900 leading-tight">{venta.cliente_nombre}</p>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-50">
+                                {venta.cliente_telefono && (
+                                    <div>
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-1">Teléfono</label>
+                                        <p className="text-sm font-medium text-slate-600">{venta.cliente_telefono}</p>
+                                    </div>
+                                )}
+                                {venta.cliente_email && (
+                                    <div>
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-1">Email</label>
+                                        <p className="text-sm font-medium text-slate-600 truncate">{venta.cliente_email}</p>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
 
                     {/* Info Comprobante Card */}
-                    <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-                        <div className="flex items-center gap-2 mb-4 text-purple-600">
-                            <Receipt size={20} />
-                            <h3 className="text-lg font-bold text-gray-800">Facturación</h3>
-                        </div>
-                        <div className="space-y-3 text-sm">
-                            <div className="flex justify-between">
-                                <span className="text-gray-500">Tipo:</span>
-                                <span className="font-bold bg-gray-100 px-2 py-0.5 rounded text-gray-700">Factura {venta.tipo_comprobante}</span>
+                    <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 ring-1 ring-slate-200/50 transition-all hover:shadow-md">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600">
+                                <CreditCard size={20} />
                             </div>
-                            <div className="flex justify-between">
-                                <span className="text-gray-500">Medio de Pago:</span>
-                                <span className="font-bold text-gray-800">{venta.medio_pago}</span>
+                            <h3 className="text-lg font-bold text-slate-800">Facturación</h3>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div className="flex justify-between items-center py-2 border-b border-slate-50">
+                                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Tipo</span>
+                                <span className="text-xs font-black bg-slate-100 text-slate-700 px-2 py-1 rounded uppercase">Factura {venta.tipo_comprobante}</span>
+                            </div>
+                            <div className="flex justify-between items-center py-2 border-b border-slate-50">
+                                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Medio de Pago</span>
+                                <span className="text-sm font-bold text-slate-800">{venta.medio_pago}</span>
                             </div>
                             {venta.cae && (
-                                <div className="pt-2 border-t border-gray-100">
-                                    <span className="block text-xs text-gray-400 uppercase font-bold mb-1">CAE</span>
-                                    <span className="font-mono text-gray-600 bg-gray-50 px-2 py-1 rounded w-full block text-center">{venta.cae}</span>
+                                <div className="pt-2">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-1 text-center">CAE AFIP</label>
+                                    <p className="font-mono text-slate-600 bg-slate-50 p-2 rounded-xl border border-slate-100 text-center font-bold text-sm tracking-widest">{venta.cae}</p>
                                 </div>
                             )}
                             {venta.pedido_origen_id && (
-                                <div className="pt-2 border-t border-gray-100">
-                                    <span className="text-gray-500 block mb-1">Generado desde:</span>
+                                <div className="pt-2 border-t border-slate-50">
                                     <button
                                         onClick={() => navigate(`/pedidos/${venta.pedido_origen_id}`)}
-                                        className="text-blue-600 hover:text-blue-800 font-bold text-xs flex items-center gap-1"
+                                        className="w-full py-2 bg-slate-50 text-blue-600 hover:bg-blue-50 transition-colors rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2"
                                     >
-                                        VER PEDIDO #{venta.pedido_origen_id}
+                                        VER PEDIDO #{venta.pedido_origen_id} <ArrowLeft size={12} className="rotate-180" />
                                     </button>
                                 </div>
                             )}
@@ -162,86 +182,92 @@ const DetalleVenta = () => {
                 </div>
 
                 {/* Columna Derecha: Items */}
-                <div className="lg:col-span-2">
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                        <div className="p-4 bg-gray-50/50 border-b border-gray-100 flex justify-between items-center">
-                            <h3 className="font-bold text-gray-700 flex items-center gap-2">
-                                <ShoppingCart size={18} className="text-indigo-500" />
-                                Items de la Venta
+                <div className="lg:col-span-8">
+                    <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 ring-1 ring-slate-200/50 overflow-hidden flex flex-col h-full transition-all hover:shadow-md">
+                        {/* Header del Panel */}
+                        <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                            <h3 className="font-black text-slate-700 flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 shadow-sm">
+                                    <ShoppingCart size={20} />
+                                </div>
+                                Detalle de Productos
                             </h3>
-                            <span className="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded text-xs font-bold">
-                                {items.length} Items
+                            <span className="text-[10px] font-black bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-full uppercase tracking-widest shadow-sm border border-indigo-200/50">
+                                {items.length} {items.length === 1 ? 'Item' : 'Items'}
                             </span>
                         </div>
 
-                        <div className="overflow-auto" style={{ height: '700px' }}>
-                            <table className="w-full text-sm text-left relative min-h-full">
-                                <thead className="bg-gray-900 text-white uppercase font-semibold sticky top-0 z-10">
+                        {/* Tabla de Items */}
+                        <div className="overflow-y-auto flex-grow px-2">
+                            <table className="w-full text-sm text-left border-separate border-spacing-0">
+                                <thead className="bg-white sticky top-0 z-10">
                                     <tr>
-                                        <th className="px-6 py-3">Producto</th>
-                                        <th className="px-6 py-3 text-center">Cant</th>
-                                        <th className="px-6 py-3 text-right">Precio Unit.</th>
-                                        <th className="px-6 py-3 text-right">Subtotal</th>
+                                        <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100">Producto</th>
+                                        <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100 text-center">Cant.</th>
+                                        <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100 text-right">Unitario</th>
+                                        <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100 text-right">Subtotal</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-100">
+                                <tbody className="divide-y divide-slate-50">
                                     {items.map((item) => (
-                                        <tr key={item.id} className="hover:bg-gray-50/50">
-                                            <td className="px-6 py-4">
-                                                <div className="font-medium text-gray-900">{item.producto_descripcion}</div>
-                                                <div className="text-xs text-gray-400 font-mono mt-0.5">{item.producto_codigo}</div>
+                                        <tr key={item.id} className="hover:bg-blue-50/40 transition-all duration-200 group">
+                                            <td className="px-6 py-3">
+                                                <p className="font-bold text-slate-800 text-base leading-tight group-hover:text-blue-700 transition-colors">{item.producto_descripcion}</p>
+                                                <p className="text-[10px] text-slate-400 font-mono mt-1 uppercase tracking-tighter">{item.producto_codigo}</p>
                                             </td>
-                                            <td className="px-6 py-4 text-center font-medium">
-                                                {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(item.cantidad)}
+                                            <td className="px-4 py-3 text-center">
+                                                <span className="inline-flex items-center justify-center w-12 h-8 rounded-xl bg-slate-100 font-black text-slate-700 text-xs group-hover:bg-white group-hover:shadow-sm transition-all">
+                                                    {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(item.cantidad)}
+                                                </span>
                                             </td>
-                                            <td className="px-6 py-4 text-right text-gray-600">
+                                            <td className="px-4 py-3 text-right text-slate-500 font-medium">
                                                 $ {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(item.precio_unitario)}
                                             </td>
-                                            <td className="px-6 py-4 text-right font-bold text-gray-800">
-                                                $ {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(item.subtotal)}
+                                            <td className="px-6 py-3 text-right">
+                                                <span className="font-black text-slate-900 text-lg">$ {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(item.subtotal)}</span>
                                             </td>
                                         </tr>
                                     ))}
-                                    <tr style={{ height: '100%' }}><td colSpan="4"></td></tr>
                                 </tbody>
-                                <tfoot className="bg-gray-900 border-t border-gray-700 sticky bottom-0 z-10 shadow-[0_-2px_4px_rgba(0,0,0,0.2)]">
-                                    {(venta.tipo_comprobante === 'A' || parseFloat(venta.iva_amount) > 0) ? (
-                                        <>
-                                            <tr>
-                                                <td colSpan="3" className="px-6 pt-4 pb-1 text-right text-gray-400 font-medium">Subtotal Neto</td>
-                                                <td className="px-6 pt-4 pb-1 text-right text-gray-300 font-bold">
-                                                    $ {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(venta.neto)}
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td colSpan="3" className="px-6 py-1 text-right text-gray-400 font-medium">IVA (21%)</td>
-                                                <td className="px-6 py-1 text-right text-gray-300 font-bold">
-                                                    $ {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(venta.iva_amount)}
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td colSpan="3" className="px-6 py-4 text-right text-white font-bold uppercase tracking-wider text-lg border-t border-gray-700">Total Final</td>
-                                                <td className="px-6 py-4 text-right border-t border-gray-700">
-                                                    <div className="text-2xl font-black text-white flex items-baseline justify-end gap-1">
-                                                        <span>$</span>
-                                                        {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(venta.total)}
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        </>
-                                    ) : (
-                                        <tr>
-                                            <td colSpan="3" className="px-6 py-4 text-right text-gray-400 font-bold uppercase tracking-wider">Total</td>
-                                            <td className="px-6 py-4 text-right">
-                                                <div className="text-2xl font-black text-white flex items-baseline justify-end gap-1">
-                                                    <span>$</span>
-                                                    {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(venta.total)}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    )}
-                                </tfoot>
                             </table>
+                        </div>
+
+                        {/* Footer Flotante (Totales) */}
+                        <div className="p-4 bg-white border-t border-slate-50">
+                            <div className="bg-slate-900 rounded-[1.5rem] p-4 shadow-2xl shadow-slate-900/20 ring-1 ring-white/10 overflow-hidden relative">
+                                {/* Decoración sutil */}
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full -mr-16 -mt-16 blur-3xl"></div>
+
+                                <div className="flex flex-col md:flex-row justify-between items-center gap-6 relative z-10">
+                                    {/* Desglose (Izquierda) */}
+                                    <div className="flex gap-8">
+                                        {(venta.tipo_comprobante === 'A' || parseFloat(venta.iva_amount) > 0) && (
+                                            <>
+                                                <div className="space-y-1">
+                                                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Subtotal Neto</p>
+                                                    <p className="text-sm font-bold text-white/90 font-mono">$ {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(venta.neto)}</p>
+                                                </div>
+                                                <div className="space-y-1 border-l border-white/10 pl-8">
+                                                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">IVA (21%)</p>
+                                                    <p className="text-sm font-bold text-white/90 font-mono">$ {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(venta.iva_amount)}</p>
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+
+                                    {/* Total (Derecha) */}
+                                    <div className="text-right">
+                                        <p className="text-[10px] font-black text-blue-400 uppercase tracking-[0.3em] mb-1">Total a Pagar</p>
+                                        <div className="flex items-baseline justify-end gap-2">
+                                            <span className="text-slate-500 text-lg font-light">$</span>
+                                            <span className="text-4xl font-black text-white tracking-tighter">
+                                                {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(venta.total)}
+                                            </span>
+                                            <span className="text-slate-500 text-[10px] font-bold uppercase ml-1">ARS</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

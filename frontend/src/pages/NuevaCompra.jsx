@@ -552,11 +552,11 @@ const NuevaCompra = () => {
                         </div>
                         <div className="col-span-1">
                             <button
-                                onClick={agregarProducto}
+                                onClick={() => agregarProducto()}
                                 disabled={!productoSeleccionado}
-                                className={`w-full py-2 rounded-lg flex items-center justify-center transition-all ${!productoSeleccionado ? 'bg-slate-100 text-slate-300 shadow-none' : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-md hover:shadow-lg'}`}
+                                className={`w-full py-2.5 rounded-lg flex items-center justify-center transition-all ${!productoSeleccionado ? 'bg-slate-100 text-slate-300 shadow-none' : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-md hover:shadow-lg hover:-translate-y-0.5'}`}
                             >
-                                <Plus size={20} />
+                                <Plus size={20} strokeWidth={3} />
                             </button>
                         </div>
                     </div>
@@ -566,28 +566,28 @@ const NuevaCompra = () => {
                         <table className="w-full text-sm">
                             <thead className="bg-slate-50 sticky top-0 z-10 text-xs text-slate-500 uppercase font-bold tracking-wider">
                                 <tr>
-                                    <th className="px-6 py-3 text-left">Código</th>
+                                    <th className="px-6 py-3 text-left w-24">Código</th>
                                     <th className="px-6 py-3 text-left">Producto</th>
-                                    <th className="px-6 py-3 text-center">Cant</th>
-                                    <th className="px-6 py-3 text-right">Costo U.</th>
-                                    {discriminarIVA && <th className="px-6 py-3 text-right">IVA</th>}
-                                    <th className="px-6 py-3 text-right">Total</th>
-                                    <th className="px-6 py-3"></th>
+                                    <th className="px-6 py-3 text-center w-24">Cant</th>
+                                    <th className="px-6 py-3 text-right w-32">Costo U.</th>
+                                    {discriminarIVA && <th className="px-6 py-3 text-right w-20">IVA</th>}
+                                    <th className="px-6 py-3 text-right w-32">Total</th>
+                                    <th className="px-6 py-3 w-16"></th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-100">
+                            <tbody className="divide-y divide-slate-100 bg-white">
                                 {items.map(item => (
-                                    <tr key={item.id} className="hover:bg-slate-50">
-                                        <td className="px-6 py-3 font-mono text-slate-500">{item.codigo}</td>
-                                        <td className="px-6 py-3 font-medium text-slate-800">{item.descripcion}</td>
-                                        <td className="px-6 py-3 text-center">{item.cantidad}</td>
-                                        <td className="px-6 py-3 text-right">${item.costo.toLocaleString('es-AR')}</td>
+                                    <tr key={item.id} className="hover:bg-slate-50 transition-colors group">
+                                        <td className="px-6 py-4 font-mono text-xs font-bold text-slate-500">{item.codigo}</td>
+                                        <td className="px-6 py-4 font-semibold text-slate-800">{item.descripcion}</td>
+                                        <td className="px-6 py-4 text-center font-bold text-slate-700">{item.cantidad}</td>
+                                        <td className="px-6 py-4 text-right text-slate-600">${item.costo.toLocaleString('es-AR')}</td>
                                         {discriminarIVA && (
-                                            <td className="px-6 py-3 text-right text-slate-500">{item.iva_alicuota}%</td>
+                                            <td className="px-6 py-4 text-right text-slate-400 font-medium">{item.iva_alicuota}%</td>
                                         )}
-                                        <td className="px-6 py-3 text-right font-bold text-indigo-700">${item.subtotal.toLocaleString('es-AR')}</td>
-                                        <td className="px-6 py-3 text-center">
-                                            <button onClick={() => eliminarItem(item.id)} className="text-slate-400 hover:text-red-500"><Trash2 size={16} /></button>
+                                        <td className="px-6 py-4 text-right font-bold text-indigo-700">${item.subtotal.toLocaleString('es-AR')}</td>
+                                        <td className="px-6 py-4 text-center">
+                                            <button onClick={() => eliminarItem(item.id)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"><Trash2 size={16} /></button>
                                         </td>
                                     </tr>
                                 ))}
@@ -602,38 +602,31 @@ const NuevaCompra = () => {
                         </table>
                     </div>
 
-                    {/* Footer */}
+                    {/* Footer - DARK STYLE */}
                     <div className="p-6 m-4 mb-8 rounded-3xl bg-slate-900 text-white flex justify-between items-center shadow-2xl ring-1 ring-white/10 flex-shrink-0 mt-auto">
-                        {discriminarIVA ? (
-                            <div className="flex items-center gap-8">
-                                <div className="space-y-0.5">
-                                    <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">Subtotal Neto</p>
-                                    <p className="text-xl font-bold text-slate-200">${totalNeto.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</p>
-                                </div>
-                                <div className="space-y-0.5 relative">
-                                    <div className="absolute -left-4 top-1/2 -translate-y-1/2 w-px h-8 bg-slate-700"></div>
-                                    <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">IVA Estimado</p>
-                                    <p className="text-xl font-bold text-slate-200">${totalIVA.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</p>
-                                    <div className="absolute -right-4 top-1/2 -translate-y-1/2 w-px h-8 bg-slate-700"></div>
-                                </div>
-                                <div className="space-y-0.5">
-                                    <p className="text-emerald-400 text-sm font-black uppercase tracking-wider">Total Estimado</p>
-                                    <div className="flex items-baseline gap-1">
-                                        <span className="text-3xl font-black tracking-tight text-emerald-400">${totalGeneral.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
-                                    </div>
+                        <div className="flex items-center gap-8">
+                            <div className="space-y-0.5">
+                                <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">Subtotal Neto</p>
+                                <p className="text-xl font-bold text-slate-200">${totalNeto.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</p>
+                            </div>
+                            <div className="space-y-0.5 relative">
+                                <div className="absolute -left-4 top-1/2 -translate-y-1/2 w-px h-8 bg-slate-700"></div>
+                                <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">IVA Estimado</p>
+                                <p className="text-xl font-bold text-slate-200">${totalIVA.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</p>
+                                <div className="absolute -right-4 top-1/2 -translate-y-1/2 w-px h-8 bg-slate-700"></div>
+                            </div>
+                            <div className="space-y-0.5">
+                                <p className="text-emerald-400 text-sm font-black uppercase tracking-wider">Total Estimado</p>
+                                <div className="flex items-baseline gap-1">
+                                    <span className="text-3xl font-black tracking-tight text-emerald-400">${totalGeneral.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
                                 </div>
                             </div>
-                        ) : (
-                            <div>
-                                <p className="text-slate-400 text-sm font-bold uppercase">Total Estimado</p>
-                                <p className="text-3xl font-black tracking-tight">${totalGeneral.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</p>
-                            </div>
-                        )}
+                        </div>
                         <BtnSave
                             label="Generar Orden"
                             onClick={() => setMostrarModalPago(true)}
                             disabled={items.length === 0}
-                            className="px-8 py-3 text-base"
+                            className="px-8 py-4 rounded-xl font-bold text-lg"
                         />
                     </div>
 

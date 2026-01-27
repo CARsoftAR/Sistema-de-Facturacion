@@ -257,6 +257,8 @@ const NuevoPedido = () => {
     };
 
     const totalGeneral = items.reduce((acc, i) => acc + i.subtotal, 0);
+    const totalNeto = totalGeneral / 1.21;
+    const totalIVA = totalGeneral - totalNeto;
 
     // ==================== GUARDAR PEDIDO ====================
     const guardarPedido = async () => {
@@ -516,21 +518,21 @@ const NuevoPedido = () => {
                     </div>
 
                     {/* Listado de Items con Scroll */}
-                    <div className="flex-1 overflow-y-auto min-h-0 bg-slate-50/30">
+                    <div className="flex-1 overflow-y-auto min-h-0">
                         <table className="w-full text-sm">
-                            <thead className="bg-slate-50 sticky top-0 z-10 shadow-sm">
-                                <tr className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                            <thead className="bg-slate-50 sticky top-0 z-10 text-xs text-slate-500 uppercase font-bold tracking-wider">
+                                <tr>
                                     <th className="px-6 py-3 text-left w-24">Código</th>
                                     <th className="px-6 py-3 text-left">Producto</th>
                                     <th className="px-6 py-3 text-center w-32">Cantidad</th>
                                     <th className="px-6 py-3 text-right w-32">Precio</th>
-                                    <th className="px-6 py-3 text-right w-32">Subtotal</th>
+                                    <th className="px-6 py-3 text-right w-32">Total</th>
                                     <th className="px-6 py-3 w-16"></th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 bg-white">
                                 {items.map((item) => (
-                                    <tr key={item.id} className="hover:bg-blue-50/30 transition-colors group">
+                                    <tr key={item.id} className="hover:bg-slate-50 transition-colors group">
                                         <td className="px-6 py-4 font-mono text-xs font-bold text-slate-500">{item.codigo}</td>
                                         <td className="px-6 py-4">
                                             <p className="font-semibold text-slate-800">{item.descripcion}</p>
@@ -555,7 +557,7 @@ const NuevoPedido = () => {
                                 {items.length === 0 && (
                                     <tr>
                                         <td colSpan="6" className="py-10 text-center text-slate-400">
-                                            Tu carrito de pedidos está vacío
+                                            No hay productos en el pedido.
                                         </td>
                                     </tr>
                                 )}
@@ -564,23 +566,32 @@ const NuevoPedido = () => {
                     </div>
 
                     {/* Footer Total - DARK STYLE */}
-                    <div className="p-6 m-4 mb-8 rounded-3xl bg-slate-900 text-white flex-shrink-0 mt-auto shadow-2xl ring-1 ring-white/10">
-                        <div className="flex justify-between items-center">
-                            <div className="space-y-1">
-                                <p className="text-slate-400 text-sm font-medium uppercase tracking-wider">Total Estimado</p>
-                                <div className="flex items-baseline gap-2">
-                                    <span className="text-4xl font-black tracking-tight">${totalGeneral.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
-                                    <span className="text-slate-400 font-light">ARS</span>
+                    <div className="p-6 m-4 mb-8 rounded-3xl bg-slate-900 text-white flex justify-between items-center shadow-2xl ring-1 ring-white/10 flex-shrink-0 mt-auto">
+                        <div className="flex items-center gap-8">
+                            <div className="space-y-0.5">
+                                <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">Subtotal Neto</p>
+                                <p className="text-xl font-bold text-slate-200">${totalNeto.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</p>
+                            </div>
+                            <div className="space-y-0.5 relative">
+                                <div className="absolute -left-4 top-1/2 -translate-y-1/2 w-px h-8 bg-slate-700"></div>
+                                <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">IVA (21%)</p>
+                                <p className="text-xl font-bold text-slate-200">${totalIVA.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</p>
+                                <div className="absolute -right-4 top-1/2 -translate-y-1/2 w-px h-8 bg-slate-700"></div>
+                            </div>
+                            <div className="space-y-0.5">
+                                <p className="text-emerald-400 text-sm font-black uppercase tracking-wider">Total Final</p>
+                                <div className="flex items-baseline gap-1">
+                                    <span className="text-3xl font-black tracking-tight text-emerald-400">${totalGeneral.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
                                 </div>
                             </div>
-                            <BtnSave
-                                label="Guardar Pedido"
-                                onClick={guardarPedido}
-                                loading={guardando}
-                                disabled={items.length === 0 || guardando}
-                                className="px-8 py-4 rounded-xl font-bold text-lg"
-                            />
                         </div>
+                        <BtnSave
+                            label="Guardar Pedido"
+                            onClick={guardarPedido}
+                            loading={guardando}
+                            disabled={items.length === 0 || guardando}
+                            className="px-8 py-4 rounded-xl font-bold text-lg"
+                        />
                     </div>
                 </div>
             </div>

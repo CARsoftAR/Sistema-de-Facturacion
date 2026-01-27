@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FileText, User, MapPin, Printer, ArrowLeft } from 'lucide-react';
+import { FileText, User, MapPin, Printer, ArrowLeft, Receipt, ShoppingCart } from 'lucide-react';
 import { BtnBack, BtnPrint } from '../components/CommonButtons';
 import Swal from 'sweetalert2';
 
@@ -50,108 +50,127 @@ const DetalleRemito = () => {
     }
 
     return (
-        <div className="container-fluid px-4 pt-4 pb-0 h-100 d-flex flex-column bg-light" style={{ minHeight: '100vh', overflowY: 'auto' }}>
-            {/* Header Standardized */}
-            <div className="mb-4">
-                <div className="mb-4">
-                    <BtnBack onClick={() => navigate('/remitos')} />
-                </div>
-                <div className="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h2 className="text-primary fw-bold mb-0" style={{ fontSize: '2rem' }}>
-                            <FileText className="me-2 inline-block" size={32} />
-                            Detalle de Remito
-                        </h2>
-                        <p className="text-muted mb-0 ps-1" style={{ fontSize: '1rem' }}>
-                            {remito.numero}
-                        </p>
-                    </div>
-                    <div className="d-flex gap-2">
-                        <BtnPrint onClick={handlePrint} />
-                    </div>
-                </div>
-            </div>
-
-            <div className="row g-4 mb-4">
+        <div className="p-6 pb-0 max-w-7xl mx-auto min-h-[calc(100vh-120px)] flex flex-col fade-in">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-0">
                 {/* Info Card */}
-                <div className="col-md-4">
-                    <div className="card border-0 shadow-sm h-100">
-                        <div className="card-header bg-white py-3 border-bottom">
-                            <h5 className="mb-0 fw-bold d-flex align-items-center gap-2 text-dark">
-                                <FileText size={20} className="text-primary" />
-                                Información General
-                            </h5>
-                        </div>
-                        <div className="card-body">
-                            <div className="mb-4">
-                                <label className="text-muted small text-uppercase fw-bold mb-1">Fecha</label>
-                                <p className="mb-0 fw-bold fs-5 text-dark">{remito.fecha}</p>
-                            </div>
-
-                            <hr className="my-3 opacity-10" />
-
-                            <div className="mb-3">
-                                <label className="text-muted small text-uppercase fw-bold d-flex align-items-center gap-2 mb-1">
-                                    <User size={14} /> Cliente
-                                </label>
-                                <p className="mb-0 fw-bold text-primary fs-5">{remito.cliente}</p>
-                            </div>
-
-                            <div className="mb-3">
-                                <label className="text-muted small text-uppercase fw-bold d-flex align-items-center gap-2 mb-1">
-                                    <MapPin size={14} /> Dirección de Entrega
-                                </label>
-                                <p className="mb-0 text-secondary">{remito.direccion || 'Sin dirección especificada'}</p>
-                            </div>
-
-                            <hr className="my-3 opacity-10" />
-
-                            <div className="mb-3">
-                                <label className="text-muted small text-uppercase fw-bold mb-1">Venta Asociada</label>
-                                <p className="mb-0 font-monospace">{remito.venta_asociada}</p>
-                            </div>
-
-                            <div className="mb-0">
-                                <label className="text-muted small text-uppercase fw-bold mb-1">Estado</label>
-                                <div>
-                                    <span className={`badge ${remito.estado === 'ENTREGADO' ? 'bg-success-subtle text-success border border-success' : 'bg-secondary'} px-3 py-2 rounded-pill`}>
-                                        {remito.estado}
+                <div className="lg:col-span-4 space-y-6">
+                    {/* Header */}
+                    <div className="flex justify-between items-start">
+                        <div className="flex items-center gap-4">
+                            <BtnBack onClick={() => navigate('/remitos')} />
+                            <div>
+                                <h1 className="text-3xl font-black text-slate-800 flex items-center gap-3">
+                                    <span className="bg-blue-600 p-2 rounded-xl text-white shadow-lg shadow-blue-200">
+                                        <Receipt size={24} />
                                     </span>
+                                    Remito <span className="text-blue-600">#{remito.numero}</span>
+                                </h1>
+                                <p className="text-slate-500 font-medium mt-1 flex items-center gap-2">
+                                    Fecha: {remito.fecha}
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex gap-3">
+                            <BtnPrint onClick={handlePrint} className="shadow-md hover:shadow-lg transition-all" />
+                        </div>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 ring-1 ring-slate-200/50 transition-all hover:shadow-md">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
+                                <User size={20} />
+                            </div>
+                            <h3 className="text-lg font-bold text-slate-800">Información del Cliente</h3>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-1">Cliente</label>
+                                <p className="text-xl font-bold text-slate-900 leading-tight">{remito.cliente}</p>
+                            </div>
+
+                            <div>
+                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-1">Dirección de Entrega</label>
+                                <div className="flex items-start gap-2 text-slate-600">
+                                    <MapPin size={16} className="mt-1 flex-shrink-0 text-slate-400" />
+                                    <p className="text-sm font-medium">{remito.direccion || 'Sin dirección especificada'}</p>
                                 </div>
                             </div>
                         </div>
                     </div>
+
+                    <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 ring-1 ring-slate-200/50 transition-all hover:shadow-md">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
+                                <FileText size={20} />
+                            </div>
+                            <h3 className="text-lg font-bold text-slate-800">Datos de Control</h3>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div className="flex justify-between items-center py-2 border-b border-slate-50">
+                                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Venta Asociada</span>
+                                <span className="text-sm font-mono font-bold text-slate-700 bg-slate-100 px-2 py-1 rounded">{remito.venta_asociada || '-'}</span>
+                            </div>
+                            <div className="flex justify-between items-center py-2">
+                                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Estado Actual</span>
+                                <span className={`text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-tighter shadow-sm
+                                    ${remito.estado === 'ENTREGADO'
+                                        ? 'bg-green-100 text-green-700 border border-green-200'
+                                        : 'bg-slate-100 text-slate-600 border border-slate-200'}`}>
+                                    {remito.estado}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                {/* Items Table */}
-                <div className="col-md-8">
-                    <div className="card border-0 shadow-sm h-100">
-                        <div className="card-header bg-white py-3 border-bottom">
-                            <h5 className="mb-0 fw-bold text-dark">Items del Remito</h5>
+                {/* Columna Derecha: Items */}
+                <div className="lg:col-span-8">
+                    <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 ring-1 ring-slate-200/50 overflow-hidden flex flex-col h-full transition-all hover:shadow-md">
+                        <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                            <h3 className="font-black text-slate-700 flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 shadow-sm">
+                                    <ShoppingCart size={20} />
+                                </div>
+                                Detalle de Productos
+                            </h3>
+                            <span className="text-[10px] font-black bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-full uppercase tracking-widest shadow-sm border border-indigo-200/50">
+                                {remito.items.length} {remito.items.length === 1 ? 'Item' : 'Items'}
+                            </span>
                         </div>
-                        <div className="card-body p-0">
-                            <div className="table-responsive">
-                                <table className="table table-hover align-middle mb-0">
-                                    <thead className="bg-light">
-                                        <tr>
-                                            <th className="py-3 ps-4 border-0 text-secondary fw-bold small text-uppercase">Producto</th>
-                                            <th className="py-3 pe-4 border-0 text-secondary fw-bold small text-uppercase text-end" style={{ width: '150px' }}>Cantidad</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {remito.items.map((item, index) => (
-                                            <tr key={item.id}>
-                                                <td className="py-3 ps-4 fw-medium text-dark border-bottom-0">
-                                                    {item.producto}
-                                                </td>
-                                                <td className="py-3 pe-4 text-end fw-bold text-dark border-bottom-0 fs-5">
+
+                        <div className="overflow-auto flex-grow h-full" style={{ maxHeight: '600px' }}>
+                            <table className="w-full text-sm text-left border-separate border-spacing-0">
+                                <thead className="bg-slate-50/80 sticky top-0 z-10">
+                                    <tr>
+                                        <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Producto</th>
+                                        <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 text-center w-32">Cantidad</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-50 bg-white">
+                                    {remito.items.map((item) => (
+                                        <tr key={item.id} className="hover:bg-blue-50/30 transition-colors group">
+                                            <td className="px-6 py-3 border-b border-slate-50/50">
+                                                <p className="font-bold text-slate-800 text-base leading-tight">{item.producto}</p>
+                                                <p className="text-[10px] text-slate-400 font-mono mt-1 uppercase tracking-tighter">REF-MB-0034</p>
+                                            </td>
+                                            <td className="px-6 py-3 border-b border-slate-50/50 text-center">
+                                                <span className="inline-flex items-center justify-center w-12 h-8 rounded-xl bg-slate-100 font-black text-slate-700 text-sm group-hover:bg-blue-100 group-hover:text-blue-700 transition-colors">
                                                     {item.cantidad}
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {remito.items.length === 0 && (
+                                        <tr>
+                                            <td colSpan="2" className="py-20 text-center text-slate-300 italic font-medium">
+                                                Este remito no tiene items asociados.
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>

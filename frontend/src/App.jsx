@@ -201,6 +201,7 @@ function App() {
               <Route path="/remitos" element={<ProtectedRoute permission="ventas"><Remitos /></ProtectedRoute>} />
               <Route path="/remitos/" element={<ProtectedRoute permission="ventas"><Remitos /></ProtectedRoute>} />
               <Route path="/remitos/nuevo" element={<ProtectedRoute permission="ventas"><NuevoRemito /></ProtectedRoute>} />
+              <Route path="/remitos/:id" element={<ProtectedRoute permission="ventas"><DetalleRemito /></ProtectedRoute>} />
               <Route path="/comprobantes/remito/:id" element={<ProtectedRoute permission="ventas"><DetalleRemito /></ProtectedRoute>} />
 
               <Route path="/notas-credito" element={<ProtectedRoute permission="ventas"><NotasCredito /></ProtectedRoute>} />

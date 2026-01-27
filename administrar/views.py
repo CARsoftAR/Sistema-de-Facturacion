@@ -2037,6 +2037,8 @@ def api_orden_compra_detalle(request, id):
         "proveedor_email": oc.proveedor.email,
         "estado": oc.estado,
         "observaciones": oc.observaciones or "",
+        "subtotal": float(oc.neto_estimado),
+        "iva": float(oc.iva_estimado),
         "total": float(oc.total_estimado),
         "items": items,
     })
@@ -4599,6 +4601,11 @@ def api_pedido_detalle(request, id):
             'subtotal': float(d.subtotal),
         })
     
+    # Calcular Neto e IVA (Asumiendo 21% para consistencia general si no se discrimina en el modelo Pedido)
+    total = float(pedido.total)
+    neto = total / 1.21
+    iva = total - neto
+
     return JsonResponse({
         'id': pedido.id,
         'fecha': pedido.fecha.strftime('%d/%m/%Y %H:%M'),
@@ -4609,7 +4616,9 @@ def api_pedido_detalle(request, id):
         'cliente_email': pedido.cliente.email or '',
         'estado': pedido.estado,
         'estado_display': pedido.get_estado_display(),
-        'total': float(pedido.total),
+        'neto': round(neto, 2),
+        'iva': round(iva, 2),
+        'total': total,
         'observaciones': pedido.observaciones or '',
         'venta_id': pedido.venta_id,
         'detalles': detalles,
@@ -4633,6 +4642,32 @@ def pedido_print(request, pedido_id):
         return render(request, template_name, context)
     except:
         return render(request, 'administrar/comprobantes/ped_modern.html', context)
+
+@login_required
+def api_pedido_pdf(request, pedido_id):
+    """Vista para generar PDF profesional de un pedido"""
+    from .models import Pedido, Empresa
+    from .utils_pdf import render_to_pdf
+    
+    pedido = get_object_or_404(Pedido, pk=pedido_id)
+    empresa = Empresa.objects.first()
+    
+    context = {
+        'pedido': pedido,
+        'cliente': pedido.cliente,
+        'detalles': pedido.detalles.all(),
+        'empresa': empresa,
+    }
+    
+    print(f"--- GENERANDO PDF PEDIDO #{pedido.id} ---")
+    response = render_to_pdf('administrar/comprobantes/pedido_pdf_v1.html', context)
+    
+    if response:
+        filename = f"Pedido_{pedido.id}.pdf"
+        response['Content-Disposition'] = f'inline; filename="{filename}"'
+        return response
+        
+    return render(request, 'administrar/comprobantes/ped_modern.html', context)
 
 
 @csrf_exempt

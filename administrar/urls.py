@@ -340,6 +340,7 @@ urlpatterns = [
     path('api/pedidos/eliminar/<int:id>/', views.api_pedido_eliminar, name='api_pedido_eliminar'),
     path('api/pedidos/estado/<int:id>/', views.api_pedido_cambiar_estado, name='api_pedido_cambiar_estado'),
     path('api/pedidos/facturar/<int:id>/', views.api_pedido_facturar, name='api_pedido_facturar'),
+    path('api/pedidos/<int:pedido_id>/pdf/', views.api_pedido_pdf, name='api_pedido_pdf'),
     path('pedidos/imprimir/<int:pedido_id>/', views.pedido_print, name='pedido_print'),
 
     # Usuarios
@@ -376,6 +377,7 @@ urlpatterns = [
     path("comprobantes/remito/crear/<int:venta_id>/", views_comprobantes.crear_remito, name="crear_remito"),
     path("api/remitos/guardar/", views_comprobantes.api_remito_guardar, name="api_remito_guardar"),
     # React Route for Detail
+    path("remitos/<int:id>/", login_required(TemplateView.as_view(template_name="react_app.html")), name="detalle_remito_react_v2"),
     path("comprobantes/remito/<int:id>/", login_required(TemplateView.as_view(template_name="react_app.html")), name="detalle_remito_react"),
     # API for Detail
     path("api/remitos/<int:id>/", views.api_remito_detalle, name="api_remito_detalle"),
