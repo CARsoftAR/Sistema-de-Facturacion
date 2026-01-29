@@ -48,6 +48,7 @@ const NuevoRemito = () => {
     const [inputCantidad, setInputCantidad] = useState('1');
     const [itemsManuales, setItemsManuales] = useState([]);
     const [comportamientoCodigoBarras, setComportamientoCodigoBarras] = useState('DEFAULT');
+    const [anchoContenido, setAnchoContenido] = useState('max-w-7xl');
 
     // COMMON STATE
     const [loading, setLoading] = useState(false);
@@ -81,8 +82,9 @@ const NuevoRemito = () => {
                 if (data && data.comportamiento_codigo_barras) {
                     console.log('Setting comportamiento to:', data.comportamiento_codigo_barras);
                     setComportamientoCodigoBarras(data.comportamiento_codigo_barras);
-                } else {
-                    console.log('No comportamiento config found, using default');
+                }
+                if (data && data.ancho_contenido) {
+                    setAnchoContenido(data.ancho_contenido);
                 }
             })
             .catch(err => console.error("Error loading config:", err));
@@ -434,7 +436,7 @@ const NuevoRemito = () => {
     };
 
     return (
-        <div className="p-6 pb-0 max-w-7xl mx-auto min-h-[calc(100vh-120px)] flex flex-col fade-in">
+        <div className={`p-6 pb-0 ${anchoContenido} mx-auto min-h-[calc(100vh-120px)] flex flex-col fade-in transition-all duration-300`}>
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-0">
 
                 {/* LEFT COLUMN: Data Input */}

@@ -17,5 +17,11 @@ export default {
             }
         },
     },
+    safelist: [
+        'max-w-5xl',
+        'max-w-7xl',
+        'max-w-screen-2xl',
+        'max-w-full',
+    ],
     plugins: [],
 }

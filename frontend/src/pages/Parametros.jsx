@@ -42,6 +42,7 @@ const Parametros = () => {
     const [papelImpresion, setPapelImpresion] = useState('A4'); // 'A4', 'T80', 'T58'
     const [pieFactura, setPieFactura] = useState('');
     const [ocultarBarraScroll, setOcultarBarraScroll] = useState(true);
+    const [anchoContenido, setAnchoContenido] = useState('max-w-7xl');
     const [autoFocoCodigoBarras, setAutoFocoCodigoBarras] = useState(false);
     const [comportamientoCodigoBarras, setComportamientoCodigoBarras] = useState('DEFAULT');
     const [discriminarIvaCompras, setDiscriminarIvaCompras] = useState(false);
@@ -81,7 +82,9 @@ const Parametros = () => {
                 // Nuevos campos
                 setPapelImpresion(response.data.papel_impresion || 'A4');
                 setPieFactura(response.data.pie_factura || '');
+                setPieFactura(response.data.pie_factura || '');
                 setOcultarBarraScroll(response.data.ocultar_barra_scroll ?? true); // Default True
+                setAnchoContenido(response.data.ancho_contenido || 'max-w-7xl');
                 setAutoFocoCodigoBarras(response.data.auto_foco_codigo_barras || false);
                 setComportamientoCodigoBarras(response.data.comportamiento_codigo_barras || 'DEFAULT');
                 setDiscriminarIvaCompras(response.data.discriminar_iva_compras || false);
@@ -121,6 +124,7 @@ const Parametros = () => {
                 papel_impresion: papelImpresion,
                 pie_factura: pieFactura,
                 ocultar_barra_scroll: ocultarBarraScroll,
+                ancho_contenido: anchoContenido,
                 auto_foco_codigo_barras: autoFocoCodigoBarras,
                 comportamiento_codigo_barras: comportamientoCodigoBarras,
                 discriminar_iva_compras: discriminarIvaCompras,
@@ -321,6 +325,12 @@ const Parametros = () => {
                                         </div>
                                     </div>
                                 </div>
+
+                                { /* ANCHO CONTENIDO - OCULTO
+                                <div style={s.fieldGroup}>
+                                    ...
+                                </div>
+                                */ }
 
                                 {/* COMPORTAMIENTO CODIGO BARRAS */}
                                 <div style={s.fieldGroup}>

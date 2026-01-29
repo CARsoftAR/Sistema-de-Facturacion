@@ -23,53 +23,124 @@ def lista_remitos(request):
 
 @login_required
 @transaction.atomic
+@login_required
+@transaction.atomic
 def crear_nota_credito(request, venta_id):
     venta = get_object_or_404(Venta, pk=venta_id)
     
     if request.method == 'POST':
-        motivo = request.POST.get('motivo', '')
+        import json
         
-        # Crear NC
-        nc = NotaCredito.objects.create(
-            cliente=venta.cliente,
-            venta_asociada=venta,
-            tipo_comprobante=f"NC{venta.tipo_comprobante}", # Si es Factura A -> NCA
-            total=venta.total,
-            motivo=motivo,
-            estado='EMITIDA'
-        )
-        
-        # Copiar detalles
-        for det in venta.detalles.all():
-            DetalleNotaCredito.objects.create(
-                nota_credito=nc,
-                producto=det.producto,
-                cantidad=det.cantidad,
-                precio_unitario=det.precio_unitario,
-                subtotal=det.subtotal
+        # Check if it's a JSON request (API)
+        if request.content_type == 'application/json':
+            try:
+                data = json.loads(request.body)
+                motivo = data.get('motivo', '')
+                items = data.get('items', [])
+                
+                if not items:
+                    return JsonResponse({'ok': False, 'error': 'La NC debe tener al menos un ítem'}, status=400)
+
+                # Calcular total real de la NC basado en los items enviados
+                total_nc = sum(float(i.get('subtotal', 0)) for i in items)
+
+                nc = NotaCredito.objects.create(
+                    cliente=venta.cliente,
+                    venta_asociada=venta,
+                    tipo_comprobante=f"NC{venta.tipo_comprobante}", 
+                    total=total_nc, # Usamos el total calculado de los items
+                    motivo=motivo,
+                    estado='EMITIDA'
+                )
+
+                for item_data in items:
+                    # Item data viene del frontend (puede ser un producto de la venta original o uno nuevo si se permite)
+                    # En NC estricta, deberían ser items de la venta. Pero para flexibilidad "igual a ND", permitimos productos.
+                    # Asumimos que envian 'id' que es el ID del PRODUCTO, no del detalle de venta.
+                    prod_id = item_data.get('id') 
+                    cantidad = float(item_data.get('cantidad', 0))
+                    precio = float(item_data.get('precio', 0))
+                    
+                    if cantidad <= 0: continue
+
+                    producto = get_object_or_404(Producto, pk=prod_id)
+                    subtotal = cantidad * precio
+
+                    DetalleNotaCredito.objects.create(
+                        nota_credito=nc,
+                        producto=producto,
+                        cantidad=cantidad,
+                        precio_unitario=precio,
+                        subtotal=subtotal
+                    )
+
+                    # Devolver stock
+                    producto.stock += int(cantidad) 
+                    producto.save()
+                    
+                    MovimientoStock.objects.create(
+                        producto=producto,
+                        tipo='IN',
+                        cantidad=cantidad,
+                        referencia=f"NC {nc.numero_formateado()} (Anula Venta {venta.id})",
+                        observaciones=f"Devolución parcial/total - {motivo}"
+                    )
+
+                # Generar Asiento
+                try:
+                    from .services import AccountingService
+                    AccountingService.registrar_nota_credito(nc)
+                except Exception as e:
+                    print(f"Error generando asiento de NC {nc.id}: {e}")
+
+                return JsonResponse({'ok': True, 'message': 'Nota de Crédito generada correctamente', 'id': nc.id})
+
+            except Exception as e:
+                print(f"Error creando NC API: {e}")
+                return JsonResponse({'ok': False, 'error': str(e)}, status=500)
+
+        # Manejo TRADICIONAL (Form Post completo - anulación total por defecto)
+        else:
+            motivo = request.POST.get('motivo', '')
+            
+            # Crear NC por Total
+            nc = NotaCredito.objects.create(
+                cliente=venta.cliente,
+                venta_asociada=venta,
+                tipo_comprobante=f"NC{venta.tipo_comprobante}",
+                total=venta.total,
+                motivo=motivo,
+                estado='EMITIDA'
             )
             
-            # Devolver stock (NC implica devolución de mercadería generalmente)
-            # Opcional: preguntar al usuario si devuelve stock. Asumimos que sí por defecto en anulación completa.
-            det.producto.stock += int(det.cantidad) # Asumiendo cantidad entera por ahora
-            det.producto.save()
-            MovimientoStock.objects.create(
-                producto=det.producto,
-                tipo='IN',
-                cantidad=det.cantidad,
-                referencia=f"NC {nc.id} (Anula Venta {venta.id})",
-                observaciones="Devolución por Nota de Crédito"
-            )
+            # Copiar detalles completos
+            for det in venta.detalles.all():
+                DetalleNotaCredito.objects.create(
+                    nota_credito=nc,
+                    producto=det.producto,
+                    cantidad=det.cantidad,
+                    precio_unitario=det.precio_unitario,
+                    subtotal=det.subtotal
+                )
+                
+                det.producto.stock += int(det.cantidad)
+                det.producto.save()
+                MovimientoStock.objects.create(
+                    producto=det.producto,
+                    tipo='IN',
+                    cantidad=det.cantidad,
+                    referencia=f"NC {nc.id} (Anula Venta {venta.id})",
+                    observaciones="Devolución por Nota de Crédito"
+                )
 
-        # Generar Asiento Contable
-        try:
-            from .services import AccountingService
-            AccountingService.registrar_nota_credito(nc)
-        except Exception as e:
-            print(f"Error generando asiento de NC {nc.id}: {e}")
+            try:
+                from .services import AccountingService
+                AccountingService.registrar_nota_credito(nc)
+            except Exception as e:
+                print(f"Error generando asiento de NC {nc.id}: {e}")
 
-        messages.success(request, f'Nota de Crédito {nc.numero_formateado()} generada correctamente.')
-        return redirect('detalle_venta', venta_id=venta.id)
+            messages.success(request, f'Nota de Crédito {nc.numero_formateado()} generada correctamente.')
+            return redirect('detalle_venta', venta_id=venta.id)
     
     return render(request, 'administrar/comprobantes/crear_nc.html', {'venta': venta})
 

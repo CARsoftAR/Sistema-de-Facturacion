@@ -204,7 +204,21 @@ class Empresa(models.Model):
     ocultar_barra_scroll = models.BooleanField(default=True, verbose_name="Ocultar Barra de Scroll en Menú")
     pie_factura = models.CharField(max_length=200, blank=True)
     
-    # Configuracion UI
+    # Configuracion UI Layout
+    ANCHO_CONTENIDO_CHOICES = [
+        ('max-w-7xl', 'Estándar (1280px)'),
+        ('max-w-5xl', 'Compacto (1024px)'),
+        ('max-w-screen-2xl', 'Amplio (1536px)'),
+        ('max-w-full', 'Pantalla Completa (Fluido)'),
+    ]
+    ancho_contenido = models.CharField(
+        max_length=20, 
+        choices=ANCHO_CONTENIDO_CHOICES, 
+        default='max-w-7xl',
+        verbose_name="Ancho del Contenido"
+    )
+
+    # Configuracion UI General
     items_por_pagina = models.IntegerField(default=10, verbose_name="Items por Página")
 
     # Configuración de Backups
