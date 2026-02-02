@@ -1445,6 +1445,7 @@ def api_mi_perfil_info(request):
                 'bancos': perfil.acceso_bancos,
                 'ctacte': perfil.acceso_ctacte,
                 'remitos': perfil.acceso_remitos,
+                'auditoria': perfil.acceso_auditoria,
             },
             'imagen_url': perfil.imagen.url if perfil.imagen else None
         }
@@ -1987,13 +1988,32 @@ def api_marcas_eliminar(request, id):
 # =======================================
 
 def api_compras_listar(request):
-    ordenes = OrdenCompra.objects.select_related("proveedor").all().order_by("-fecha")
-    compras = Compra.objects.select_related("proveedor", "orden_compra").all().order_by("-fecha")
+    fecha_start = request.GET.get("fecha_start")
+    fecha_end = request.GET.get("fecha_end")
+    
+    ordenes = OrdenCompra.objects.select_related("proveedor").all()
+    compras = Compra.objects.select_related("proveedor", "orden_compra").all()
 
+    if fecha_start and fecha_end:
+        from django.utils import timezone
+        import datetime
+        try:
+            tz = timezone.get_current_timezone()
+            dt_start = timezone.make_aware(datetime.datetime.combine(datetime.datetime.strptime(fecha_start, '%Y-%m-%d').date(), datetime.time.min), tz)
+            dt_end = timezone.make_aware(datetime.datetime.combine(datetime.datetime.strptime(fecha_end, '%Y-%m-%d').date(), datetime.time.max), tz)
+            ordenes = ordenes.filter(fecha__range=(dt_start, dt_end))
+            compras = compras.filter(fecha__range=(dt_start, dt_end))
+        except (ValueError, TypeError):
+            pass
+
+    ordenes = ordenes.order_by("-fecha")
+    compras = compras.order_by("-fecha")
+
+    from django.utils import timezone
     data_ordenes = [{
         "id": o.id,
         "proveedor": o.proveedor.nombre,
-        "fecha": o.fecha.strftime("%d/%m/%Y %H:%M"),
+        "fecha": timezone.localtime(o.fecha).strftime("%d/%m/%Y %H:%M"),
         "estado": o.estado,
         "total_estimado": o.total_estimado,
     } for o in ordenes]
@@ -2001,7 +2021,7 @@ def api_compras_listar(request):
     data_compras = [{
         "id": c.id,
         "proveedor": c.proveedor.nombre,
-        "fecha": c.fecha.strftime("%d/%m/%Y %H:%M"),
+        "fecha": timezone.localtime(c.fecha).strftime("%d/%m/%Y %H:%M"),
         "orden_origen": f"OC {c.orden_compra.id}" if c.orden_compra else "-",
         "orden_compra_id": c.orden_compra.id if c.orden_compra else None,
         "total": c.total,
@@ -3256,7 +3276,23 @@ def buscar_productos(request):
 def api_ventas_listar(request):
     """API para listar todas las ventas con soporte para filtros mejorados"""
     q = request.GET.get("q", "").strip()
-    ventas = Venta.objects.select_related("cliente").all().order_by("-fecha")
+    fecha_start = request.GET.get("fecha_start")
+    fecha_end = request.GET.get("fecha_end")
+    
+    ventas = Venta.objects.select_related("cliente").all()
+    
+    if fecha_start and fecha_end:
+        from django.utils import timezone
+        import datetime
+        try:
+            tz = timezone.get_current_timezone()
+            dt_start = timezone.make_aware(datetime.datetime.combine(datetime.datetime.strptime(fecha_start, '%Y-%m-%d').date(), datetime.time.min), tz)
+            dt_end = timezone.make_aware(datetime.datetime.combine(datetime.datetime.strptime(fecha_end, '%Y-%m-%d').date(), datetime.time.max), tz)
+            ventas = ventas.filter(fecha__range=(dt_start, dt_end))
+        except (ValueError, TypeError):
+            pass
+
+    ventas = ventas.order_by("-fecha")
     
     if q:
         from django.db.models import Q
@@ -3272,17 +3308,22 @@ def api_ventas_listar(request):
                 except ValueError:
                     pass
 
-        ventas = ventas.filter(
+        from django.db.models.functions import Cast
+        from django.db.models import CharField
+        
+        ventas = ventas.annotate(fecha_str=Cast('fecha', CharField())).filter(
             Q(cliente__nombre__icontains=q) |
             Q(id__iexact=busqueda_id) |
-            Q(tipo_comprobante__icontains=q)
+            Q(tipo_comprobante__icontains=q) |
+            Q(fecha_str__icontains=q)
         )
     
     data = []
+    from django.utils import timezone
     for v in ventas:
         data.append({
             "id": v.id,
-            "fecha": v.fecha.strftime("%d/%m/%Y %H:%M"),
+            "fecha": timezone.localtime(v.fecha).strftime("%d/%m/%Y %H:%M"),
             "cliente": v.cliente.nombre if v.cliente else "Sin cliente",
             "tipo_comprobante": v.tipo_comprobante,
             "total": float(v.total),
@@ -4519,10 +4560,13 @@ def api_pedidos_lista(request):
     
     # Aplicar filtros
     if busqueda:
-        pedidos = pedidos.filter(
+        from django.db.models.functions import Cast
+        from django.db.models import CharField
+        pedidos = pedidos.annotate(fecha_str=Cast('fecha', CharField())).filter(
             Q(id__icontains=busqueda) |
             Q(cliente__nombre__icontains=busqueda) |
-            Q(observaciones__icontains=busqueda)
+            Q(observaciones__icontains=busqueda) |
+            Q(fecha_str__icontains=busqueda)
         )
     
     if estado:
@@ -4537,10 +4581,24 @@ def api_pedidos_lista(request):
         pedidos = pedidos.filter(cliente_id=cliente_id)
     
     if fecha_desde:
-        pedidos = pedidos.filter(fecha__date__gte=fecha_desde)
+        from django.utils import timezone
+        import datetime
+        try:
+            tz = timezone.get_current_timezone()
+            dt_start = timezone.make_aware(datetime.datetime.combine(datetime.datetime.strptime(fecha_desde, '%Y-%m-%d').date(), datetime.time.min), tz)
+            pedidos = pedidos.filter(fecha__gte=dt_start)
+        except (ValueError, TypeError):
+            pass
     
     if fecha_hasta:
-        pedidos = pedidos.filter(fecha__date__lte=fecha_hasta)
+        from django.utils import timezone
+        import datetime
+        try:
+            tz = timezone.get_current_timezone()
+            dt_end = timezone.make_aware(datetime.datetime.combine(datetime.datetime.strptime(fecha_hasta, '%Y-%m-%d').date(), datetime.time.max), tz)
+            pedidos = pedidos.filter(fecha__lte=dt_end)
+        except (ValueError, TypeError):
+            pass
     
     # Ordenar
     pedidos = pedidos.order_by('-fecha')
@@ -4555,13 +4613,14 @@ def api_pedidos_lista(request):
     
     # Serializar
     data = []
+    from django.utils import timezone
     for p in pedidos_page:
         # Contar items
         num_items = p.detalles.count()
         
         data.append({
             'id': p.id,
-            'fecha': p.fecha.strftime('%d/%m/%Y %H:%M'),
+            'fecha': timezone.localtime(p.fecha).strftime('%d/%m/%Y %H:%M'),
             'cliente_id': p.cliente.id,
             'cliente_nombre': p.cliente.nombre,
             'total': float(p.total),
@@ -8749,27 +8808,39 @@ def api_presupuestos_listar(request):
         per_page = int(request.GET.get('per_page', 10))
         q = request.GET.get('q', '').strip()
         estado = request.GET.get('estado', '')
+        fecha_start = request.GET.get('fecha_start', '')
+        fecha_end = request.GET.get('fecha_end', '')
 
         presupuestos = Presupuesto.objects.select_related('cliente').order_by('-fecha')
 
         if q:
             presupuestos = presupuestos.filter(cliente__nombre__icontains=q)
-        if estado:
-            presupuestos = presupuestos.filter(estado=estado)
 
-        total = presupuestos.count()
-        start = (page - 1) * per_page
-        end = start + per_page
+        if fecha_start and fecha_end:
+            import datetime
+            try:
+                dt_start = datetime.datetime.strptime(fecha_start, '%Y-%m-%d').date()
+                dt_end = datetime.datetime.strptime(fecha_end, '%Y-%m-%d').date()
+                presupuestos = presupuestos.filter(fecha__date__range=(dt_start, dt_end))
+            except (ValueError, TypeError):
+                pass
         
-        data = []
-        for p in presupuestos[start:end]:
+        # Obtenemos todos los resultados para filtrar por estado virtual (VENCIDO) si es necesario
+        all_presupuestos = list(presupuestos)
+        today = datetime.date.today()
+        
+        filtered_data = []
+        for p in all_presupuestos:
             # Calcular vencimiento
             fecha_venc = p.fecha.date() + datetime.timedelta(days=p.validez)
-            is_vencido = fecha_venc < datetime.date.today() and p.estado == 'PENDIENTE'
-            
+            is_vencido = fecha_venc < today and p.estado == 'PENDIENTE'
             estado_real = 'VENCIDO' if is_vencido else p.estado
-
-            data.append({
+            
+            # Aplicar filtro de estado si existe
+            if estado and estado != estado_real:
+                continue
+                
+            filtered_data.append({
                 'id': p.id,
                 'fecha': p.fecha.strftime('%d/%m/%Y'),
                 'cliente': p.cliente.nombre,
@@ -8778,7 +8849,11 @@ def api_presupuestos_listar(request):
                 'estado': estado_real
             })
 
-        return JsonResponse({'ok': True, 'data': data, 'total': total})
+        total = len(filtered_data)
+        start = (page - 1) * per_page
+        end = start + per_page
+        
+        return JsonResponse({'ok': True, 'data': filtered_data[start:end], 'total': total})
     except Exception as e:
         return JsonResponse({'ok': False, 'error': str(e)})
 
@@ -8791,7 +8866,7 @@ def api_presupuesto_guardar(request):
         data = json.loads(request.body)
         presupuesto_id = data.get('id')
         cliente_id = data.get('cliente_id')
-        items = data.get('items', [])
+        items = data.get('items') or data.get('detalles', [])
         total = float(data.get('total', 0))
         validez = int(data.get('validez', 15))
         observaciones = data.get('observaciones', '')
@@ -8800,10 +8875,17 @@ def api_presupuesto_guardar(request):
             return JsonResponse({'ok': False, 'error': 'Sin ítems'})
 
         # Cliente
-        if cliente_id:
+        if cliente_id and cliente_id != "":
             cliente = Cliente.objects.get(id=cliente_id)
         else:
-            cliente = Cliente.objects.get_or_create(nombre="Consumidor Final", defaults={'condicion_fiscal': 'CF'})[0]
+            # Regla: Si no hay cliente, es Cliente de Paso (Consumidor Final)
+            cliente = Cliente.objects.filter(nombre="Consumidor Final").first()
+            if not cliente:
+                cliente = Cliente.objects.create(
+                    nombre="Consumidor Final",
+                    tipo_cliente="P",
+                    condicion_fiscal="CF",
+                )
 
         if presupuesto_id:
             # EDICION
@@ -8830,13 +8912,25 @@ def api_presupuesto_guardar(request):
             )
 
         for item in items:
+            producto_id = item.get('id')
+            if not producto_id:
+                continue
+                
+            # Intentar obtener el producto para asegurar la integridad
+            try:
+                producto = Producto.objects.get(id=producto_id)
+                # Prioridad: 1. Lo que mandó el front, 2. La descripción actual del producto
+                desc = item.get('descripcion') or item.get('producto_descripcion') or producto.descripcion
+            except:
+                desc = item.get('descripcion') or item.get('producto_descripcion') or "Producto Desconocido"
+
             DetallePresupuesto.objects.create(
                 presupuesto=presupuesto,
-                producto_id=item['id'],
-                descripcion_producto=item['descripcion'], # Asegurar que esto venga del JS
-                cantidad=item['cantidad'],
-                precio_unitario=item['precio'],
-                subtotal=item['subtotal']
+                producto_id=producto_id,
+                descripcion_producto=desc,
+                cantidad=item.get('cantidad', 1),
+                precio_unitario=item.get('precio', 0),
+                subtotal=item.get('subtotal', 0)
             )
 
         return JsonResponse({'ok': True, 'presupuesto_id': presupuesto.id})
@@ -8859,6 +8953,24 @@ def api_presupuesto_cancelar(request, id):
     except Exception as e:
         return JsonResponse({'ok': False, 'error': str(e)})
 
+@csrf_exempt
+@require_POST
+@login_required
+@transaction.atomic
+def api_presupuesto_reactivar(request, id):
+    """Establece la fecha del presupuesto a HOY para renovar su validez"""
+    try:
+        from django.utils import timezone
+        p = Presupuesto.objects.get(id=id)
+        if p.estado != 'PENDIENTE':
+            return JsonResponse({'ok': False, 'error': 'Solo se pueden reactivar presupuestos pendientes/vencidos'})
+        
+        p.fecha = timezone.now()
+        p.save()
+        return JsonResponse({'ok': True})
+    except Exception as e:
+        return JsonResponse({'ok': False, 'error': str(e)})
+
 @login_required
 def api_presupuesto_detalle(request, id):
     """API para obtener detalle de un presupuesto"""
@@ -8867,6 +8979,12 @@ def api_presupuesto_detalle(request, id):
     except Presupuesto.DoesNotExist:
         return JsonResponse({'error': 'Presupuesto no encontrado'}, status=404)
     
+    # Calcular estado real (VENCIDO si aplica)
+    today = datetime.date.today()
+    fecha_venc = p.fecha.date() + datetime.timedelta(days=p.validez)
+    is_vencido = fecha_venc < today and p.estado == 'PENDIENTE'
+    estado_real = 'VENCIDO' if is_vencido else p.estado
+
     # Serializar detalles
     detalles = []
     for d in p.detalles.all():
@@ -8884,17 +9002,17 @@ def api_presupuesto_detalle(request, id):
         'id': p.id,
         'fecha': p.fecha.strftime('%d/%m/%Y'),
         'validez': p.validez,
-        'vencimiento': (p.fecha + datetime.timedelta(days=p.validez)).strftime('%d/%m/%Y'),
+        'vencimiento': fecha_venc.strftime('%d/%m/%Y'),
         'cliente_id': p.cliente.id,
         'cliente_nombre': p.cliente.nombre,
         'cliente_cuit': p.cliente.cuit or '',
         'cliente_telefono': p.cliente.telefono or '',
         'cliente_email': p.cliente.email or '',
-        'estado': p.estado,
+        'estado': estado_real,
         'total': float(p.total),
         'observaciones': p.observaciones or '',
         'venta_id': p.venta_id if p.venta else None,
-        'pedido_id': p.pedido_id if hasattr(p, 'pedido') and p.pedido else None, # Safely access pedido
+        'pedido_id': p.pedido_id if hasattr(p, 'pedido') and p.pedido else None,
         'detalles': detalles,
     })
 
@@ -8902,21 +9020,25 @@ def api_presupuesto_detalle(request, id):
 @require_POST
 @login_required
 @transaction.atomic
-@csrf_exempt
-@require_POST
-@login_required
-@transaction.atomic
 def api_presupuesto_convertir_a_pedido(request, id):
     """
     Convierte un Presupuesto en PEDIDO.
-    1. NO Verifica Stock estricto (permite backorder).
+    1. Verifica si venció.
     2. Crea Pedido.
-    3. NO Descuenta Stock (se descuenta al facturar/remitear el pedido).
+    3. NO Descuenta Stock.
     """
     try:
         p = Presupuesto.objects.get(id=id)
+        
+        # Validar Vencimiento
+        fecha_venc = p.fecha.date() + datetime.timedelta(days=p.validez)
+        is_vencido = fecha_venc < datetime.date.today() and p.estado == 'PENDIENTE'
+        
+        if is_vencido:
+            return JsonResponse({'ok': False, 'error': 'El presupuesto ha vencido. Intente reactivarlo o duplicarlo.'})
+
         if p.estado != 'PENDIENTE':
-            return JsonResponse({'ok': False, 'error': f'El presupuesto está {p.estado}'})
+            return JsonResponse({'ok': False, 'error': f'El presupuesto ya está {p.estado}'})
 
         # 1. Crear Pedido (Sin validar stock bloqueante)
         pedido = Pedido.objects.create(
@@ -9004,31 +9126,44 @@ def api_remitos_listar(request):
         page_number = request.GET.get('page', 1)
         per_page = request.GET.get('per_page', 10)
         q = request.GET.get('q', '')
-        fecha = request.GET.get('fecha', '')
+        fecha_start = request.GET.get('fecha_start', '')
+        fecha_end = request.GET.get('fecha_end', '')
 
         queryset = Remito.objects.select_related('cliente', 'venta_asociada').all().order_by('-fecha')
 
         # Filtros
         if q:
-            queryset = queryset.filter(
+            from django.db.models.functions import Cast
+            from django.db.models import CharField
+            queryset = queryset.annotate(fecha_str=Cast('fecha', CharField())).filter(
                 Q(cliente__nombre__icontains=q) | 
                 Q(id__icontains=q) |
-                Q(venta_asociada__id__icontains=q)
+                Q(venta_asociada__id__icontains=q) |
+                Q(fecha_str__icontains=q)
             )
         
-        if fecha:
-            queryset = queryset.filter(fecha__date=fecha)
+        if fecha_start and fecha_end:
+            from django.utils import timezone
+            import datetime
+            try:
+                tz = timezone.get_current_timezone()
+                dt_start = timezone.make_aware(datetime.datetime.combine(datetime.datetime.strptime(fecha_start, '%Y-%m-%d').date(), datetime.time.min), tz)
+                dt_end = timezone.make_aware(datetime.datetime.combine(datetime.datetime.strptime(fecha_end, '%Y-%m-%d').date(), datetime.time.max), tz)
+                queryset = queryset.filter(fecha__range=(dt_start, dt_end))
+            except (ValueError, TypeError):
+                pass
 
         # Paginación
         paginator = Paginator(queryset, per_page)
         page_obj = paginator.get_page(page_number)
 
         data = []
+        from django.utils import timezone
         for r in page_obj:
             data.append({
                 'id': r.id,
                 'numero': r.numero_formateado(),
-                'fecha': r.fecha.strftime('%d/%m/%Y'), # Solo fecha para la tabla
+                'fecha': timezone.localtime(r.fecha).strftime('%d/%m/%Y'), # Solo fecha para la tabla
                 'cliente': r.cliente.nombre,
                 'venta_id': r.venta_asociada.id if r.venta_asociada else None,
                 'venta_str': r.venta_asociada.numero_factura_formateado() if r.venta_asociada else '-',
@@ -9053,16 +9188,54 @@ def api_remitos_listar(request):
 # =========================================
 @login_required
 def api_notas_credito_listar(request):
-    """API para listar notas de crédito"""
+    """API para listar notas de crédito con filtros y paginación"""
     try:
-        ncs = NotaCredito.objects.select_related('cliente', 'venta_asociada').all().order_by('-fecha')
+        from django.core.paginator import Paginator
+        from django.db.models import Q
+        from django.db.models.functions import Cast
+        from django.db.models import CharField
+
+        page_number = request.GET.get('page', 1)
+        per_page = request.GET.get('per_page', 10)
+        q = request.GET.get('q', '')
+        fecha_start = request.GET.get('fecha_start', '')
+        fecha_end = request.GET.get('fecha_end', '')
+
+        queryset = NotaCredito.objects.select_related('cliente', 'venta_asociada').all().order_by('-fecha')
+        
+        # Filtros
+        if q:
+            queryset = queryset.annotate(fecha_str=Cast('fecha', CharField())).filter(
+                Q(cliente__nombre__icontains=q) |
+                Q(id__icontains=q) |
+                Q(venta_asociada__id__icontains=q) |
+                Q(fecha_str__icontains=q)
+            )
+        
+        if fecha_start and fecha_end:
+            from django.utils import timezone
+            import datetime
+            try:
+                tz = timezone.get_current_timezone()
+                dt_start_obj = datetime.datetime.strptime(fecha_start, '%Y-%m-%d').date()
+                dt_end_obj = datetime.datetime.strptime(fecha_end, '%Y-%m-%d').date()
+                dt_start = timezone.make_aware(datetime.datetime.combine(dt_start_obj, datetime.time.min), tz)
+                dt_end = timezone.make_aware(datetime.datetime.combine(dt_end_obj, datetime.time.max), tz)
+                queryset = queryset.filter(fecha__range=(dt_start, dt_end))
+            except (ValueError, TypeError):
+                pass
+
+        # Paginación
+        paginator = Paginator(queryset, per_page)
+        page_obj = paginator.get_page(page_number)
         
         data = []
-        for nc in ncs:
+        from django.utils import timezone
+        for nc in page_obj:
             data.append({
                 'id': nc.id,
                 'numero': nc.numero_formateado(),
-                'fecha': nc.fecha.strftime('%d/%m/%Y %H:%M'),
+                'fecha': timezone.localtime(nc.fecha).strftime('%d/%m/%Y %H:%M'),
                 'cliente': nc.cliente.nombre,
                 'venta_id': nc.venta_asociada.id if nc.venta_asociada else None,
                 'venta_str': nc.venta_asociada.numero_factura_formateado() if nc.venta_asociada else '-',
@@ -9071,7 +9244,12 @@ def api_notas_credito_listar(request):
                 'tipo': nc.tipo_comprobante
             })
             
-        return JsonResponse({'notas_credito': data})
+        return JsonResponse({
+            'notas_credito': data,
+            'total': paginator.count,
+            'total_pages': paginator.num_pages,
+            'current_page': page_obj.number
+        })
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
@@ -9285,55 +9463,53 @@ def api_notas_credito_listar(request):
 @login_required
 
 def api_remito_detalle(request, id):
-
     try:
-
         r = get_object_or_404(Remito, pk=id)
-
         
-
+        print(f"DEBUG: Remito #{r.id} encontrado, detalles count: {r.detalles.count()}")
+        
         items = []
-
         for item in r.detalles.all():
-
-            items.append({
-
-                'id': item.id,
-
-                'producto': item.producto.descripcion,
-
-                'cantidad': float(item.cantidad),
-
-            })
-
-
+            print(f"DEBUG: Item {item.id}, producto: {item.producto}, cantidad: {item.cantidad}")
+            
+            # Validar que el producto existe
+            if item.producto:
+                items.append({
+                    'id': item.id,
+                    'producto': item.producto.descripcion,
+                    'codigo': item.producto.codigo if hasattr(item.producto, 'codigo') else None,
+                    'cantidad': float(item.cantidad),
+                })
+            else:
+                print(f"WARNING: Item {item.id} no tiene producto asociado")
+                items.append({
+                    'id': item.id,
+                    'producto': 'Producto no encontrado',
+                    'codigo': None,
+                    'cantidad': float(item.cantidad),
+                })
+        
+        print(f"DEBUG: Items procesados: {len(items)}")
 
         data = {
-
             'id': r.id,
-
             'numero': r.numero_formateado(),
-
             'fecha': r.fecha.strftime('%d/%m/%Y %H:%M'),
-
             'cliente': r.cliente.nombre,
-
-            'direccion': r.cliente.domicilio, # O la dirección de entrega específica si existiera en el modelo
-
-            'venta_asociada': r.venta_asociada.numero_factura_formateado() if r.venta_asociada else '-',
-
+            'direccion': r.cliente.domicilio,
+            'venta_id': r.venta_asociada.id if r.venta_asociada else None,
+            'venta_str': r.venta_asociada.numero_factura_formateado() if r.venta_asociada else '-',
             'estado': r.estado,
-
             'items': items
-
         }
-
+        
+        print(f"DEBUG: Respuesta data: {data}")
         return JsonResponse(data)
 
     except Exception as e:
-
+        import traceback
         print(f"Error api_remito_detalle: {e}")
-
+        traceback.print_exc()
         return JsonResponse({'error': str(e)}, status=500)
 
 
@@ -9447,16 +9623,54 @@ def api_nota_credito_detalle(request, id):
 
 @login_required
 def api_notas_debito_listar(request):
-    """API para listar notas de débito"""
+    """API para listar notas de débito con filtros y paginación"""
     try:
-        nds = NotaDebito.objects.select_related('cliente', 'venta_asociada').all().order_by('-fecha')
+        from django.core.paginator import Paginator
+        from django.db.models import Q
+        from django.db.models.functions import Cast
+        from django.db.models import CharField
+
+        page_number = request.GET.get('page', 1)
+        per_page = request.GET.get('per_page', 10)
+        q = request.GET.get('q', '')
+        fecha_start = request.GET.get('fecha_start', '')
+        fecha_end = request.GET.get('fecha_end', '')
+
+        queryset = NotaDebito.objects.select_related('cliente', 'venta_asociada').all().order_by('-fecha')
+        
+        # Filtros
+        if q:
+            queryset = queryset.annotate(fecha_str=Cast('fecha', CharField())).filter(
+                Q(cliente__nombre__icontains=q) |
+                Q(id__icontains=q) |
+                Q(venta_asociada__id__icontains=q) |
+                Q(fecha_str__icontains=q)
+            )
+        
+        if fecha_start and fecha_end:
+            from django.utils import timezone
+            import datetime
+            try:
+                tz = timezone.get_current_timezone()
+                dt_start_obj = datetime.datetime.strptime(fecha_start, '%Y-%m-%d').date()
+                dt_end_obj = datetime.datetime.strptime(fecha_end, '%Y-%m-%d').date()
+                dt_start = timezone.make_aware(datetime.datetime.combine(dt_start_obj, datetime.time.min), tz)
+                dt_end = timezone.make_aware(datetime.datetime.combine(dt_end_obj, datetime.time.max), tz)
+                queryset = queryset.filter(fecha__range=(dt_start, dt_end))
+            except (ValueError, TypeError):
+                pass
+
+        # Paginación
+        paginator = Paginator(queryset, per_page)
+        page_obj = paginator.get_page(page_number)
         
         data = []
-        for nd in nds:
+        from django.utils import timezone
+        for nd in page_obj:
             data.append({
                 'id': nd.id,
                 'numero': nd.numero_formateado(),
-                'fecha': nd.fecha.strftime('%d/%m/%Y %H:%M'),
+                'fecha': timezone.localtime(nd.fecha).strftime('%d/%m/%Y %H:%M'),
                 'cliente': nd.cliente.nombre,
                 'venta_id': nd.venta_asociada.id if nd.venta_asociada else None,
                 'venta_str': nd.venta_asociada.numero_factura_formateado() if nd.venta_asociada else '-',
@@ -9465,7 +9679,12 @@ def api_notas_debito_listar(request):
                 'tipo': nd.tipo_comprobante
             })
             
-        return JsonResponse({'notas_debito': data})
+        return JsonResponse({
+            'notas_debito': data,
+            'total': paginator.count,
+            'total_pages': paginator.num_pages,
+            'current_page': page_obj.number
+        })
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
@@ -9514,13 +9733,34 @@ def api_nota_debito_crear(request, venta_id):
     try:
         data = json.loads(request.body)
         items = data.get('items', [])
-        motivo = data.get('motivo', 'Nota de Débito') # Motivo general opcional
+        monto_global = data.get('monto')
+        motivo = data.get('motivo', 'Nota de Débito')
+        
+        venta = Venta.objects.get(pk=venta_id)
+
+        # Si no hay items pero hay un monto directo (modal simple), generamos un item virtual
+        if not items and monto_global:
+            # Buscamos o creamos un producto genérico para cargos financieros/ND
+            producto_generico, _ = Producto.objects.get_or_create(
+                codigo='ND-GENERICO',
+                defaults={
+                    'descripcion': 'CONCEPTOS VARIOS / INTERESES',
+                    'precio_efectivo': 0,
+                    'precio_tarjeta': 0,
+                    'precio_ctacte': 0,
+                    'stock': 0
+                }
+            )
+            items = [{
+                'id': producto_generico.id,
+                'cantidad': 1,
+                'precio': monto_global,
+                'subtotal': monto_global
+            }]
         
         if not items:
-             return JsonResponse({'ok': False, 'error': 'Debe agregar al menos un item.'})
+             return JsonResponse({'ok': False, 'error': 'Debe agregar al menos un item o especificar un monto.'})
 
-        venta = Venta.objects.get(pk=venta_id)
-        
         # Calcular total
         total_nd = Decimal('0.00')
         for item in items:
@@ -9552,7 +9792,7 @@ def api_nota_debito_crear(request, venta_id):
             try:
                 producto = Producto.objects.get(pk=producto_id)
             except Producto.DoesNotExist:
-                 continue # O lanzar error
+                 continue
                  
             DetalleNotaDebito.objects.create(
                 nota_debito=nd,
@@ -9737,15 +9977,35 @@ def api_dashboard_stats(request):
             'cantidad': c['cantidad_compras']
         })
 
-    # --- 2. KPIs Principales ---
-    # We keep these as TODAY/REALTIME for operational awareness, independent of the profitability filter
-    today_start = timezone.make_aware(datetime.combine(hoy_date, datetime.min.time()))
-    today_end = today_start + timedelta(days=1)
+    # --- 2. KPIs Principales (REALTIME) ---
+    start_of_day = timezone.make_aware(datetime.combine(hoy_date, datetime.min.time()))
+    end_of_day = timezone.make_aware(datetime.combine(hoy_date, datetime.max.time()))
     
-    ventas_hoy = Venta.objects.filter(fecha__gte=today_start, fecha__lt=today_end).aggregate(total=Sum('total'))['total'] or 0
-    ingresos_caja = MovimientoCaja.objects.filter(fecha__gte=today_start, fecha__lt=today_end, tipo='Ingreso').aggregate(total=Sum('monto'))['total'] or 0
-    egresos_caja = MovimientoCaja.objects.filter(fecha__gte=today_start, fecha__lt=today_end, tipo='Egreso').aggregate(total=Sum('monto'))['total'] or 0
-    caja_hoy_neto = ingresos_caja - egresos_caja
+    # Ventas de Hoy
+    ventas_hoy_qs = Venta.objects.filter(fecha__range=(start_of_day, end_of_day))
+    ventas_hoy = ventas_hoy_qs.aggregate(total=Sum('total'))['total'] or 0
+    
+    # Utilidad de Hoy (Estimada por costo de productos)
+    detalles_hoy = DetalleVenta.objects.filter(venta__in=ventas_hoy_qs).select_related('producto')
+    total_costo_hoy = sum((d.cantidad * (d.producto.costo or 0)) for d in detalles_hoy)
+    utilidad_hoy = float(ventas_hoy) - float(total_costo_hoy)
+    
+    # Caja Disponible (Saldo de la Caja Activa)
+    from .models import CajaDiaria
+    caja_abierta = CajaDiaria.objects.filter(estado='ABIERTA').first()
+    if caja_abierta:
+        movs = MovimientoCaja.objects.filter(caja_diaria=caja_abierta).aggregate(
+            ingresos=Sum('monto', filter=Q(tipo='Ingreso')),
+            egresos=Sum('monto', filter=Q(tipo='Egreso'))
+        )
+        ing = movs['ingresos'] or 0
+        eg = movs['egresos'] or 0
+        caja_disponible = float(caja_abierta.monto_apertura) + float(ing) - float(eg)
+    else:
+        caja_disponible = 0
+    
+    caja_hoy_neto = caja_disponible
+
     
     # Pendientes Query & List
     pedidos_pendientes_qs = Pedido.objects.filter(estado__in=['PENDIENTE', 'PREPARACION']).order_by('-fecha')
@@ -9817,41 +10077,46 @@ def api_dashboard_stats(request):
         data_ingresos.append(fechas_map[d]['ingreso'])
         data_egresos.append(fechas_map[d]['egreso'])
 
-    # --- 3. Chart: Ventas vs Compras (Last 7 days fixed) ---
-    fecha_inicio_chart = hoy_date - timedelta(days=6)
-    start_chart_dt = timezone.make_aware(datetime.combine(fecha_inicio_chart, datetime.min.time()))
-    
-    ventas_range = Venta.objects.filter(fecha__gte=start_chart_dt).values('fecha', 'total')
-    compras_range = Compra.objects.filter(fecha__gte=start_chart_dt).values('fecha', 'total')
-    
-    daily_ventas = {}
-    daily_compras = {}
-    
-    for v in ventas_range:
-        local_dt = v['fecha'] - timedelta(hours=3)
-        day_str = local_dt.strftime('%Y-%m-%d')
-        daily_ventas[day_str] = daily_ventas.get(day_str, 0) + float(v['total'])
-        
-    for c in compras_range:
-        local_dt = c['fecha'] - timedelta(hours=3)
-        day_str = local_dt.strftime('%Y-%m-%d')
-        daily_compras[day_str] = daily_compras.get(day_str, 0) + float(c['total'])
-
-    chart_labels = []
+    # --- 3. Chart: Rendimiento Mensual (Últimos 6 meses) ---
+    months_labels = []
     data_ventas = []
     data_compras = []
     
-    for i in range(7):
-        dia_iter = fecha_inicio_chart + timedelta(days=i)
-        dia_str = dia_iter.strftime('%Y-%m-%d')
-        chart_labels.append(dia_iter.strftime('%d/%m'))
-        data_ventas.append(daily_ventas.get(dia_str, 0))
-        data_compras.append(daily_compras.get(dia_str, 0))
+    meses_es = {1: 'Ene', 2: 'Feb', 3: 'Mar', 4: 'Abr', 5: 'May', 6: 'Jun', 
+                7: 'Jul', 8: 'Ago', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dic'}
+    
+    for i in range(5, -1, -1):
+        # Retroceder i meses de forma segura
+        target_date = hoy_date
+        for _ in range(i):
+            target_date = target_date.replace(day=1) - timedelta(days=1)
+        
+        m = target_date.month
+        label = meses_es[m]
+        months_labels.append(label)
+
+        # Calcular rango con datetimes
+        month_start_date = target_date.replace(day=1)
+        next_month_date = (month_start_date + timedelta(days=32)).replace(day=1)
+        month_end_date = next_month_date - timedelta(days=1)
+        
+        dt_start_month = timezone.make_aware(datetime.combine(month_start_date, datetime.min.time()))
+        dt_end_month = timezone.make_aware(datetime.combine(month_end_date, datetime.max.time()))
+        
+        # Totales del mes
+        v_mes = Venta.objects.filter(fecha__range=(dt_start_month, dt_end_month)).aggregate(total=Sum('total'))['total'] or 0
+        c_mes = Compra.objects.filter(fecha__range=(dt_start_month, dt_end_month)).aggregate(total=Sum('total'))['total'] or 0
+        
+        data_ventas.append(float(v_mes))
+        data_compras.append(float(c_mes))
 
     chart_datasets = [
         {'label': 'Ventas', 'data': data_ventas, 'borderColor': '#0d6efd', 'backgroundColor': 'rgba(13, 110, 253, 0.1)'},
         {'label': 'Compras', 'data': data_compras, 'borderColor': '#dc3545', 'backgroundColor': 'rgba(220, 53, 69, 0.1)'}
     ]
+    
+    chart_labels = months_labels
+
     
     # --- 4. Actividad Reciente ---
     recientes = []
@@ -9896,11 +10161,24 @@ def api_dashboard_stats(request):
             'total': float(p['total_vendido'] or 0)
         })
 
+    # --- Additional KPI Details ---
+    cantidad_ventas_hoy = Venta.objects.filter(fecha__range=(start_of_day, end_of_day)).count()
+    
+    monto_pedidos_pendientes = pedidos_pendientes_qs.aggregate(total=Sum('total'))['total'] or 0
+    
+    ingresos_caja_hoy = 0
+    if caja_abierta:
+        ingresos_caja_hoy = MovimientoCaja.objects.filter(caja_diaria=caja_abierta, tipo='Ingreso').aggregate(t=Sum('monto'))['t'] or 0
+
     data = {
         'kpi': {
             'ventas_hoy': float(ventas_hoy),
+            'cantidad_ventas_hoy': cantidad_ventas_hoy,
+            'utilidad_hoy': float(utilidad_hoy),
             'caja_hoy': float(caja_hoy_neto),
+            'ingresos_caja_hoy': float(ingresos_caja_hoy),
             'pedidos_pendientes': pedidos_pendientes_count,
+            'monto_pedidos_pendientes': float(monto_pedidos_pendientes),
             'stock_bajo': stock_bajo_count,
         },
         'rentabilidad': rentabilidad,

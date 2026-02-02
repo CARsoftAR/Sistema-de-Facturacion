@@ -1,48 +1,45 @@
+// Productos.jsx - Rediseño Premium 2025
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import {
+    Package, Plus, Search, FilterX, Pencil, Trash2,
+    AlertTriangle, CheckCircle, ListFilter, Tag,
+    Hash, DollarSign, Activity, ChevronRight, Layers,
+    Archive
+} from 'lucide-react';
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { useLocation, useSearchParams } from 'react-router-dom';
-import { Pencil, Trash2, Search, Plus, RotateCcw, Package, AlertTriangle, CheckCircle } from 'lucide-react';
-// import ProductoForm from '../components/productos/ProductoForm'; // Removed as we use page now
-import { BtnAdd, BtnEdit, BtnDelete, BtnAction, BtnClear, BtnVertical } from '../components/CommonButtons';
-import { showDeleteAlert } from '../utils/alerts';
+// Premium UI Components
+import { StatCard, PremiumTable, TableCell, PremiumFilterBar } from '../components/premium';
+import { BentoCard, BentoGrid } from '../components/premium/BentoCard';
+import { Alert, showConfirmationAlert, showSuccessAlert, showErrorAlert } from '../utils/alerts';
+import { BtnAdd } from '../components/CommonButtons';
 import TablePagination from '../components/common/TablePagination';
 import EmptyState from '../components/EmptyState';
-import { useNavigate } from 'react-router-dom';
+import { cn } from '../utils/cn';
 
 const Productos = () => {
     const navigate = useNavigate();
-    const [searchParams] = useSearchParams();
     const location = useLocation();
+
+    // State
     const [productos, setProductos] = useState([]);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
+    const [alertaStockMinimo, setAlertaStockMinimo] = useState(true);
+
     const STORAGE_KEY = 'table_prefs_productos_items';
     const [itemsPerPage, setItemsPerPage] = useState(() => {
         const saved = localStorage.getItem(STORAGE_KEY);
         const parsed = parseInt(saved, 10);
         return (parsed && parsed > 0) ? parsed : 10;
     });
-    const [alertaStockMinimo, setAlertaStockMinimo] = useState(true);
 
-    useEffect(() => {
-        if (true) { // Siempre cargamos para obtener otras config como alertaStockMinimo
-            fetch('/api/config/obtener/')
-                .then(res => res.json())
-                .then(data => {
-                    if (data.items_por_pagina && !localStorage.getItem(STORAGE_KEY)) {
-                        setItemsPerPage(data.items_por_pagina);
-                    }
-                    if (data.alerta_stock_minimo !== undefined) {
-                        setAlertaStockMinimo(data.alerta_stock_minimo);
-                    }
-                })
-                .catch(console.error);
-        }
-    }, []);
+    // Filtros Auxiliares
+    const [marcas, setMarcas] = useState([]);
+    const [rubros, setRubros] = useState([]);
 
-    // Filtros - Inicializar con valores de la URL actual
     const getFiltersFromURL = () => {
         const params = new URLSearchParams(location.search);
         return {
@@ -55,63 +52,49 @@ const Productos = () => {
 
     const [filters, setFilters] = useState(getFiltersFromURL());
 
-    // Auxiliares para filtros
-    const [marcas, setMarcas] = useState([]);
-    const [rubros, setRubros] = useState([]);
-
-    // Sincronizar filtros con la URL cuando cambia location.search
     useEffect(() => {
-        setFilters(getFiltersFromURL());
-        setPage(1);
-    }, [location.search]);
+        const loadConfigAndFilters = async () => {
+            try {
+                const [cRes, mRes, rRes] = await Promise.all([
+                    fetch('/api/config/obtener/'),
+                    fetch('/api/marcas/listar/'),
+                    fetch('/api/rubros/listar/')
+                ]);
+                const cData = await cRes.json();
+                const mData = await mRes.json();
+                const rData = await rRes.json();
 
-    // Modal Form (Deprecated for Page)
-    // const [showForm, setShowForm] = useState(false);
-    // const [editingProduct, setEditingProduct] = useState(null);
+                if (cData.items_por_pagina && !localStorage.getItem(STORAGE_KEY)) {
+                    setItemsPerPage(cData.items_por_pagina);
+                }
+                setAlertaStockMinimo(cData.alerta_stock_minimo !== false);
+                setMarcas(mData.data || []);
+                setRubros(rData.length ? rData : []);
+            } catch (e) { console.error("Error loading initial data", e); }
+        };
+        loadConfigAndFilters();
+    }, []);
 
     const fetchProductos = useCallback(async (signal) => {
-        if (itemsPerPage === 0) return;
         setLoading(true);
         try {
             const params = new URLSearchParams({
-                page: page,
+                page,
                 per_page: itemsPerPage,
-                ...filters
+                busqueda: filters.busqueda,
+                marca: filters.marca,
+                rubro: filters.rubro,
+                stock: filters.stock
             });
-
             const response = await fetch(`/api/productos/lista/?${params}`, { signal });
             const data = await response.json();
-
             setProductos(data.productos || []);
             setTotalPages(data.total_pages || 1);
             setTotalItems(data.total || 0);
         } catch (error) {
-            if (error.name !== 'AbortError') {
-                console.error("Error al cargar productos:", error);
-            }
-        } finally {
-            setLoading(false);
-        }
+            if (error.name !== 'AbortError') console.error(error);
+        } finally { setLoading(false); }
     }, [page, filters, itemsPerPage]);
-
-    // Cargar filtros auxiliares (solo una vez)
-    useEffect(() => {
-        const loadFilters = async () => {
-            try {
-                const [mRes, rRes] = await Promise.all([
-                    fetch('/api/marcas/listar/'),
-                    fetch('/api/rubros/listar/')
-                ]);
-                const mData = await mRes.json();
-                const rData = await rRes.json();
-                setMarcas(mData.data || []);
-                setRubros(rData.length ? rData : []);
-            } catch (e) {
-                console.error("Error cargando filtros", e);
-            }
-        };
-        loadFilters();
-    }, []);
 
     useEffect(() => {
         const controller = new AbortController();
@@ -119,219 +102,266 @@ const Productos = () => {
         return () => controller.abort();
     }, [fetchProductos]);
 
-    const handleFilterChange = (e) => {
-        const { name, value } = e.target;
+    const handleFilterChange = (name, value) => {
         setFilters(prev => ({ ...prev, [name]: value }));
         setPage(1);
     };
 
-    const handleCreate = () => {
-        navigate('/productos/nuevo');
-    };
-
-    const handleEdit = (producto) => {
-        navigate(`/productos/editar/${producto.id}`);
-    };
-
     const handleDelete = async (id) => {
-        const result = await showDeleteAlert(
-            "¿Eliminar producto?",
-            "Esta acción eliminará el producto del catálogo. El historial de ventas no se borra, pero dejará de estar disponible para nuevas operaciones.",
-            'Eliminar',
-            {
-                iconComponent: (
-                    <div className="rounded-circle d-flex align-items-center justify-content-center bg-danger-subtle text-danger mx-auto" style={{ width: '80px', height: '80px' }}>
-                        <Package size={40} strokeWidth={1.5} />
-                    </div>
-                )
-            }
+        const result = await showConfirmationAlert(
+            "¿Eliminar Producto?",
+            "Esta acción quitará el producto del catálogo activo. No afectará reportes de ventas pasadas.",
+            "SÍ, ELIMINAR",
+            "danger"
         );
         if (!result.isConfirmed) return;
 
         try {
             const res = await fetch(`/api/productos/${id}/eliminar/`);
-            if (res.ok) {
-                fetchProductos();
-            } else {
-                alert("No se pudo eliminar el producto.");
+            if (res.ok) fetchProductos();
+            else showErrorAlert("Error", "No se pudo eliminar el producto.");
+        } catch (e) { showErrorAlert("Error", "Error de servidor"); }
+    };
+
+    // Stats calculation
+    const stockStats = useMemo(() => {
+        const sinStock = productos.filter(p => (p.stock_actual || p.stock) <= 0).length;
+        const bajoStock = productos.filter(p => {
+            const current = p.stock_actual || p.stock;
+            return current <= p.stock_minimo && current > 0;
+        }).length;
+        return { sin: sinStock, bajo: bajoStock };
+    }, [productos]);
+
+    const handleEdit = (p) => navigate(`/productos/editar/${p.id}`);
+
+    // Table Columns
+    const columns = [
+        {
+            key: 'codigo',
+            label: '# Cód.',
+            width: '110px',
+            render: (v) => <TableCell.ID value={v} />
+        },
+        {
+            key: 'descripcion',
+            label: 'Producto / Concepto',
+            render: (v, p) => <TableCell.Primary value={p.nombre || v} />
+        },
+        {
+            key: 'marca_nombre',
+            label: 'Marca',
+            width: '150px',
+            render: (v, p) => (
+                <span className="px-2.5 py-0.5 bg-neutral-100 text-neutral-600 rounded-full text-[10px] font-black tracking-widest uppercase border border-neutral-200 inline-block">
+                    {v || p.marca || 'Genérico'}
+                </span>
+            )
+        },
+        {
+            key: 'rubro_nombre',
+            label: 'Rubro',
+            width: '150px',
+            render: (v, p) => (
+                <span className="px-2.5 py-0.5 bg-neutral-50 text-neutral-500 rounded-full text-[10px] font-black tracking-widest uppercase border border-neutral-100 inline-block">
+                    {v || p.rubro || 'Sin Rubro'}
+                </span>
+            )
+        },
+        {
+            key: 'precio_venta',
+            label: 'Precio Unit.',
+            align: 'right',
+            width: '150px',
+            render: (v, p) => {
+                const precio = v || p.precio_efectivo || p.precio_tarjeta || p.precio_lista || 0;
+                return <TableCell.Currency value={precio} />;
             }
-        } catch (e) {
-            console.error("Error eliminado", e);
+        },
+        {
+            key: 'iva_alicuota',
+            label: 'IVA',
+            align: 'center',
+            width: '100px',
+            render: (v) => <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-widest border bg-neutral-50 text-neutral-500 border-neutral-200 uppercase">{v}%</span>
+        },
+        {
+            key: 'stock_actual',
+            label: 'Stock',
+            align: 'center',
+            width: '120px',
+            render: (v, p) => {
+                const stock = v !== undefined ? v : p.stock;
+                const isLow = alertaStockMinimo && stock <= p.stock_minimo;
+                const isEmpty = stock <= 0;
+                return (
+                    <div className="flex flex-col items-center gap-1">
+                        <span className={cn(
+                            "px-3 py-1 rounded-full text-xs font-black border",
+                            isEmpty ? "bg-red-50 text-red-600 border-red-200" :
+                                isLow ? "bg-amber-50 text-amber-600 border-amber-200 shadow-sm shadow-amber-100" :
+                                    "bg-emerald-50 text-emerald-600 border-emerald-200"
+                        )}>
+                            {stock}
+                        </span>
+                    </div>
+                );
+            }
+        },
+        {
+            key: 'acciones',
+            label: 'Acciones',
+            align: 'right',
+            width: '120px',
+            sortable: false,
+            render: (_, p) => (
+                <div className="flex justify-end gap-2 group-hover:opacity-100 transition-all">
+                    <button
+                        onClick={() => handleEdit(p)}
+                        className="p-2 text-neutral-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-all"
+                    >
+                        <Pencil size={18} />
+                    </button>
+                    <button
+                        onClick={() => handleDelete(p.id)}
+                        className="p-2 text-neutral-400 hover:text-error-600 hover:bg-error-50 rounded-lg transition-all"
+                    >
+                        <Trash2 size={18} />
+                    </button>
+                </div>
+            )
         }
-    };
-
-    const handleSave = () => {
-        fetchProductos();
-    };
-
-    const formatCurrency = (val) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(val);
+    ];
 
     return (
-        <div className="container-fluid px-4 pt-4 pb-0 bg-light fade-in main-content-container">
+        <div className="p-6 w-full max-w-[1920px] mx-auto h-[calc(100vh-64px)] overflow-hidden flex flex-col gap-6 animate-in fade-in duration-500 bg-slate-50/50">
 
-            {/* HEADER */}
-            <div className="d-flex justify-content-between align-items-center mb-4">
-                <div>
-                    <h2 className="text-primary fw-bold mb-0" style={{ fontSize: '2rem' }}>
-                        <Package className="me-2 inline-block" size={32} />
-                        Productos
-                    </h2>
-                    <p className="text-muted mb-0 ps-1" style={{ fontSize: '1rem' }}>
-                        Gestiona el catálogo completo de productos y servicios.
+            {/* Header */}
+            <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div className="space-y-1">
+                    <h1 className="text-3xl font-black text-neutral-900 tracking-tight flex items-center gap-3">
+                        <Package className="text-primary-600" size={32} strokeWidth={2.5} />
+                        Catálogo de Productos
+                    </h1>
+                    <p className="text-neutral-500 font-medium text-sm ml-1">
+                        Visualización maestra de inventario, precios y stock en tiempo real.
                     </p>
                 </div>
-                <BtnAdd label="Nuevo Producto" icon={Package} onClick={handleCreate} className="btn-lg shadow-lg shadow-blue-500/30 hover:shadow-blue-600/40 active:scale-95 transition-all" />
-            </div>
-
-            {/* FILTROS */}
-            <div className="card border-0 shadow-sm mb-4">
-                <div className="card-body bg-light rounded">
-                    <div className="row g-3">
-                        <div className="col-md-4">
-                            <div className="input-group">
-                                <span className="input-group-text bg-white border-end-0"><Search size={18} className="text-muted" /></span>
-                                <input
-                                    type="text"
-                                    className="form-control border-start-0"
-                                    placeholder="Buscar por código, descripción..."
-                                    name="busqueda"
-                                    value={filters.busqueda}
-                                    onChange={handleFilterChange}
-                                />
-                            </div>
-                        </div>
-                        <div className="col-md-2">
-                            <select className="form-select" name="marca" value={filters.marca} onChange={handleFilterChange}>
-                                <option value="">Todas las Marcas</option>
-                                {marcas.map(m => <option key={m.id} value={m.id}>{m.nombre}</option>)}
-                            </select>
-                        </div>
-                        <div className="col-md-2">
-                            <select className="form-select" name="rubro" value={filters.rubro} onChange={handleFilterChange}>
-                                <option value="">Todos los Rubros</option>
-                                {rubros.map(r => <option key={r.id} value={r.id}>{r.nombre}</option>)}
-                            </select>
-                        </div>
-                        <div className="col-md-2">
-                            <select className="form-select" name="stock" value={filters.stock} onChange={handleFilterChange}>
-                                <option value="todos">Todo el Stock</option>
-                                <option value="con_stock">Con Stock</option>
-                                <option value="sin_stock">Sin Stock</option>
-                                <option value="bajo">Stock Bajo</option>
-                            </select>
-                        </div>
-                        <div className="col-md-2">
-                            <BtnClear onClick={() => { setFilters({ busqueda: '', marca: '', rubro: '', stock: 'todos' }); setPage(1); }} className="w-100" />
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* TABLA */}
-            <div className="card border-0 shadow mb-4 flex-grow-1 overflow-hidden d-flex flex-column">
-                <div className="card-body p-0 d-flex flex-column overflow-hidden">
-                    <div className="table-responsive flex-grow-1 table-container-fixed">
-                        <table className="table align-middle mb-0">
-                            <thead className="table-dark" style={{ backgroundColor: '#212529', color: '#fff' }}>
-                                <tr>
-                                    <th className="ps-4 py-3 fw-bold">Código</th>
-                                    <th className="py-3 fw-bold">Descripción</th>
-                                    <th className="py-3 fw-bold">Marca / Rubro</th>
-                                    <th className="py-3 fw-bold">Precio</th>
-                                    <th className="text-center py-3 fw-bold">IVA</th>
-                                    <th className="text-center py-3 fw-bold">Stock</th>
-                                    <th className="text-end pe-4 py-3 fw-bold">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {loading ? (
-                                    <tr>
-                                        <td colSpan="7" className="text-center py-5">
-                                            <div className="spinner-border text-primary" role="status"></div>
-                                        </td>
-                                    </tr>
-                                ) : productos.length === 0 ? (
-                                    <tr>
-                                        <td colSpan="7" className="py-5">
-                                            <EmptyState
-                                                icon={Package}
-                                                title="No hay productos"
-                                                description="Agrega nuevos productos para gestionar tu inventario."
-                                                iconColor="text-blue-500"
-                                                bgIconColor="bg-blue-50"
-                                            />
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    productos.map(p => (
-                                        <tr key={p.id} className="border-bottom-0">
-                                            <td className="ps-4 py-3">
-                                                <span className="font-monospace small bg-light border px-2 py-1 rounded text-dark fw-medium">{p.codigo || '-'}</span>
-                                            </td>
-                                            <td className="py-3">
-                                                <div className="fw-bold text-dark">{p.nombre || p.descripcion}</div>
-                                                <div className="text-muted small fw-medium">{p.descripcion || 'Sin descripción'}</div>
-                                            </td>
-                                            <td className="py-3">
-                                                <div className="badge bg-light text-dark border me-1 fw-medium">{p.marca_nombre || p.marca || 'Sin Marca'}</div>
-                                                <div className="badge bg-light text-secondary border fw-medium">{p.rubro_nombre || p.rubro || 'Sin Rubro'}</div>
-                                            </td>
-                                            <td className="fw-bold text-success py-3">
-                                                $ {parseFloat(p.precio_venta || p.precio_efectivo).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
-                                            </td>
-                                            <td className="text-center py-3">
-                                                <span className="badge bg-slate-100 text-slate-600 border fw-bold">
-                                                    {p.iva_alicuota}%
-                                                </span>
-                                            </td>
-                                            <td className="text-center py-3">
-                                                <span className={`badge rounded-pill fw-medium px-3 py-2 ${(!alertaStockMinimo || p.stock_actual > p.stock_minimo || p.stock > p.stock_minimo) ? 'bg-success-subtle text-success border border-success' : 'bg-danger-subtle text-danger border border-danger'}`}>
-                                                    {p.stock_actual !== undefined ? p.stock_actual : p.stock}
-                                                </span>
-                                            </td>
-                                            <td className="text-end pe-4 py-3">
-                                                <div className="d-flex justify-content-end gap-2">
-                                                    <div className="d-flex justify-content-end gap-2">
-                                                        <BtnEdit onClick={() => handleEdit(p)} />
-                                                        <BtnDelete onClick={() => handleDelete(p.id)} />
-                                                    </div>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {/* PAGINACIÓN */}
-                    {/* PAGINACIÓN */}
-                    {/* PAGINACIÓN */}
-                    <TablePagination
-                        currentPage={page}
-                        totalPages={totalPages}
-                        totalItems={totalItems}
-                        itemsPerPage={itemsPerPage}
-                        onPageChange={setPage}
-                        onItemsPerPageChange={(newVal) => {
-                            setItemsPerPage(newVal);
-                            setPage(1);
-                            localStorage.setItem(STORAGE_KEY, newVal);
-                        }}
+                <div className="flex items-center gap-3">
+                    <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-neutral-200 text-neutral-700 rounded-xl font-bold text-sm hover:bg-neutral-50 transition-all shadow-sm">
+                        <Layers size={18} /> Categorías
+                    </button>
+                    <BtnAdd
+                        label="NUEVO PRODUCTO"
+                        onClick={() => navigate('/productos/nuevo')}
+                        className="!bg-primary-600 !hover:bg-primary-700 !rounded-xl !px-6 !py-3 !font-black !tracking-widest !text-xs !shadow-lg !shadow-primary-600/20"
                     />
                 </div>
-            </div>
+            </header>
 
-            {/* Modal Form Overlay - Removed */}
-            {/* {showForm && (
-                <ProductoForm
-                    producto={editingProduct}
-                    onClose={() => setShowForm(false)}
-                    onSave={handleSave}
+            {/* Stats */}
+            <BentoGrid cols={4}>
+                <StatCard
+                    label="Items Totales"
+                    value={totalItems}
+                    icon={Archive}
+                    color="primary"
                 />
-            )} */}
+                <StatCard
+                    label="Valorizado Ventas"
+                    value={formatCurrency(productos.reduce((a, p) => a + ((p.stock_actual || p.stock) * (p.precio_venta || p.precio_efectivo || 0)), 0))}
+                    icon={DollarSign}
+                    color="success"
+                />
+                <StatCard
+                    label="Stock Bajo"
+                    value={stockStats.bajo}
+                    icon={AlertTriangle}
+                    color="warning"
+                />
+                <StatCard
+                    label="Sin Stock"
+                    value={stockStats.sin}
+                    icon={Activity}
+                    color="error"
+                />
+            </BentoGrid>
+
+            {/* Main Content Area */}
+            <div className="flex flex-col flex-grow gap-4 min-h-0">
+                <PremiumFilterBar
+                    busqueda={filters.busqueda}
+                    setBusqueda={(v) => handleFilterChange('busqueda', v)}
+                    showQuickFilters={false}
+                    showDateRange={false}
+                    onClear={() => { setFilters({ busqueda: '', marca: '', rubro: '', stock: 'todos' }); setPage(1); }}
+                    placeholder="Buscar por nombre, código o rubro..."
+                >
+                    <select
+                        className="bg-white border border-neutral-200 rounded-full px-6 h-[52px] text-[10px] font-black uppercase tracking-widest text-neutral-600 focus:ring-2 focus:ring-primary-500 transition-all outline-none shadow-sm cursor-pointer appearance-none pr-12 min-w-[160px] bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_1rem_center] bg-no-repeat"
+                        value={filters.marca}
+                        onChange={(e) => handleFilterChange('marca', e.target.value)}
+                    >
+                        <option value="">T. LAS MARCAS</option>
+                        {marcas.map(m => <option key={m.id} value={m.id}>{m.nombre.toUpperCase()}</option>)}
+                    </select>
+
+                    <select
+                        className="bg-white border border-neutral-200 rounded-full px-6 h-[52px] text-[10px] font-black uppercase tracking-widest text-neutral-600 focus:ring-2 focus:ring-primary-500 transition-all outline-none shadow-sm cursor-pointer appearance-none pr-12 min-w-[160px] bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_1rem_center] bg-no-repeat"
+                        value={filters.rubro}
+                        onChange={(e) => handleFilterChange('rubro', e.target.value)}
+                    >
+                        <option value="">T. LOS RUBROS</option>
+                        {rubros.map(r => <option key={r.id} value={r.id}>{r.nombre.toUpperCase()}</option>)}
+                    </select>
+
+                    <select
+                        className="bg-white border border-neutral-200 rounded-full px-6 h-[52px] text-[10px] font-black uppercase tracking-widest text-neutral-600 focus:ring-2 focus:ring-primary-500 transition-all outline-none shadow-sm cursor-pointer appearance-none pr-12 min-w-[160px] bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_1rem_center] bg-no-repeat"
+                        value={filters.stock}
+                        onChange={(e) => handleFilterChange('stock', e.target.value)}
+                    >
+                        <option value="todos">TODO EL STOCK</option>
+                        <option value="con_stock">CON STOCK</option>
+                        <option value="sin_stock">SIN STOCK</option>
+                        <option value="bajo">STOCK BAJO</option>
+                    </select>
+                </PremiumFilterBar>
+
+                <div className="flex-grow flex flex-col min-h-0">
+                    <PremiumTable
+                        columns={columns}
+                        data={productos}
+                        loading={loading}
+                        className="flex-grow shadow-lg"
+                        emptyState={
+                            <EmptyState
+                                title="No hay resultados"
+                                description="Ajusta los filtros o agrega una nueva referencia al catálogo."
+                                icon={Package}
+                            />
+                        }
+                    />
+
+                    <div className="bg-white border-x border-b border-neutral-200 rounded-b-[2rem] px-6 py-1 shadow-premium">
+                        <TablePagination
+                            currentPage={page}
+                            totalPages={totalPages}
+                            totalItems={totalItems}
+                            itemsPerPage={itemsPerPage}
+                            onPageChange={setPage}
+                            onItemsPerPageChange={(newVal) => {
+                                setItemsPerPage(newVal);
+                                setPage(1);
+                                localStorage.setItem(STORAGE_KEY, newVal);
+                            }}
+                        />
+                    </div>
+                </div>
+            </div>
         </div>
     );
 };
+
+const formatCurrency = (val) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(val);
 
 export default Productos;

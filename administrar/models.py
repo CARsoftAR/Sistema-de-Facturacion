@@ -202,6 +202,7 @@ class Empresa(models.Model):
     
     # UI
     ocultar_barra_scroll = models.BooleanField(default=True, verbose_name="Ocultar Barra de Scroll en Menú")
+    ocultar_scroll_tablas = models.BooleanField(default=False, verbose_name="Ocultar Scroll en Tablas")
     pie_factura = models.CharField(max_length=200, blank=True)
     
     # Configuracion UI Layout
@@ -719,6 +720,7 @@ class PerfilUsuario(models.Model):
     acceso_bancos = models.BooleanField(default=False, verbose_name="Acceso a Bancos")
     acceso_ctacte = models.BooleanField(default=False, verbose_name="Acceso a Ctas. Corrientes")
     acceso_remitos = models.BooleanField(default=False, verbose_name="Acceso a Remitos")
+    acceso_auditoria = models.BooleanField(default=False, verbose_name="Acceso a Auditoría")
     
     # Datos personales
     telefono = models.CharField(max_length=30, blank=True, verbose_name="Teléfono")

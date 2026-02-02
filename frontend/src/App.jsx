@@ -1,4 +1,5 @@
 import { useState, Suspense } from 'react'
+import './styles/premium.css'
 import React from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import Sidebar from './components/Sidebar'
@@ -39,7 +40,9 @@ import NuevoCliente from './pages/NuevoCliente'
 import AjusteStock from './pages/AjusteStock'
 import MovimientosStock from './pages/MovimientosStock'
 import NuevoProveedor from './pages/NuevoProveedor'
+import Auditoria from './pages/Auditoria'
 import Backups from './pages/Backups'
+
 
 import Parametros from './pages/Parametros'
 import Reportes from './pages/Reportes'
@@ -57,6 +60,12 @@ import Bancos from './pages/Bancos'
 import ReportesContables from './pages/ReportesContables'
 import MiPerfil from './pages/MiPerfil'
 import { useAuth } from './context/AuthContext'
+
+// Premium Components (Testing)
+import VentasPremium from './pages/VentasPremium'
+import IntelligentDashboard from './pages/IntelligentDashboard'
+import ShowcasePremium from './pages/ShowcasePremium'
+import DashboardPremium from './pages/DashboardPremium'
 
 import CuentasCorrientesClientes from './pages/CuentasCorrientesClientes';
 import DetalleCuentaCorriente from './pages/DetalleCuentaCorriente';
@@ -128,16 +137,10 @@ function App() {
       <div className="d-flex vh-100 overflow-hidden bg-light">
         <Sidebar />
 
-        {/* Main Content Area - Offset by sidebar width on desktop */}
-        <main className="flex-grow-1 transition-all d-flex flex-column" style={{ marginLeft: '0px' }}>
+        {/* Main Content Area */}
+        <main className="flex-grow-1 transition-all d-flex flex-column h-full overflow-hidden">
           <TopNavbar />
-          <style>
-            {`
-              @media (min-width: 992px) {
-                main { margin-left: 300px !important; }
-              }
-            `}
-          </style>
+
 
           <div className="main-content-container flex-grow-1 overflow-auto bg-white/50 backdrop-blur-sm">
             <Routes>
@@ -237,6 +240,15 @@ function App() {
 
               <Route path="/backups" element={<ProtectedRoute permission="configuracion"><Backups /></ProtectedRoute>} />
               <Route path="/usuarios" element={<ProtectedRoute permission="usuarios"><Usuarios /></ProtectedRoute>} />
+              <Route path="/auditoria" element={<ProtectedRoute permission="auditoria"><Auditoria /></ProtectedRoute>} />
+
+
+              {/* PREMIUM DESIGN - Testing Routes (Sin protección para ver ahora) */}
+              <Route path="/ventas-premium" element={<ProtectedRoute permission="ventas"><VentasPremium /></ProtectedRoute>} />
+              <Route path="/dashboard-inteligente" element={<ProtectedRoute><IntelligentDashboard /></ProtectedRoute>} />
+              <Route path="/showcase-premium" element={<ShowcasePremium />} />
+              <Route path="/dashboard-premium" element={<DashboardPremium />} />
+
               <Route path="*" element={<div className="p-5" style={{ zIndex: 9999, position: 'relative' }}><h1>REACT 404</h1><p>Pathname: {window.location.pathname}</p></div>} />
             </Routes>
 

@@ -1,0 +1,406 @@
+/**
+ * Premium Global Styles
+ * 
+ * Custom CSS utilities and animations for the premium design system.
+ * These styles complement Tailwind CSS with additional premium effects.
+ */
+
+/* ============================================
+   GLASSMORPHISM EFFECTS
+   ============================================ */
+
+.glass {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.glass-dark {
+    background: rgba(15, 23, 42, 0.7);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* ============================================
+   PREMIUM SHADOWS
+   ============================================ */
+
+.shadow-premium {
+    box-shadow:
+        0 1px 2px 0 rgba(0, 0, 0, 0.05),
+        0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+.shadow-premium-md {
+    box-shadow:
+        0 4px 6px -1px rgba(0, 0, 0, 0.1),
+        0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.shadow-premium-lg {
+    box-shadow:
+        0 10px 15px -3px rgba(0, 0, 0, 0.1),
+        0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.shadow-premium-xl {
+    box-shadow:
+        0 20px 25px -5px rgba(0, 0, 0, 0.1),
+        0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.shadow-premium-2xl {
+    box-shadow:
+        0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+/* ============================================
+   GRADIENT BACKGROUNDS
+   ============================================ */
+
+.gradient-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.gradient-success {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.gradient-warning {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.gradient-error {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
+
+.gradient-ocean {
+    background: linear-gradient(135deg, #667eea 0%, #2563eb 100%);
+}
+
+.gradient-sunset {
+    background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+}
+
+.gradient-forest {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+
+@keyframes fade-in {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slide-up {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slide-down {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes scale-in {
+    from {
+        transform: scale(0.95);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -1000px 0;
+    }
+
+    100% {
+        background-position: 1000px 0;
+    }
+}
+
+.fade-in {
+    animation: fade-in 0.3s ease-out;
+}
+
+.slide-up {
+    animation: slide-up 0.3s ease-out;
+}
+
+.slide-down {
+    animation: slide-down 0.3s ease-out;
+}
+
+.scale-in {
+    animation: scale-in 0.2s ease-out;
+}
+
+.animate-shimmer {
+    animation: shimmer 2s infinite linear;
+    background: linear-gradient(to right,
+            #f3f4f6 0%,
+            #e5e7eb 20%,
+            #f3f4f6 40%,
+            #f3f4f6 100%);
+    background-size: 1000px 100%;
+}
+
+/* ============================================
+   HOVER EFFECTS
+   ============================================ */
+
+.hover-lift {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hover-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.hover-glow {
+    transition: box-shadow 0.3s ease;
+}
+
+.hover-glow:hover {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+}
+
+/* ============================================
+   SCROLLBAR STYLING
+   ============================================ */
+
+.scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+.scrollbar-hidden::-webkit-scrollbar {
+    display: none;
+}
+
+.scrollbar-hidden {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+/* ============================================
+   LOADING STATES
+   ============================================ */
+
+.skeleton {
+    background: linear-gradient(90deg,
+            #f3f4f6 25%,
+            #e5e7eb 50%,
+            #f3f4f6 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+}
+
+.pulse-slow {
+    animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* ============================================
+   FOCUS STATES (Accessibility)
+   ============================================ */
+
+.focus-ring:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px #fff, 0 0 0 4px #3b82f6;
+}
+
+.focus-ring-error:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px #fff, 0 0 0 4px #ef4444;
+}
+
+.focus-ring-success:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px #fff, 0 0 0 4px #10b981;
+}
+
+/* ============================================
+   PREMIUM BADGES
+   ============================================ */
+
+.badge-premium {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.125rem 0.625rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    border: 1px solid;
+    backdrop-filter: blur(4px);
+}
+
+.badge-primary {
+    background-color: #eff6ff;
+    color: #1d4ed8;
+    border-color: #bfdbfe;
+}
+
+.badge-success {
+    background-color: #f0fdf4;
+    color: #047857;
+    border-color: #86efac;
+}
+
+.badge-warning {
+    background-color: #fffbeb;
+    color: #d97706;
+    border-color: #fde68a;
+}
+
+.badge-error {
+    background-color: #fef2f2;
+    color: #dc2626;
+    border-color: #fecaca;
+}
+
+/* ============================================
+   CARD EFFECTS
+   ============================================ */
+
+.card-premium {
+    background-color: white;
+    border-radius: 0.5rem;
+    border: 1px solid #e7e5e4;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+    transition: all 200ms ease-in-out;
+}
+
+.card-premium:hover {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+    transform: translateY(-2px);
+}
+
+.card-interactive {
+    background-color: white;
+    border-radius: 0.5rem;
+    border: 1px solid #e7e5e4;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+    transition: all 200ms ease-in-out;
+    cursor: pointer;
+}
+
+.card-interactive:hover {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+    transform: translateY(-2px);
+}
+
+.card-interactive:active {
+    transform: scale(0.99);
+}
+
+/* ============================================
+   TEXT EFFECTS
+   ============================================ */
+
+.text-gradient {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.text-shimmer {
+    background: linear-gradient(90deg,
+            #94a3b8 0%,
+            #475569 50%,
+            #94a3b8 100%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: shimmer 3s linear infinite;
+}
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+
+.backdrop-blur-premium {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+.transition-premium {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.transition-premium-slow {
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ============================================
+   RESPONSIVE HELPERS
+   ============================================ */
+
+@media (max-width: 640px) {
+    .mobile-full {
+        width: 100%;
+    }
+
+    .mobile-stack {
+        flex-direction: column;
+    }
+}
+
+/* ============================================
+   PRINT STYLES
+   ============================================ */
+
+@media print {
+    .no-print {
+        display: none !important;
+    }
+
+    .print-full-width {
+        width: 100% !important;
+    }
+}

@@ -360,23 +360,23 @@ const NuevaNotaDebito = () => {
                         <table className="w-full text-sm">
                             <thead className="bg-slate-50 sticky top-0 z-10 shadow-sm">
                                 <tr className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                                    <th className="px-6 py-3 text-left w-24">Código</th>
-                                    <th className="px-6 py-3 text-left">Producto</th>
-                                    <th className="px-6 py-3 text-right">Precio</th>
-                                    <th className="px-6 py-3 text-center">Cant.</th>
-                                    <th className="px-6 py-3 text-right">Subtotal</th>
-                                    <th className="px-6 py-3 w-16"></th>
+                                    <th className="px-6 py-1.5 text-left w-24">Código</th>
+                                    <th className="px-6 py-1.5 text-left">Producto</th>
+                                    <th className="px-6 py-1.5 text-right">Precio</th>
+                                    <th className="px-6 py-1.5 text-center">Cant.</th>
+                                    <th className="px-6 py-1.5 text-right">Subtotal</th>
+                                    <th className="px-6 py-1.5 w-16"></th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 bg-white">
                                 {items.map((item, index) => (
                                     <tr key={index} className="hover:bg-slate-50">
-                                        <td className="px-6 py-3 font-mono text-xs font-bold text-slate-500">{item.codigo}</td>
-                                        <td className="px-6 py-3 font-medium text-slate-700">{item.descripcion}</td>
-                                        <td className="px-6 py-3 text-right text-slate-600">${item.precio.toLocaleString('es-AR')}</td>
-                                        <td className="px-6 py-3 text-center font-bold">{item.cantidad}</td>
-                                        <td className="px-6 py-3 text-right font-bold text-emerald-600">${item.subtotal.toLocaleString('es-AR')}</td>
-                                        <td className="px-6 py-3 text-center">
+                                        <td className="px-6 py-1 font-mono text-xs font-bold text-slate-500">{item.codigo}</td>
+                                        <td className="px-6 py-1 font-medium text-slate-700">{item.descripcion}</td>
+                                        <td className="px-6 py-1 text-right text-slate-600">${item.precio.toLocaleString('es-AR')}</td>
+                                        <td className="px-6 py-1 text-center font-bold">{item.cantidad}</td>
+                                        <td className="px-6 py-1 text-right font-bold text-emerald-600">${item.subtotal.toLocaleString('es-AR')}</td>
+                                        <td className="px-6 py-1 text-center">
                                             <button onClick={() => eliminarItem(index)} className="p-1.5 text-slate-400 hover:text-red-500 transition-colors">
                                                 <Trash2 size={16} />
                                             </button>
@@ -385,7 +385,7 @@ const NuevaNotaDebito = () => {
                                 ))}
                                 {items.length === 0 && (
                                     <tr>
-                                        <td colSpan="6" className="py-10 text-center text-slate-400">
+                                        <td colSpan="6" className="py-4 text-center text-slate-400">
                                             No hay items cargados.
                                         </td>
                                     </tr>

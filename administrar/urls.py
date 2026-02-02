@@ -281,6 +281,7 @@ urlpatterns = [
     path('api/presupuesto/<int:id>/', views.api_presupuesto_detalle, name='api_presupuesto_detalle'),
     path('api/presupuesto/guardar/', views.api_presupuesto_guardar, name='api_presupuesto_guardar'),
     path('api/presupuesto/cancelar/<int:id>/', views.api_presupuesto_cancelar, name='api_presupuesto_cancelar'),
+    path('api/presupuesto/reactivar/<int:id>/', views.api_presupuesto_reactivar, name='api_presupuesto_reactivar'),
 
     path('api/presupuesto/convertir-pedido/<int:id>/', views.api_presupuesto_convertir_a_pedido, name='api_presupuesto_convertir_a_pedido'),
     path('presupuesto/pdf/<int:id>/', views.presupuesto_pdf, name='presupuesto_pdf'),

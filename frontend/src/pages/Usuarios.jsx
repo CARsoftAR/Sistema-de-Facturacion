@@ -1,9 +1,12 @@
-
-import React, { useState, useEffect, useCallback } from 'react';
-import { Search, User, RotateCcw, ShieldCheck, Mail, Shield, Pencil, Trash2 } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Search, User, RefreshCw, ShieldCheck, Mail, Shield, Pencil, Trash2, Key, Activity, Clock, ShieldAlert, UserCheck } from 'lucide-react';
 import UsuarioForm from '../components/usuarios/UsuarioForm';
 import { BtnAdd, BtnEdit, BtnDelete, BtnAction, BtnClear } from '../components/CommonButtons';
-import { showDeleteAlert } from '../utils/alerts';
+import { PremiumTable, TableCell } from '../components/premium/PremiumTable';
+import { BentoCard, BentoGrid, StatCard } from '../components/premium/BentoCard';
+import { SearchInput } from '../components/premium/PremiumInput';
+import { showConfirmationAlert, showSuccessAlert, showErrorAlert } from '../utils/alerts';
+import { cn } from '../utils/cn';
 
 const Usuarios = () => {
     const [usuarios, setUsuarios] = useState([]);
@@ -45,17 +48,11 @@ const Usuarios = () => {
     };
 
     const handleDelete = async (id) => {
-        const result = await showDeleteAlert(
+        const result = await showConfirmationAlert(
             "¿Eliminar usuario?",
             "Esta acción eliminará al usuario del sistema. Perderá el acceso y sus datos de registro permanecerán como histórico.",
-            'Eliminar',
-            {
-                iconComponent: (
-                    <div className="rounded-circle d-flex align-items-center justify-content-center bg-danger-subtle text-danger mx-auto" style={{ width: '80px', height: '80px' }}>
-                        <User size={40} strokeWidth={1.5} />
-                    </div>
-                )
-            }
+            "SÍ, ELIMINAR",
+            "danger"
         );
         if (!result.isConfirmed) return;
 
@@ -68,12 +65,13 @@ const Usuarios = () => {
             });
             const data = await res.json();
             if (data.ok) {
+                showSuccessAlert("Usuario Eliminado", "Se ha actualizado la lista de personal autorizado.");
                 fetchUsuarios();
             } else {
-                alert(data.error || "No se pudo eliminar el usuario.");
+                showErrorAlert("Error", data.error || "No se pudo eliminar el usuario.");
             }
         } catch (e) {
-            console.error("Error eliminado", e);
+            showErrorAlert("Error", "Error de servidor al intentar eliminar.");
         }
     };
 
@@ -92,11 +90,121 @@ const Usuarios = () => {
         return cookieValue;
     };
 
-    const filteredUsuarios = usuarios.filter(u =>
-        u.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        u.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        u.username?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredUsuarios = useMemo(() => {
+        return usuarios.filter(u =>
+            u.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            u.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            u.username?.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    }, [usuarios, searchTerm]);
+
+    const stats = useMemo(() => {
+        return {
+            total: usuarios.length,
+            admins: usuarios.filter(u => u.is_staff).length,
+            vendedores: usuarios.filter(u => !u.is_staff).length,
+            activos: usuarios.filter(u => u.is_active).length
+        };
+    }, [usuarios]);
+
+    const columns = [
+        {
+            key: 'username',
+            label: 'Usuario / Perfil',
+            render: (_, u) => (
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-slate-100 to-white flex items-center justify-center font-black text-slate-800 border border-slate-200 shadow-sm uppercase">
+                        {u.first_name ? u.first_name.charAt(0) : u.username.charAt(0)}
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="font-black text-slate-800 text-sm uppercase tracking-tight">{u.first_name || u.username}</span>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono">ID: {u.id} • @{u.username}</span>
+                    </div>
+                </div>
+            )
+        },
+        {
+            key: 'email',
+            label: 'Correo Electrónico',
+            render: (v) => (
+                <div className="flex items-center gap-2 text-slate-500 text-xs font-bold lowercase tracking-wider">
+                    <Mail size={12} className="text-slate-300" />
+                    <span>{v || '---'}</span>
+                </div>
+            )
+        },
+        {
+            key: 'is_staff',
+            label: 'Rol / Permisos',
+            width: '180px',
+            align: 'center',
+            render: (v) => (
+                <span className={cn(
+                    "px-3 py-1 rounded-lg text-[10px] font-black border uppercase tracking-widest flex items-center justify-center gap-1.5",
+                    v ? "bg-indigo-50 text-indigo-700 border-indigo-200" : "bg-emerald-50 text-emerald-700 border-emerald-200"
+                )}>
+                    {v ? <ShieldAlert size={12} strokeWidth={3} /> : <UserCheck size={12} strokeWidth={3} />}
+                    {v ? 'Administrador' : 'Vendedor'}
+                </span>
+            )
+        },
+        {
+            key: 'last_login',
+            label: 'Último Acceso',
+            width: '200px',
+            render: (v) => (
+                <div className="flex items-center gap-2 text-slate-400 text-[10px] font-black font-mono">
+                    <Clock size={12} />
+                    {v ? new Date(v).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' }) : 'NUNCA'}
+                </div>
+            )
+        },
+        {
+            key: 'is_active',
+            label: 'Estado',
+            width: '120px',
+            align: 'center',
+            render: (v) => (
+                <div className="flex items-center justify-center">
+                    <span className={cn(
+                        "w-2.5 h-2.5 rounded-full",
+                        v ? "bg-emerald-500 shadow-lg shadow-emerald-500/50" : "bg-slate-300 shadow-none"
+                    )} />
+                    <span className={cn(
+                        "ml-2 text-[10px] font-black uppercase tracking-widest",
+                        v ? "text-emerald-700" : "text-slate-400"
+                    )}>
+                        {v ? 'ACTIVO' : 'BAJA'}
+                    </span>
+                </div>
+            )
+        },
+        {
+            key: 'acciones',
+            label: 'Acciones',
+            width: '120px',
+            align: 'right',
+            sortable: false,
+            render: (_, u) => (
+                <div className="flex justify-end gap-2 group-hover:opacity-100 transition-all opacity-0">
+                    <button
+                        onClick={() => handleEdit(u)}
+                        className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
+                        title="Configurar Perfil"
+                    >
+                        <Pencil size={18} />
+                    </button>
+                    <button
+                        onClick={() => handleDelete(u.id)}
+                        className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
+                        title="Dar de Baja"
+                    >
+                        <Trash2 size={18} />
+                    </button>
+                </div>
+            )
+        }
+    ];
 
     if (view === 'form') {
         return (
@@ -113,129 +221,92 @@ const Usuarios = () => {
     }
 
     return (
-        <div className="container-fluid px-4 pt-4 pb-3 bg-light fade-in main-content-container">
-            {/* Header - Matching Ventas.jsx */}
-            <div className="d-flex justify-content-between align-items-center mb-4 text-start">
-                <div>
-                    <h2 className="text-primary fw-bold mb-0 d-flex align-items-center gap-2" style={{ fontSize: '2rem' }}>
-                        <ShieldCheck className="text-primary" size={32} />
-                        Gestión de Usuarios
-                    </h2>
-                    <p className="text-muted mb-0 ps-1" style={{ fontSize: '1rem' }}>
-                        Administra los accesos y permisos del personal al sistema.
+        <div className="h-[calc(100vh-64px)] overflow-hidden bg-slate-50/50 flex flex-col p-6 gap-6">
+
+            {/* Header */}
+            <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div className="space-y-1">
+                    <div className="flex items-center gap-3">
+                        <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-2.5 rounded-2xl text-white shadow-lg shadow-slate-900/20">
+                            <ShieldCheck size={24} strokeWidth={2.5} />
+                        </div>
+                        <h1 className="text-3xl font-black text-slate-900 tracking-tight">Equipos de Trabajo</h1>
+                    </div>
+                    <p className="text-slate-500 font-bold text-xs uppercase tracking-[0.15em] ml-14">
+                        Control de identidades y privilegios del sistema.
                     </p>
                 </div>
-                <BtnAdd label="Nuevo Usuario" icon={ShieldCheck} onClick={handleCreate} className="btn-lg shadow-sm" />
-            </div>
 
-            {/* Filtros - Matching Ventas.jsx style */}
-            <div className="card border-0 shadow-sm mb-4">
-                <div className="card-body bg-light rounded">
-                    <div className="row g-3 align-items-center">
-                        <div className="col-md-5">
-                            <div className="input-group">
-                                <span className="input-group-text bg-white border-end-0"><Search size={18} className="text-muted" /></span>
-                                <input
-                                    type="text"
-                                    className="form-control border-start-0"
-                                    placeholder="Buscar por nombre, email o usuario..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                />
-                            </div>
+                <BtnAdd
+                    label="NUEVO USUARIO"
+                    onClick={handleCreate}
+                    className="!bg-slate-900 !hover:bg-slate-800 !rounded-xl !px-8 !font-black !tracking-widest !text-[10px] !shadow-xl !shadow-slate-900/20"
+                />
+            </header>
+
+            {/* Stats */}
+            <BentoGrid cols={4}>
+                <StatCard
+                    label="Total Personal"
+                    value={stats.total}
+                    icon={User}
+                    color="primary"
+                />
+                <StatCard
+                    label="Administradores"
+                    value={stats.admins}
+                    icon={Shield}
+                    color="indigo"
+                />
+                <StatCard
+                    label="Vendedores / Staff"
+                    value={stats.vendedores}
+                    icon={Activity}
+                    color="success"
+                />
+                <StatCard
+                    label="Credenciales Activas"
+                    value={stats.activos}
+                    icon={Key}
+                    color="warning"
+                />
+            </BentoGrid>
+
+            {/* Main Area */}
+            <div className="flex-1 flex flex-col gap-4 min-h-0">
+                <BentoCard className="p-4 bg-white/80 backdrop-blur-md">
+                    <div className="flex flex-col md:flex-row gap-4">
+                        <div className="flex-1">
+                            <SearchInput
+                                placeholder="Buscar equipo por nombre, email o username..."
+                                value={searchTerm}
+                                onSearch={setSearchTerm}
+                                className="!py-3 border-slate-200"
+                            />
                         </div>
-                        <div className="col-md-1 ms-auto">
-                            <button onClick={fetchUsuarios} className="btn btn-white w-100 border text-secondary shadow-sm" title="Actualizar Listado">
-                                <RotateCcw size={18} />
-                            </button>
-                        </div>
+                        <button
+                            onClick={fetchUsuarios}
+                            className="px-6 py-3 bg-slate-50 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all border border-slate-200 font-black text-[10px] tracking-widest flex items-center gap-2 uppercase"
+                        >
+                            <RefreshCw size={16} strokeWidth={3} /> Sincronizar
+                        </button>
                     </div>
-                </div>
-            </div>
+                </BentoCard>
 
-            {/* Tabla - Matching robustness of Ventas.jsx */}
-            <div className="card border-0 shadow mb-0 flex-grow-1 overflow-hidden d-flex flex-column">
-                <div className="card-body p-0 d-flex flex-column overflow-hidden">
-                    <div className="table-responsive flex-grow-1 table-container-fixed">
-                        <table className="table align-middle mb-0 table-hover">
-                            <thead className="bg-white border-bottom position-sticky top-0 z-1 text-start">
-                                <tr>
-                                    <th className="ps-4 py-3 text-dark fw-bold">Usuario</th>
-                                    <th className="py-3 text-dark fw-bold">Email</th>
-                                    <th className="py-3 text-dark fw-bold">Rol</th>
-                                    <th className="py-3 text-dark fw-bold">Último Acceso</th>
-                                    <th className="py-3 text-dark fw-bold">Estado</th>
-                                    <th className="text-end pe-4 py-3 text-dark fw-bold">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody className="text-start">
-                                {loading ? (
-                                    <tr>
-                                        <td colSpan="6" className="text-center py-5">
-                                            <div className="spinner-border text-primary" role="status"></div>
-                                        </td>
-                                    </tr>
-                                ) : filteredUsuarios.length === 0 ? (
-                                    <tr>
-                                        <td colSpan="6" className="text-center py-5 text-muted">
-                                            <div className="mb-3 opacity-50"><User size={40} /></div>
-                                            No se encontraron usuarios.
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    filteredUsuarios.map(u => (
-                                        <tr key={u.id} className="border-bottom-0">
-                                            <td className="ps-4 py-3">
-                                                <div className="d-flex align-items-center gap-3">
-                                                    <div className="rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center fw-bold" style={{ width: '40px', height: '40px', minWidth: '40px' }}>
-                                                        {u.first_name ? u.first_name.charAt(0).toUpperCase() : u.username.charAt(0).toUpperCase()}
-                                                    </div>
-                                                    <div>
-                                                        <div className="fw-bold text-dark">{u.first_name || u.username}</div>
-                                                        <div className="small text-muted">ID: {u.id}</div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="py-3">
-                                                <div className="d-flex align-items-center gap-2">
-                                                    <Mail size={14} className="text-muted" />
-                                                    <span className="small">{u.email || '-'}</span>
-                                                </div>
-                                            </td>
-                                            <td className="py-3">
-                                                <span className={`badge ${u.is_staff ? 'bg-danger bg-opacity-10 text-danger' : 'bg-primary bg-opacity-10 text-primary'} border-0 px-3`}>
-                                                    {u.is_staff ? 'Administrador' : 'Vendedor'}
-                                                </span>
-                                            </td>
-                                            <td className="py-3 small text-muted">
-                                                {u.last_login}
-                                            </td>
-                                            <td className="py-3">
-                                                {u.is_active ? (
-                                                    <span className="badge bg-success-subtle text-success border-0 px-3 py-2 rounded-pill">Activo</span>
-                                                ) : (
-                                                    <span className="badge bg-danger-subtle text-danger border-0 px-3 py-2 rounded-pill">Inactivo</span>
-                                                )}
-                                            </td>
-                                            <td className="text-end pe-4 py-3">
-                                                <div className="d-flex justify-content-end gap-2">
-                                                    <div className="d-flex justify-content-end gap-2">
-                                                        <BtnEdit onClick={() => handleEdit(u)} />
-                                                        <BtnDelete onClick={() => handleDelete(u.id)} />
-                                                    </div>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
+                <div className="flex-1 flex flex-col min-h-0">
+                    <PremiumTable
+                        columns={columns}
+                        data={filteredUsuarios}
+                        loading={loading}
+                        className="flex-1 shadow-lg"
+                    />
+                    <div className="bg-white border-x border-b border-slate-200 rounded-b-[2rem] px-6 py-4 shadow-premium text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex justify-center">
+                        Listado completo de personal con acceso al entorno
                     </div>
                 </div>
             </div>
         </div>
     );
 };
-
 
 export default Usuarios;

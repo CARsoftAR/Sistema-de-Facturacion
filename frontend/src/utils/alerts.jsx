@@ -1,8 +1,8 @@
 import Swal from 'sweetalert2';
 
 /**
- * Alertas con diseño Premium EXACTAMENTE como el de Compras.
- * Esta versión usa HTML nativo puro (string) para evitar errores de React/Vite.
+ * Alertas con diseño Premium EXCLUSIVO (Neumorphic/Glass dynamic style).
+ * Esta versión usa HTML nativo puro (string) para máxima compatibilidad con Vite/Fast Refresh.
  */
 const firePremium = (options) => {
     const {
@@ -19,18 +19,18 @@ const firePremium = (options) => {
     } = options;
 
     const content = html || `
-        <p style="color: #64748b; font-weight: 500; font-size: 0.875rem; padding: 0 10px; line-height: 1.5; margin: 0;">
+        <p style="color: #64748b; font-weight: 500; font-size: 0.875rem; padding: 0 10px; line-height: 1.6; margin: 0;">
             ${text || ''}
         </p>
     `;
 
     return Swal.fire({
         html: `
-            <div style="display: flex; flex-direction: column; align-items: center; font-family: 'Inter', sans-serif;">
-                <div style="margin-bottom: 20px;">
+            <div style="display: flex; flex-direction: column; align-items: center; font-family: 'Inter', system-ui, -apple-system, sans-serif;">
+                <div style="margin-bottom: 24px; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.05));">
                     ${iconHtml}
                 </div>
-                <h3 style="font-size: 1.5rem; font-weight: 900; color: #1e293b; margin-bottom: 12px; margin-top: 0;">${title}</h3>
+                <h3 style="font-size: 1.5rem; font-weight: 900; color: #0f172a; margin-bottom: 12px; margin-top: 0; letter-spacing: -0.025em;">${title}</h3>
                 ${content}
             </div>
         `,
@@ -40,40 +40,47 @@ const firePremium = (options) => {
         cancelButtonText: cancelText,
         buttonsStyling: false,
         reverseButtons: true,
-        backdrop: 'rgba(15, 23, 42, 0.4)',
-        padding: '2rem',
+        backdrop: 'rgba(15, 23, 42, 0.5)',
+        padding: '2.5rem',
         timer: timer,
         icon: undefined,
         customClass: {
-            popup: 'rounded-premium-alert shadow-2xl border-0 overflow-hidden w-full max-w-sm',
-            actions: 'w-full flex gap-3 mt-8',
-            confirmButton: 'flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold shadow-lg hover:bg-blue-700 transition-all text-sm uppercase tracking-wide border-0 outline-none',
-            cancelButton: 'flex-1 py-3 border border-slate-200 rounded-xl font-bold text-slate-500 hover:bg-slate-50 transition-all text-sm uppercase tracking-wide bg-transparent'
+            popup: 'rounded-[1.5rem] lg:rounded-[3rem] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] border-0 overflow-hidden w-full max-w-[400px]',
+            actions: 'w-full flex gap-3 mt-10',
+            confirmButton: 'flex-[2] py-4 bg-blue-600 text-white rounded-2xl font-black shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all text-xs uppercase tracking-[0.15em] border-0 outline-none',
+            cancelButton: 'flex-1 py-4 border border-slate-200 rounded-2xl font-bold text-slate-500 hover:bg-slate-50 transition-all text-xs uppercase tracking-wide bg-transparent'
         },
         didOpen: (popup) => {
             popup.style.borderRadius = '2.5rem';
             const confirmBtn = popup.querySelector('.swal2-confirm');
             if (confirmBtn) {
                 confirmBtn.style.backgroundColor = confirmColor;
-                confirmBtn.style.boxShadow = 'none';
+                confirmBtn.style.boxShadow = '0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05)';
                 confirmBtn.style.outline = 'none';
-                confirmBtn.style.flex = '1';
                 confirmBtn.style.display = showConfirmButton ? 'block' : 'none';
             }
             const cancelBtn = popup.querySelector('.swal2-cancel');
             if (cancelBtn) {
                 cancelBtn.style.boxShadow = 'none';
                 cancelBtn.style.outline = 'none';
-                cancelBtn.style.flex = '1';
             }
         }
     });
 };
 
 export const showConfirmationAlert = async (title, text, confirmText = 'Confirmar', variant = 'danger', options = {}) => {
+    // Icono Premium de Advertencia con Círculos Concéntricos
+    const iconHtml = `
+        <svg width="88" height="88" viewBox="0 0 88 88" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="44" cy="44" r="40" fill="${variant === 'danger' ? '#fee2e2' : '#fef3c7'}"/>
+            <circle cx="44" cy="44" r="40" stroke="${variant === 'danger' ? '#fecaca' : '#fcd34d'}" stroke-width="4" fill="none"/>
+            <path d="M44 28V48M44 58H44.02" stroke="${variant === 'danger' ? '#ef4444' : '#f59e0b'}" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+    `;
     return firePremium({
         title,
         text,
+        iconHtml,
         confirmText,
         confirmColor: variant === 'danger' ? '#ef4444' : '#2563eb',
         showCancel: true,
@@ -81,13 +88,12 @@ export const showConfirmationAlert = async (title, text, confirmText = 'Confirma
     });
 };
 
-export const showSuccessAlert = async (title, text, confirmText = 'OK', options = {}) => {
-    // Icono con círculo de fondo verde claro Y borde circular verde
+export const showSuccessAlert = async (title, text, confirmText = '¡ENTENDIDO!', options = {}) => {
     const iconHtml = `
-        <svg width="84" height="84" viewBox="0 0 84 84" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: block;">
+        <svg width="88" height="88" viewBox="0 0 84 84" fill="none" xmlns="http://www.w3.org/2000/svg">
             <circle cx="42" cy="42" r="40" fill="#d1fae5"/>
             <circle cx="42" cy="42" r="40" stroke="#86efac" stroke-width="4" fill="none"/>
-            <path d="M56 32L35.375 52.625L28 45.25" stroke="#10b981" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M56 32L35.375 52.625L28 45.25" stroke="#10b981" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
     `;
     return firePremium({
@@ -100,11 +106,12 @@ export const showSuccessAlert = async (title, text, confirmText = 'OK', options 
     });
 };
 
-export const showErrorAlert = async (title, text, confirmText = 'Entendido', options = {}) => {
+export const showErrorAlert = async (title, text, confirmText = 'Cerrar', options = {}) => {
     const iconHtml = `
-        <svg width="84" height="84" viewBox="0 0 84 84" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="42" cy="42" r="42" fill="#fee2e2"/>
-            <path d="M52 32L32 52M32 32L52 52" stroke="#ef4444" stroke-width="7" stroke-linecap="round"/>
+        <svg width="88" height="88" viewBox="0 0 88 88" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="44" cy="44" r="40" fill="#fee2e2"/>
+            <circle cx="44" cy="44" r="40" stroke="#fecaca" stroke-width="4" fill="none"/>
+            <path d="M54 34L34 54M34 34L54 54" stroke="#ef4444" stroke-width="8" stroke-linecap="round"/>
         </svg>
     `;
     return firePremium({
@@ -112,16 +119,17 @@ export const showErrorAlert = async (title, text, confirmText = 'Entendido', opt
         text,
         iconHtml: iconHtml,
         confirmText,
-        confirmColor: '#2563eb',
+        confirmColor: '#ef4444',
         ...options
     });
 };
 
 export const showWarningAlert = async (title, text, confirmText = 'Entendido', options = {}) => {
     const iconHtml = `
-        <svg width="84" height="84" viewBox="0 0 84 84" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="42" cy="42" r="42" fill="#fef3c7"/>
-            <path d="M42 28V46M42 56H42.02" stroke="#f59e0b" stroke-width="7" stroke-linecap="round"/>
+        <svg width="88" height="88" viewBox="0 0 88 88" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="44" cy="44" r="40" fill="#fef3c7"/>
+            <circle cx="44" cy="44" r="40" stroke="#fcd34d" stroke-width="4" fill="none"/>
+            <path d="M44 28V48M44 58H44.02" stroke="#f59e0b" stroke-width="8" stroke-linecap="round"/>
         </svg>
     `;
     return firePremium({
@@ -135,11 +143,12 @@ export const showWarningAlert = async (title, text, confirmText = 'Entendido', o
     });
 };
 
-export const showDeleteAlert = async (title, text, confirmText = 'Eliminar', options = {}) => {
+export const showDeleteAlert = async (title, text, confirmText = 'SI, ELIMINAR', options = {}) => {
     const iconHtml = `
-        <svg width="84" height="84" viewBox="0 0 84 84" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="42" cy="42" r="42" fill="#fee2e2"/>
-            <path d="M54 30H30M32 30V54C32 55.1046 32.8954 56 34 56H50C51.1046 56 52 55.1046 52 54V30M38 30V26C38 24.8954 38.8954 24 40 24H44C45.1046 24 46 24.8954 46 26V30" stroke="#ef4444" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+        <svg width="88" height="88" viewBox="0 0 88 88" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="44" cy="44" r="40" fill="#fee2e2"/>
+            <circle cx="44" cy="44" r="40" stroke="#fecaca" stroke-width="4" fill="none"/>
+            <path d="M54 32H34M36 32V56C36 57.1046 36.8954 58 38 58H50C51.1046 58 52 57.1046 52 56V32M42 32V28C42 26.8954 42.8954 26 44 26H44C45.1046 26 46 26.8954 46 28V32" stroke="#ef4444" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
     `;
     return firePremium({
@@ -160,6 +169,9 @@ export const showToast = (title, icon = 'success') => {
         showConfirmButton: false,
         timer: 3000,
         timerProgressBar: true,
+        customClass: {
+            popup: 'rounded-xl shadow-lg border-0'
+        }
     });
     Toast.fire({ icon, title });
 };

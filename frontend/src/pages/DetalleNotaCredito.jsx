@@ -68,152 +68,172 @@ const DetalleNotaCredito = () => {
     if (!nota) return null;
 
     return (
-        <div className="p-6 pb-0 max-w-7xl mx-auto min-h-[calc(100vh-120px)] flex flex-col fade-in">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-0">
-                {/* Columna Izquierda: Info */}
-                <div className="lg:col-span-4 space-y-6">
-                    {/* Header */}
-                    <div className="flex justify-between items-start">
-                        <div className="flex items-center gap-4">
+        <div className="h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-emerald-50/30 to-slate-50 flex flex-col">
+            <div className="flex-1 overflow-hidden p-6 flex flex-col">
+
+                {/* Header - Compacto */}
+                <div className="mb-4">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
                             <BtnBack onClick={() => navigate('/notas-credito')} />
                             <div>
-                                <h1 className="text-3xl font-black text-slate-800 flex items-center gap-3">
-                                    <span className="bg-green-600 p-2 rounded-xl text-white shadow-lg shadow-green-200">
-                                        <Receipt size={24} />
+                                <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2">
+                                    <span className="bg-gradient-to-br from-emerald-600 to-emerald-700 p-2 rounded-xl text-white shadow-md">
+                                        <Receipt size={20} />
                                     </span>
-                                    NC <span className="text-green-600">#{nota.numero}</span>
+                                    NC #{nota.numero}
                                 </h1>
-                                <p className="text-slate-500 font-medium mt-1 flex items-center gap-2">
-                                    <Calendar size={14} className="text-slate-400" /> Fecha: {nota.fecha}
+                                <p className="text-sm text-slate-600 font-medium mt-0.5 flex items-center gap-1">
+                                    <Calendar size={12} className="text-emerald-500" />
+                                    {nota.fecha}
                                 </p>
                             </div>
                         </div>
-                        <div className="flex gap-3">
-                            <BtnPrint onClick={handlePrint} className="shadow-md hover:shadow-lg transition-all" />
-                        </div>
+                        <BtnPrint onClick={handlePrint} className="shadow-md hover:shadow-lg transition-all" />
                     </div>
-
-                    {/* Estado y Total Card */}
-                    <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 ring-1 ring-slate-200/50 transition-all hover:shadow-md">
-                        <div className="flex justify-between items-start mb-6">
-                            <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Estado</h3>
-                            {getEstadoBadge(nota.estado)}
-                        </div>
-                        <div className="mt-4 pt-4 border-t border-slate-50">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-1">TOTAL DEVOLUCIÓN</label>
-                            <div className="flex items-baseline gap-2">
-                                <span className="text-3xl font-black text-green-600 leading-tight">$ {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(nota.total)}</span>
-                                <span className="text-slate-400 font-light text-sm">ARS</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Cliente Card */}
-                    <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 ring-1 ring-slate-200/50 transition-all hover:shadow-md">
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
-                                <User size={20} />
-                            </div>
-                            <h3 className="text-lg font-bold text-slate-800">Cliente</h3>
-                        </div>
-
-                        <div className="space-y-4">
-                            <div>
-                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-1">Nombre / Razón Social</label>
-                                <p className="text-xl font-bold text-slate-900 leading-tight">{nota.cliente}</p>
-                            </div>
-
-                            <div className="pt-2 border-t border-slate-50">
-                                <p className="text-sm text-slate-500 flex items-center gap-2">
-                                    <FileText size={14} /> Venta Orig:
-                                    <span className="font-bold text-slate-700">{nota.venta_asociada}</span>
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Motivo Card */}
-                    {nota.motivo && (
-                        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 ring-1 ring-slate-200/50 transition-all hover:shadow-md">
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600">
-                                    <AlertCircle size={20} />
-                                </div>
-                                <h3 className="text-lg font-bold text-slate-800">Motivo</h3>
-                            </div>
-                            <p className="text-slate-600 text-sm italic leading-relaxed">
-                                "{nota.motivo}"
-                            </p>
-                        </div>
-                    )}
                 </div>
 
-                {/* Columna Derecha: Items */}
-                <div className="lg:col-span-8">
-                    <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 ring-1 ring-slate-200/50 overflow-hidden flex flex-col h-full transition-all hover:shadow-md">
-                        {/* Header del Panel */}
-                        <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
-                            <h3 className="font-black text-slate-700 flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 shadow-sm">
-                                    <ShoppingCart size={20} />
+                {/* Main Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 flex-1 min-h-0">
+
+                    {/* Left Column */}
+                    <div className="lg:col-span-1 space-y-4 overflow-y-auto pr-2">
+
+                        {/* Estado y Total */}
+                        <div className="bg-white p-4 rounded-2xl shadow-md border border-slate-200/50">
+                            <div className="flex justify-between items-start mb-3">
+                                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Estado</h3>
+                                {getEstadoBadge(nota.estado)}
+                            </div>
+                            <div className="mt-3 pt-3 border-t border-slate-100">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-1">Total Devolución</label>
+                                <div className="flex items-baseline gap-2">
+                                    <span className="text-3xl font-black bg-gradient-to-br from-emerald-700 to-emerald-900 bg-clip-text text-transparent leading-tight">
+                                        $ {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(nota.total)}
+                                    </span>
+                                    <span className="text-slate-400 font-medium text-xs">ARS</span>
                                 </div>
-                                Detalle de Productos
-                            </h3>
-                            <span className="text-[10px] font-black bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-full uppercase tracking-widest shadow-sm border border-indigo-200/50">
-                                {items.length} {items.length === 1 ? 'Item' : 'Items'}
-                            </span>
+                            </div>
                         </div>
 
-                        {/* Tabla de Items */}
-                        <div className="overflow-y-auto flex-grow px-2">
-                            <table className="w-full text-sm text-left border-separate border-spacing-0">
-                                <thead className="bg-white sticky top-0 z-10">
-                                    <tr>
-                                        <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100">Producto</th>
-                                        <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100 text-center">Cant.</th>
-                                        <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100 text-right">Unitario</th>
-                                        <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100 text-right">Subtotal</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-50">
-                                    {items.map((item) => (
-                                        <tr key={item.id} className="hover:bg-blue-50/40 transition-all duration-200 group">
-                                            <td className="px-6 py-3">
-                                                <p className="font-bold text-slate-800 text-base leading-tight group-hover:text-blue-700 transition-colors">{item.producto}</p>
-                                            </td>
-                                            <td className="px-4 py-3 text-center">
-                                                <span className="inline-flex items-center justify-center w-12 h-8 rounded-xl bg-slate-100 font-black text-slate-700 text-xs group-hover:bg-white group-hover:shadow-sm transition-all">
-                                                    {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(item.cantidad)}
-                                                </span>
-                                            </td>
-                                            <td className="px-4 py-3 text-right text-slate-500 font-medium">
-                                                $ {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(item.precio_unitario)}
-                                            </td>
-                                            <td className="px-6 py-3 text-right">
-                                                <span className="font-black text-slate-900 text-lg">$ {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(item.subtotal)}</span>
-                                            </td>
+                        {/* Cliente */}
+                        <div className="bg-white p-4 rounded-2xl shadow-md border border-slate-200/50">
+                            <div className="flex items-center gap-2 mb-3">
+                                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-white shadow-md">
+                                    <User size={18} />
+                                </div>
+                                <h3 className="text-lg font-black text-slate-800">Cliente</h3>
+                            </div>
+                            <div className="space-y-3">
+                                <div>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-1">Nombre / Razón Social</label>
+                                    <p className="text-base font-bold text-slate-900 leading-tight">{nota.cliente_nombre}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Venta Origen */}
+                        {nota.venta_origen_id && (
+                            <div className="bg-white p-4 rounded-2xl shadow-md border border-slate-200/50">
+                                <div className="flex items-center gap-2 mb-3">
+                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white shadow-md">
+                                        <Receipt size={18} />
+                                    </div>
+                                    <h3 className="text-lg font-black text-slate-800">Venta Origen</h3>
+                                </div>
+                                <button
+                                    onClick={() => navigate(`/ventas/${nota.venta_origen_id}`)}
+                                    className="w-full py-2 bg-blue-600 text-white hover:bg-blue-700 transition-colors rounded-lg font-black text-[9px] uppercase tracking-widest flex items-center justify-center gap-1 shadow-md"
+                                >
+                                    VER VENTA #{nota.venta_origen_id} <ArrowLeft size={12} className="rotate-180" />
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Motivo */}
+                        {nota.motivo && (
+                            <div className="bg-white p-4 rounded-2xl shadow-md border border-slate-200/50">
+                                <div className="flex items-center gap-2 mb-3">
+                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-white shadow-md">
+                                        <AlertCircle size={18} />
+                                    </div>
+                                    <h3 className="text-lg font-black text-slate-800">Motivo</h3>
+                                </div>
+                                <p className="text-sm text-slate-700 leading-relaxed">{nota.motivo}</p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Right Column - Tabla */}
+                    <div className="lg:col-span-2 flex flex-col min-h-0">
+                        <div className="bg-white rounded-2xl shadow-md border border-slate-200/50 overflow-hidden flex flex-col h-full">
+
+                            {/* Header */}
+                            <div className="p-4 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white">
+                                <div className="flex justify-between items-center">
+                                    <h3 className="font-black text-slate-800 text-lg flex items-center gap-2">
+                                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center text-white shadow-md">
+                                            <ShoppingCart size={18} />
+                                        </div>
+                                        Detalle de Productos
+                                    </h3>
+                                    <span className="text-[10px] font-black bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-full uppercase tracking-widest">
+                                        {items.length} {items.length === 1 ? 'Item' : 'Items'}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Tabla */}
+                            <div className="flex-1 overflow-y-auto">
+                                <table className="w-full text-sm">
+                                    <thead className="bg-slate-50 sticky top-0 z-10">
+                                        <tr>
+                                            <th className="px-4 py-1.5 text-left text-[10px] font-black text-slate-500 uppercase tracking-widest border-b-2 border-slate-200">Producto</th>
+                                            <th className="px-3 py-1.5 text-center text-[10px] font-black text-slate-500 uppercase tracking-widest border-b-2 border-slate-200">Cant.</th>
+                                            <th className="px-3 py-1.5 text-right text-[10px] font-black text-slate-500 uppercase tracking-widest border-b-2 border-slate-200">Unitario</th>
+                                            <th className="px-4 py-1.5 text-right text-[10px] font-black text-slate-500 uppercase tracking-widest border-b-2 border-slate-200">Subtotal</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {items.map((item) => (
+                                            <tr key={item.id} className="hover:bg-emerald-50/50 transition-all duration-200 group">
+                                                <td className="px-4 py-1.5">
+                                                    <p className="font-bold text-slate-900 text-sm leading-tight group-hover:text-emerald-700 transition-colors">{item.producto_descripcion}</p>
+                                                    <p className="text-[9px] text-slate-400 font-mono mt-0.5 uppercase tracking-wide">{item.producto_codigo}</p>
+                                                </td>
+                                                <td className="px-3 py-1.5 text-center">
+                                                    <span className="inline-flex items-center justify-center min-w-[2.5rem] px-2 h-7 rounded-lg bg-slate-100 font-black text-slate-700 text-xs group-hover:bg-white group-hover:shadow-sm transition-all">
+                                                        {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(item.cantidad)}
+                                                    </span>
+                                                </td>
+                                                <td className="px-3 py-1.5 text-right text-slate-600 font-semibold text-sm">
+                                                    $ {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(item.precio_unitario)}
+                                                </td>
+                                                <td className="px-4 py-1.5 text-right">
+                                                    <span className="font-black text-slate-900 text-base">$ {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(item.subtotal)}</span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
 
-                        {/* Footer Flotante (Totales) */}
-                        <div className="p-4 bg-white border-t border-slate-50">
-                            <div className="bg-slate-900 rounded-[1.5rem] p-4 shadow-2xl shadow-slate-900/20 ring-1 ring-white/10 overflow-hidden relative">
-                                {/* Decoración sutil */}
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/10 rounded-full -mr-16 -mt-16 blur-3xl"></div>
+                            {/* Footer */}
+                            <div className="p-4 bg-white border-t-2 border-slate-100">
+                                <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-xl p-4 shadow-xl shadow-slate-900/20 ring-1 ring-white/10 overflow-hidden relative">
+                                    <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full -mr-16 -mt-16 blur-3xl"></div>
 
-                                <div className="flex flex-col md:flex-row justify-between items-center gap-6 relative z-10">
-                                    {/* Total (Derecha) */}
-                                    <div className="text-right ml-auto">
-                                        <p className="text-[10px] font-black text-green-400 uppercase tracking-[0.3em] mb-1">Total Devolución</p>
-                                        <div className="flex items-baseline justify-end gap-2">
-                                            <span className="text-slate-500 text-lg font-light">$</span>
-                                            <span className="text-4xl font-black text-white tracking-tighter">
-                                                {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(nota.total)}
-                                            </span>
-                                            <span className="text-slate-500 text-[10px] font-bold uppercase ml-1">ARS</span>
+                                    <div className="flex justify-end items-center relative z-10">
+                                        {/* Total */}
+                                        <div className="text-right">
+                                            <p className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.3em] mb-1">Total Devolución</p>
+                                            <div className="flex items-baseline justify-end gap-2">
+                                                <span className="text-slate-400 text-lg font-light">$</span>
+                                                <span className="text-4xl font-black text-white tracking-tighter">
+                                                    {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(nota.total)}
+                                                </span>
+                                                <span className="text-slate-400 text-[10px] font-bold uppercase ml-1">ARS</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

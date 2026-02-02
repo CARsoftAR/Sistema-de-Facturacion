@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { Layers, Plus, Search, Edit2, Trash2 } from 'lucide-react';
-import Swal from 'sweetalert2';
-import { showConfirmationAlert, showDeleteAlert, showToast } from '../utils/alerts';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { Layers, Plus, Search, Edit2, Trash2, Tag, Box, Info, CheckCircle2 } from 'lucide-react';
+import { showConfirmationAlert, showSuccessAlert, showErrorAlert } from '../utils/alerts';
 import { BtnAdd, BtnEdit, BtnDelete } from '../components/CommonButtons';
-import TablePagination from '../components/common/TablePagination';
-import StandardModal from '../components/common/StandardModal';
+import { PremiumTable, TableCell } from '../components/premium/PremiumTable';
+import { BentoCard, StatCard, BentoGrid } from '../components/premium/BentoCard';
+import { SearchInput } from '../components/premium/PremiumInput';
+import { cn } from '../utils/cn';
 
 const Rubros = () => {
     const [rubros, setRubros] = useState([]);
@@ -13,10 +14,6 @@ const Rubros = () => {
     const [showModal, setShowModal] = useState(false);
     const [formData, setFormData] = useState({ id: null, nombre: '', descripcion: '' });
     const [saving, setSaving] = useState(false);
-
-    // Pagination
-    const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage, setItemsPerPage] = useState(10);
 
     useEffect(() => {
         fetchRubros();
@@ -27,16 +24,10 @@ const Rubros = () => {
         try {
             const response = await fetch('/api/rubros/listar/');
             const data = await response.json();
-            // API returns { ok: true, data: [...] }
-            if (data.ok) {
-                setRubros(data.data || []);
-            } else {
-                setRubros([]);
-                console.error("Error loading rubros:", data.error);
-            }
+            if (data.ok) setRubros(data.data || []);
         } catch (error) {
             console.error("Error fetching rubros:", error);
-            showToast('Error al cargar rubros', 'error');
+            showErrorAlert("Error", "No se pudo conectar con el servidor.");
         } finally {
             setLoading(false);
         }
@@ -44,6 +35,8 @@ const Rubros = () => {
 
     const handleSave = async (e) => {
         if (e) e.preventDefault();
+        if (!formData.nombre.trim()) return showWarningAlert("Atención", "El nombre es obligatorio.");
+
         setSaving(true);
         try {
             const getCookie = (name) => {
@@ -72,26 +65,26 @@ const Rubros = () => {
 
             const data = await response.json();
             if (data.ok) {
-                showToast(formData.id ? 'Rubro actualizado' : 'Rubro creado', 'success');
+                showSuccessAlert(formData.id ? "Ajuste Guardado" : "Rubro Registrado", `El rubro "${formData.nombre}" ha sido actualizado.`);
                 setShowModal(false);
                 fetchRubros();
             } else {
-                const errorMsg = data.errors ? Object.values(data.errors).flat().join(', ') : 'Error al guardar';
-                showToast(errorMsg, 'error');
+                showErrorAlert("Error", data.error || "No se pudo guardar el registro.");
             }
         } catch (error) {
             console.error("Error saving rubro:", error);
-            showToast('Error de conexión', 'error');
+            showErrorAlert("Fallo Crítico", "Error interno al intentar guardar.");
         } finally {
             setSaving(false);
         }
     };
 
     const handleDelete = async (id, nombre) => {
-        const result = await showDeleteAlert(
-            '¿Eliminar Rubro?',
-            `Se eliminará el rubro "${nombre}".`,
-            'Eliminar'
+        const result = await showConfirmationAlert(
+            `¿Eliminar Rubro?`,
+            `Se eliminará "${nombre}". Todos los productos asociados perderán esta clasificación.`,
+            "SÍ, ELIMINAR",
+            "danger"
         );
 
         if (result.isConfirmed) {
@@ -118,162 +111,184 @@ const Rubros = () => {
 
                 const data = await response.json();
                 if (data.ok) {
-                    showToast('Rubro eliminado', 'success');
+                    showSuccessAlert("Eliminado", "Clasificación removida correctamente.");
                     fetchRubros();
                 } else {
-                    showToast(data.error || 'Error al eliminar', 'error');
+                    showErrorAlert("Error", data.error || "No se pudo eliminar el registro.");
                 }
             } catch (error) {
                 console.error("Error deleting rubro:", error);
-                showToast('Error de conexión', 'error');
+                showErrorAlert("Error", "No se pudo procesar la solicitud.");
             }
         }
     };
 
-    const openNew = () => {
-        setFormData({ id: null, nombre: '', descripcion: '' });
+    const openModal = (rubro = null) => {
+        if (rubro) setFormData({ id: rubro.id, nombre: rubro.nombre, descripcion: rubro.descripcion || '' });
+        else setFormData({ id: null, nombre: '', descripcion: '' });
         setShowModal(true);
     };
 
-    const openEdit = (rubro) => {
-        setFormData({ id: rubro.id, nombre: rubro.nombre, descripcion: rubro.descripcion });
-        setShowModal(true);
-    };
+    const filteredData = useMemo(() => {
+        return rubros.filter(r =>
+            r.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (r.descripcion && r.descripcion.toLowerCase().includes(searchTerm.toLowerCase()))
+        );
+    }, [rubros, searchTerm]);
 
-    // Filtering
-    const filteredRubros = rubros.filter(r =>
-        r.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (r.descripcion && r.descripcion.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
+    const stats = useMemo(() => ({
+        total: rubros.length,
+        mostUsed: rubros.length > 0 ? rubros[0].nombre : 'N/A' // Placeholder
+    }), [rubros]);
 
-    // Pagination Logic
-    const totalItems = filteredRubros.length;
-    const totalPages = Math.ceil(totalItems / itemsPerPage);
-    const indexOfLastItem = currentPage * itemsPerPage;
-    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-    const currentItems = filteredRubros.slice(indexOfFirstItem, indexOfLastItem);
+    const columns = [
+        {
+            key: 'nombre',
+            label: 'Nombre del Rubro',
+            render: (v) => <span className="font-black text-slate-800 uppercase tracking-tight">{v}</span>
+        },
+        {
+            key: 'descripcion',
+            label: 'Descripción / Detalles',
+            render: (v) => <span className="text-slate-500 font-medium italic text-xs">{v || 'Sin descripción'}</span>
+        },
+        {
+            key: 'acciones',
+            label: 'Acciones',
+            align: 'right',
+            width: '120px',
+            render: (_, row) => (
+                <div className="flex justify-end gap-2 group-hover:opacity-100 opacity-0 transition-all">
+                    <button onClick={() => openModal(row)} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all">
+                        <Edit2 size={18} />
+                    </button>
+                    <button onClick={() => handleDelete(row.id, row.nombre)} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all">
+                        <Trash2 size={18} />
+                    </button>
+                </div>
+            )
+        }
+    ];
 
     return (
-        <div className="container-fluid px-4 pt-4 pb-0 h-100 d-flex flex-column bg-light fade-in">
+        <div className="h-[calc(100vh-64px)] overflow-hidden bg-slate-50/50 flex flex-col p-6 gap-6">
+
             {/* Header */}
-            <div className="d-flex justify-content-between align-items-center mb-4">
-                <div>
-                    <h2 className="text-primary fw-bold mb-0" style={{ fontSize: '2rem' }}>
-                        <Layers className="me-2 inline-block" size={32} />
-                        Rubros
-                    </h2>
-                    <p className="text-muted mb-0 ps-1">Clasificación de productos</p>
-                </div>
-                <BtnAdd label="Nuevo Rubro" onClick={openNew} className="btn-lg shadow-sm" />
-            </div>
-
-            {/* Filters */}
-            <div className="card border-0 shadow-sm rounded-3 mb-3">
-                <div className="card-body p-2">
-                    <div className="position-relative" style={{ maxWidth: '400px' }}>
-                        <Search className="position-absolute top-50 start-0 translate-middle-y ms-3 text-muted" size={18} />
-                        <input
-                            type="text"
-                            className="form-control ps-5 border-0 bg-light"
-                            placeholder="Buscar rubros..."
-                            value={searchTerm}
-                            onChange={e => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-                        />
+            <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div className="space-y-1">
+                    <div className="flex items-center gap-3">
+                        <div className="bg-gradient-to-br from-indigo-600 to-indigo-700 p-2.5 rounded-2xl text-white shadow-lg shadow-indigo-600/20">
+                            <Layers size={24} strokeWidth={2.5} />
+                        </div>
+                        <h1 className="text-3xl font-black text-slate-900 tracking-tight">Rubros de Productos</h1>
                     </div>
+                    <p className="text-slate-500 font-bold text-xs uppercase tracking-[0.15em] ml-14">
+                        Categorización y estructura de inventario.
+                    </p>
                 </div>
-            </div>
 
-            {/* Table */}
-            <div className="card border-0 shadow mb-0 flex-grow-1 overflow-hidden d-flex flex-column">
-                <div className="card-body p-0 d-flex flex-column overflow-hidden">
-                    <div className="table-responsive flex-grow-1">
-                        <table className="table align-middle mb-0 table-hover">
-                            <thead className="table-dark">
-                                <tr>
-                                    <th className="ps-4 py-3">Nombre</th>
-                                    <th className="py-3">Descripción</th>
-                                    <th className="text-end pe-4 py-3">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {loading ? (
-                                    <tr>
-                                        <td colSpan="3" className="text-center py-5">
-                                            <div className="spinner-border text-primary" role="status">
-                                                <span className="visually-hidden">Cargando...</span>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ) : currentItems.length === 0 ? (
-                                    <tr>
-                                        <td colSpan="3" className="text-center py-5 text-muted">
-                                            No se encontraron rubros.
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    currentItems.map(rubro => (
-                                        <tr key={rubro.id}>
-                                            <td className="ps-4 fw-bold">{rubro.nombre}</td>
-                                            <td className="text-muted small">{rubro.descripcion || '-'}</td>
-                                            <td className="text-end pe-4">
-                                                <div className="d-flex justify-content-end gap-2">
-                                                    <BtnEdit onClick={() => openEdit(rubro)} title="Editar" />
-                                                    <BtnDelete onClick={() => handleDelete(rubro.id, rubro.nombre)} title="Eliminar" />
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+                <BtnAdd label="NUEVO RUBRO" onClick={() => openModal()} className="!bg-slate-900 !rounded-xl !px-8 !font-black !tracking-widest !text-[10px] !shadow-xl !shadow-slate-900/20" />
+            </header>
 
-                    {/* Pagination */}
-                    <TablePagination
-                        currentPage={currentPage}
-                        totalPages={totalPages}
-                        totalItems={totalItems}
-                        itemsPerPage={itemsPerPage}
-                        onPageChange={setCurrentPage}
-                        onItemsPerPageChange={setItemsPerPage}
+            {/* Stats */}
+            <BentoGrid cols={4}>
+                <StatCard label="Total Rubros" value={stats.total} icon={Layers} color="indigo" />
+                <StatCard label="Categorizados" value="100%" icon={CheckCircle2} color="emerald" />
+            </BentoGrid>
+
+            {/* Main Area */}
+            <div className="flex-1 flex flex-col gap-4 min-h-0">
+                <BentoCard className="p-4 bg-white/80 backdrop-blur-md">
+                    <SearchInput
+                        placeholder="Filtrar por nombre o descripción..."
+                        onSearch={setSearchTerm}
+                        className="!py-3 border-slate-200"
+                    />
+                </BentoCard>
+
+                <div className="flex-1 flex flex-col min-h-0">
+                    <PremiumTable
+                        columns={columns}
+                        data={filteredData}
+                        loading={loading}
+                        className="flex-1 shadow-lg"
                     />
                 </div>
             </div>
 
-            {/* Standard Modal */}
-            <StandardModal
-                isOpen={showModal}
-                onClose={() => setShowModal(false)}
-                title={formData.id ? 'Editar Rubro' : 'Nuevo Rubro'}
-                onSubmit={handleSave}
-                isLoading={saving}
-                headerIcon={<Layers size={20} />}
-            >
-                <form id="rubro-form" onSubmit={handleSave} className="space-y-4">
-                    <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Nombre</label>
-                        <input
-                            type="text"
-                            className="w-full px-4 py-2 text-base font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
-                            required
-                            autoFocus
-                            placeholder="Ej: Lácteos, Panadería, etc."
-                            value={formData.nombre}
-                            onChange={e => setFormData({ ...formData, nombre: e.target.value })}
-                        />
+            {/* Premium Modal */}
+            {showModal && (
+                <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 animate-in zoom-in-95 duration-200">
+                        {/* Modal Header */}
+                        <div className="bg-slate-900 px-8 py-10 text-white relative">
+                            <div className="absolute top-0 right-0 p-8 opacity-10">
+                                <Layers size={120} strokeWidth={1} />
+                            </div>
+                            <div className="relative z-10">
+                                <div className="flex items-center gap-3 mb-2">
+                                    <div className="bg-white/10 p-2 rounded-xl backdrop-blur-md">
+                                        <Tag size={20} className="text-indigo-400" />
+                                    </div>
+                                    <span className="text-[10px] font-black tracking-[0.2em] uppercase text-indigo-400">Rubros / Clasificación</span>
+                                </div>
+                                <h2 className="text-3xl font-black uppercase tracking-tight">
+                                    {formData.id ? 'Editar Rubro' : 'Nuevo Registro'}
+                                </h2>
+                            </div>
+                        </div>
+
+                        {/* Modal Body */}
+                        <form onSubmit={handleSave} className="p-8 space-y-6">
+                            <div className="space-y-2">
+                                <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">
+                                    <Box size={14} /> Nombre del Rubro
+                                </label>
+                                <input
+                                    type="text"
+                                    autoFocus
+                                    className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-500 focus:bg-white outline-none font-bold text-slate-700 transition-all uppercase"
+                                    placeholder="Ej: Lácteos, Panadería..."
+                                    value={formData.nombre}
+                                    onChange={e => setFormData({ ...formData, nombre: e.target.value })}
+                                    required
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">
+                                    <Info size={14} /> Notas Adicionales
+                                </label>
+                                <textarea
+                                    rows="3"
+                                    className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-500 focus:bg-white outline-none font-medium text-slate-600 transition-all resize-none"
+                                    placeholder="Opcional: Detalles sobre este rubro..."
+                                    value={formData.descripcion}
+                                    onChange={e => setFormData({ ...formData, descripcion: e.target.value })}
+                                />
+                            </div>
+
+                            <div className="flex gap-3 pt-4">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowModal(false)}
+                                    className="flex-1 py-4 bg-slate-100 text-slate-500 rounded-2xl font-black text-xs tracking-widest uppercase hover:bg-slate-200 transition-all"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={saving}
+                                    className="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black text-xs tracking-widest uppercase hover:bg-indigo-700 shadow-xl shadow-indigo-600/20 active:scale-95 transition-all flex items-center justify-center gap-2"
+                                >
+                                    {saving ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Save size={18} />}
+                                    {formData.id ? 'ACTUALIZAR' : 'REGISTRAR'}
+                                </button>
+                            </div>
+                        </form>
                     </div>
-                    <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Descripción (Opcional)</label>
-                        <textarea
-                            className="w-full px-4 py-2 text-sm text-slate-600 bg-slate-50 border border-slate-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all resize-none"
-                            rows="3"
-                            placeholder="Detalles adicionales..."
-                            value={formData.descripcion}
-                            onChange={e => setFormData({ ...formData, descripcion: e.target.value })}
-                        ></textarea>
-                    </div>
-                </form>
-            </StandardModal>
+                </div>
+            )}
         </div>
     );
 };

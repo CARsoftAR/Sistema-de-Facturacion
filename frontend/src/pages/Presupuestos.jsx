@@ -1,15 +1,24 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import TablePagination from '../components/common/TablePagination'; // Moved up for safety
+// Presupuestos.jsx - Rediseño Premium 2025
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { FileText, Plus, Search, Check, AlertCircle, ShoppingCart, CheckCircle, Clock } from 'lucide-react';
-import { BtnAdd, BtnDelete, BtnAction, BtnClear, BtnView, BtnPrint, BtnTableAction } from '../components/CommonButtons';
-import EmptyState from '../components/EmptyState';
+import {
+    FileText, Plus, Search, Check, AlertCircle, ShoppingCart,
+    CheckCircle, Clock, Trash2, Printer, Eye, FilterX,
+    ListFilter, DollarSign, Hash, TrendingUp, Activity, Download
+} from 'lucide-react';
+
+// Premium UI Components
+import { BentoCard, StatCard, PremiumTable, TableCell, SearchInput, PremiumFilterBar } from '../components/premium';
+import { BentoGrid } from '../components/premium/BentoCard';
+import { cn } from '../utils/cn';
 import { showDeleteAlert, showSuccessAlert, showErrorAlert, showConfirmationAlert } from '../utils/alerts';
+import { BtnAdd } from '../components/CommonButtons';
+import TablePagination from '../components/common/TablePagination';
+import EmptyState from '../components/EmptyState';
 
 const STORAGE_KEY = 'table_prefs_presupuestos_items';
 
 const Presupuestos = () => {
-    console.log("Presupuestos Component Loaded. TablePagination:", TablePagination);
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const [presupuestos, setPresupuestos] = useState([]);
@@ -26,10 +35,25 @@ const Presupuestos = () => {
         return 10;
     });
 
+    const getLocalDate = (date = new Date()) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
+    const [dateRange, setDateRange] = useState({
+        start: getLocalDate(new Date(new Date().getFullYear(), new Date().getMonth(), 1)),
+        end: getLocalDate()
+    });
+
+    // Filtros
+    const [filters, setFilters] = useState({
+        busqueda: searchParams.get('busqueda') || '',
+        estado: searchParams.get('estado') || '',
+    });
+
     useEffect(() => {
-        // Fallback to API config if not in local storage? 
-        // Or just prioritize local storage. For consistency, we rely on local storage or default 10.
-        // If we want to fetch default from API only if NOT in local storage:
         const saved = localStorage.getItem(STORAGE_KEY);
         if (!saved) {
             fetch('/api/config/obtener/')
@@ -41,60 +65,64 @@ const Presupuestos = () => {
         }
     }, []);
 
-    // Filtros
-    const [filters, setFilters] = useState({
-        busqueda: searchParams.get('busqueda') || '',
-        estado: searchParams.get('estado') || '',
-    });
-
-    useEffect(() => {
-        setFilters({
-            busqueda: searchParams.get('busqueda') || '',
-            estado: searchParams.get('estado') || '',
-        });
-        setPage(1);
-    }, [searchParams]);
-
-    const fetchPresupuestos = useCallback(async () => {
+    const fetchPresupuestos = useCallback(async (signal) => {
         setLoading(true);
         try {
             const params = new URLSearchParams({
                 page: page,
                 per_page: itemsPerPage,
                 q: filters.busqueda,
-                estado: filters.estado
+                estado: filters.estado,
+                fecha_start: dateRange.start,
+                fecha_end: dateRange.end
             });
 
-            const response = await fetch(`/api/presupuestos/listar/?${params}`);
+            const response = await fetch(`/api/presupuestos/listar/?${params}`, { signal });
             const data = await response.json();
 
             if (data.ok) {
-                setPresupuestos(data.data);
-                setTotalItems(data.total);
-                setTotalPages(Math.ceil(data.total / itemsPerPage));
+                setPresupuestos(data.data || []);
+                setTotalItems(data.total || 0);
+                setTotalPages(Math.ceil((data.total || 0) / itemsPerPage));
             } else {
-                console.error("Error fetching presupuestos:", data.error);
+                setPresupuestos([]);
             }
         } catch (error) {
-            console.error("Error:", error);
+            if (error.name !== 'AbortError') setPresupuestos([]);
         } finally {
             setLoading(false);
         }
     }, [page, itemsPerPage, filters]);
 
     useEffect(() => {
-        fetchPresupuestos();
+        const controller = new AbortController();
+        fetchPresupuestos(controller.signal);
+        return () => controller.abort();
     }, [fetchPresupuestos]);
 
-    const handleSearch = (e) => {
-        e.preventDefault();
-        setSearchParams({ ...filters }); // Update URL params needed?
-        fetchPresupuestos();
-    };
+    // KPI Calculations
+    const stats = useMemo(() => {
+        const totalAmount = presupuestos.reduce((acc, p) => acc + parseFloat(p.total || 0), 0);
+        // Contamos tanto PENDIENTE como VENCIDO como "Pendientes" para los KPIs
+        const pendientes = presupuestos.filter(p => p.estado === 'PENDIENTE' || p.estado === 'VENCIDO').length;
+        const aprobados = presupuestos.filter(p => p.estado === 'APROBADO').length;
+
+        return {
+            total: totalAmount,
+            count: totalItems,
+            pendientes: pendientes,
+            aprobados: aprobados
+        };
+    }, [presupuestos, totalItems]);
 
     const handleClear = () => {
         setFilters({ busqueda: '', estado: '' });
+        setDateRange({
+            start: getLocalDate(new Date(new Date().getFullYear(), new Date().getMonth(), 1)),
+            end: getLocalDate()
+        });
         setSearchParams({});
+        setPage(1);
     };
 
     const handleConvertToPedido = async (presupuesto) => {
@@ -163,140 +191,190 @@ const Presupuestos = () => {
         }
     };
 
-    const getEstadoBadge = (estado) => {
-        switch (estado) {
-            case 'APROBADO':
-                return <span className="badge rounded-pill bg-success-subtle text-success border border-success px-3 py-2"><CheckCircle size={16} className="me-1 inline-block" /> Aprobado</span>;
-            case 'PENDIENTE':
-                return <span className="badge rounded-pill bg-warning-subtle text-warning-emphasis border border-warning-subtle px-3 py-2"><Clock size={16} className="me-1 inline-block" /> Pendiente</span>;
-            case 'VENCIDO':
-                return <span className="badge rounded-pill bg-secondary-subtle text-secondary border border-secondary px-3 py-2"><AlertCircle size={16} className="me-1 inline-block" /> Vencido</span>;
-            case 'CANCELADO':
-                return <span className="badge rounded-pill bg-danger-subtle text-danger border border-danger px-3 py-2"><AlertCircle size={16} className="me-1 inline-block" /> Cancelado</span>;
-            default:
-                return <span className="badge rounded-pill bg-info-subtle text-info-emphasis border border-info-subtle px-3 py-2">{estado}</span>;
+    const columns = [
+        {
+            key: 'id',
+            label: '# ID',
+            width: '100px',
+            render: (v) => <TableCell.ID value={v} />
+        },
+        {
+            key: 'fecha',
+            label: 'Fecha',
+            width: '180px',
+            render: (v) => <TableCell.Date value={v} />
+        },
+        {
+            key: 'cliente',
+            label: 'Cliente',
+            render: (v) => <TableCell.Primary value={v} />
+        },
+        {
+            key: 'vencimiento',
+            label: 'Vencimiento',
+            width: '180px',
+            render: (v) => <TableCell.Date value={v} />
+        },
+        {
+            key: 'total',
+            label: 'Total',
+            align: 'right',
+            width: '150px',
+            render: (v) => <TableCell.Currency value={v} />
+        },
+        {
+            key: 'estado',
+            label: 'Estado',
+            width: '150px',
+            render: (v) => (
+                <TableCell.Status
+                    value={v}
+                    variant={
+                        v === 'APROBADO' ? 'success' :
+                            v === 'PENDIENTE' ? 'warning' :
+                                v === 'VENCIDO' ? 'secondary' :
+                                    v === 'CANCELADO' ? 'error' : 'default'
+                    }
+                />
+            )
+        },
+        {
+            key: 'acciones',
+            label: 'Acciones',
+            align: 'right',
+            width: '200px',
+            sortable: false,
+            render: (_, p) => (
+                <div className="flex justify-end gap-2">
+                    <button
+                        onClick={() => navigate(`/presupuestos/${p.id}`)}
+                        className="p-2 text-neutral-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-all"
+                        title="Ver Detalle"
+                    >
+                        <Eye size={18} />
+                    </button>
+                    {p.estado === 'PENDIENTE' && (
+                        <button
+                            onClick={() => handleConvertToPedido(p)}
+                            className="p-2 text-neutral-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
+                            title="Convertir a Pedido"
+                        >
+                            <ShoppingCart size={18} />
+                        </button>
+                    )}
+                    {p.estado !== 'VENCIDO' && (
+                        <button
+                            onClick={() => handlePrint(p.id)}
+                            className="p-2 text-neutral-400 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg transition-all"
+                            title="Imprimir"
+                        >
+                            <Printer size={18} />
+                        </button>
+                    )}
+                    <button
+                        onClick={() => handleDelete(p.id)}
+                        className="p-2 text-neutral-400 hover:text-error-600 hover:bg-error-50 rounded-lg transition-all"
+                        title="Eliminar"
+                    >
+                        <Trash2 size={18} />
+                    </button>
+                </div>
+            )
         }
-    };
+    ];
 
     return (
-        <div className="container-fluid px-4 pt-4 pb-3 main-content-container bg-light fade-in">
-            {/* Header */}
-            <div className="d-flex justify-content-between align-items-center mb-4">
-                <div>
-                    <h2 className="text-primary fw-bold mb-0" style={{ fontSize: '2rem' }}>
-                        <FileText className="me-2 inline-block" size={32} />
-                        Presupuestos
-                    </h2>
-                    <p className="text-muted mb-0 ps-1" style={{ fontSize: '1rem' }}>
-                        Gestión de Presupuestos y Cotizaciones
+        <div className="p-6 w-full max-w-[1920px] mx-auto h-full overflow-hidden flex flex-col gap-6 animate-in fade-in duration-500 bg-slate-50/50">
+
+            {/* Header Section */}
+            <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div className="space-y-1">
+                    <h1 className="text-3xl font-black text-neutral-900 tracking-tight flex items-center gap-3">
+                        <FileText className="text-blue-600" size={32} strokeWidth={2.5} />
+                        Historial de Presupuestos
+                    </h1>
+                    <p className="text-neutral-500 font-medium text-sm ml-1">
+                        Gestión de Presupuestos y Cotizaciones.
                     </p>
                 </div>
-                <BtnAdd onClick={() => navigate('/presupuestos/nuevo')} label="Nuevo Presupuesto" icon={FileText} className="btn-lg shadow-lg shadow-blue-500/30 hover:shadow-blue-600/40 active:scale-95 transition-all" />
-            </div>
-
-            {/* Filtros */}
-            <div className="card border-0 shadow-sm mb-4">
-                <div className="card-body bg-light rounded">
-                    <form onSubmit={handleSearch} className="row g-3 align-items-center">
-                        <div className="col-md-5">
-                            <div className="input-group">
-                                <span className="input-group-text bg-white border-end-0"><Search size={18} className="text-muted" /></span>
-                                <input
-                                    type="text"
-                                    className="form-control border-start-0"
-                                    placeholder="Buscar cliente, ID..."
-                                    value={filters.busqueda}
-                                    onChange={(e) => setFilters({ ...filters, busqueda: e.target.value })}
-                                />
-                            </div>
-                        </div>
-                        <div className="col-md-3">
-                            <select
-                                className="form-select"
-                                value={filters.estado}
-                                onChange={(e) => setFilters({ ...filters, estado: e.target.value })}
-                            >
-                                <option value="">Todos los Estados</option>
-                                <option value="PENDIENTE">Pendiente</option>
-                                <option value="APROBADO">Aprobado</option>
-                                <option value="VENCIDO">Vencido</option>
-                                <option value="CANCELADO">Cancelado</option>
-                            </select>
-                        </div>
-                        <div className="col-md-4 d-flex gap-2">
-                            <BtnAction onClick={fetchPresupuestos} label="Filtrar" icon={Search} color="primary" />
-                            <BtnClear onClick={handleClear} />
-                        </div>
-                    </form>
+                <div className="flex items-center gap-3">
+                    <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-neutral-200 text-neutral-700 rounded-xl font-bold text-sm hover:bg-neutral-50 transition-all shadow-sm">
+                        <Download size={18} /> Exportar
+                    </button>
+                    <BtnAdd
+                        label="NUEVO PRESUPUESTO"
+                        onClick={() => navigate('/presupuestos/nuevo')}
+                        className="!bg-blue-600 !hover:bg-blue-700 !rounded-xl !px-6 !py-3 !font-black !tracking-widest !text-xs !shadow-lg !shadow-blue-600/20"
+                    />
                 </div>
-            </div>
+            </header>
 
-            {/* Tabla */}
-            <div className="card border-0 shadow mb-0 flex-grow-1 overflow-hidden d-flex flex-column">
-                <div className="card-body p-0 d-flex flex-column overflow-hidden">
-                    <div className="table-responsive flex-grow-1 table-container-fixed">
-                        <table className="table align-middle mb-0">
-                            <thead className="table-dark" style={{ backgroundColor: '#212529', color: '#fff' }}>
-                                <tr>
-                                    <th className="ps-4 py-3 fw-bold">#</th>
-                                    <th className="py-3 fw-bold">Fecha</th>
-                                    <th className="py-3 fw-bold">Cliente</th>
-                                    <th className="py-3 fw-bold">Vencimiento</th>
-                                    <th className="py-3 fw-bold text-end">Total</th>
-                                    <th className="py-3 fw-bold text-center">Estado</th>
-                                    <th className="text-end pe-4 py-3 fw-bold">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {loading ? (
-                                    <tr>
-                                        <td colSpan="7" className="text-center py-5">
-                                            <div className="spinner-border text-primary" role="status"></div>
-                                        </td>
-                                    </tr>
-                                ) : presupuestos.length === 0 ? (
-                                    <tr>
-                                        <td colSpan="7" className="py-5">
-                                            <EmptyState
-                                                title="No se encontraron presupuestos"
-                                                description="Intenta con otros filtros o crea uno nuevo"
-                                            />
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    presupuestos.map((p) => (
-                                        <tr key={p.id} className="border-bottom-0">
-                                            <td className="ps-4 fw-bold text-primary py-3">#{p.id}</td>
-                                            <td className="py-3"><span className="text-dark fw-medium">{p.fecha}</span></td>
-                                            <td className="fw-medium py-3">{p.cliente}</td>
-                                            <td className="py-3 fw-medium text-muted">{p.vencimiento}</td>
-                                            <td className="text-end fw-bold text-success py-3">$ {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(p.total)}</td>
-                                            <td className="text-center py-3">{getEstadoBadge(p.estado)}</td>
-                                            <td className="text-end pe-4 py-3">
-                                                <div className="d-flex justify-content-end gap-2">
-                                                    <BtnView onClick={() => navigate(`/presupuestos/${p.id}`)} />
-                                                    {p.estado === 'PENDIENTE' && (
-                                                        <BtnTableAction
-                                                            icon={ShoppingCart}
-                                                            label="A Pedido"
-                                                            color="success"
-                                                            onClick={() => handleConvertToPedido(p)}
-                                                            title="Convertir a Pedido"
-                                                        />
-                                                    )}
-                                                    <BtnPrint onClick={() => handlePrint(p.id)} />
-                                                    <BtnDelete onClick={() => handleDelete(p.id)} />
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+            {/* KPI Section */}
+            <BentoGrid cols={4}>
+                <StatCard
+                    label="Volume Presupuestado"
+                    value={`$${stats.total.toLocaleString()}`}
+                    icon={DollarSign}
+                    color="primary"
+                />
+                <StatCard
+                    label="Presupuestos Pendientes"
+                    value={stats.pendientes}
+                    icon={Clock}
+                    color="warning"
+                />
+                <StatCard
+                    label="Presupuestos Aprobados"
+                    value={stats.aprobados}
+                    icon={CheckCircle}
+                    color="success"
+                />
+                <StatCard
+                    label="Total Operaciones"
+                    value={stats.count}
+                    icon={Hash}
+                    color="primary"
+                />
+            </BentoGrid>
 
-                    {/* Paginación */}
-                    {/* Paginación */}
+            <PremiumFilterBar
+                busqueda={filters.busqueda}
+                setBusqueda={(val) => { setFilters(prev => ({ ...prev, busqueda: val })); setPage(1); }}
+                dateRange={dateRange}
+                setDateRange={setDateRange}
+                onClear={handleClear}
+                placeholder="Buscar por cliente, ID o estado..."
+            >
+                <select
+                    className="bg-white border border-neutral-200 rounded-full px-6 h-[52px] text-[10px] font-black uppercase tracking-widest text-neutral-600 focus:ring-2 focus:ring-primary-500 transition-all outline-none shadow-sm cursor-pointer appearance-none pr-12 min-w-[200px] bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_1rem_center] bg-no-repeat"
+                    value={filters.estado}
+                    onChange={(e) => { setFilters(prev => ({ ...prev, estado: e.target.value })); setPage(1); }}
+                >
+                    <option value="">TODOS LOS ESTADOS</option>
+                    <option value="PENDIENTE">PENDIENTES</option>
+                    <option value="APROBADO">APROBADOS</option>
+                    <option value="VENCIDO">VENCIDOS</option>
+                    <option value="CANCELADO">CANCELADOS</option>
+                </select>
+            </PremiumFilterBar>
+
+            {/* Table Container */}
+            <div className="flex-grow flex flex-col min-h-0">
+                <PremiumTable
+                    columns={columns}
+                    data={presupuestos}
+                    loading={loading}
+                    className="flex-grow shadow-lg"
+                    emptyState={
+                        <EmptyState
+                            title="No hay presupuestos registrados"
+                            description="Los presupuestos aparecerán aquí una vez generados en la terminal."
+                        />
+                    }
+                />
+
+                {/* Pagination */}
+                <div className="bg-white border-x border-b border-neutral-200 rounded-b-[2rem] px-6 py-1 shadow-premium relative z-10">
                     <TablePagination
                         currentPage={page}
                         totalPages={totalPages}

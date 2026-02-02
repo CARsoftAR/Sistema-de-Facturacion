@@ -92,13 +92,13 @@ body {
   color: #064e3b !important;
 }
 
-/* Full Height Page Layout */
+/* Full Height Page Layout Fix */
 .main-content-container {
-  height: calc(100vh - 64px);
+  min-height: calc(100vh - 64px);
   /* 64px is TopNavbar height */
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  /* overflow: hidden;  <-- REMOVED TO FIX CLIPPING */
 }
 
 /* Scrollable Table Area */
@@ -108,7 +108,7 @@ body {
   min-height: 0;
 }
 
-/* Hide default horizontal scrollbar on body if necessary */
+/* Hide scroll */
 body {
   overflow: hidden;
 }

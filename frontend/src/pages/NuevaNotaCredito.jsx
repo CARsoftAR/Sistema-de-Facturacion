@@ -403,22 +403,22 @@ const NuevaNotaCredito = () => {
                         <table className="w-full text-sm">
                             <thead className="bg-slate-50 sticky top-0 z-10 shadow-sm border-b border-slate-100">
                                 <tr className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                                    <th className="px-6 py-3 text-left w-24">Código</th>
-                                    <th className="px-6 py-3 text-left">Producto</th>
-                                    <th className="px-6 py-3 text-right">Precio</th>
-                                    <th className="px-6 py-3 text-center">Cant.</th>
-                                    <th className="px-6 py-3 text-right">Subtotal</th>
-                                    <th className="px-4 py-3 text-center w-16"></th>
+                                    <th className="px-6 py-1.5 text-left w-24">Código</th>
+                                    <th className="px-6 py-1.5 text-left">Producto</th>
+                                    <th className="px-6 py-1.5 text-right">Precio</th>
+                                    <th className="px-6 py-1.5 text-center">Cant.</th>
+                                    <th className="px-6 py-1.5 text-right">Subtotal</th>
+                                    <th className="px-4 py-1.5 text-center w-16"></th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 bg-white">
                                 {items.length > 0 ? (
                                     items.map((item, idx) => (
                                         <tr key={idx} className="hover:bg-slate-50 group">
-                                            <td className="px-6 py-3 font-mono text-xs font-bold text-slate-500">
+                                            <td className="px-6 py-1 font-mono text-xs font-bold text-slate-500">
                                                 {item.codigo}
                                             </td>
-                                            <td className="px-6 py-3">
+                                            <td className="px-6 py-1">
                                                 <p className="font-bold text-slate-800">{item.descripcion}</p>
                                                 {item.es_original && (
                                                     <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded border border-blue-100 mt-1 inline-block">
@@ -426,18 +426,18 @@ const NuevaNotaCredito = () => {
                                                     </span>
                                                 )}
                                             </td>
-                                            <td className="px-6 py-3 text-right font-medium text-slate-600">
+                                            <td className="px-6 py-1 text-right font-medium text-slate-600">
                                                 ${new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(item.precio)}
                                             </td>
-                                            <td className="px-6 py-3 text-center">
+                                            <td className="px-6 py-1 text-center">
                                                 <span className="font-bold text-slate-700 bg-slate-100 px-2 py-1 rounded-md">
                                                     {item.cantidad}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-3 text-right font-bold text-red-600">
+                                            <td className="px-6 py-1 text-right font-bold text-red-600">
                                                 ${new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(item.subtotal)}
                                             </td>
-                                            <td className="px-4 py-3 text-center">
+                                            <td className="px-4 py-1 text-center">
                                                 <button
                                                     onClick={() => eliminarItem(idx)}
                                                     className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
@@ -449,7 +449,7 @@ const NuevaNotaCredito = () => {
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan="6" className="py-20 text-center text-slate-400">
+                                        <td colSpan="6" className="py-4 text-center text-slate-400">
                                             <div className="bg-slate-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 opacity-50">
                                                 <Trash2 size={32} />
                                             </div>

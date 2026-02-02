@@ -1,10 +1,15 @@
-import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
+// Nuevo Pedido - Terminal Premium 2025
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, Trash2, User, ShoppingCart, FileText, X, Check, ClipboardList, Save, AlertTriangle } from 'lucide-react';
-import { BtnSave, BtnCancel, BtnBack } from '../components/CommonButtons';
+import {
+    Search, Plus, Trash2, User, ShoppingCart,
+    Check, X, Zap, ArrowLeft, ChevronRight,
+    FileText, ClipboardList, AlertTriangle
+} from 'lucide-react';
+import { showWarningAlert, showSuccessAlert, showConfirmationAlert } from '../utils/alerts';
 import { useProductSearch } from '../hooks/useProductSearch';
+import { cn } from '../utils/cn';
 
-// Obtener CSRF Token
 function getCookie(name) {
     let cookieValue = null;
     if (document.cookie && document.cookie !== '') {
@@ -20,49 +25,20 @@ function getCookie(name) {
     return cookieValue;
 }
 
-const AutoFocusInput = ({ onKeyDownNext, ...props }) => {
-    const inputRef = useRef(null);
-    useLayoutEffect(() => {
-        if (inputRef.current) {
-            inputRef.current.focus();
-            requestAnimationFrame(() => inputRef.current?.focus());
-            setTimeout(() => inputRef.current?.focus(), 200);
-        }
-    }, []);
-    return <input ref={inputRef} {...props} />;
-};
-
 const NuevoPedido = () => {
     const navigate = useNavigate();
 
-    // ==================== STATE ====================
+    // REFS
+    const codigoRef = useRef(null);
+    const clienteInputRef = useRef(null);
+    const cantidadRef = useRef(null);
+
+    // STATE
     const [cliente, setCliente] = useState(null);
     const [busquedaCliente, setBusquedaCliente] = useState('');
     const [clientesSugeridos, setClientesSugeridos] = useState([]);
     const [mostrarSugerenciasCliente, setMostrarSugerenciasCliente] = useState(false);
     const [sugerenciaClienteActiva, setSugerenciaClienteActiva] = useState(0);
-
-    // Campos de entrada de producto
-    // ==================== PRODUCT SEARCH HOOK ====================
-    const {
-        inputCodigo, setInputCodigo,
-        inputProducto, setInputProducto,
-        codigosSugeridos, productosSugeridos,
-        mostrarSugerenciasCodigo, mostrarSugerenciasProducto,
-        sugerenciaCodigoActiva, sugerenciaActiva,
-        codigoListRef, productoListRef,
-        nextInputRef: productoRef,
-        handleCodigoKeyDown, handleProductoKeyDown,
-        handleCodigoBlur, handleProductoBlur,
-        seleccionar: seleccionarProducto,
-        limpiar: limpiarBusqueda
-    } = useProductSearch({
-        onSelect: (producto) => {
-            setProductoSeleccionado(producto);
-            setInputPrecio(producto.precio_efectivo.toString());
-            setTimeout(() => cantidadRef.current?.select(), 50);
-        }
-    });
 
     const [inputCantidad, setInputCantidad] = useState('1');
     const [inputPrecio, setInputPrecio] = useState('');
@@ -71,113 +47,80 @@ const NuevoPedido = () => {
     const [items, setItems] = useState([]);
     const [observaciones, setObservaciones] = useState('');
     const [guardando, setGuardando] = useState(false);
-    const [mensaje, setMensaje] = useState(null);
 
     // Modal Stock Custom
     const [modalStockOpen, setModalStockOpen] = useState(false);
     const [productoPendiente, setProductoPendiente] = useState(null);
 
-    // Referencias
-    const codigoRef = useRef(null);
-    // productoRef (from hook)
-    const cantidadRef = useRef(null);
-    const clienteInputRef = useRef(null);
+    const {
+        inputCodigo, setInputCodigo,
+        inputProducto, setInputProducto,
+        codigosSugeridos, productosSugeridos,
+        mostrarSugerenciasCodigo, mostrarSugerenciasProducto,
+        sugerenciaCodigoActiva, sugerenciaActiva,
+        codigoListRef,
+        productoListRef,
+        nextInputRef: productoRef,
+        handleCodigoKeyDown, handleProductoKeyDown,
+        handleCodigoBlur, handleProductoBlur,
+        seleccionar,
+        limpiar
+    } = useProductSearch({
+        onSelect: (producto) => {
+            setProductoSeleccionado(producto);
+            setInputPrecio(producto.precio_efectivo.toString());
+            setInputCantidad('1');
+            setTimeout(() => cantidadRef.current?.select(), 50);
+        }
+    });
 
-    // Referencias para scroll automático en listas
-    const clienteListRef = useRef(null);
-    // codigoListRef (from hook)
-    // productoListRef (from hook)
-
-    // ==================== FOCUS INICIAL ====================
     useEffect(() => {
-        setTimeout(() => clienteInputRef.current?.focus(), 100);
+        setTimeout(() => clienteInputRef.current?.focus(), 400);
     }, []);
 
-    // ==================== BUSCAR CLIENTE ====================
     useEffect(() => {
-        if (busquedaCliente.length < 2) {
-            setClientesSugeridos([]);
-            return;
+        if (!busquedaCliente || busquedaCliente.length < 2) {
+            setClientesSugeridos([]); setMostrarSugerenciasCliente(false); return;
         }
-        const timer = setTimeout(() => {
-            fetch(`/api/clientes/buscar/?q=${encodeURIComponent(busquedaCliente)}`)
-                .then(res => res.json())
-                .then(data => {
-                    setClientesSugeridos(data.data || []);
-                    setMostrarSugerenciasCliente(true);
-                    setSugerenciaClienteActiva(0);
-                })
-                .catch(() => setClientesSugeridos([]));
+        const timer = setTimeout(async () => {
+            try {
+                const res = await fetch(`/api/clientes/buscar/?q=${encodeURIComponent(busquedaCliente)}`);
+                const data = await res.json();
+                setClientesSugeridos(data.data || []);
+                setMostrarSugerenciasCliente((data.data || []).length > 0);
+            } catch (err) { console.error(err); }
         }, 300);
         return () => clearTimeout(timer);
     }, [busquedaCliente]);
 
-    // ==================== OBTENER INICIALES ====================
-    const getInitials = (nombre) => {
-        if (!nombre) return '?';
-        const palabras = nombre.trim().split(/\s+/);
-        if (palabras.length >= 2) {
-            return (palabras[0][0] + palabras[1][0]).toUpperCase();
-        }
-        return nombre.substring(0, 2).toUpperCase();
-    };
-
-    // ==================== SELECCIONAR CLIENTE ====================
     const seleccionarCliente = (c) => {
-        setCliente(c);
-        setBusquedaCliente('');
-        setMostrarSugerenciasCliente(false);
-        setClientesSugeridos([]);
+        setCliente(c); setBusquedaCliente(''); setMostrarSugerenciasCliente(false);
         setTimeout(() => codigoRef.current?.focus(), 100);
     };
 
-    // ==================== MANEJO DE TECLAS - CLIENTE ====================
     const handleClienteKeyDown = (e) => {
         if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            const newIndex = Math.min(sugerenciaClienteActiva + 1, clientesSugeridos.length - 1);
-            setSugerenciaClienteActiva(newIndex);
-            const item = clienteListRef.current?.children[newIndex];
-            item?.scrollIntoView({ block: 'nearest' });
+            setSugerenciaClienteActiva(prev => Math.min(prev + 1, clientesSugeridos.length - 1));
         } else if (e.key === 'ArrowUp') {
-            e.preventDefault();
-            const newIndex = Math.max(sugerenciaClienteActiva - 1, 0);
-            setSugerenciaClienteActiva(newIndex);
-            const item = clienteListRef.current?.children[newIndex];
-            item?.scrollIntoView({ block: 'nearest' });
-        } else if (e.key === 'Enter') {
-            e.preventDefault();
-            if (clientesSugeridos.length > 0) {
-                seleccionarCliente(clientesSugeridos[sugerenciaClienteActiva]);
-            }
-        } else if (e.key === 'Escape') {
-            setMostrarSugerenciasCliente(false);
+            setSugerenciaClienteActiva(prev => Math.max(prev - 1, 0));
+        } else if (e.key === 'Enter' && clientesSugeridos.length > 0) {
+            seleccionarCliente(clientesSugeridos[sugerenciaClienteActiva]);
         }
     };
 
-    // ==================== AGREGAR PRODUCTO A LA LISTA ====================
     const agregarProductoALista = () => {
         if (!productoSeleccionado) return;
-
         const cantidad = parseFloat(inputCantidad) || 1;
         const precio = parseFloat(inputPrecio) || productoSeleccionado.precio_efectivo;
 
-        // Verificar stock
         const existe = items.find(i => i.id === productoSeleccionado.id);
         const cantidadTotal = existe ? existe.cantidad + cantidad : cantidad;
 
         if (cantidadTotal > productoSeleccionado.stock) {
-            // Abrir Modal Stock Custom
-            setProductoPendiente({
-                producto: productoSeleccionado,
-                cantidad,
-                precio,
-                existe
-            });
+            setProductoPendiente({ producto: productoSeleccionado, cantidad, precio, existe });
             setModalStockOpen(true);
             return;
         }
-
         encolarProducto(productoSeleccionado, cantidad, precio, existe);
     };
 
@@ -190,440 +133,332 @@ const NuevoPedido = () => {
             ));
         } else {
             setItems([...items, {
-                id: prod.id,
-                codigo: prod.codigo,
-                descripcion: prod.descripcion,
-                precio: prec,
-                cantidad: cant,
-                subtotal: cant * prec,
-                stock: prod.stock
+                id: prod.id, codigo: prod.codigo, descripcion: prod.descripcion,
+                precio: prec, cantidad: cant, subtotal: cant * prec, stock: prod.stock
             }]);
         }
-
-        setMensaje(null);
-        limpiarCamposEntrada();
-        codigoRef.current?.focus();
-    };
-
-    const confirmarAgregarStock = () => {
-        if (productoPendiente) {
-            encolarProducto(
-                productoPendiente.producto,
-                productoPendiente.cantidad,
-                productoPendiente.precio,
-                productoPendiente.existe
-            );
-        }
-        setModalStockOpen(false);
-        setProductoPendiente(null);
-    };
-
-    const cancelarAgregarStock = () => {
-        setModalStockOpen(false);
-        setProductoPendiente(null);
         limpiarCamposEntrada();
         codigoRef.current?.focus();
     };
 
     const limpiarCamposEntrada = () => {
-        limpiarBusqueda();
-        setInputCantidad('1');
-        setInputPrecio('');
-        setProductoSeleccionado(null);
+        limpiar(); setInputCantidad('1'); setInputPrecio(''); setProductoSeleccionado(null);
     };
 
-    // ==================== MANEJO DE TECLAS - CÓDIGO/PRODUCTO ====================
-    // Handlers removed (handled by hook)
-
-    const handleCantidadKeyDown = (e) => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            agregarProductoALista();
-        }
+    const cancelarPedido = () => {
+        showConfirmationAlert('¿Cancelar Pedido?', 'Se borrarán todos los items cargados.').then((result) => {
+            if (result.isConfirmed) {
+                setItems([]); setCliente(null); setObservaciones('');
+                clienteInputRef.current?.focus();
+            }
+        });
     };
 
-    // ==================== ACCIONES ITEM ====================
-    const cambiarCantidad = (id, nuevaCantidad) => {
-        if (nuevaCantidad < 1) return;
-        setItems(items.map(i =>
-            i.id === id
-                ? { ...i, cantidad: nuevaCantidad, subtotal: nuevaCantidad * i.precio }
-                : i
-        ));
-    };
+    const guardarPedido = async () => {
+        if (items.length === 0) return showWarningAlert('Error', 'Debe agregar al menos un producto.');
+        if (!cliente) return showWarningAlert('Error', 'Debe seleccionar un cliente.');
 
-    const eliminarItem = (id) => {
-        setItems(items.filter(i => i.id !== id));
+        setGuardando(true);
+        try {
+            const payload = {
+                cliente_id: cliente.id,
+                detalles: items.map(p => ({
+                    producto_id: p.id, cantidad: p.cantidad, precio_unitario: p.precio
+                })),
+                observaciones: observaciones
+            };
+            const response = await fetch('/api/pedidos/crear/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+                body: JSON.stringify(payload)
+            });
+            const data = await response.json();
+            if (data.ok) {
+                showSuccessAlert('Pedido Creado', `Orden #${data.id} generada correctamente.`);
+                setTimeout(() => navigate('/pedidos'), 1500);
+            } else throw new Error(data.error);
+        } catch (err) {
+            showWarningAlert('Error', err.message || 'Error de conexión');
+        } finally { setGuardando(false); }
     };
 
     const totalGeneral = items.reduce((acc, i) => acc + i.subtotal, 0);
     const totalNeto = totalGeneral / 1.21;
     const totalIVA = totalGeneral - totalNeto;
 
-    // ==================== GUARDAR PEDIDO ====================
-    const guardarPedido = async () => {
-        if (items.length === 0) {
-            setMensaje({ tipo: 'error', texto: 'Debe agregar al menos un producto.' });
-            return;
-        }
-        if (!cliente) {
-            setMensaje({ tipo: 'error', texto: 'Debe seleccionar un cliente.' });
-            return;
-        }
-
-        setGuardando(true);
-        setMensaje(null);
-
-        try {
-            const payload = {
-                cliente_id: cliente.id,
-                detalles: items.map(p => ({
-                    producto_id: p.id,
-                    cantidad: p.cantidad,
-                    precio_unitario: p.precio
-                })),
-                observaciones: observaciones
-            };
-
-            const response = await fetch('/api/pedidos/crear/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken')
-                },
-                body: JSON.stringify(payload)
-            });
-
-            const data = await response.json();
-
-            if (data.ok) {
-                // Éxito
-                setItems([]);
-                setCliente(null);
-                setObservaciones('');
-                setMensaje({ tipo: 'success', texto: `Pedido #${data.id} creado correctamente.` });
-                setTimeout(() => navigate('/pedidos'), 1500);
-            } else {
-                setMensaje({ tipo: 'error', texto: data.error || 'Error al guardar el pedido.' });
-            }
-        } catch (err) {
-            setMensaje({ tipo: 'error', texto: 'Error de conexión.' });
-        } finally {
-            setGuardando(false);
-        }
-    };
-
-    // ==================== RENDER ====================
     return (
-        <div className="p-6 pb-0 max-w-7xl mx-auto min-h-[calc(100vh-120px)] flex flex-col fade-in">
+        <div className="p-3 lg:p-4 max-w-[1900px] mx-auto space-y-3 animate-in fade-in duration-500 h-full bg-slate-50 flex flex-col overflow-hidden relative">
 
-            {/* Layout principal */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-0">
+            {/* Top Bar */}
+            <div className="flex items-center gap-4 bg-white p-3 px-5 rounded-2xl border border-neutral-200 shadow-sm flex-shrink-0 relative z-[200]">
+                <div className="flex items-center gap-3 pr-4 border-r border-neutral-100">
+                    <button
+                        onClick={() => navigate('/pedidos')}
+                        className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-full transition-all font-black text-[10px] shadow-lg shadow-red-500/20 uppercase tracking-widest group"
+                    >
+                        <ArrowLeft size={16} strokeWidth={3} className="group-hover:-translate-x-1 transition-transform" />
+                        Volver
+                    </button>
+                    <h1 className="text-base font-black text-neutral-900 tracking-tight flex items-center gap-2 m-0 uppercase font-outfit">
+                        NUEVO PEDIDO <ClipboardList size={14} className="text-blue-600" />
+                    </h1>
+                </div>
 
-                {/* =============== COLUMNA IZQUIERDA (4 cols) =============== */}
-                <div
-                    className="lg:col-span-4 flex flex-col gap-6 overflow-y-auto pr-1"
-                    style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-                >
-
-                    {/* Header: Back Button & Title Stacked */}
-                    <div className="mb-6 flex-shrink-0">
-                        <div className="mb-4">
-                            <BtnBack onClick={() => navigate('/pedidos')} />
+                {/* Cliente Selector */}
+                <div className="flex-1 max-w-sm relative overflow-visible">
+                    <input
+                        ref={clienteInputRef}
+                        type="text"
+                        placeholder="Buscar Cliente..."
+                        value={busquedaCliente}
+                        onChange={(e) => setBusquedaCliente(e.target.value)}
+                        onKeyDown={handleClienteKeyDown}
+                        className="w-full pl-4 pr-4 py-2 bg-neutral-50 border border-neutral-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-sm font-bold"
+                    />
+                    {mostrarSugerenciasCliente && (
+                        <div className="absolute z-[300] top-full left-0 w-full mt-2 bg-white border border-neutral-200 rounded-xl shadow-2xl p-1 animate-in slide-in-from-top-2">
+                            {clientesSugeridos.map((c, idx) => (
+                                <div key={c.id} onClick={() => seleccionarCliente(c)} className={cn("px-4 py-3 cursor-pointer rounded-lg text-xs font-bold transition-all", idx === sugerenciaClienteActiva ? "bg-blue-600 text-white shadow-lg translate-x-1" : "hover:bg-neutral-50")}>
+                                    <div className="flex justify-between items-center">
+                                        <span>{c.nombre}</span>
+                                        <span className={cn("text-[8px] px-1.5 py-0.5 rounded ml-2", idx === sugerenciaClienteActiva ? "bg-white/20" : "bg-neutral-100 text-neutral-500")}>
+                                            {c.cuit || 'S.C.'}
+                                        </span>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
-                        <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
-                            <ClipboardList className="text-blue-600" size={32} strokeWidth={2.5} />
-                            Nuevo Pedido
-                        </h1>
-                        <p className="text-slate-500 font-medium ml-10">Registrar un nuevo pedido de cliente</p>
+                    )}
+                </div>
+
+                {cliente && (
+                    <div className="flex items-center gap-3 bg-blue-600 text-white px-4 py-2 rounded-xl animate-in zoom-in-95 shadow-lg shadow-blue-600/20">
+                        <div className="flex flex-col">
+                            <span className="text-[10px] font-black uppercase tracking-widest leading-none">{cliente.nombre}</span>
+                            <span className="text-[8px] font-bold text-blue-200 uppercase mt-0.5">{cliente.cuit || 'SIN CUIT'}</span>
+                        </div>
+                        <button onClick={() => setCliente(null)} className="p-1 hover:bg-white/20 rounded-lg transition-all"><X size={14} /></button>
                     </div>
-                    <style>
-                        {`
-                            .lg\\:col-span-4::-webkit-scrollbar {
-                                display: none;
-                            }
-                        `}
-                    </style>
+                )}
 
-                    {/* Cliente Card */}
-                    <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5 flex-shrink-0 group">
-                        <div className="flex items-center gap-2 mb-4">
-                            <div className="p-2 bg-blue-50 text-blue-600 rounded-lg group-hover:bg-blue-100 transition-colors">
-                                <User size={20} />
-                            </div>
-                            <h2 className="font-bold text-slate-700 text-lg">Cliente</h2>
-                        </div>
+                <div className="flex items-center gap-2 px-4 border-l border-neutral-100">
+                    <div className="relative">
+                        <input
+                            type="text"
+                            placeholder="Notas del pedido..."
+                            value={observaciones}
+                            onChange={(e) => setObservaciones(e.target.value)}
+                            className="w-64 px-4 py-2 bg-neutral-50 border border-neutral-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-xs font-bold"
+                        />
+                    </div>
+                    {items.length > 0 && (
+                        <button
+                            onClick={cancelarPedido}
+                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-black bg-neutral-50 text-neutral-400 border border-neutral-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all"
+                        >
+                            <Trash2 size={14} /> CANCELAR
+                        </button>
+                    )}
+                </div>
 
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                <div className="flex items-center gap-6 ml-auto border-l border-neutral-100 pl-6">
+                    <div className="flex flex-col">
+                        <span className="text-[10px] font-black text-neutral-400 uppercase tracking-widest leading-none mb-1">Items</span>
+                        <span className="text-base font-black text-neutral-900">{items.length}</span>
+                    </div>
+                    <div className="flex flex-col pr-4">
+                        <span className="text-[10px] font-black text-neutral-400 uppercase tracking-widest leading-none mb-1">Unidades</span>
+                        <span className="text-base font-black text-neutral-900">{items.reduce((a, b) => a + b.cantidad, 0)}</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Terminal Main Body */}
+            <div className="flex-1 bg-white rounded-3xl shadow-premium border border-neutral-200 flex flex-col overflow-hidden relative z-[50]">
+
+                {/* Search Bar */}
+                <div className="px-6 py-4 border-b border-neutral-200 bg-neutral-50/50 flex-shrink-0 relative z-[100]">
+                    <div className="grid grid-cols-12 gap-4 items-end">
+                        <div className="col-span-2 relative">
+                            <label className="block text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em] mb-2 ml-1">CÓDIGO</label>
                             <input
-                                ref={clienteInputRef}
+                                ref={codigoRef}
                                 type="text"
-                                placeholder="Buscar por nombre o DNI..."
-                                value={busquedaCliente}
-                                onChange={(e) => setBusquedaCliente(e.target.value)}
-                                onKeyDown={handleClienteKeyDown}
-                                onFocus={() => clientesSugeridos.length > 0 && setMostrarSugerenciasCliente(true)}
-                                onBlur={() => setTimeout(() => setMostrarSugerenciasCliente(false), 200)}
-                                className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 bg-slate-50 transition-all font-medium"
+                                value={inputCodigo}
+                                onChange={(e) => setInputCodigo(e.target.value.toUpperCase())}
+                                onKeyDown={handleCodigoKeyDown}
+                                onBlur={handleCodigoBlur}
+                                placeholder="----"
+                                className="w-full px-4 py-3 bg-white border border-neutral-300 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-mono font-bold text-center text-blue-600 shadow-sm text-lg"
                             />
-                            {mostrarSugerenciasCliente && clientesSugeridos.length > 0 && (
-                                <div ref={clienteListRef} className="absolute z-10 w-full mt-2 bg-white border border-slate-100 rounded-xl shadow-xl max-h-60 overflow-y-auto overflow-hidden ring-1 ring-black/5">
-                                    {clientesSugeridos.map((c, idx) => (
-                                        <div
-                                            key={c.id}
-                                            onClick={() => seleccionarCliente(c)}
-                                            className={`px-4 py-3 cursor-pointer border-b border-slate-50 last:border-b-0 flex items-center justify-between ${idx === sugerenciaClienteActiva ? 'bg-blue-50' : 'hover:bg-slate-50'}`}
-                                        >
-                                            <div>
-                                                <div className="font-bold text-slate-800">{c.nombre}</div>
-                                                <div className="text-xs text-slate-500 font-mono mt-0.5">{c.cuit || 'Sin CUIT'}</div>
+                            {mostrarSugerenciasCodigo && codigosSugeridos.length > 0 && (
+                                <div ref={codigoListRef} className="absolute z-[150] top-full left-0 mt-2 w-[220%] bg-white border border-neutral-200 rounded-2xl shadow-2xl p-1">
+                                    {codigosSugeridos.map((p, idx) => (
+                                        <div key={p.id} onClick={() => seleccionar(p)} className={cn("px-4 py-3 cursor-pointer rounded-xl flex justify-between items-center transition-all", idx === sugerenciaCodigoActiva ? "bg-blue-600 text-white shadow-lg scale-[1.02]" : "hover:bg-neutral-50")}>
+                                            <div className="flex flex-col text-left">
+                                                <span className="text-sm font-black tracking-tight">{p.codigo}</span>
+                                                <span className={cn("text-[9px] font-bold uppercase", idx === sugerenciaCodigoActiva ? "text-blue-100" : "text-neutral-400")}>{p.descripcion}</span>
                                             </div>
-                                            {idx === sugerenciaClienteActiva && <div className="text-blue-500"><Check size={16} /></div>}
+                                            <span className="text-base font-black text-left">${p.precio_efectivo}</span>
                                         </div>
                                     ))}
                                 </div>
                             )}
                         </div>
-
-                        {cliente ? (
-                            <div className="mt-4 p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-100 flex items-start justify-between relative overflow-hidden">
-                                <div className="flex items-center gap-3 relative z-10">
-                                    <div className="w-12 h-12 rounded-full bg-white text-blue-600 shadow-sm flex items-center justify-center font-bold text-lg border border-blue-100">
-                                        {getInitials(cliente.nombre)}
-                                    </div>
-                                    <div>
-                                        <p className="font-bold text-slate-800 text-base">{cliente.nombre}</p>
-                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 mt-1">
-                                            {cliente.cuit || 'Consumidor Final'}
-                                        </span>
-                                    </div>
+                        <div className="col-span-7 relative">
+                            <label className="block text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em] mb-2 ml-1">PRODUCTO</label>
+                            <input
+                                ref={productoRef}
+                                type="text"
+                                value={inputProducto}
+                                onChange={(e) => { setInputProducto(e.target.value); setProductoSeleccionado(null); }}
+                                onKeyDown={handleProductoKeyDown}
+                                onBlur={handleProductoBlur}
+                                placeholder="Escriba para buscar..."
+                                className="w-full px-5 py-3 bg-white border border-neutral-300 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-bold text-neutral-800 shadow-sm text-lg"
+                            />
+                            {mostrarSugerenciasProducto && (
+                                <div ref={productoListRef} className="absolute z-[150] top-full left-0 w-full mt-2 bg-white border border-neutral-200 rounded-2xl shadow-2xl max-h-64 overflow-y-auto p-1">
+                                    {productosSugeridos.map((p, idx) => (
+                                        <div key={p.id} onClick={() => seleccionar(p)} className={cn("px-5 py-3 cursor-pointer rounded-xl flex justify-between items-center transition-all", idx === sugerenciaActiva ? "bg-blue-50 border-l-4 border-blue-600 shadow-sm" : "hover:bg-neutral-50")}>
+                                            <div className="flex flex-col text-left">
+                                                <span className="text-sm font-black uppercase text-neutral-800 tracking-tight">{p.descripcion}</span>
+                                                <span className="text-[10px] font-black text-neutral-400 font-mono">{p.codigo} - STOCK: {p.stock}</span>
+                                            </div>
+                                            <span className="text-lg font-black text-neutral-900">${p.precio_efectivo.toLocaleString()}</span>
+                                        </div>
+                                    ))}
                                 </div>
-                                <button onClick={() => setCliente(null)} className="text-slate-400 hover:text-red-500 hover:bg-white p-2 rounded-full transition-all relative z-10">
-                                    <Trash2 size={16} />
-                                </button>
-                                {/* Decoration */}
-                                <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl"></div>
-                            </div>
-                        ) : (
-                            <div className="mt-3 flex items-center gap-2 text-slate-400 px-2">
-                                <div className="w-2 h-2 rounded-full bg-slate-300"></div>
-                                <span className="text-sm font-medium">Consumidor Final seleccionado por defecto</span>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Observaciones Card - Replaces Payment Methods */}
-                    <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5 flex-shrink-0 group flex-1">
-                        <div className="flex items-center gap-2 mb-4">
-                            <div className="p-2 bg-purple-50 text-purple-600 rounded-lg group-hover:bg-purple-100 transition-colors">
-                                <FileText size={20} />
-                            </div>
-                            <h2 className="font-bold text-slate-700 text-lg">Observaciones</h2>
+                            )}
                         </div>
-                        <textarea
-                            className="w-full h-40 p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-purple-500 resize-none text-sm text-slate-700 font-medium"
-                            placeholder="Notas o detalles adicionales del pedido..."
-                            value={observaciones}
-                            onChange={(e) => setObservaciones(e.target.value)}
-                        />
+                        <div className="col-span-1">
+                            <label className="block text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em] mb-2 ml-1 text-center">CANT.</label>
+                            <input
+                                ref={cantidadRef}
+                                type="number"
+                                value={inputCantidad}
+                                onChange={(e) => setInputCantidad(e.target.value)}
+                                className="w-full py-3 bg-white border border-neutral-300 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 text-center font-black text-neutral-900 text-lg"
+                            />
+                        </div>
+                        <div className="col-span-2">
+                            <button
+                                onClick={agregarProductoALista}
+                                disabled={!productoSeleccionado}
+                                className={cn(
+                                    "w-full h-[52px] rounded-xl flex items-center justify-center transition-all shadow-lg shadow-blue-500/10",
+                                    productoSeleccionado ? "bg-blue-600 text-white hover:bg-blue-700 active:scale-95 shadow-blue-600/20" : "bg-neutral-100 text-neutral-300"
+                                )}
+                            >
+                                <Plus size={24} strokeWidth={4} />
+                            </button>
+                        </div>
                     </div>
-
                 </div>
 
-                {/* =============== COLUMNA DERECHA (8 cols) - PRODUCTOS =============== */}
-                <div className="lg:col-span-8 flex flex-col h-full bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden relative">
-
-                    {/* Barra de Entrada de Productos */}
-                    <div className="p-5 border-b border-slate-100 bg-slate-50 flex-shrink-0 z-20">
-                        <div className="grid grid-cols-12 gap-4 items-end">
-                            {/* Código */}
-                            <div className="col-span-2 relative">
-                                <label className="block text-xs font-bold text-slate-500 mb-1.5 ml-1">CÓDIGO</label>
-                                <input
-                                    ref={codigoRef}
-                                    type="text"
-                                    value={inputCodigo}
-                                    onChange={(e) => setInputCodigo(e.target.value.toUpperCase())}
-                                    onKeyDown={handleCodigoKeyDown}
-                                    onBlur={handleCodigoBlur}
-                                    placeholder="XXX"
-                                    className="w-full px-3 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-slate-50 font-mono text-sm uppercase text-center font-bold tracking-wide"
-                                />
-                                {/* Dropdown Código */}
-                                {mostrarSugerenciasCodigo && codigosSugeridos.length > 0 && (
-                                    <div ref={codigoListRef} className="absolute left-0 top-full mt-1 w-72 bg-white border border-slate-200 rounded-xl shadow-2xl max-h-64 overflow-y-auto z-50">
-                                        {codigosSugeridos.map((p, idx) => (
-                                            <div
-                                                key={p.id}
-                                                onClick={() => seleccionarProducto(p)}
-                                                className={`px-4 py-3 cursor-pointer border-b border-slate-50 last:border-b-0 ${idx === sugerenciaCodigoActiva ? 'bg-blue-50' : 'hover:bg-slate-50'}`}
-                                            >
-                                                <div className="flex justify-between items-baseline mb-1">
-                                                    <span className="font-mono text-sm font-bold text-blue-600 bg-blue-50 px-1.5 rounded">{p.codigo}</span>
-                                                    <span className="text-sm font-bold text-green-600">${p.precio_efectivo.toLocaleString('es-AR')}</span>
-                                                </div>
-                                                <div className="text-xs text-slate-600 truncate">{p.descripcion}</div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Producto */}
-                            <div className="col-span-6 relative">
-                                <label className="block text-xs font-bold text-slate-500 mb-1.5 ml-1">PRODUCTO</label>
-                                <input
-                                    ref={productoRef}
-                                    type="text"
-                                    value={inputProducto}
-                                    onChange={(e) => { setInputProducto(e.target.value); setProductoSeleccionado(null); }}
-                                    onKeyDown={handleProductoKeyDown}
-                                    onBlur={handleProductoBlur}
-                                    placeholder="Buscar producto por nombre..."
-                                    className="w-full px-3 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-slate-50 text-sm font-medium"
-                                />
-                                {/* Dropdown Producto */}
-                                {mostrarSugerenciasProducto && productosSugeridos.length > 0 && (
-                                    <div ref={productoListRef} className="absolute left-0 top-full mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-2xl max-h-64 overflow-y-auto z-50">
-                                        {productosSugeridos.map((p, idx) => (
-                                            <div key={p.id} onClick={() => seleccionarProducto(p)} className={`px-4 py-3 cursor-pointer border-b border-slate-50 last:border-b-0 flex justify-between items-center ${idx === sugerenciaActiva ? 'bg-blue-50' : 'hover:bg-slate-50'}`}>
-                                                <div className="flex-1 min-w-0 pr-4">
-                                                    <div className="font-bold text-slate-700 text-sm truncate">{p.descripcion}</div>
-                                                    <div className="text-xs text-slate-400 mt-0.5 flex items-center gap-2">
-                                                        <span className="bg-slate-100 px-1.5 rounded font-mono text-slate-500">{p.codigo}</span>
-                                                        {p.stock <= 5 && <span className="text-amber-500 font-bold">¡Poco Stock: {p.stock}!</span>}
-                                                    </div>
-                                                </div>
-                                                <div className="text-right">
-                                                    <div className="text-sm font-bold text-slate-800">${p.precio_efectivo.toLocaleString('es-AR')}</div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="col-span-2">
-                                <label className="block text-xs font-bold text-slate-500 mb-1.5 ml-1 text-center">CANT.</label>
-                                <input ref={cantidadRef} type="number" min="1" value={inputCantidad} onChange={(e) => setInputCantidad(e.target.value)} onKeyDown={handleCantidadKeyDown} disabled={!productoSeleccionado} title={!productoSeleccionado ? "Seleccione un producto primero" : "Cantidad"} className={`w-full px-2 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm text-center font-bold transition-colors ${!productoSeleccionado ? 'bg-slate-100 text-slate-400 cursor-not-allowed opacity-75' : 'bg-slate-50 text-slate-800'}`} />
-                            </div>
-
-                            <div className="col-span-2">
-                                <button onClick={agregarProductoALista} disabled={!productoSeleccionado} className={`w-full py-2.5 rounded-lg flex items-center justify-center transition-all shadow-sm ${productoSeleccionado ? 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-md hover:-translate-y-0.5' : 'bg-slate-100 text-slate-300 cursor-not-allowed'}`}>
-                                    <Plus size={20} strokeWidth={3} />
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Listado de Items con Scroll */}
-                    <div className="flex-1 overflow-y-auto min-h-0">
-                        <table className="w-full text-sm">
-                            <thead className="bg-slate-50 sticky top-0 z-10 text-xs text-slate-500 uppercase font-bold tracking-wider">
-                                <tr>
-                                    <th className="px-6 py-3 text-left w-24">Código</th>
-                                    <th className="px-6 py-3 text-left">Producto</th>
-                                    <th className="px-6 py-3 text-center w-32">Cantidad</th>
-                                    <th className="px-6 py-3 text-right w-32">Precio</th>
-                                    <th className="px-6 py-3 text-right w-32">Total</th>
-                                    <th className="px-6 py-3 w-16"></th>
+                {/* Table Area */}
+                <div className={cn("flex-1 min-h-0 bg-white relative z-10 flex flex-col", items.length > 0 ? "overflow-y-auto" : "overflow-hidden")}>
+                    <table className="w-full border-collapse">
+                        <thead className="sticky top-0 bg-neutral-50 z-20 border-b border-neutral-200">
+                            <tr className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.2em]">
+                                <th className="px-6 py-1.5 text-left w-32">REF</th>
+                                <th className="px-6 py-1.5 text-left">DETALLE DEL PRODUCTO</th>
+                                <th className="px-6 py-1.5 text-center w-36">CANTIDAD</th>
+                                <th className="px-6 py-1.5 text-right w-36">PRECIO UNIT.</th>
+                                <th className="px-6 py-1.5 text-right w-44">SUBTOTAL</th>
+                                <th className="px-6 py-1.5 w-16"></th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-neutral-100">
+                            {items.map((item) => (
+                                <tr key={item.id} className="group hover:bg-blue-50/30 transition-colors">
+                                    <td className="px-6 py-1 font-mono text-xs font-bold text-neutral-400 whitespace-nowrap">{item.codigo}</td>
+                                    <td className="px-6 py-1">
+                                        <div className="text-left">
+                                            <p className="font-black text-sm text-neutral-800 uppercase tracking-tight">{item.descripcion}</p>
+                                            {item.cantidad > item.stock && <p className="text-[10px] text-amber-600 font-black uppercase mt-1 flex items-center gap-1"><AlertTriangle size={10} /> Stock insuficiente ({item.stock})</p>}
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-1">
+                                        <div className="flex items-center justify-center bg-white border border-neutral-200 rounded-xl p-1 w-fit mx-auto shadow-sm">
+                                            <button onClick={() => cambiarCantidad(item.id, item.cantidad - 1)} className="w-8 h-8 flex items-center justify-center text-neutral-400 hover:text-red-500 font-black text-lg">-</button>
+                                            <span className="w-10 text-center font-black text-sm text-neutral-900">{item.cantidad}</span>
+                                            <button onClick={() => cambiarCantidad(item.id, item.cantidad + 1)} className="w-8 h-8 flex items-center justify-center text-neutral-400 hover:text-green-600 font-black text-lg">+</button>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-1 text-right font-bold text-xs text-neutral-500">${item.precio.toLocaleString()}</td>
+                                    <td className="px-6 py-1 text-right">
+                                        <span className="inline-block px-4 py-1.5 bg-neutral-900 text-white rounded-xl font-black text-base tracking-tighter">
+                                            ${item.subtotal.toLocaleString()}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-1 text-center">
+                                        <button onClick={() => setItems(items.filter(i => i.id !== item.id))} className="p-2 text-neutral-300 hover:text-red-500 opacity-50 hover:opacity-100 transition-all">
+                                            <Trash2 size={18} />
+                                        </button>
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100 bg-white">
-                                {items.map((item) => (
-                                    <tr key={item.id} className="hover:bg-slate-50 transition-colors group">
-                                        <td className="px-6 py-4 font-mono text-xs font-bold text-slate-500">{item.codigo}</td>
-                                        <td className="px-6 py-4">
-                                            <p className="font-semibold text-slate-800">{item.descripcion}</p>
-                                            {item.cantidad > item.stock && <p className="text-xs text-amber-600 flex items-center gap-1 mt-1"><AlertTriangle size={12} /> Supera Stock ({item.stock})</p>}
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center justify-center bg-slate-100 rounded-lg p-1 w-fit mx-auto">
-                                                <button onClick={() => cambiarCantidad(item.id, item.cantidad - 1)} className="w-6 h-6 rounded flex items-center justify-center text-slate-500 hover:bg-white hover:text-red-500 transition-colors disabled:opacity-50">-</button>
-                                                <span className="w-8 text-center font-bold text-slate-700 text-xs">{item.cantidad}</span>
-                                                <button onClick={() => cambiarCantidad(item.id, item.cantidad + 1)} className="w-6 h-6 rounded flex items-center justify-center text-slate-500 hover:bg-white hover:text-green-600 transition-colors">+</button>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 text-right text-slate-600 font-medium">${item.precio.toLocaleString('es-AR')}</td>
-                                        <td className="px-6 py-4 text-right font-bold text-slate-800">${item.subtotal.toLocaleString('es-AR')}</td>
-                                        <td className="px-6 py-4 text-center">
-                                            <button onClick={() => eliminarItem(item.id)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
-                                                <Trash2 size={18} />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                                {items.length === 0 && (
-                                    <tr>
-                                        <td colSpan="6" className="py-10 text-center text-slate-400">
-                                            No hay productos en el pedido.
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+                            ))}
+                        </tbody>
+                    </table>
+                    {items.length === 0 && (
+                        <div className="flex-grow flex flex-col items-center justify-center gap-4 opacity-20">
+                            <ShoppingCart size={64} strokeWidth={1} />
+                            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-neutral-500">Aguardando Artículos del Pedido</span>
+                        </div>
+                    )}
+                </div>
 
-                    {/* Footer Total - DARK STYLE */}
-                    <div className="p-6 m-4 mb-8 rounded-3xl bg-slate-900 text-white flex justify-between items-center shadow-2xl ring-1 ring-white/10 flex-shrink-0 mt-auto">
-                        <div className="flex items-center gap-8">
-                            <div className="space-y-0.5">
-                                <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">Subtotal Neto</p>
-                                <p className="text-xl font-bold text-slate-200">${totalNeto.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</p>
-                            </div>
-                            <div className="space-y-0.5 relative">
-                                <div className="absolute -left-4 top-1/2 -translate-y-1/2 w-px h-8 bg-slate-700"></div>
-                                <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">IVA (21%)</p>
-                                <p className="text-xl font-bold text-slate-200">${totalIVA.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</p>
-                                <div className="absolute -right-4 top-1/2 -translate-y-1/2 w-px h-8 bg-slate-700"></div>
-                            </div>
-                            <div className="space-y-0.5">
-                                <p className="text-emerald-400 text-sm font-black uppercase tracking-wider">Total Final</p>
-                                <div className="flex items-baseline gap-1">
-                                    <span className="text-3xl font-black tracking-tight text-emerald-400">${totalGeneral.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
-                                </div>
+                {/* Footer */}
+                <div className="p-4 px-8 bg-neutral-950 text-white flex flex-col md:flex-row justify-between items-center gap-6 shadow-[0_-10px_40px_rgba(0,0,0,0.3)] flex-shrink-0 relative z-20 border-t border-white/5">
+                    <div className="flex items-center gap-10">
+                        <div className="space-y-1 text-left">
+                            <p className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em] mb-1">Monto de Pedido</p>
+                            <div className="flex items-baseline gap-2">
+                                <span className="text-6xl font-black text-blue-500 tracking-tighter select-none">${totalGeneral.toLocaleString()}</span>
+                                <span className="text-blue-800 text-xs font-black font-mono uppercase">Ars</span>
                             </div>
                         </div>
-                        <BtnSave
-                            label="Guardar Pedido"
-                            onClick={guardarPedido}
-                            loading={guardando}
-                            disabled={items.length === 0 || guardando}
-                            className="px-8 py-4 rounded-xl font-bold text-lg"
-                        />
                     </div>
+
+                    <button
+                        onClick={guardarPedido}
+                        disabled={items.length === 0 || guardando}
+                        className={cn(
+                            "px-14 py-6 rounded-[2rem] font-black text-xl uppercase tracking-[0.2em] flex items-center gap-4 transition-all group active:scale-95 shadow-xl",
+                            items.length > 0
+                                ? "bg-blue-600 text-white hover:bg-blue-500 shadow-blue-600/40 hover:-translate-y-2"
+                                : "bg-neutral-800 text-neutral-600 cursor-not-allowed border border-white/5"
+                        )}
+                    >
+                        {guardando ? "PROCESANDO" : "CONFIRMAR PEDIDO"} <ChevronRight size={24} strokeWidth={4} className="group-hover:translate-x-2 transition-transform" />
+                    </button>
                 </div>
             </div>
 
             {/* Modal de Stock */}
             {modalStockOpen && productoPendiente && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-in zoom-in-95 duration-200 border border-slate-200">
-                        <div className="flex flex-col items-center text-center">
-                            <div className="w-16 h-16 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center mb-4">
-                                <AlertTriangle size={32} strokeWidth={2.5} />
-                            </div>
-                            <h3 className="text-xl font-bold text-slate-800 mb-2">Advertencia de Stock</h3>
-                            <p className="text-slate-600 mb-6">
-                                El producto <span className="font-bold text-slate-800">"{productoPendiente.producto.descripcion}"</span> no tiene stock suficiente.
-                                <br />
-                                <span className="text-sm mt-2 block bg-amber-50 text-amber-700 py-1 px-2 rounded-lg inline-block">
-                                    Stock Disponible: {productoPendiente.producto.stock}
-                                </span>
-                            </p>
+                <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-[2rem] shadow-2xl max-w-md w-full p-8 animate-in zoom-in-95 duration-200 border border-slate-200 text-center">
+                        <div className="w-20 h-20 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mb-6 mx-auto shadow-sm">
+                            <AlertTriangle size={40} strokeWidth={2.5} />
+                        </div>
+                        <h3 className="text-2xl font-black text-slate-900 mb-2 uppercase tracking-tight">Advertencia de Stock</h3>
+                        <p className="text-slate-500 font-medium mb-8 leading-relaxed">
+                            El producto <span className="text-slate-900 font-bold">"{productoPendiente.producto.descripcion}"</span> no tiene stock disponible suficiente.
+                            <br />
+                            <span className="text-sm mt-3 px-4 py-1.5 bg-amber-100 text-amber-700 rounded-full font-black inline-block uppercase tracking-wider">
+                                Disponible: {productoPendiente.producto.stock}
+                            </span>
+                        </p>
 
-                            <div className="flex gap-3 w-full">
-                                <BtnCancel
-                                    onClick={cancelarAgregarStock}
-                                    className="flex-1"
-                                />
-                                <BtnSave
-                                    label="Agregar Igual"
-                                    onClick={confirmarAgregarStock}
-                                    className="flex-1 justify-center bg-amber-500 hover:bg-amber-600 shadow-amber-500/30"
-                                />
-                            </div>
+                        <div className="flex gap-4">
+                            <button onClick={() => { setModalStockOpen(false); setProductoPendiente(null); }} className="flex-1 py-4 bg-neutral-100 text-neutral-400 font-black rounded-2xl hover:bg-neutral-200 transition-all uppercase tracking-widest text-xs">
+                                CANCELAR
+                            </button>
+                            <button onClick={() => { encolarProducto(productoPendiente.producto, productoPendiente.cantidad, productoPendiente.precio, productoPendiente.existe); setModalStockOpen(false); setProductoPendiente(null); }} className="flex-1 py-4 bg-amber-500 text-white font-black rounded-2xl hover:bg-amber-600 shadow-lg shadow-amber-500/30 transition-all uppercase tracking-widest text-xs">
+                                AGREGAR IGUAL
+                            </button>
                         </div>
                     </div>
                 </div>

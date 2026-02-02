@@ -744,7 +744,7 @@ const NuevoRemito = () => {
                                 {/* EMPTY STATES */}
                                 {((modo === 'VENTA' && !venta) || (modo === 'MANUAL' && itemsManuales.length === 0)) && (
                                     <tr>
-                                        <td colSpan="3" className="py-20 text-center text-slate-400">
+                                        <td colSpan="3" className="py-4 text-center text-slate-400">
                                             <div className="bg-slate-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 opacity-50">
                                                 <ShoppingCart size={32} />
                                             </div>

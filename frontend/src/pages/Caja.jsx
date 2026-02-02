@@ -1,28 +1,17 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
-    Wallet,
-    PlusCircle,
-    ArrowUpCircle,
-    ArrowDownCircle,
-    Search,
-    Filter,
-    RotateCcw,
-    Pencil,
-    Trash2,
-    CheckCircle2,
-    AlertCircle,
-    X,
-    TrendingUp,
-    TrendingDown,
-    Calendar,
-    LogIn,
-    LogOut,
-    Printer
+    Wallet, PlusCircle, ArrowUpCircle, ArrowDownCircle, Search, ListFilter, FilterX,
+    Pencil, Trash2, CheckCircle2, AlertCircle, X, TrendingUp, TrendingDown,
+    Calendar, LogIn, LogOut, Printer, Clock, Activity, DollarSign, History
 } from 'lucide-react';
 import Swal from 'sweetalert2';
-import { BtnClear, BtnEdit, BtnDelete, BtnAction } from '../components/CommonButtons';
+import { BtnAdd, BtnAction } from '../components/CommonButtons';
 import TablePagination from '../components/common/TablePagination';
-import { showDeleteAlert, showSuccessAlert, showErrorAlert, showWarningAlert } from '../utils/alerts';
+import { PremiumTable, TableCell } from '../components/premium/PremiumTable';
+import { BentoCard, BentoGrid, StatCard } from '../components/premium/BentoCard';
+import { SearchInput, PremiumSelect } from '../components/premium/PremiumInput';
+import { showConfirmationAlert, showSuccessAlert, showErrorAlert, showWarningAlert, showDeleteAlert } from '../utils/alerts';
+import { cn } from '../utils/cn';
 
 const STORAGE_KEY = 'table_prefs_caja_items';
 
@@ -37,29 +26,9 @@ const Caja = () => {
     const [totalItems, setTotalItems] = useState(0);
     const [itemsPerPage, setItemsPerPage] = useState(() => {
         const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
-            const parsed = parseInt(saved, 10);
-            return (parsed && parsed > 0) ? parsed : 10;
-        }
-        return 10;
+        const parsed = parseInt(saved, 10);
+        return (parsed && parsed > 0) ? parsed : 10;
     });
-
-    useEffect(() => {
-        // Consultar config solo si no hay preferencia local guardada para inicializar,
-        // pero como ya inicializamos con localStorage o 10, esto es secundario.
-        // Mantenemos la lógica de consultar si no hay nada guardado o para confirmar defaults.
-        if (!localStorage.getItem(STORAGE_KEY)) {
-            fetch('/api/config/obtener/')
-                .then(res => res.json())
-                .then(data => {
-                    if (data.items_por_pagina) setItemsPerPage(data.items_por_pagina);
-                })
-                .catch(error => {
-                    console.error("Error fetching config:", error);
-                    showErrorAlert('Error', 'No se pudo cargar la configuración de la tabla.');
-                });
-        }
-    }, []);
 
     // Filtros
     const [filters, setFilters] = useState({
@@ -115,7 +84,6 @@ const Caja = () => {
             setMovimientos(data.movimientos || []);
             setTotalPages(data.total_pages || 1);
             setTotalItems(data.total || 0);
-            setTotalItems(data.total || 0);
             setSaldoActual(data.saldo_actual || 0);
             setSaldoFiltrado(data.saldo_filtrado !== undefined ? data.saldo_filtrado : (data.saldo_actual || 0));
         } catch (error) {
@@ -130,8 +98,7 @@ const Caja = () => {
         fetchCajaData();
     }, [fetchCajaData]);
 
-    const handleFilterChange = (e) => {
-        const { name, value } = e.target;
+    const handleFilterChange = (name, value) => {
         setFilters(prev => ({ ...prev, [name]: value }));
         setPage(1);
     };
@@ -155,7 +122,7 @@ const Caja = () => {
             const data = await response.json();
 
             if (data.ok || !data.error) {
-                await showSuccessAlert('Éxito', id ? 'Movimiento actualizado' : 'Movimiento creado');
+                await showSuccessAlert('Éxito', id ? 'Movimiento actualizado correctamente' : 'Movimiento registrado con éxito');
                 setShowMovimientoModal(false);
                 setEditingMovimiento(null);
                 setMovimientoForm({ tipo: 'Ingreso', descripcion: '', monto: '' });
@@ -169,9 +136,11 @@ const Caja = () => {
     };
 
     const handleDeleteMovimiento = async (id) => {
-        const result = await showDeleteAlert(
+        const result = await showConfirmationAlert(
             "¿Eliminar movimiento?",
-            "Esta acción eliminará el registro de caja de forma permanente. El saldo se recalculará automáticamente."
+            "Esta acción eliminará el registro de caja de forma permanente. El saldo se recalculará automáticamente.",
+            "SÍ, ELIMINAR",
+            "danger"
         );
 
         if (result.isConfirmed) {
@@ -179,13 +148,13 @@ const Caja = () => {
                 const response = await fetch(`/api/caja/movimiento/${id}/eliminar/`, { method: 'POST' });
                 const data = await response.json();
                 if (data.ok || !data.error) {
-                    await showSuccessAlert('Eliminado', 'El movimiento ha sido eliminado');
+                    await showSuccessAlert('Eliminado', 'El movimiento ha sido eliminado exitosamente');
                     fetchCajaData();
                 } else {
                     showErrorAlert('Error', data.error);
                 }
             } catch (error) {
-                showErrorAlert('Error', 'Ocurrió un error al eliminar');
+                showErrorAlert('Error', 'Ocurrió un error al intentar eliminar');
             }
         }
     };
@@ -200,7 +169,7 @@ const Caja = () => {
             });
             const data = await response.json();
             if (data.ok) {
-                await showSuccessAlert('Caja Abierta', 'Se inició la jornada correctamente');
+                await showSuccessAlert('Caja Abierta', 'Se ha iniciado la jornada de caja correctamente');
                 setShowAperturaModal(false);
                 setMontoApertura('');
                 fetchCajaData();
@@ -223,7 +192,7 @@ const Caja = () => {
             }
         } catch (error) {
             console.error(error);
-            showErrorAlert('Error', 'No se pudo cargar el historial');
+            showErrorAlert('Error', 'No se pudo cargar el historial de cierres');
         } finally {
             setLoadingHistory(false);
         }
@@ -231,7 +200,12 @@ const Caja = () => {
 
     const fetchCierreDetail = async (id) => {
         try {
-            Swal.fire({ title: 'Cargando...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            Swal.fire({
+                title: 'Cargando...',
+                html: '<div className="flex justify-center py-4"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div></div>',
+                showConfirmButton: false,
+                allowOutsideClick: false
+            });
             const res = await fetch(`/api/caja/cierre/${id}/`);
             const data = await res.json();
             Swal.close();
@@ -242,7 +216,7 @@ const Caja = () => {
             }
         } catch (error) {
             console.error(error);
-            showErrorAlert('Error', 'No se pudo cargar el detalle');
+            showErrorAlert('Error', 'No se pudo cargar el detalle del arqueo');
         }
     };
 
@@ -254,7 +228,7 @@ const Caja = () => {
     const submitCierre = async (e) => {
         e.preventDefault();
         if (!montoCierreReal) {
-            showWarningAlert('Atención', 'Debes ingresar un monto');
+            showWarningAlert('Atención', 'Debes ingresar el monto físico contado en caja');
             return;
         }
 
@@ -272,17 +246,17 @@ const Caja = () => {
                 if (data.diferencia !== 0) {
                     const isSobrante = data.diferencia > 0;
                     diffHtml = `
-                        <div class="mt-2 p-2 rounded ${isSobrante ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'} fw-bold border">
+                        <div class="mt-4 p-3 rounded-xl ${isSobrante ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'} font-black border text-center text-sm uppercase tracking-wider">
                             ${isSobrante ? 'Sobrante' : 'Faltante'}: $${Math.abs(data.diferencia).toLocaleString('es-AR')}
                         </div>
                     `;
                 }
-                await showSuccessAlert('Cierre Exitoso', '', 'Entendido', {
+                await showSuccessAlert('Cierre de Caja Exitoso', '', 'Entendido', {
                     html: `
-                        <div class="text-start p-2">
-                            <p className="mb-2"><strong>Saldo Final:</strong> $${data.saldo_total.toLocaleString('es-AR')}</p>
-                            <p className="mb-2"><strong>Ingresos:</strong> $${data.ingresos_dia.toLocaleString('es-AR')}</p>
-                            <p className="mb-2 text-danger"><strong>Egresos:</strong> $${data.egresos_dia.toLocaleString('es-AR')}</p>
+                        <div class="text-start p-2 space-y-3 font-medium text-slate-600">
+                            <div class="flex justify-between border-b pb-2"><span>Saldo Final (Sistema):</span> <span class="font-black text-slate-800">$${data.saldo_total.toLocaleString('es-AR')}</span></div>
+                            <div class="flex justify-between border-b pb-2"><span>Ingresos del Día:</span> <span class="font-black text-emerald-600">$${data.ingresos_dia.toLocaleString('es-AR')}</span></div>
+                            <div class="flex justify-between border-b pb-2"><span>Egresos del Día:</span> <span class="font-black text-rose-600">$${data.egresos_dia.toLocaleString('es-AR')}</span></div>
                             ${diffHtml}
                         </div>
                     `
@@ -296,455 +270,455 @@ const Caja = () => {
         }
     };
 
-    const openEditModal = (mov) => {
-        setEditingMovimiento(mov);
-        setMovimientoForm({
-            tipo: mov.tipo,
-            descripcion: mov.descripcion,
-            monto: mov.monto
-        });
-        setShowMovimientoModal(true);
-    };
+    const columns = [
+        {
+            key: 'fecha',
+            label: 'Fecha / Hora',
+            width: '180px',
+            render: (v) => (
+                <div className="flex flex-col">
+                    <span className="font-bold text-slate-800">{v.split(' ')[0]}</span>
+                    <span className="text-[10px] text-slate-400 font-black font-mono uppercase tracking-widest">{v.split(' ')[1]}</span>
+                </div>
+            )
+        },
+        {
+            key: 'descripcion',
+            label: 'Descripción del Movimiento',
+            render: (v) => <span className="font-bold text-slate-700 text-sm uppercase tracking-tight">{v}</span>
+        },
+        {
+            key: 'tipo',
+            label: 'Tipo',
+            width: '120px',
+            align: 'center',
+            render: (v) => (
+                <span className={cn(
+                    "px-2.5 py-1 rounded-full text-[10px] font-black border uppercase tracking-widest flex items-center justify-center gap-1.5",
+                    v === 'Ingreso' ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-rose-50 text-rose-600 border-rose-200"
+                )}>
+                    {v === 'Ingreso' ? <ArrowUpCircle size={12} strokeWidth={3} /> : <ArrowDownCircle size={12} strokeWidth={3} />}
+                    {v}
+                </span>
+            )
+        },
+        {
+            key: 'monto',
+            label: 'Monto',
+            width: '160px',
+            align: 'right',
+            render: (v, mov) => (
+                <span className={cn(
+                    "font-black text-lg tabular-nums",
+                    mov.tipo === 'Ingreso' ? "text-emerald-600" : "text-rose-600"
+                )}>
+                    {mov.tipo === 'Ingreso' ? '+' : '-'} <TableCell.Currency value={v} />
+                </span>
+            )
+        },
+        {
+            key: 'usuario',
+            label: 'Usuario',
+            width: '150px',
+            render: (v) => (
+                <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-black text-slate-500 border border-slate-200 uppercase">
+                        {v?.charAt(0)}
+                    </div>
+                    <span className="text-xs font-bold text-slate-500 uppercase">{v}</span>
+                </div>
+            )
+        },
+        {
+            key: 'acciones',
+            label: 'Acciones',
+            width: '120px',
+            align: 'right',
+            sortable: false,
+            render: (_, mov) => (
+                <div className="flex justify-end gap-2 group-hover:opacity-100 transition-all">
+                    <button
+                        onClick={() => {
+                            setEditingMovimiento(mov);
+                            setMovimientoForm({ tipo: mov.tipo, descripcion: mov.descripcion, monto: mov.monto });
+                            setShowMovimientoModal(true);
+                        }}
+                        className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
+                    >
+                        <Pencil size={18} />
+                    </button>
+                    <button
+                        onClick={() => handleDeleteMovimiento(mov.id)}
+                        className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
+                    >
+                        <Trash2 size={18} />
+                    </button>
+                </div>
+            )
+        }
+    ];
 
     const formatCurrency = (val) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(val);
 
     return (
-        <div className="container-fluid px-4 pt-4 pb-0 h-100 d-flex flex-column bg-light fade-in" style={{ maxHeight: '100vh', overflow: 'hidden' }}>
-            {/* Compact Header with Integrated Balance */}
-            <div className="d-flex flex-column flex-xl-row justify-content-between align-items-xl-center mb-4 gap-3 border-bottom pb-4">
-                {/* Clean Title Section */}
-                <div>
-                    <h2 className="text-primary fw-bold mb-0" style={{ fontSize: '2rem' }}>
-                        <Wallet className="me-2 inline-block" size={32} />
-                        Caja y Movimientos
-                    </h2>
-                    <div className="d-flex align-items-center gap-2 mt-1">
-                        <span className={`badge rounded-3 ${cajaAbierta ? 'bg-success' : 'bg-danger'} px-4 py-2 fw-bold shadow-sm`}>
-                            {cajaAbierta ? 'SESIÓN ABIERTA' : 'CAJA CERRADA'}
+        <div className="h-[calc(100vh-64px)] overflow-hidden bg-slate-50/50 flex flex-col p-6 gap-6">
+
+            {/* Header */}
+            <header className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+                <div className="space-y-1">
+                    <div className="flex items-center gap-3">
+                        <div className="bg-gradient-to-br from-indigo-600 to-indigo-700 p-2.5 rounded-2xl text-white shadow-lg shadow-indigo-600/20">
+                            <Wallet size={24} strokeWidth={2.5} />
+                        </div>
+                        <h1 className="text-3xl font-black text-slate-900 tracking-tight">Caja y Arqueos</h1>
+                    </div>
+                    <div className="flex items-center gap-3 mt-1 ml-12">
+                        <span className={cn(
+                            "px-3 py-0.5 rounded-full text-[10px] font-black tracking-widest border uppercase",
+                            cajaAbierta ? "bg-emerald-100 text-emerald-700 border-emerald-200" : "bg-rose-100 text-rose-700 border-rose-200"
+                        )}>
+                            {cajaAbierta ? 'SESIÓN ACTIVA' : 'CAJA CERRADA'}
                         </span>
                         {cajaAbierta && cajaData && (
-                            <span className="text-muted small">
-                                Apertura: {cajaData.fecha_apertura} por {cajaData.usuario}
+                            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                                <Clock size={14} className="text-slate-300" />
+                                {cajaData.fecha_apertura} • {cajaData.usuario}
                             </span>
                         )}
                     </div>
                 </div>
 
-                {/* Right Side: Clean Balance + Actions */}
-                <div className="d-flex flex-column flex-md-row align-items-md-center gap-4">
-                    {/* Minimalist Balance */}
-                    <div className="text-end">
-                        <div className="small text-muted fw-bold text-uppercase" style={{ fontSize: '0.7rem', letterSpacing: '0.5px' }}>
-                            {(filters.tipo || filters.busqueda || filters.fecha_desde || filters.fecha_hasta) ? 'SALDO FILTRADO' : 'SALDO ACTUAL'}
-                        </div>
-                        <div className={`h2 mb-0 fw-bold ${((filters.tipo || filters.busqueda || filters.fecha_desde || filters.fecha_hasta) ? saldoFiltrado : saldoActual) >= 0 ? 'text-dark' : 'text-danger'}`}>
-                            {formatCurrency((filters.tipo || filters.busqueda || filters.fecha_desde || filters.fecha_hasta) ? saldoFiltrado : saldoActual)}
-                        </div>
-                    </div>
-
-                    {/* Buttons */}
-                    <div className="d-flex gap-2">
-                        <button onClick={fetchHistory} className="btn btn-white border shadow-sm d-flex align-items-center gap-2 fw-medium px-3 py-2 text-primary hover-bg-primary transition-all">
-                            <RotateCcw size={18} /> Historial Cierres
-                        </button>
-
-                        {!cajaAbierta ? (
-                            <button onClick={() => setShowAperturaModal(true)} className="btn btn-primary shadow-sm d-flex align-items-center gap-2 fw-bold px-3 py-2">
-                                <TrendingUp size={18} /> Abrir
-                            </button>
-                        ) : (
-                            <button onClick={handleCierre} className="btn btn-dark shadow-sm d-flex align-items-center gap-2 fw-bold px-3 py-2">
-                                <TrendingDown size={18} /> Cerrar
-                            </button>
-                        )}
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={fetchHistory}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-xs hover:bg-slate-50 transition-all shadow-sm uppercase tracking-widest"
+                    >
+                        <History size={18} className="text-slate-400" /> Historial Z
+                    </button>
+                    {!cajaAbierta ? (
+                        <BtnAdd
+                            label="ABRIR CAJA"
+                            onClick={() => setShowAperturaModal(true)}
+                            className="!bg-emerald-600 !hover:bg-emerald-700 !shadow-emerald-600/20"
+                        />
+                    ) : (
                         <button
+                            onClick={handleCierre}
+                            className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-xl font-black text-xs tracking-widest hover:bg-slate-800 transition-all shadow-xl shadow-slate-900/20"
+                        >
+                            <LogOut size={18} /> CERRAR CAJA
+                        </button>
+                    )}
+                    {cajaAbierta && (
+                        <BtnAdd
+                            label="NUEVO MOVIMIENTO"
                             onClick={() => {
-                                if (!cajaAbierta) return Swal.fire('Caja Cerrada', 'Debes abrir la caja antes de registrar movimientos', 'warning');
                                 setEditingMovimiento(null);
                                 setMovimientoForm({ tipo: 'Ingreso', descripcion: '', monto: '' });
                                 setShowMovimientoModal(true);
                             }}
-                            className={`btn shadow-sm d-flex align-items-center gap-2 fw-bold px-3 py-2 ${cajaAbierta ? 'btn-primary' : 'btn-secondary'}`}
-                            title={!cajaAbierta ? "Debes abrir la caja para registrar movimientos" : "Registrar nuevo movimiento manual"}
-                        >
-                            <PlusCircle size={18} /> Nuevo Movimiento
-                        </button>
-                    </div>
+                        />
+                    )}
                 </div>
-            </div>
+            </header>
 
+            {/* Stats */}
+            <BentoGrid cols={4}>
+                <StatCard
+                    label="Saldo en Caja"
+                    value={formatCurrency(saldoActual)}
+                    icon={DollarSign}
+                    color="primary"
+                />
+                <StatCard
+                    label="Saldo Filtrado"
+                    value={formatCurrency(saldoFiltrado)}
+                    icon={ListFilter}
+                    color="indigo"
+                />
+                <StatCard
+                    label="Ingresos (Dia)"
+                    value={formatCurrency(movimientos.filter(m => m.tipo === 'Ingreso').reduce((acc, m) => acc + parseFloat(m.monto), 0))}
+                    icon={ArrowUpCircle}
+                    color="success"
+                />
+                <StatCard
+                    label="Egresos (Dia)"
+                    value={formatCurrency(movimientos.filter(m => m.tipo === 'Egreso').reduce((acc, m) => acc + parseFloat(m.monto), 0))}
+                    icon={ArrowDownCircle}
+                    color="error"
+                />
+            </BentoGrid>
 
+            {/* Main Area */}
+            <div className="flex-1 flex flex-col gap-4 min-h-0">
 
-            {/* Filtros */}
-            <div className="card border-0 shadow-sm mb-4">
-                <div className="card-body bg-light rounded">
-                    <div className="row g-3">
-                        <div className="col-md-3">
-                            <div className="input-group">
-                                <span className="input-group-text bg-white border-end-0"><Search size={18} className="text-muted" /></span>
-                                <input
-                                    type="text"
-                                    name="busqueda"
-                                    className="form-control border-start-0"
-                                    placeholder="Buscar..."
-                                    value={filters.busqueda}
-                                    onChange={handleFilterChange}
-                                />
-                            </div>
+                {/* Filtros */}
+                <BentoCard className="p-4 bg-white/80 backdrop-blur-md">
+                    <div className="grid grid-cols-12 gap-4 items-end">
+                        <div className="col-span-12 lg:col-span-4">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-1.5 ml-1">Búsqueda rápida</label>
+                            <SearchInput
+                                placeholder="Concepto, usuario, referencia..."
+                                value={filters.busqueda}
+                                onSearch={(v) => handleFilterChange('busqueda', v)}
+                                className="!py-3"
+                            />
                         </div>
-                        <div className="col-md-2">
+                        <div className="col-span-12 lg:col-span-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-1.5 ml-1">Desde</label>
                             <input
                                 type="date"
-                                name="fecha_desde"
-                                className="form-control"
+                                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none font-bold text-xs text-slate-700"
                                 value={filters.fecha_desde}
-                                onChange={handleFilterChange}
-                                title="Fecha Desde"
+                                onChange={(e) => handleFilterChange('fecha_desde', e.target.value)}
                             />
                         </div>
-                        <div className="col-md-2">
+                        <div className="col-span-12 lg:col-span-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-1.5 ml-1">Hasta</label>
                             <input
                                 type="date"
-                                name="fecha_hasta"
-                                className="form-control"
+                                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none font-bold text-xs text-slate-700"
                                 value={filters.fecha_hasta}
-                                onChange={handleFilterChange}
-                                title="Fecha Hasta"
+                                onChange={(e) => handleFilterChange('fecha_hasta', e.target.value)}
                             />
                         </div>
-                        <div className="col-md-2">
-                            <select
-                                name="tipo"
-                                className="form-select"
+                        <div className="col-span-12 lg:col-span-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-1.5 ml-1">Tipo Mov.</label>
+                            <PremiumSelect
                                 value={filters.tipo}
-                                onChange={handleFilterChange}
+                                onChange={(e) => handleFilterChange('tipo', e.target.value)}
+                                options={[
+                                    { value: '', label: 'TODOS' },
+                                    { value: 'Ingreso', label: 'INGRESOS' },
+                                    { value: 'Egreso', label: 'EGRESOS' }
+                                ]}
+                                className="!py-3 !text-xs !font-black !tracking-widest"
+                            />
+                        </div>
+                        <div className="col-span-12 lg:col-span-4 flex justify-end gap-2">
+                            <button
+                                onClick={resetFilters}
+                                className="p-3 bg-slate-100 text-slate-400 rounded-xl hover:bg-slate-200 transition-all flex items-center justify-center gap-2 font-bold text-xs uppercase tracking-widest min-w-[140px]"
+                                title="Limpiar Filtros"
                             >
-                                <option value="">Tipo</option>
-                                <option value="Ingreso">Ingresos</option>
-                                <option value="Egreso">Egresos</option>
-                            </select>
-                        </div>
-                        <div className="col-md-3">
-                            <div className="d-flex gap-1">
-                                <BtnAction onClick={fetchCajaData} label="Filtrar" icon={Search} color="primary" className="flex-grow-1" />
-                                <BtnClear onClick={resetFilters} label="Limpiar Filtro" className="flex-grow-1" />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Tabla */}
-            <div className="card border-0 shadow mb-0 flex-grow-1 overflow-hidden d-flex flex-column">
-                <div className="card-body p-0 d-flex flex-column overflow-hidden">
-                    <div className="table-responsive flex-grow-1 table-container-fixed">
-                        <table className="table align-middle mb-0">
-                            <thead className="table-dark" style={{ backgroundColor: '#212529', color: '#fff' }}>
-                                <tr>
-                                    <th className="ps-4 py-3 fw-bold" style={{ width: '15%' }}>Fecha / Hora</th>
-                                    <th className="py-3 fw-bold" style={{ width: '35%' }}>Descripción</th>
-                                    <th className="text-center py-3 fw-bold" style={{ width: '10%' }}>Tipo</th>
-                                    <th className="text-end py-3 fw-bold" style={{ width: '15%' }}>Monto</th>
-                                    <th className="py-3 fw-bold" style={{ width: '10%' }}>Usuario</th>
-                                    <th className="text-end pe-4 py-3 fw-bold" style={{ width: '15%' }}>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {loading && movimientos.length === 0 ? (
-                                    <tr>
-                                        <td colSpan="6" className="text-center py-5">
-                                            <div className="spinner-border text-primary" role="status"></div>
-                                        </td>
-                                    </tr>
-                                ) : movimientos.length === 0 ? (
-                                    <tr>
-                                        <td colSpan="6" className="text-center py-5">
-                                            <div className="text-muted opacity-50 mb-3"><Wallet size={48} className="mx-auto" /></div>
-                                            <p className="text-muted mb-0">No se encontraron movimientos disponibles.</p>
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    movimientos.map(mov => (
-                                        <tr key={mov.id} className="border-bottom-0">
-                                            <td className="ps-4 py-3">
-                                                <div className="d-flex align-items-center gap-2">
-                                                    <Calendar size={14} className="text-muted" />
-                                                    <span className="text-dark fw-medium small">{mov.fecha}</span>
-                                                </div>
-                                            </td>
-                                            <td className="py-3">
-                                                <span className="text-dark fw-medium">{mov.descripcion}</span>
-                                            </td>
-                                            <td className="text-center py-3">
-                                                <span className={`badge rounded-pill px-3 py-2 ${mov.tipo === 'Ingreso' ? 'bg-success-subtle text-success border border-success' : 'bg-danger-subtle text-danger border border-danger'}`}>
-                                                    {mov.tipo}
-                                                </span>
-                                            </td>
-                                            <td className="text-end py-3">
-                                                <span className={`fw-bold ${mov.tipo === 'Ingreso' ? 'text-success' : 'text-danger'}`}>
-                                                    {mov.tipo === 'Egreso' ? '-' : '+'} {formatCurrency(mov.monto)}
-                                                </span>
-                                            </td>
-                                            <td className="py-3">
-                                                <div className="d-flex align-items-center gap-2">
-                                                    <div className="bg-primary bg-opacity-10 text-primary rounded-circle small d-flex align-items-center justify-content-center" style={{ width: '24px', height: '24px', fontSize: '10px' }}>
-                                                        {mov.usuario?.charAt(0).toUpperCase()}
-                                                    </div>
-                                                    <span className="small text-muted">{mov.usuario}</span>
-                                                </div>
-                                            </td>
-                                            <td className="pe-4 text-end py-3">
-                                                <div className="d-flex justify-content-end gap-2">
-                                                    <BtnEdit onClick={() => openEditModal(mov)} />
-                                                    <BtnDelete onClick={() => handleDeleteMovimiento(mov.id)} />
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {/* Paginación */}
-                    <TablePagination
-                        currentPage={page}
-                        totalPages={totalPages}
-                        totalItems={totalItems}
-                        itemsPerPage={itemsPerPage}
-                        onPageChange={setPage}
-                        onItemsPerPageChange={(newVal) => {
-                            setItemsPerPage(newVal);
-                            setPage(1);
-                            localStorage.setItem(STORAGE_KEY, newVal);
-                        }}
-                    />
-
-
-                </div >
-            </div >
-
-            {/* MODAL: MOVIMIENTO (Nuevo/Editar) */}
-            {
-                showMovimientoModal && (
-                    <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-                        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-200">
-                            {/* Header */}
-                            <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white">
-                                <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                                    <PlusCircle className="text-blue-600" size={22} strokeWidth={2.5} />
-                                    {editingMovimiento ? 'Editar Movimiento' : 'Nuevo Movimiento'}
-                                </h2>
-                                <button
-                                    onClick={() => setShowMovimientoModal(false)}
-                                    className="text-slate-400 hover:text-red-500 hover:bg-slate-50 p-2 rounded-full transition-all"
-                                >
-                                    <X size={20} />
-                                </button>
-                            </div>
-
-                            <form onSubmit={handleSaveMovimiento} className="p-6 space-y-5">
-                                {/* Tipo de Operación */}
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Tipo de Operación</label>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <button
-                                            type="button"
-                                            onClick={() => setMovimientoForm({ ...movimientoForm, tipo: 'Ingreso' })}
-                                            className={`py-3 rounded-xl flex items-center justify-center gap-2 font-bold transition-all ${movimientoForm.tipo === 'Ingreso'
-                                                ? 'bg-green-600 text-white shadow-lg shadow-green-500/30 scale-[1.02]'
-                                                : 'bg-white border text-slate-400 hover:bg-slate-50'
-                                                }`}
-                                        >
-                                            <ArrowUpCircle size={20} /> Ingreso
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => setMovimientoForm({ ...movimientoForm, tipo: 'Egreso' })}
-                                            className={`py-3 rounded-xl flex items-center justify-center gap-2 font-bold transition-all ${movimientoForm.tipo === 'Egreso'
-                                                ? 'bg-red-500 text-white shadow-lg shadow-red-500/30 scale-[1.02]'
-                                                : 'bg-white border text-slate-400 hover:bg-slate-50'
-                                                }`}
-                                        >
-                                            <ArrowDownCircle size={20} /> Egreso
-                                        </button>
-                                    </div>
-                                </div>
-
-                                {/* Descripción */}
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Descripción</label>
-                                    <input
-                                        type="text"
-                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-medium text-slate-700 placeholder:text-slate-300"
-                                        placeholder="Ej: Cobro a cliente, Pago servicio..."
-                                        required
-                                        value={movimientoForm.descripcion}
-                                        onChange={(e) => setMovimientoForm({ ...movimientoForm, descripcion: e.target.value })}
-                                    />
-                                </div>
-
-                                {/* Monto */}
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Monto</label>
-                                    <div className="relative">
-                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
-                                        <input
-                                            type="number"
-                                            step="0.01"
-                                            className="w-full pl-8 pr-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-bold text-xl text-slate-800 placeholder:text-slate-300"
-                                            placeholder="0.00"
-                                            required
-                                            value={movimientoForm.monto}
-                                            onChange={(e) => setMovimientoForm({ ...movimientoForm, monto: e.target.value })}
-                                        />
-                                    </div>
-                                </div>
-
-                                <button
-                                    type="submit"
-                                    className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg shadow-blue-500/30 transition-all transform hover:-translate-y-0.5 active:scale-[0.98] flex items-center justify-center gap-2 mt-2"
-                                >
-                                    <CheckCircle2 size={24} strokeWidth={2.5} />
-                                    {editingMovimiento ? 'Actualizar Movimiento' : 'Guardar Movimiento'}
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                )
-            }
-
-            {/* MODAL: APERTURA */}
-            {
-                showAperturaModal && (
-                    <div className="d-flex align-items-center justify-content-center" style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 1100 }}>
-                        <div className="rounded-4 shadow-lg scale-in" style={{ width: '450px', overflow: 'hidden', backgroundColor: '#ffffff', border: 'none' }}>
-                            <div className="px-4 py-3 d-flex justify-content-between align-items-center bg-primary text-white">
-                                <h5 className="mb-0 fw-bold d-flex align-items-center gap-2">
-                                    <LogIn size={20} />
-                                    Apertura de Caja Diaria
-                                </h5>
-                                <button onClick={() => setShowAperturaModal(false)} className="btn-close btn-close-white shadow-none"></button>
-                            </div>
-                            <form onSubmit={handleApertura}>
-                                <div className="p-4">
-                                    <p className="text-secondary mb-3">Ingrese el monto inicial (cambio) con el que inicia el día.</p>
-                                    <div className="mb-3">
-                                        <label className="form-label fw-bold text-dark">Monto Inicial <span className="text-danger">*</span></label>
-                                        <input
-                                            type="number"
-                                            step="0.01"
-                                            className="form-control form-control-lg border shadow-none"
-                                            placeholder="0.00"
-                                            autoFocus
-                                            required
-                                            value={montoApertura}
-                                            onChange={(e) => setMontoApertura(e.target.value)}
-                                        />
-                                    </div>
-                                </div>
-                                <div className="px-4 py-3 bg-light d-flex justify-content-end gap-2 border-top">
-                                    <button type="button" onClick={() => setShowAperturaModal(false)} className="btn btn-secondary px-4 fw-medium border-0 shadow-sm" style={{ backgroundColor: '#6c757d' }}>
-                                        Cancelar
-                                    </button>
-                                    <button type="submit" className="btn btn-primary px-4 fw-bold shadow-sm d-flex align-items-center gap-2">
-                                        <CheckCircle2 size={18} /> Abrir Caja
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                )
-            }
-
-
-            {/* MODAL: CIERRE */}
-            {
-                showCierreModal && (
-                    <div className="d-flex align-items-center justify-content-center" style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 1100 }}>
-                        <div className="rounded-4 shadow-lg scale-in" style={{ width: '450px', overflow: 'hidden', backgroundColor: '#ffffff', border: 'none' }}>
-                            <div className="px-4 py-3 d-flex justify-content-between align-items-center bg-primary text-white">
-                                <h5 className="mb-0 fw-bold d-flex align-items-center gap-2">
-                                    <LogOut size={20} />
-                                    Cierre de Caja (Arqueo)
-                                </h5>
-                                <button onClick={() => setShowCierreModal(false)} className="btn-close btn-close-white shadow-none"></button>
-                            </div>
-                            <form onSubmit={submitCierre}>
-                                <div className="p-4">
-                                    <p className="text-secondary mb-3">Por favor, ingresá el dinero físico total que hay en caja actualmente para realizar el arqueo.</p>
-                                    <div className="mb-3">
-                                        <label className="form-label fw-bold text-dark">Monto Físico en Caja <span className="text-danger">*</span></label>
-                                        <input
-                                            type="number"
-                                            step="0.01"
-                                            className="form-control form-control-lg border shadow-none"
-                                            placeholder="0.00"
-                                            autoFocus
-                                            required
-                                            value={montoCierreReal}
-                                            onChange={(e) => setMontoCierreReal(e.target.value)}
-                                        />
-                                    </div>
-                                </div>
-                                <div className="px-4 py-3 bg-light d-flex justify-content-end gap-2 border-top">
-                                    <button type="button" onClick={() => setShowCierreModal(false)} className="btn btn-secondary px-4 fw-medium border-0 shadow-sm" style={{ backgroundColor: '#6c757d' }}>
-                                        Cancelar
-                                    </button>
-                                    <button type="submit" className="btn btn-primary px-4 fw-bold shadow-sm d-flex align-items-center gap-2">
-                                        <TrendingDown size={18} /> Cerrar Caja
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                )
-            }
-
-            {/* MODAL: HISTORIAL CIERRES */}
-            {showHistoryModal && (
-                <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-200 flex flex-col max-h-[90vh]">
-                        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white">
-                            <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                                <RotateCcw className="text-blue-600" size={22} strokeWidth={2.5} />
-                                Historial de Cierres (Z)
-                            </h2>
-                            <button onClick={() => setShowHistoryModal(false)} className="text-slate-400 hover:text-red-500 hover:bg-slate-50 p-2 rounded-full transition-all">
-                                <X size={20} />
+                                <FilterX size={18} strokeWidth={2.5} /> Limpiar Filtros
                             </button>
                         </div>
-                        <div className="flex-grow overflow-auto p-4">
-                            <table className="table align-middle">
-                                <thead className="table-light">
+                    </div>
+                </BentoCard>
+
+                {/* Tabla */}
+                <div className="flex-1 flex flex-col min-h-0">
+                    <PremiumTable
+                        columns={columns}
+                        data={movimientos}
+                        loading={loading}
+                        className="flex-1 shadow-lg"
+                    />
+                    <div className="bg-white border-x border-b border-slate-200 rounded-b-[2rem] px-6 py-1 shadow-premium">
+                        <TablePagination
+                            currentPage={page}
+                            totalPages={totalPages}
+                            totalItems={totalItems}
+                            itemsPerPage={itemsPerPage}
+                            onPageChange={setPage}
+                            onItemsPerPageChange={(newVal) => {
+                                setItemsPerPage(newVal);
+                                setPage(1);
+                                localStorage.setItem(STORAGE_KEY, newVal);
+                            }}
+                        />
+                    </div>
+                </div>
+            </div>
+
+            {/* MODALES */}
+
+            {/* Modal: Apertura */}
+            {showAperturaModal && (
+                <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden border border-slate-200">
+                        <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 p-8 text-white relative">
+                            <button onClick={() => setShowAperturaModal(false)} className="absolute right-6 top-6 text-white/50 hover:text-white transition-colors"><X size={24} /></button>
+                            <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mb-4"><LogIn size={32} strokeWidth={2.5} /></div>
+                            <h2 className="text-2xl font-black tracking-tight">Iniciar Jornada</h2>
+                            <p className="text-emerald-100 font-medium text-sm mt-1">Ingrese el monto inicial contado para abrir caja.</p>
+                        </div>
+                        <form onSubmit={handleApertura} className="p-8 space-y-6">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">DINERO INICIAL ($)</label>
+                                <div className="relative">
+                                    <DollarSign className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300" size={24} />
+                                    <input
+                                        type="number" step="0.01" required autoFocus
+                                        className="w-full pl-14 pr-6 py-5 bg-slate-50 border-2 border-slate-100 rounded-3xl text-3xl font-black text-slate-800 focus:border-emerald-500 focus:bg-white transition-all outline-none"
+                                        placeholder="0.00"
+                                        value={montoApertura}
+                                        onChange={(e) => setMontoApertura(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+                            <button className="w-full py-5 bg-emerald-600 text-white rounded-3xl font-black text-sm tracking-[0.15em] shadow-xl shadow-emerald-600/20 hover:bg-emerald-700 active:scale-[0.98] transition-all uppercase">
+                                CONFIRMAR APERTURA
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal: Cierre */}
+            {showCierreModal && (
+                <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden border border-slate-200">
+                        <div className="bg-slate-900 p-8 text-white relative">
+                            <button onClick={() => setShowCierreModal(false)} className="absolute right-6 top-6 text-white/50 hover:text-white transition-colors"><X size={24} /></button>
+                            <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center mb-4"><LogOut size={32} strokeWidth={2.5} /></div>
+                            <h2 className="text-2xl font-black tracking-tight">Arqueo de Caja</h2>
+                            <p className="text-slate-400 font-medium text-sm mt-1">Cuente el dinero físico y reporte el total.</p>
+                        </div>
+                        <form onSubmit={submitCierre} className="p-8 space-y-6">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">MONTO FÍSICO CONTADO ($)</label>
+                                <div className="relative">
+                                    <DollarSign className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300" size={24} />
+                                    <input
+                                        type="number" step="0.01" required autoFocus
+                                        className="w-full pl-14 pr-6 py-5 bg-slate-50 border-2 border-slate-100 rounded-3xl text-3xl font-black text-slate-800 focus:border-slate-500 focus:bg-white transition-all outline-none"
+                                        placeholder="0.00"
+                                        value={montoCierreReal}
+                                        onChange={(e) => setMontoCierreReal(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+                            <button className="w-full py-5 bg-slate-900 text-white rounded-3xl font-black text-sm tracking-[0.15em] shadow-xl shadow-slate-900/20 hover:bg-slate-800 active:scale-[0.98] transition-all uppercase">
+                                PROCESAR CIERRE (Z)
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal: Movimiento Manual */}
+            {showMovimientoModal && (
+                <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden border border-slate-200">
+                        <div className="p-8 border-b border-slate-50 flex flex-col gap-4">
+                            <div className="flex justify-between items-start">
+                                <div className="bg-indigo-50 p-3 rounded-2xl text-indigo-600">
+                                    <PlusCircle size={32} strokeWidth={2.5} />
+                                </div>
+                                <button onClick={() => setShowMovimientoModal(false)} className="text-slate-300 hover:text-rose-500 transition-colors bg-slate-50 p-2 rounded-full"><X size={20} /></button>
+                            </div>
+                            <div>
+                                <h1 className="text-2xl font-black text-slate-900 tracking-tight">{editingMovimiento ? 'Editar Movimiento' : 'Nuevo Movimiento'}</h1>
+                                <p className="text-slate-400 text-sm font-medium">Registro manual de dinero en efectivo.</p>
+                            </div>
+                        </div>
+
+                        <form onSubmit={handleSaveMovimiento} className="p-8 space-y-6">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">TIPO DE MOVIMIENTO</label>
+                                <div className="grid grid-cols-2 gap-3 p-1.5 bg-slate-50 rounded-2xl border-2 border-slate-100">
+                                    <button
+                                        type="button"
+                                        onClick={() => setMovimientoForm({ ...movimientoForm, tipo: 'Ingreso' })}
+                                        className={cn(
+                                            "py-3 rounded-xl font-black text-xs tracking-widest transition-all",
+                                            movimientoForm.tipo === 'Ingreso' ? "bg-white text-emerald-600 shadow-md scale-[1.02] border border-emerald-100" : "text-slate-400 hover:text-slate-600"
+                                        )}
+                                    >
+                                        <ArrowUpCircle size={16} className="inline-block mr-2" strokeWidth={3} /> INGRESO
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setMovimientoForm({ ...movimientoForm, tipo: 'Egreso' })}
+                                        className={cn(
+                                            "py-3 rounded-xl font-black text-xs tracking-widest transition-all",
+                                            movimientoForm.tipo === 'Egreso' ? "bg-white text-rose-600 shadow-md scale-[1.02] border border-rose-100" : "text-slate-400 hover:text-slate-600"
+                                        )}
+                                    >
+                                        <ArrowDownCircle size={16} className="inline-block mr-2" strokeWidth={3} /> EGRESO
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">CONCEPTO / DESCRIPCIÓN</label>
+                                <input
+                                    type="text" required
+                                    className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl text-slate-800 font-bold focus:border-indigo-500 focus:bg-white transition-all outline-none italic placeholder:text-slate-300"
+                                    placeholder="Motivo del movimiento..."
+                                    value={movimientoForm.descripcion}
+                                    onChange={(e) => setMovimientoForm({ ...movimientoForm, descripcion: e.target.value })}
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">MONTO ($)</label>
+                                <input
+                                    type="number" step="0.01" required
+                                    className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl text-2xl font-black text-slate-800 focus:border-indigo-500 focus:bg-white transition-all outline-none tabular-nums"
+                                    placeholder="0.00"
+                                    value={movimientoForm.monto}
+                                    onChange={(e) => setMovimientoForm({ ...movimientoForm, monto: e.target.value })}
+                                />
+                            </div>
+
+                            <button className="w-full py-5 bg-indigo-600 text-white rounded-3xl font-black text-sm tracking-[0.15em] shadow-xl shadow-indigo-600/20 hover:bg-indigo-700 active:scale-[0.98] transition-all uppercase mt-2">
+                                {editingMovimiento ? 'ACTUALIZAR REGISTRO' : 'REGISTRAR MOVIMIENTO'}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal: Historial de Cierres */}
+            {showHistoryModal && (
+                <div className="fixed inset-0 z-[2000] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-[3rem] shadow-2xl w-full max-w-5xl h-[85vh] overflow-hidden border border-slate-200 flex flex-col">
+                        <div className="p-8 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
+                            <div className="flex items-center gap-4">
+                                <div className="bg-white p-3 rounded-2xl shadow-sm text-indigo-600 border border-slate-100"><History size={24} /></div>
+                                <div>
+                                    <h1 className="text-2xl font-black text-slate-900 tracking-tight">Historial de Cierres de Caja</h1>
+                                    <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1">Reportes Z detallados por jornada</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setShowHistoryModal(false)} className="text-slate-300 hover:text-rose-500 transition-colors bg-white p-3 rounded-2xl shadow-sm border border-slate-100"><X size={24} /></button>
+                        </div>
+                        <div className="flex-1 overflow-auto p-0">
+                            <table className="w-full text-left">
+                                <thead className="bg-slate-900 text-slate-400 sticky top-0 z-10">
                                     <tr>
-                                        <th>Fecha Cierre</th>
-                                        <th>Usuario</th>
-                                        <th className="text-end">Monto Sistema</th>
-                                        <th className="text-end">Monto Real</th>
-                                        <th className="text-end">Diferencia</th>
-                                        <th className="text-end">Acciones</th>
+                                        <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest">FECHA CIERRE</th>
+                                        <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest">RESPONSABLE</th>
+                                        <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-right">SISTEMA</th>
+                                        <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-right">EFECTIVO</th>
+                                        <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-right">DIFERENCIA</th>
+                                        <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-right">ACCIONES</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody className="divide-y divide-slate-100 font-medium text-slate-600">
                                     {loadingHistory ? (
-                                        <tr><td colSpan="6" className="text-center py-4"><div className="spinner-border text-primary" /></td></tr>
+                                        <tr><td colSpan="6" className="text-center py-20"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div></td></tr>
                                     ) : historyData.length === 0 ? (
-                                        <tr><td colSpan="6" className="text-center py-4 text-muted">No hay cierres registrados</td></tr>
+                                        <tr><td colSpan="6" className="text-center py-20 font-black text-slate-300 uppercase italic">No se registran cierres históricos</td></tr>
                                     ) : (
                                         historyData.map(c => (
-                                            <tr key={c.id}>
-                                                <td>{c.fecha_cierre}</td>
-                                                <td>{c.usuario}</td>
-                                                <td className="text-end fw-medium">${c.monto_sistema.toLocaleString('es-AR')}</td>
-                                                <td className="text-end fw-bold">${c.monto_real.toLocaleString('es-AR')}</td>
-                                                <td className={`text-end fw-bold ${c.diferencia === 0 ? 'text-muted' : c.diferencia > 0 ? 'text-success' : 'text-danger'}`}>
+                                            <tr key={c.id} className="hover:bg-slate-50 transition-colors group">
+                                                <td className="px-8 py-4 font-black text-slate-800">{c.fecha_cierre}</td>
+                                                <td className="px-8 py-4 uppercase text-xs font-black tracking-widest text-slate-400">{c.usuario}</td>
+                                                <td className="px-8 py-4 text-right font-bold tabular-nums">${c.monto_sistema.toLocaleString('es-AR')}</td>
+                                                <td className="px-8 py-4 text-right font-black text-slate-900 tabular-nums">${c.monto_real.toLocaleString('es-AR')}</td>
+                                                <td className={cn(
+                                                    "px-8 py-4 text-right font-black tabular-nums",
+                                                    c.diferencia === 0 ? "text-slate-300" : c.diferencia > 0 ? "text-emerald-500" : "text-rose-500"
+                                                )}>
                                                     {c.diferencia > 0 ? '+' : ''}{c.diferencia.toLocaleString('es-AR')}
                                                 </td>
-                                                <td className="text-end">
-                                                    <button onClick={() => fetchCierreDetail(c.id)} className="btn btn-sm btn-outline-primary shadow-sm hover:translate-y-[-1px] transition-all">
-                                                        <Search size={16} /> Ver Detalle
-                                                    </button>
+                                                <td className="px-8 py-4 text-right">
+                                                    <button onClick={() => fetchCierreDetail(c.id)} className="px-4 py-2 bg-indigo-50 text-indigo-600 rounded-xl font-black text-[10px] tracking-[0.15em] hover:bg-indigo-600 hover:text-white transition-all">DETALLES</button>
                                                 </td>
                                             </tr>
                                         ))
@@ -756,103 +730,59 @@ const Caja = () => {
                 </div>
             )}
 
-            {/* MODAL: DETALLE DE CIERRE (ARQUEO) */}
+            {/* Modal: Detalle de Cierre (Mini-Arqueo) */}
             {showDetailModal && selectedCierre && (
-                <div className="fixed inset-0 z-[1200] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-200 flex flex-col max-h-[95vh]">
-                        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-gray-50">
-                            <div>
-                                <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                                    <CheckCircle2 className="text-green-600" size={22} strokeWidth={2.5} />
-                                    Detalle de Cierre #{selectedCierre.caja.id}
-                                </h2>
-                                <p className="text-sm text-slate-500 ms-8">Cerrado el {selectedCierre.caja.fecha_cierre} por {selectedCierre.caja.usuario}</p>
+                <div className="fixed inset-0 z-[2100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-[3rem] shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden border border-slate-200 flex flex-col">
+                        <div className="p-8 border-b border-slate-50 flex justify-between items-center bg-slate-900 text-white">
+                            <div className="flex items-center gap-4">
+                                <div className="bg-white/10 p-3 rounded-2xl text-emerald-400"><CheckCircle2 size={24} /></div>
+                                <div>
+                                    <h1 className="text-2xl font-black tracking-tight">Resumen de Jornada #{selectedCierre.caja.id}</h1>
+                                    <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-1">Cierre: {selectedCierre.caja.fecha_cierre} • {selectedCierre.caja.usuario}</p>
+                                </div>
                             </div>
-                            <button onClick={() => setShowDetailModal(false)} className="text-slate-400 hover:text-red-500 hover:bg-slate-50 p-2 rounded-full transition-all">
-                                <X size={20} />
-                            </button>
+                            <button onClick={() => setShowDetailModal(false)} className="text-white/30 hover:text-white transition-colors bg-white/5 p-3 rounded-2xl"><X size={24} /></button>
                         </div>
 
-                        <div className="flex-grow overflow-auto p-6 bg-slate-50/50">
-                            {/* Kards Summary */}
-                            <div className="row g-3 mb-4">
-                                <div className="col-md-3">
-                                    <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm h-100">
-                                        <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Monto Apertura</div>
-                                        <div className="text-2xl font-bold text-slate-700">${selectedCierre.caja.monto_apertura.toLocaleString('es-AR')}</div>
-                                    </div>
+                        <div className="flex-1 overflow-auto p-10 bg-slate-50/30 font-medium">
+                            <div className="grid grid-cols-3 gap-6 mb-10">
+                                <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex flex-col gap-1 items-center">
+                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">INGRESOS TOTALES</span>
+                                    <span className="text-2xl font-black text-emerald-600 font-mono tracking-tight">${selectedCierre.ingresos_totales.toLocaleString('es-AR')}</span>
                                 </div>
-                                <div className="col-md-3">
-                                    <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm h-100">
-                                        <div className="text-xs font-bold text-green-500 uppercase tracking-wider mb-1">Ingresos</div>
-                                        <div className="text-2xl font-bold text-green-600">+${selectedCierre.resumen.ingresos.toLocaleString('es-AR')}</div>
-                                    </div>
+                                <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex flex-col gap-1 items-center">
+                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">EGRESOS TOTALES</span>
+                                    <span className="text-2xl font-black text-rose-500 font-mono tracking-tight">${selectedCierre.egresos_totales.toLocaleString('es-AR')}</span>
                                 </div>
-                                <div className="col-md-3">
-                                    <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm h-100">
-                                        <div className="text-xs font-bold text-red-500 uppercase tracking-wider mb-1">Egresos</div>
-                                        <div className="text-2xl font-bold text-red-600">-${Math.abs(selectedCierre.resumen.egresos).toLocaleString('es-AR')}</div>
-                                    </div>
-                                </div>
-                                <div className="col-md-3">
-                                    <div className="bg-slate-800 p-3 rounded-xl border border-slate-700 shadow-sm h-100 text-white">
-                                        <div className="text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">Saldo Sistema</div>
-                                        <div className="text-2xl font-bold">${selectedCierre.caja.monto_sistema.toLocaleString('es-AR')}</div>
-                                    </div>
+                                <div className="bg-indigo-600 p-6 rounded-3xl shadow-xl shadow-indigo-600/20 flex flex-col gap-1 items-center text-white">
+                                    <span className="text-[10px] font-black text-white/50 uppercase tracking-widest">DIFERENCIA (Z)</span>
+                                    <span className="text-2xl font-black font-mono tracking-tight">${(selectedCierre.caja.monto_real - selectedCierre.caja.monto_sistema).toLocaleString('es-AR')}</span>
                                 </div>
                             </div>
 
-                            <div className="row g-3 mb-4">
-                                <div className="col-md-6">
-                                    <div className={`p-4 rounded-xl border h-100 flex items-center justify-between ${selectedCierre.caja.diferencia === 0 ? 'bg-white border-slate-200' : selectedCierre.caja.diferencia > 0 ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-                                        <div>
-                                            <div className="text-sm font-bold text-slate-500 uppercase tracking-wider">Resultado del Arqueo</div>
-                                            <div className="text-3xl font-bold text-slate-800 mt-1">${selectedCierre.caja.monto_real.toLocaleString('es-AR')}</div>
-                                            <div className="text-sm text-slate-500">Monto Real en Caja</div>
-                                        </div>
-                                        <div className="text-end">
-                                            <div className={`text-lg font-bold ${selectedCierre.caja.diferencia === 0 ? 'text-muted' : selectedCierre.caja.diferencia > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                                {selectedCierre.caja.diferencia > 0 ? '+' : ''}{selectedCierre.caja.diferencia.toLocaleString('es-AR')}
-                                            </div>
-                                            <div className="text-xs font-bold uppercase text-slate-400">Diferencia</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="col-md-6">
-                                    <div className="bg-white p-4 rounded-xl border border-slate-200 h-100">
-                                        <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Observaciones</div>
-                                        <p className="text-slate-600 italic">"{selectedCierre.caja.observaciones || 'Sin observaciones'}"</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                                <div className="px-4 py-3 bg-slate-50 border-b border-slate-200 font-bold text-slate-700 text-sm uppercase tracking-wider">
-                                    Detalle de Movimientos
-                                </div>
-                                <table className="table fs-sm mb-0">
-                                    <thead>
+                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                                <Activity size={14} className="text-indigo-500" /> Detalle de Movimientos de la Jornada
+                            </h3>
+                            <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+                                <table className="w-full text-left">
+                                    <thead className="bg-slate-50 border-b border-slate-100">
                                         <tr>
-                                            <th>Hora</th>
-                                            <th>Descripción</th>
-                                            <th>Tipo</th>
-                                            <th>Usuario</th>
-                                            <th className="text-end">Monto</th>
+                                            <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">HORA</th>
+                                            <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">DESCRIPCIÓN</th>
+                                            <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">MONTO</th>
                                         </tr>
                                     </thead>
-                                    <tbody>
-                                        {selectedCierre.movimientos.map(m => (
-                                            <tr key={m.id}>
-                                                <td>{m.fecha}</td>
-                                                <td>{m.descripcion}</td>
-                                                <td>
-                                                    <span className={`badge rounded-pill ${m.tipo === 'Ingreso' ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50'}`}>
-                                                        {m.tipo}
-                                                    </span>
-                                                </td>
-                                                <td>{m.usuario}</td>
-                                                <td className={`text-end fw-bold ${m.tipo === 'Ingreso' ? 'text-green-600' : 'text-red-600'}`}>
-                                                    {m.tipo === 'Egreso' ? '-' : '+'}${m.monto.toLocaleString('es-AR')}
+                                    <tbody className="divide-y divide-slate-50 text-sm">
+                                        {selectedCierre.movimientos?.map(m => (
+                                            <tr key={m.id} className="hover:bg-slate-50/50">
+                                                <td className="px-6 py-3 text-[10px] font-black text-slate-300 font-mono italic">{m.fecha.split(' ')[1]}</td>
+                                                <td className="px-6 py-3 font-bold text-slate-700 uppercase">{m.descripcion}</td>
+                                                <td className={cn(
+                                                    "px-6 py-3 text-right font-black",
+                                                    m.tipo === 'Ingreso' ? "text-emerald-500" : "text-rose-500"
+                                                )}>
+                                                    {m.tipo === 'Ingreso' ? '+' : '-'} ${m.monto.toLocaleString('es-AR')}
                                                 </td>
                                             </tr>
                                         ))}
@@ -860,27 +790,10 @@ const Caja = () => {
                                 </table>
                             </div>
                         </div>
-
-                        <div className="p-4 bg-white border-t border-slate-100 flex justify-end gap-2">
-                            <button onClick={() => window.print()} className="btn btn-outline-secondary d-flex align-items-center gap-2">
-                                <Printer size={18} /> Imprimir
-                            </button>
-                            <button onClick={() => setShowDetailModal(false)} className="btn btn-primary px-5">
-                                Cerrar
-                            </button>
-                        </div>
                     </div>
                 </div>
             )}
-
-            <style>{`
-                .hover-bg-primary:hover { background-color: #e7f1ff !important; color: #0d6efd !important; }
-                .hover-bg-danger:hover { background-color: #f8d7da !important; color: #dc3545 !important; }
-                .input-group-merge .form-control:focus { border-color: #dee2e6; }
-                .tracking-wider { letter-spacing: 0.1em; }
-                .pagination .page-link:hover { background-color: #f8f9fa; }
-            `}</style>
-        </div >
+        </div>
     );
 };
 

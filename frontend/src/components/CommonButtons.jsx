@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pencil, Trash2, Plus, Search, Filter, Download, Printer, FileText, Check, X, ArrowLeft, ArrowUpRight, RotateCcw, Eraser } from 'lucide-react';
+import { Pencil, Trash2, Plus, Search, ListFilter, Download, Printer, FileText, Check, X, ArrowLeft, ArrowUpRight, FilterX, Eraser } from 'lucide-react';
 
 // Base styles for consistency
 const BASE_BTN_CLASS = "btn shadow-sm rounded-2 d-inline-flex align-items-center justify-content-center gap-2 transition-all fw-bold";
@@ -195,11 +195,11 @@ export const BtnBack = ({ onClick, label = "Volver", className = "" }) => (
 /**
  * For specialized actions like "Asientos", "Balance" that don't fit standard CRUD.
  */
-export const BtnAction = ({ label, icon: Icon, onClick, color = "primary", className = "", ...rest }) => {
-    const style = gradientStyles[color] || gradientStyles.primary;
+export const BtnAction = ({ label, icon: Icon, onClick, color = "primary", className = "", style = {}, ...rest }) => {
+    const defaultStyle = gradientStyles[color] || gradientStyles.primary;
     return (
         <button type="button" className={`${BASE_BTN_CLASS} border-0 ${className}`}
-            style={{ background: style.bg, color: style.text }}
+            style={{ background: defaultStyle.bg, color: defaultStyle.text, ...style }}
             onClick={onClick} {...rest}>
             {Icon && (typeof Icon === 'function' || typeof Icon === 'object' ? <Icon size={18} /> : null)}
             {label}
@@ -215,7 +215,7 @@ export const BtnClear = ({ onClick, label = "Limpiar Filtros", className = "" })
         style={{ height: '38px', backgroundColor: '#e2f9e3' }}
         title="Limpiar filtros"
     >
-        <Eraser size={16} />
+        <FilterX size={16} />
         {label}
     </button>
 );

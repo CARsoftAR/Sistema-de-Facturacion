@@ -56,6 +56,7 @@ def api_config_obtener(request):
             'papel_impresion': empresa.papel_impresion,
             'pie_factura': empresa.pie_factura,
             'ocultar_barra_scroll': empresa.ocultar_barra_scroll,
+            'ocultar_scroll_tablas': empresa.ocultar_scroll_tablas,
             'ancho_contenido': empresa.ancho_contenido,
             'auto_foco_codigo_barras': empresa.auto_foco_codigo_barras,
             'comportamiento_codigo_barras': empresa.comportamiento_codigo_barras,
@@ -146,6 +147,7 @@ def api_config_guardar(request):
         if 'papel_impresion' in data: empresa.papel_impresion = data['papel_impresion']
         if 'pie_factura' in data: empresa.pie_factura = data['pie_factura']
         if 'ocultar_barra_scroll' in data: empresa.ocultar_barra_scroll = data['ocultar_barra_scroll']
+        if 'ocultar_scroll_tablas' in data: empresa.ocultar_scroll_tablas = data['ocultar_scroll_tablas']
         if 'ancho_contenido' in data: empresa.ancho_contenido = data['ancho_contenido']
         if 'auto_foco_codigo_barras' in data: empresa.auto_foco_codigo_barras = data['auto_foco_codigo_barras']
         if 'comportamiento_codigo_barras' in data: empresa.comportamiento_codigo_barras = data['comportamiento_codigo_barras']

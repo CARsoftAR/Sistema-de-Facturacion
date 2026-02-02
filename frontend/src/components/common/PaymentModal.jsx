@@ -1,455 +1,382 @@
-import React, { useState, useEffect } from 'react';
-import { X, Check, DollarSign, CreditCard, FileText, Calendar, User, Plus, Truck } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+    X, Check, DollarSign, CreditCard, FileText,
+    Calendar, User, Plus, Truck, ChevronRight,
+    Zap, Receipt, Banknote, Landmark, ShieldCheck, Activity
+} from 'lucide-react';
+import { cn } from '../../utils/cn';
 
 const PaymentModal = ({
     isOpen,
     onClose,
     onConfirm,
-    total, // Total esperado (venta) o deuda total (ctacte)
+    total, // Total esperado (numérico)
     mode = 'sale', // 'sale' | 'payment' | 'purchase'
     clientName = '',
-    allowCtaCte = true, // Legacy prop, prefer allowedMethods
-    allowedMethods = ['EFECTIVO', 'TARJETA', 'CHEQUE', 'CTACTE'], // Control specific methods
+    allowedMethods = ['EFECTIVO', 'TARJETA', 'CHEQUE', 'CTACTE'],
     initialMethod = 'EFECTIVO',
-    onMethodChange = null // Callback to parent
+    onMethodChange = null
 }) => {
     if (!isOpen) return null;
 
-    const [amount, setAmount] = useState(mode === 'sale' ? total : '');
+    // --- FORMATEADORES ---
+    const formatToAR = useCallback((val) => {
+        if (val === undefined || val === null || val === '') return '0,00';
+        const num = typeof val === 'string' ? parseFloat(val.toString().replace(/\./g, '').replace(',', '.')) : val;
+        if (isNaN(num)) return '0,00';
+        return new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
+    }, []);
+
+    const parseFromAR = useCallback((str) => {
+        if (!str) return 0;
+        const clean = str.toString().replace(/\./g, '').replace(',', '.');
+        return parseFloat(clean) || 0;
+    }, []);
+
+    // --- ESTADOS ---
+    const [amount, setAmount] = useState('');
     const [method, setMethod] = useState(initialMethod);
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [description, setDescription] = useState('');
-
-    // Detalles por método
     const [transferRef, setTransferRef] = useState('');
     const [cardDetails, setCardDetails] = useState({ last4: '', installments: '1' });
-    const [chequeDetails, setChequeDetails] = useState({
-        bank: '',
-        number: '',
-        emissionDate: new Date().toISOString().split('T')[0],
-        paymentDate: new Date().toISOString().split('T')[0], // a.k.a Fecha Vto
-        signer: ''
-    });
-    const [perceptions, setPerceptions] = useState({ iva: 0, iibb: 0 });
-    const [retentions, setRetentions] = useState({ iva: 0, iibb: 0 });
-
+    const [perceptions, setPerceptions] = useState({ iva: '0,00', iibb: '0,00' });
+    const [retentions, setRetentions] = useState({ iva: '0,00', iibb: '0,00' });
     const [isSaving, setIsSaving] = useState(false);
 
+    // --- INICIALIZACIÓN ---
     useEffect(() => {
         if (isOpen) {
             setMethod(initialMethod);
-            const finalTotal = total + perceptions.iva + perceptions.iibb - retentions.iva - retentions.iibb;
+            setPerceptions({ iva: '0,00', iibb: '0,00' });
+            setRetentions({ iva: '0,00', iibb: '0,00' });
             if (mode === 'sale' || mode === 'purchase') {
-                setAmount(finalTotal);
+                setAmount(formatToAR(total));
             } else {
-                setAmount('');
+                setAmount('0,00');
             }
-            setDate(new Date().toISOString().split('T')[0]);
             setIsSaving(false);
-            setTransferRef('');
-            setCardDetails({ last4: '', installments: '1' });
-            setChequeDetails({
-                bank: '',
-                number: '',
-                emissionDate: new Date().toISOString().split('T')[0],
-                paymentDate: new Date().toISOString().split('T')[0],
-                signer: ''
-            });
-            setPerceptions({ iva: 0, iibb: 0 });
-            setRetentions({ iva: 0, iibb: 0 });
             setDescription('');
         }
-    }, [isOpen, total, mode, initialMethod]);
+    }, [isOpen, total, mode, initialMethod, formatToAR]);
 
-    // Update amount when taxes change ONLY IF it's a new operation
+    // --- CÁLCULO DE TOTAL AUTOMÁTICO ---
     useEffect(() => {
         if (isOpen && (mode === 'sale' || mode === 'purchase')) {
-            const finalTotal = total + perceptions.iva + perceptions.iibb - retentions.iva - retentions.iibb;
-            setAmount(finalTotal);
+            const pIVA = parseFromAR(perceptions.iva);
+            const pIIBB = parseFromAR(perceptions.iibb);
+            const rIVA = parseFromAR(retentions.iva);
+            const rIIBB = parseFromAR(retentions.iibb);
+            const finalTotal = total + pIVA + pIIBB - rIVA - rIIBB;
+            setAmount(formatToAR(finalTotal));
         }
-    }, [perceptions, retentions]);
+    }, [perceptions, retentions, total, isOpen, formatToAR, parseFromAR]);
+
+    // --- MANEJADORES DE ENTRADA ---
+    const handleCurrencyInputChange = (e, setter, key) => {
+        let val = e.target.value;
+        val = val.replace(/[^\dots,]/g, ''); // Fix: removed dots keep commas decimal only
+        val = val.replace(/[^\d,]/g, '');
+        const parts = val.split(',');
+        if (parts.length > 2) return;
+        if (key) {
+            setter(prev => ({ ...prev, [key]: val }));
+        } else {
+            setter(val);
+        }
+    };
+
+    const handleBlurFormat = (setter, key) => {
+        if (key) {
+            setter(prev => ({ ...prev, [key]: formatToAR(prev[key]) }));
+        } else {
+            setter(prev => formatToAR(prev));
+        }
+    };
 
     const handleConfirm = async (e) => {
-        e.preventDefault();
+        if (e) e.preventDefault();
         setIsSaving(true);
+        const p_iva = parseFromAR(perceptions.iva);
+        const p_iibb = parseFromAR(perceptions.iibb);
+        const r_iva = parseFromAR(retentions.iva);
+        const r_iibb = parseFromAR(retentions.iibb);
+        const numAmount = parseFromAR(amount);
+        const opTotal = total + p_iva + p_iibb - r_iva - r_iibb;
 
         const paymentData = {
-            monto: parseFloat(amount),
+            monto: numAmount,
             fecha: date,
             metodo_pago: method,
             descripcion: description,
             referencia: transferRef,
             tarjeta: cardDetails,
-            cheque: chequeDetails,
-            percepcion_iva: perceptions.iva,
-            percepcion_iibb: perceptions.iibb,
-            retencion_iva: retentions.iva,
-            retencion_iibb: retentions.iibb,
-            total_operacion: total + perceptions.iva + perceptions.iibb - retentions.iva - retentions.iibb,
-            vuelto: (method === 'EFECTIVO' && parseFloat(amount) > (total + perceptions.iva + perceptions.iibb - retentions.iva - retentions.iibb) && mode !== 'purchase') ? Math.max(0, parseFloat(amount) - (total + perceptions.iva + perceptions.iibb - retentions.iva - retentions.iibb)) : 0
+            percepcion_iva: p_iva,
+            percepcion_iibb: p_iibb,
+            retencion_iva: r_iva,
+            retencion_iibb: r_iibb,
+            total_operacion: opTotal,
+            vuelto: (method === 'EFECTIVO' && numAmount > opTotal && mode !== 'purchase') ? Math.max(0, numAmount - opTotal) : 0
         };
 
         await onConfirm(paymentData);
         setIsSaving(false);
     };
 
-    const formatMoney = (val) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(val);
+    const numericAmount = parseFromAR(amount);
+    const currentTotalCalc = total + parseFromAR(perceptions.iva) + parseFromAR(perceptions.iibb) - parseFromAR(retentions.iva) - parseFromAR(retentions.iibb);
+    const change = numericAmount - currentTotalCalc;
+    const showChange = method === 'EFECTIVO' && change > 0 && currentTotalCalc > 0 && mode !== 'purchase';
 
-    // Calculate Change (Vuelto)
-    const numericAmount = parseFloat(amount) || 0;
-    const numericTotal = parseFloat(total) || 0;
-    const change = numericAmount - numericTotal;
-    const showChange = method === 'EFECTIVO' && change > 0 && numericTotal > 0 && mode !== 'purchase';
-
-    // Map methods to UI config
     const methodConfig = {
-        'EFECTIVO': { label: 'Efectivo', icon: DollarSign, color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-200' },
-        'TARJETA': { label: 'Tarjeta', icon: CreditCard, color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-200' },
-        'TRANSFERENCIA': { label: 'Transf.', icon: FileText, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200' },
-        'CHEQUE': { label: 'Cheque', icon: FileText, color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-200' },
-        'CTACTE': { label: 'Cta. Cte.', icon: User, color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-200' },
+        'EFECTIVO': { label: 'Efectivo', icon: Banknote },
+        'TARJETA': { label: 'Tarjeta', icon: CreditCard },
+        'TRANSFERENCIA': { label: 'Transf.', icon: Zap },
+        'CHEQUE': { label: 'Cheque', icon: Landmark },
+        'CTACTE': { label: 'Cta. Cte.', icon: User },
     };
 
-    // Filter available methods
-    const visibleMethods = allowedMethods.filter(m => {
-        if (m === 'CTACTE' && !allowCtaCte) return false;
-        return true;
-    });
-
     return (
-        <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 overflow-hidden transform transition-all animate-in fade-in zoom-in-95 duration-200 border border-slate-200">
-
-                {/* White Header (Centered Style - Premium) */}
-                <div className="relative pt-6 px-6 pb-2 text-center z-10" style={{ backgroundColor: 'white' }}>
-                    <button
-                        onClick={onClose}
-                        className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-2 rounded-full transition-all"
-                    >
-                        <X size={24} />
-                    </button>
-
-                    <div className={`mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-3 shadow-sm ${mode === 'purchase' ? 'bg-blue-50 text-blue-600' : 'bg-green-50 text-green-600'}`}>
-                        {mode === 'purchase' ? <Truck size={32} strokeWidth={2} /> : <DollarSign size={32} strokeWidth={2} />}
+        <div className="fixed inset-0 z-[1500] flex items-center justify-center p-4 bg-neutral-950/80 backdrop-blur-md animate-in fade-in duration-300">
+            <form
+                onSubmit={handleConfirm}
+                className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-4xl max-h-[95vh] flex flex-col transform transition-all animate-in zoom-in-95 duration-300 border border-neutral-200 select-none overflow-hidden"
+            >
+                {/* Header */}
+                <div className="px-8 py-5 flex items-center justify-between shrink-0 bg-white border-b border-neutral-100">
+                    <div className="flex items-center gap-4">
+                        <div className={cn(
+                            "w-10 h-10 rounded-xl flex items-center justify-center shadow-sm",
+                            mode === 'purchase' ? "bg-amber-100 text-amber-600" : "bg-primary-100 text-primary-600"
+                        )}>
+                            {mode === 'purchase' ? <Truck size={20} /> : <ShieldCheck size={20} />}
+                        </div>
+                        <div className="text-left">
+                            <h2 className="text-xl font-black text-neutral-900 leading-none tracking-tight">
+                                {mode === 'sale' ? 'Finalizar Venta' : mode === 'purchase' ? 'Confirmar Compra' : 'Registrar Pago'}
+                            </h2>
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 mt-1 block">
+                                {clientName || (mode === 'purchase' ? 'PROVEEDOR SELECCIONADO' : 'CONSUMIDOR FINAL')}
+                            </span>
+                        </div>
                     </div>
-
-                    <h2 className="text-2xl font-black text-slate-800 mb-1">
-                        {mode === 'sale' ? 'Completar Pago' : mode === 'purchase' ? 'Recibir Orden' : 'Registrar Pago'}
-                    </h2>
-
-                    <p className="text-sm font-bold text-slate-500 uppercase tracking-widest flex justify-center items-center gap-2">
-                        {methodConfig[method]?.label || method}
-                        {clientName && <span className="text-slate-300">|</span>}
-                        {clientName && <span className="text-slate-400 font-medium normal-case">{clientName}</span>}
-                    </p>
+                    <button type="button" onClick={onClose} className="p-2 text-neutral-400 hover:text-neutral-900 hover:bg-neutral-50 rounded-full transition-all">
+                        <X size={22} />
+                    </button>
                 </div>
 
-                <form onSubmit={handleConfirm} className="p-6 pt-2">
+                {/* Body */}
+                <div className="flex-1 overflow-y-auto p-8 pt-6 no-scrollbar">
+                    <div className="grid grid-cols-12 gap-8">
 
-                    {/* Big Total Display */}
-                    {(total > 0 || mode === 'payment') && (
-                        <div className="text-center mb-6" style={{ backgroundColor: 'white' }}>
-                            <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">
-                                {mode === 'payment' ? 'DEUDA TOTAL' : 'TOTAL A PAGAR'}
-                            </p>
-                            <div className="text-4xl font-black text-slate-800 tracking-tight">
-                                {formatMoney(total + perceptions.iva + perceptions.iibb - retentions.iva - retentions.iibb)}
-                            </div>
-                        </div>
-                    )}
+                        {/* Columna Izquierda: Información de Pago */}
+                        <div className="col-span-12 lg:col-span-7 space-y-6">
 
-                    {/* Impuestos Section (Expandable/Optional) */}
-                    {(mode === 'sale' || mode === 'purchase') && (
-                        <div className="mb-4 space-y-3">
-                            {/* Percepciones */}
-                            <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">Percepciones (Suman al total)</label>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div className="relative">
-                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">IVA $</span>
-                                        <input
-                                            type="number"
-                                            step="0.01"
-                                            className="w-full pl-12 pr-2 py-1.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white"
-                                            value={perceptions.iva || ''}
-                                            onChange={(e) => setPerceptions({ ...perceptions, iva: parseFloat(e.target.value) || 0 })}
-                                            placeholder="0.00"
-                                        />
-                                    </div>
-                                    <div className="relative">
-                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">IIBB $</span>
-                                        <input
-                                            type="number"
-                                            step="0.01"
-                                            className="w-full pl-14 pr-2 py-1.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white"
-                                            value={perceptions.iibb || ''}
-                                            onChange={(e) => setPerceptions({ ...perceptions, iibb: parseFloat(e.target.value) || 0 })}
-                                            placeholder="0.00"
-                                        />
-                                    </div>
+                            {/* Monto Principal */}
+                            <div className="bg-neutral-50 border border-neutral-200 rounded-3xl p-6 relative transition-all group focus-within:border-primary-500/30 focus-within:bg-white focus-within:shadow-xl focus-within:shadow-primary-500/5">
+                                <label className="block text-[10px] font-black text-neutral-400 uppercase tracking-widest mb-2 ml-1">Total Confirmado</label>
+                                <div className="flex items-baseline gap-3">
+                                    <span className="text-2xl font-black text-neutral-300">$</span>
+                                    <input
+                                        type="text" required autoFocus
+                                        className="w-full bg-transparent text-4xl font-black text-neutral-900 border-none outline-none focus:ring-0 p-0 tracking-tighter"
+                                        value={amount}
+                                        onChange={(e) => handleCurrencyInputChange(e, setAmount)}
+                                        onBlur={() => handleBlurFormat(setAmount)}
+                                    />
+                                    {showChange && (
+                                        <div className="bg-emerald-500 text-white px-4 py-2 rounded-2xl shadow-lg shrink-0 transform animate-in slide-in-from-right-4">
+                                            <div className="text-[8px] font-black uppercase opacity-90 leading-none">Vuelto</div>
+                                            <div className="text-lg font-black mt-1">{new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(change)}</div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
-                            {/* Retenciones (Solo Compras) */}
+                            {/* Medios de Pago */}
+                            <div className="space-y-3">
+                                <label className="block text-[11px] font-black text-neutral-400 uppercase tracking-[0.2em] ml-1">Medio de Pago</label>
+                                <div className="grid grid-cols-2 gap-3">
+                                    {allowedMethods.map(m => {
+                                        const conf = methodConfig[m] || methodConfig['EFECTIVO'];
+                                        const active = method === m;
+                                        return (
+                                            <button
+                                                key={m} type="button"
+                                                onClick={() => { setMethod(m); if (onMethodChange) onMethodChange(m); }}
+                                                className={cn(
+                                                    "flex items-center gap-4 p-4 rounded-2xl border-2 transition-all duration-300",
+                                                    active
+                                                        ? "bg-neutral-900 border-neutral-900 text-white shadow-xl -translate-y-1"
+                                                        : "bg-white border-neutral-100 text-neutral-500 hover:border-neutral-200"
+                                                )}
+                                            >
+                                                <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", active ? "bg-white/10" : "bg-neutral-50")}>
+                                                    <conf.icon size={20} />
+                                                </div>
+                                                <span className="text-sm font-black uppercase tracking-tight">{conf.label}</span>
+                                                {active && <Check size={18} className="ml-auto text-primary-400" />}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* Fecha y Nota */}
+                            <div className="grid grid-cols-2 gap-4 pb-2">
+                                <div className="space-y-2">
+                                    <label className="block text-[10px] font-black text-neutral-400 uppercase tracking-widest ml-1">Fecha</label>
+                                    <input
+                                        type="date" value={date} onChange={(e) => setDate(e.target.value)}
+                                        className="w-full px-4 py-3 text-sm font-black bg-neutral-50 border border-neutral-100 rounded-2xl outline-none focus:bg-white focus:border-neutral-300 transition-all font-mono"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="block text-[10px] font-black text-neutral-400 uppercase tracking-widest ml-1">Referencia</label>
+                                    <input
+                                        type="text" value={description} onChange={(e) => setDescription(e.target.value)}
+                                        placeholder="Nota..."
+                                        className="w-full px-4 py-3 text-sm font-black bg-neutral-50 border border-neutral-100 rounded-2xl outline-none focus:bg-white focus:border-neutral-300 transition-all"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Datos Tarjeta */}
+                            {method === 'TARJETA' && (
+                                <div className="animate-in slide-in-from-top-4 duration-300 space-y-4">
+                                    <div className="flex items-center gap-2 border-b border-neutral-100 pb-2">
+                                        <CreditCard size={18} className="text-primary-500" />
+                                        <span className="text-[11px] font-black uppercase tracking-[0.2em] text-neutral-950">Información de Tarjeta</span>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <label className="block text-[10px] font-black text-neutral-400 uppercase tracking-widest ml-1">Últimos 4 Dígitos</label>
+                                            <input
+                                                type="text" maxLength={4}
+                                                className="w-full px-4 py-3 text-sm font-black bg-neutral-50 border border-neutral-100 rounded-2xl outline-none focus:bg-white focus:border-neutral-300 transition-all"
+                                                value={cardDetails.last4} onChange={(e) => setCardDetails({ ...cardDetails, last4: e.target.value })}
+                                                placeholder="0000"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="block text-[10px] font-black text-neutral-400 uppercase tracking-widest ml-1">Cuotas</label>
+                                            <select
+                                                className="w-full px-4 py-3 text-sm font-black bg-neutral-50 border border-neutral-100 rounded-2xl outline-none focus:bg-white focus:border-neutral-300 transition-all cursor-pointer"
+                                                value={cardDetails.installments} onChange={(e) => setCardDetails({ ...cardDetails, installments: e.target.value })}
+                                            >
+                                                <option value="1">1 pago (Sin interés)</option>
+                                                <option value="3">3 cuotas fijas</option>
+                                                <option value="6">6 cuotas fijas</option>
+                                                <option value="12">12 cuotas fijas</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Columna Derecha: Impuestos */}
+                        <div className="col-span-12 lg:col-span-5 space-y-6">
+
+                            {/* Percepciones (+) */}
+                            {(mode === 'sale' || mode === 'purchase') && (
+                                <div className="bg-white border border-neutral-100 rounded-[2rem] p-6 shadow-sm space-y-5">
+                                    <div className="flex items-center gap-2 text-neutral-400 border-b border-neutral-50 pb-3">
+                                        <Receipt size={18} />
+                                        <span className="text-[11px] font-black uppercase tracking-[0.2em] text-neutral-500">Percepciones (+)</span>
+                                    </div>
+                                    <div className="grid grid-cols-1 gap-4">
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-neutral-400 uppercase tracking-widest ml-1">Percep. IVA $</label>
+                                            <input
+                                                type="text"
+                                                value={perceptions.iva}
+                                                onChange={(e) => handleCurrencyInputChange(e, setPerceptions, 'iva')}
+                                                onBlur={() => handleBlurFormat(setPerceptions, 'iva')}
+                                                className={cn(
+                                                    "w-full px-4 py-3 text-base font-black border rounded-xl focus:ring-4 focus:ring-primary-500/10 focus:bg-white focus:border-primary-500 outline-none transition-all",
+                                                    parseFromAR(perceptions.iva) === 0 ? "bg-neutral-50/50 border-neutral-100 text-neutral-400" : "bg-white border-primary-100 text-neutral-900"
+                                                )}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-neutral-400 uppercase tracking-widest ml-1">Percep. IIBB $</label>
+                                            <input
+                                                type="text"
+                                                value={perceptions.iibb}
+                                                onChange={(e) => handleCurrencyInputChange(e, setPerceptions, 'iibb')}
+                                                onBlur={() => handleBlurFormat(setPerceptions, 'iibb')}
+                                                className={cn(
+                                                    "w-full px-4 py-3 text-base font-black border rounded-xl focus:ring-4 focus:ring-primary-500/10 focus:bg-white focus:border-primary-500 outline-none transition-all",
+                                                    parseFromAR(perceptions.iibb) === 0 ? "bg-neutral-50/50 border-neutral-100 text-neutral-400" : "bg-white border-primary-100 text-neutral-900"
+                                                )}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Retenciones (-) */}
                             {mode === 'purchase' && (
-                                <div className="bg-amber-50/50 p-3 rounded-xl border border-amber-100">
-                                    <label className="text-xs font-bold text-amber-700 uppercase tracking-wider mb-2 block">Retenciones (Restan al total a pagar)</label>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div className="relative">
-                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-amber-400 text-xs font-bold">IVA $</span>
+                                <div className="bg-rose-50/30 border border-rose-100 rounded-[2rem] p-6 shadow-sm space-y-5">
+                                    <div className="flex items-center gap-2 text-rose-500 border-b border-rose-100 pb-3">
+                                        <Activity size={18} />
+                                        <span className="text-[11px] font-black uppercase tracking-[0.2em]">Retenciones (-)</span>
+                                    </div>
+                                    <div className="grid grid-cols-1 gap-4">
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-rose-400 uppercase tracking-widest ml-1">IVA $</label>
                                             <input
-                                                type="number"
-                                                step="0.01"
-                                                className="w-full pl-12 pr-2 py-1.5 text-sm border border-amber-200 rounded-lg focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 bg-white"
-                                                value={retentions.iva || ''}
-                                                onChange={(e) => setRetentions({ ...retentions, iva: parseFloat(e.target.value) || 0 })}
-                                                placeholder="0.00"
+                                                type="text"
+                                                value={retentions.iva}
+                                                onChange={(e) => handleCurrencyInputChange(e, setRetentions, 'iva')}
+                                                onBlur={() => handleBlurFormat(setRetentions, 'iva')}
+                                                className={cn(
+                                                    "w-full px-4 py-3 text-base font-black border rounded-xl focus:ring-4 focus:ring-rose-500/10 focus:border-rose-400 outline-none transition-all",
+                                                    parseFromAR(retentions.iva) === 0 ? "bg-white/50 border-rose-100 text-rose-300" : "bg-white border-rose-300 text-rose-600"
+                                                )}
                                             />
                                         </div>
-                                        <div className="relative">
-                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-amber-400 text-xs font-bold">IIBB $</span>
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-rose-400 uppercase tracking-widest ml-1">IIBB $</label>
                                             <input
-                                                type="number"
-                                                step="0.01"
-                                                className="w-full pl-14 pr-2 py-1.5 text-sm border border-amber-200 rounded-lg focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 bg-white"
-                                                value={retentions.iibb || ''}
-                                                onChange={(e) => setRetentions({ ...retentions, iibb: parseFloat(e.target.value) || 0 })}
-                                                placeholder="0.00"
+                                                type="text"
+                                                value={retentions.iibb}
+                                                onChange={(e) => handleCurrencyInputChange(e, setRetentions, 'iibb')}
+                                                onBlur={() => handleBlurFormat(setRetentions, 'iibb')}
+                                                className={cn(
+                                                    "w-full px-4 py-3 text-base font-black border rounded-xl focus:ring-4 focus:ring-rose-500/10 focus:border-rose-400 outline-none transition-all",
+                                                    parseFromAR(retentions.iibb) === 0 ? "bg-white/50 border-rose-100 text-rose-300" : "bg-white border-rose-300 text-rose-600"
+                                                )}
                                             />
                                         </div>
                                     </div>
                                 </div>
                             )}
                         </div>
-                    )}
-
-                    {/* Amount & Change Section - Side by Side */}
-                    <div className="mb-3">
-                        <div className="flex justify-between items-baseline mb-2">
-                            <label className="block text-sm font-bold text-slate-700">
-                                {mode === 'sale' ? 'Monto Recibido' : 'Monto ($)'}
-                            </label>
-                            {mode === 'payment' && total > 0 && (
-                                <button type="button" onClick={() => setAmount(total)} className="text-xs font-bold text-blue-600 hover:text-blue-800">
-                                    Saldar Total
-                                </button>
-                            )}
-                        </div>
-
-                        <div className="flex gap-3 h-[52px]">
-                            {/* Input Container */}
-                            <div className="relative flex-1">
-                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-lg">$</span>
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    className="w-full h-full pl-10 pr-4 text-xl font-bold border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-slate-800 placeholder:text-slate-300"
-                                    value={amount}
-                                    onChange={(e) => setAmount(e.target.value)}
-                                    placeholder={total > 0 ? total.toString() : "0.00"}
-                                    required
-                                    autoFocus
-                                />
-                            </div>
-
-                            {/* Vuelto / Change Display - Compact Side-By-Side */}
-                            {showChange && (
-                                <div className="flex-1 bg-emerald-50 border border-emerald-100 px-4 rounded-xl flex flex-col justify-center items-end animate-in fade-in slide-in-from-right-4 duration-300 shadow-sm">
-                                    <span className="text-emerald-700 font-bold text-[10px] uppercase tracking-wider leading-none mb-0.5">Vuelto</span>
-                                    <span className="text-2xl font-black text-emerald-600 leading-none">{formatMoney(change)}</span>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Short Amount Warning (Optional UX) */}
-                        {method === 'EFECTIVO' && numericAmount < numericTotal && numericAmount > 0 && parseInt(cardDetails.installments || 1) <= 1 && (
-                            <div className="mt-2 text-xs text-amber-600 font-bold text-center">
-                                Falta: {formatMoney(numericTotal - numericAmount)}
-                            </div>
-                        )}
                     </div>
+                </div>
 
-                    <hr className="border-slate-100 my-2" />
-
-                    {/* Método de Pago Cards */}
-                    <div className="mb-6">
-                        <label className="block text-xs font-bold text-slate-500 mb-3 uppercase tracking-wider">Medio de Pago</label>
-                        <div className="grid grid-cols-5 gap-2">
-                            {visibleMethods.map(m => {
-                                const conf = methodConfig[m] || methodConfig['EFECTIVO'];
-                                const active = method === m;
-                                return (
-                                    <button
-                                        key={m}
-                                        type="button"
-                                        onClick={() => {
-                                            setMethod(m);
-                                            if (onMethodChange) onMethodChange(m);
-                                        }}
-                                        className={`relative flex flex-col items-center justify-center gap-2 p-3 rounded-xl border-2 transition-all duration-200 ${active ? `${conf.border} ${conf.bg} shadow-sm ring-1 ring-inset ${conf.border}` : 'border-slate-100 hover:border-slate-200 hover:bg-slate-50'
-                                            }`}
-                                    >
-                                        <conf.icon size={20} className={active ? conf.color : 'text-slate-400'} />
-                                        <span className={`font-bold text-[10px] uppercase tracking-tight ${active ? 'text-slate-900' : 'text-slate-500'}`}>{conf.label}</span>
-                                        {active && <div className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-slate-800 animate-pulse"></div>}
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </div>
-
-                    {/* Campos Específicos por Método */}
-                    <div className="space-y-4 mb-6">
-                        {/* Fecha Siempre Visible (Compacta) */}
-                        <div>
-                            <label className="block text-xs font-bold text-slate-500 mb-1">Fecha Operación</label>
-                            <div className="relative">
-                                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                                <input
-                                    type="date"
-                                    className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-600 font-medium"
-                                    value={date}
-                                    onChange={(e) => setDate(e.target.value)}
-                                />
-                            </div>
-                        </div>
-
-                        {/* TRANSFERENCIA */}
-                        {method === 'TRANSFERENCIA' && (
-                            <div className="animate-in fade-in slide-in-from-top-1">
-                                <label className="block text-xs font-bold text-slate-500 mb-1">Referencia / Comprobante</label>
-                                <input
-                                    type="text"
-                                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:border-blue-500"
-                                    placeholder="N° de operación..."
-                                    value={transferRef}
-                                    onChange={(e) => setTransferRef(e.target.value)}
-                                />
-                            </div>
+                {/* Footer */}
+                <div className="px-8 py-6 bg-neutral-50 border-t border-neutral-100 flex gap-6 shrink-0 mt-auto">
+                    <button type="button" onClick={onClose} className="flex-1 py-4 text-sm font-black uppercase tracking-[0.2em] text-neutral-400 hover:text-neutral-900 transition-all font-mono">
+                        CANCELAR
+                    </button>
+                    <button
+                        type="submit"
+                        disabled={!numericAmount || numericAmount <= 0 || isSaving}
+                        className={cn(
+                            "flex-[2.5] py-4 rounded-[1.25rem] flex items-center justify-center gap-4 transition-all active:scale-95 shadow-2xl",
+                            isSaving || !numericAmount || numericAmount <= 0
+                                ? "bg-neutral-200 text-neutral-400 cursor-not-allowed"
+                                : "bg-primary-600 text-white shadow-primary-600/30 hover:bg-primary-700 hover:-translate-y-1"
                         )}
-
-                        {/* TARJETA */}
-                        {method === 'TARJETA' && (
-                            <div className="grid grid-cols-2 gap-3 animate-in fade-in slide-in-from-top-1">
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 mb-1">Últimos 4</label>
-                                    <div className="relative">
-                                        <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-                                        <input
-                                            type="text"
-                                            maxLength={4}
-                                            className="w-full pl-8 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus:border-blue-500"
-                                            placeholder="xxxx"
-                                            value={cardDetails.last4}
-                                            onChange={(e) => setCardDetails({ ...cardDetails, last4: e.target.value })}
-                                        />
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 mb-1">Cuotas</label>
-                                    <select
-                                        className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:border-blue-500 bg-white"
-                                        value={cardDetails.installments}
-                                        onChange={(e) => setCardDetails({ ...cardDetails, installments: e.target.value })}
-                                    >
-                                        <option value="1">1 pago</option>
-                                        <option value="3">3 cuotas</option>
-                                        <option value="6">6 cuotas</option>
-                                        <option value="12">12 cuotas</option>
-                                    </select>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* CHEQUE */}
-                        {method === 'CHEQUE' && (
-                            <div className="space-y-3 bg-indigo-50/50 p-3 rounded-xl border border-indigo-100 animate-in fade-in slide-in-from-top-1">
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1">Banco</label>
-                                        <input
-                                            type="text"
-                                            className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:border-blue-500"
-                                            placeholder="Nombre Banco"
-                                            value={chequeDetails.bank}
-                                            onChange={(e) => setChequeDetails({ ...chequeDetails, bank: e.target.value })}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1">N° Cheque</label>
-                                        <input
-                                            type="text"
-                                            className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:border-blue-500"
-                                            placeholder="Número"
-                                            value={chequeDetails.number}
-                                            onChange={(e) => setChequeDetails({ ...chequeDetails, number: e.target.value })}
-                                        />
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1">F. Pago</label>
-                                        <input
-                                            type="date"
-                                            className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:border-blue-500"
-                                            value={chequeDetails.paymentDate}
-                                            onChange={(e) => setChequeDetails({ ...chequeDetails, paymentDate: e.target.value })}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1">Firmante</label>
-                                        <input
-                                            type="text"
-                                            className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:border-blue-500"
-                                            placeholder="(Opcional)"
-                                            value={chequeDetails.signer}
-                                            onChange={(e) => setChequeDetails({ ...chequeDetails, signer: e.target.value })}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Observaciones */}
-                        <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Nota (Opcional)</label>
-                            <input
-                                type="text"
-                                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:border-blue-500 placeholder:text-slate-300"
-                                placeholder="Notas u observaciones (opcional)..."
-                                value={description}
-                                onChange={(e) => setDescription(e.target.value)}
-                            />
-                        </div>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex gap-3 pt-2">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="flex-1 py-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-all text-sm uppercase tracking-wide"
-                        >
-                            Cancelar
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={!amount || parseFloat(amount) <= 0 || isSaving}
-                            className="flex-1 py-3.5 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-500/30 hover:bg-blue-700 hover:translate-y-px transition-all flex items-center justify-center gap-2 text-sm uppercase tracking-wide disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {isSaving ? (
-                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            ) : (
-                                <>
-                                    <Check size={20} strokeWidth={2.5} />
-                                    Confirmar
-                                </>
-                            )}
-                        </button>
-                    </div>
-
-                </form>
-            </div>
+                    >
+                        <span className="text-sm font-black uppercase tracking-[0.2em]">CONFIRMAR OPERACIÓN</span>
+                        <ChevronRight size={22} strokeWidth={3} />
+                    </button>
+                </div>
+            </form>
         </div>
     );
 };

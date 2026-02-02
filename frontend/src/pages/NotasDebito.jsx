@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, X, FileText, ArrowUpCircle, Calendar } from 'lucide-react';
+import { Plus, Search, FilterX, FileText, ArrowUpCircle, Calendar, Eye, Printer, Trash2, ListFilter } from 'lucide-react';
 import Swal from 'sweetalert2';
 import EmptyState from '../components/EmptyState';
-import { BtnView, BtnPrint, BtnDelete } from '../components/CommonButtons';
+import { BtnView, BtnPrint, BtnDelete, BtnClear, BtnAdd } from '../components/CommonButtons';
 import TablePagination from '../components/common/TablePagination';
 import { showDeleteAlert, showToast } from '../utils/alerts';
+import { PremiumTable, TableCell, PremiumFilterBar, StatCard } from '../components/premium';
+import { BentoGrid } from '../components/premium/BentoCard';
+import { cn } from '../utils/cn';
 
 const STORAGE_KEY = 'table_prefs_notasdebito_items';
 
@@ -21,9 +24,20 @@ const NotasDebito = () => {
         const parsed = parseInt(saved, 10);
         return (parsed && parsed > 0) ? parsed : 10;
     });
+    const getLocalDate = (date = new Date()) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
+    const [dateRange, setDateRange] = useState({
+        start: getLocalDate(new Date(new Date().getFullYear(), new Date().getMonth(), 1)),
+        end: getLocalDate()
+    });
+
     const [filters, setFilters] = useState({
-        busqueda: '',
-        fecha: ''
+        busqueda: ''
     });
 
     useEffect(() => {
@@ -45,7 +59,8 @@ const NotasDebito = () => {
                 page,
                 per_page: itemsPerPage,
                 q: filters.busqueda,
-                fecha: filters.fecha
+                fecha_start: dateRange.start,
+                fecha_end: dateRange.end
             });
             const response = await fetch(`/api/notas-debito/listar/?${params}`);
             const data = await response.json();
@@ -67,7 +82,7 @@ const NotasDebito = () => {
 
     useEffect(() => {
         fetchNotas();
-    }, [fetchNotas]);
+    }, [fetchNotas, dateRange]);
 
     const handlePrint = (id) => {
         window.open(`/api/notas-debito/${id}/pdf/`, '_blank');
@@ -84,7 +99,11 @@ const NotasDebito = () => {
     };
 
     const clearFilters = () => {
-        setFilters({ busqueda: '', fecha: '' });
+        setFilters({ busqueda: '' });
+        setDateRange({
+            start: getLocalDate(new Date(new Date().getFullYear(), new Date().getMonth(), 1)),
+            end: getLocalDate()
+        });
         setPage(1);
     };
 
@@ -119,171 +138,146 @@ const NotasDebito = () => {
         }
     };
 
+    const columns = [
+        {
+            key: 'numero',
+            label: '# ID',
+            width: '180px',
+            render: (v) => <TableCell.ID value={v} />
+        },
+        {
+            key: 'fecha',
+            label: 'Fecha',
+            width: '180px',
+            render: (v) => <TableCell.Date value={v} />
+        },
+        {
+            key: 'cliente',
+            label: 'Cliente',
+            render: (v) => <TableCell.Primary value={v} />
+        },
+        {
+            key: 'venta_str',
+            label: 'Venta Asoc.',
+            width: '180px',
+            render: (v, row) => (
+                row.venta_id ? (
+                    <TableCell.Status value={`FC: ${v}`} variant="default" />
+                ) : <span className="text-neutral-300">-</span>
+            )
+        },
+        {
+            key: 'total',
+            label: 'Total',
+            width: '150px',
+            align: 'right',
+            render: (v) => <TableCell.Currency value={v} />
+        },
+        {
+            key: 'estado',
+            label: 'Estado',
+            width: '150px',
+            align: 'center',
+            render: (v) => {
+                const variant = v === 'EMITIDA' ? 'success' : v === 'ANULADA' ? 'error' : 'default';
+                return <TableCell.Status value={v} variant={variant} />;
+            }
+        },
+        {
+            key: 'acciones',
+            label: 'Acciones',
+            width: '150px',
+            align: 'right',
+            sortable: false,
+            render: (_, row) => (
+                <div className="flex justify-end items-center gap-1">
+                    <button
+                        onClick={() => handleView(row.id)}
+                        className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-400 hover:text-primary-600 transition-all"
+                        title="Ver Detalle"
+                    >
+                        <Eye size={18} />
+                    </button>
+                    <button
+                        onClick={() => handlePrint(row.id)}
+                        className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-400 hover:text-neutral-900 transition-all"
+                        title="Imprimir"
+                    >
+                        <Printer size={18} />
+                    </button>
+                    <button
+                        onClick={() => handleDelete(row.id)}
+                        className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-400 hover:text-red-600 transition-all"
+                        title="Anular"
+                    >
+                        <Trash2 size={18} />
+                    </button>
+                </div>
+            )
+        }
+    ];
 
     return (
-        <div className="p-6 pb-10 max-w-7xl mx-auto fade-in">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-                <div>
-                    <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
-                        <ArrowUpCircle className="text-emerald-600" size={32} strokeWidth={2.5} />
-                        Notas de Débito
-                    </h1>
-                    <p className="text-slate-500 font-medium ml-10">Gestión de recargos y ajustes positivos</p>
+        <div className="flex flex-col h-[calc(100vh-64px)] overflow-hidden bg-neutral-50/30">
+            {/* Header / Toolbar Area */}
+            <div className="p-8 pb-4">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                    <div className="flex-shrink-0">
+                        <div className="flex items-center gap-3 mb-1">
+                            <div className="p-2 bg-indigo-600 rounded-2xl shadow-lg shadow-indigo-600/20">
+                                <ArrowUpCircle size={24} className="text-white" />
+                            </div>
+                            <h1 className="text-3xl font-black text-neutral-900 tracking-tight whitespace-nowrap">Notas de Débito</h1>
+                        </div>
+                        <p className="text-neutral-500 font-medium ml-1">Gestión de recargos y ajustes financieros.</p>
+                    </div>
+
+                    <PremiumFilterBar
+                        busqueda={filters.busqueda}
+                        setBusqueda={(val) => setFilters(prev => ({ ...prev, busqueda: val }))}
+                        dateRange={dateRange}
+                        setDateRange={setDateRange}
+                        onClear={clearFilters}
+                        placeholder="Buscar número o cliente..."
+                        className="!px-0"
+                    />
                 </div>
-                <button
-                    onClick={() => navigate('/notas-debito/nuevo')}
-                    className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-2xl font-bold shadow-lg shadow-emerald-200 transition-all hover:-translate-y-1"
-                >
-                    <Plus size={20} strokeWidth={3} />
-                    Nueva Nota de Débito
-                </button>
             </div>
 
-            {/* Filtros Card */}
-            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5 mb-6">
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
-                    <div className="md:col-span-6 relative">
-                        <label className="block text-xs font-bold text-slate-400 mb-1.5 ml-1 uppercase tracking-wider">Buscar Comprobante</label>
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                            <input
-                                type="text"
-                                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-medium text-slate-700"
-                                placeholder="Cliente, número de ND..."
-                                name="busqueda"
-                                value={filters.busqueda}
-                                onChange={handleFilterChange}
-                            />
-                        </div>
-                    </div>
-                    <div className="md:col-span-3">
-                        <label className="block text-xs font-bold text-slate-400 mb-1.5 ml-1 uppercase tracking-wider">Fecha</label>
-                        <input
-                            type="date"
-                            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-medium text-slate-700 font-mono"
-                            name="fecha"
-                            value={filters.fecha}
-                            onChange={handleFilterChange}
+            {/* Table Area */}
+            <div className="flex-1 px-8 pb-8 overflow-hidden min-h-0">
+                <div className="h-full bg-white rounded-[2.5rem] border border-neutral-200 shadow-xl shadow-neutral-200/50 flex flex-col overflow-hidden">
+                    <div className="flex-1 overflow-hidden">
+                        <PremiumTable
+                            columns={columns}
+                            data={notas}
+                            loading={loading}
+                            emptyMessage={
+                                <EmptyState
+                                    icon={ArrowUpCircle}
+                                    title="Sin Notas de Débito"
+                                    description="No se encontraron recargos que coincidan con los filtros."
+                                    iconColor="text-indigo-500"
+                                    bgIconColor="bg-indigo-50"
+                                />
+                            }
                         />
                     </div>
-                    <div className="md:col-span-3">
-                        <button
-                            onClick={clearFilters}
-                            className="w-full px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-bold transition-all flex items-center justify-center gap-2"
-                        >
-                            <X size={18} />
-                            Limpiar
-                        </button>
+
+                    <div className="px-6 py-4 border-t border-neutral-100 bg-neutral-50/50">
+                        <TablePagination
+                            currentPage={page}
+                            totalPages={totalPages}
+                            totalItems={totalItems}
+                            itemsPerPage={itemsPerPage}
+                            onPageChange={setPage}
+                            onItemsPerPageChange={(newVal) => {
+                                setItemsPerPage(newVal);
+                                setPage(1);
+                                localStorage.setItem(STORAGE_KEY, newVal);
+                            }}
+                        />
                     </div>
-                </div>
-            </div>
-
-            {/* Listado */}
-            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col min-h-[500px]">
-                <div className="p-0">
-                    <table className="w-full text-sm">
-                        <thead>
-                            <tr className="bg-slate-50/50 border-b border-slate-100">
-                                <th className="px-6 py-4 text-left font-bold text-slate-400 uppercase tracking-widest text-[10px]">Fecha</th>
-                                <th className="px-6 py-4 text-left font-bold text-slate-400 uppercase tracking-widest text-[10px]">Número</th>
-                                <th className="px-6 py-4 text-left font-bold text-slate-400 uppercase tracking-widest text-[10px]">Cliente</th>
-                                <th className="px-6 py-4 text-left font-bold text-slate-400 uppercase tracking-widest text-[10px]">Venta Asoc.</th>
-                                <th className="px-6 py-4 text-right font-bold text-slate-400 uppercase tracking-widest text-[10px]">Total</th>
-                                <th className="px-6 py-4 text-left font-bold text-slate-400 uppercase tracking-widest text-[10px]">Estado</th>
-                                <th className="px-6 py-4 text-right font-bold text-slate-400 uppercase tracking-widest text-[10px]">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                            {loading && notas.length === 0 ? (
-                                <tr>
-                                    <td colSpan="7" className="py-20 text-center">
-                                        <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-emerald-500 border-t-transparent"></div>
-                                        <p className="mt-4 text-slate-500 font-medium">Cargando notas de débito...</p>
-                                    </td>
-                                </tr>
-                            ) : notas.length === 0 ? (
-                                <tr>
-                                    <td colSpan="7" className="py-20">
-                                        <EmptyState
-                                            icon={ArrowUpCircle}
-                                            title="No hay notas de débito"
-                                            description="Los recargos generados aparecerán aquí."
-                                            iconColor="text-emerald-500"
-                                            bgIconColor="bg-emerald-50"
-                                        />
-                                    </td>
-                                </tr>
-                            ) : (
-                                notas.map((nota) => (
-                                    <tr key={nota.id} className="hover:bg-slate-50/50 transition-colors group">
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="flex items-center gap-2">
-                                                <Calendar size={14} className="text-slate-400" />
-                                                <span className="font-bold text-slate-700">{nota.fecha}</span>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className="font-mono text-sm font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg">
-                                                {nota.numero}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span className="font-bold text-slate-800">{nota.cliente}</span>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            {nota.venta_id ? (
-                                                <div className="flex items-center gap-1.5 text-slate-500 font-bold text-xs bg-slate-100 w-fit px-2.5 py-1 rounded-full border border-slate-200">
-                                                    <FileText size={12} />
-                                                    FC: {nota.venta_str}
-                                                </div>
-                                            ) : (
-                                                <span className="text-slate-300">-</span>
-                                            )}
-                                        </td>
-                                        <td className="px-6 py-4 text-right whitespace-nowrap">
-                                            <span className="font-black text-slate-900 text-base">
-                                                ${new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(nota.total)}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-black uppercase tracking-tighter shadow-sm border ${nota.estado === 'EMITIDA' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                                                nota.estado === 'ANULADA' ? 'bg-red-50 text-red-600 border-red-100' :
-                                                    'bg-amber-50 text-amber-600 border-amber-100'
-                                                }`}>
-                                                <div className={`w-1.5 h-1.5 rounded-full mr-2 ${nota.estado === 'EMITIDA' ? 'bg-emerald-500' :
-                                                    nota.estado === 'ANULADA' ? 'bg-red-500' : 'bg-amber-500'
-                                                    }`}></div>
-                                                {nota.estado}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-right">
-                                            <div className="flex justify-end gap-2">
-                                                <BtnView onClick={() => handleView(nota.id)} />
-                                                <BtnPrint onClick={() => handlePrint(nota.id)} />
-                                                <BtnDelete onClick={() => handleDelete(nota.id)} />
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-
-                <div className="mt-auto p-4 border-t border-slate-100 bg-slate-50/50">
-                    <TablePagination
-                        currentPage={page}
-                        totalPages={totalPages}
-                        totalItems={totalItems}
-                        itemsPerPage={itemsPerPage}
-                        onPageChange={setPage}
-                        onItemsPerPageChange={(newVal) => {
-                            setItemsPerPage(newVal);
-                            setPage(1);
-                            localStorage.setItem(STORAGE_KEY, newVal);
-                        }}
-                    />
                 </div>
             </div>
         </div>

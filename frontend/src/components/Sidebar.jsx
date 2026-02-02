@@ -1,6 +1,6 @@
-// Sidebar Component - Updated with Stock Management
+// Sidebar Component - Premium & Intelligent Redesign 2025
 import React, { useState, useEffect } from 'react';
-import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import {
     LayoutDashboard,
@@ -18,128 +18,147 @@ import {
     Menu,
     X,
     CreditCard,
-    ClipboardList,
-    LogOut,
     Landmark,
-    BarChart3
+    TrendingUp,
+    Briefcase,
+    Sparkles,
+    BarChart3,
+    LogOut,
+    Search,
+    Bell,
+    UserCircle,
+    ClipboardList,
+    Tags,
+    Bookmark,
+    ListFilter,
+    Ruler,
+    Database,
+    MapPin,
+    CheckCircle2,
+    Ticket,
+    Activity,
+    HelpCircle,
+    Info,
+    Building2
 } from 'lucide-react';
+
+
 import { useAuth } from '../context/AuthContext';
 
-const SidebarItem = ({ icon: Icon, label, href, subItems, isOpen, activeSubItem, onToggle, standalone, permission }) => {
-    const { hasPermission } = useAuth();
-    const isExpanded = isOpen;
-    const hasSubItems = subItems && subItems.length > 0;
+const SidebarItem = ({ icon: Icon, label, href, subItems, isOpen, onToggle, permission, isExternal }) => {
     const location = useLocation();
+    const { hasPermission } = useAuth();
+    const isActive = location.pathname === href || subItems?.some(item => location.pathname === item.href);
 
-    // Check permissions for main item
-    if (permission && !hasPermission(permission)) {
-        return null;
-    }
+    if (permission && !hasPermission(permission)) return null;
 
-    // Filter subItems based on permissions
-    const visibleSubItems = subItems ? subItems.filter(item => !item.permission || hasPermission(item.permission)) : [];
-
-    if (hasSubItems && visibleSubItems.length === 0) {
-        return null;
-    }
-
-    const handleClick = (e) => {
-        if (hasSubItems) {
-            e.preventDefault();
-            onToggle();
-        } else {
-            if (standalone) {
-                // Dejar que el <a> funcione normalmente o usar window.location
-                return;
-            }
-            // For internal links without subitems, NavLink handles it.
-            // If we had an onClick to close mobile menu, we'd add it here.
-        }
-    };
-
-
-    // Check if this item is active (including subitems)
-    // For items with subitems, only mark active if a subitem matches the current route
-    // For items without subitems, mark active if href matches current route
-    const isActive = hasSubItems
-        ? (visibleSubItems && visibleSubItems.some(item => location.pathname === item.href))
-        : (href && location.pathname === href);
-
-    return (
-        <div className="mb-1">
-            {/* Main Item */}
-            {hasSubItems ? (
-                <div
-                    className={`d-flex align-items-center justify-content-between px-3 py-2 rounded pointer user-select-none transition-all ${isActive ? 'bg-primary text-white shadow-sm' : 'text-white hover-bg-dark-subtle'}`}
-                    style={{ cursor: 'pointer', transition: 'all 0.2s ease' }}
-                    onClick={handleClick}
+    if (subItems) {
+        return (
+            <div className="flex flex-col">
+                <button
+                    onClick={onToggle}
+                    className={`flex items-center justify-between px-4 py-3 rounded-2xl transition-all duration-300 group ${isActive ? 'bg-primary-50 text-primary-700' : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900'
+                        }`}
                 >
-                    <div className="d-flex align-items-center gap-3">
-                        <Icon size={20} />
-                        <span className="fw-medium">{label}</span>
+                    <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-xl transition-all duration-300 ${isActive ? 'bg-primary-600 text-white shadow-lg shadow-primary-600/20' : 'bg-neutral-100 text-neutral-400 group-hover:bg-white group-hover:text-neutral-900 shadow-sm'
+                            }`}>
+                            <Icon size={18} />
+                        </div>
+                        <span className="text-sm font-bold tracking-tight">{label}</span>
                     </div>
-                    {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                </div>
-            ) : standalone ? (
-                <a
-                    href={href}
-                    className={`d-flex align-items-center justify-content-between px-3 py-2 rounded pointer user-select-none transition-all text-white hover-bg-dark-subtle text-decoration-none`}
-                    style={{ transition: 'all 0.2s ease' }}
-                >
-                    <div className="d-flex align-items-center gap-3">
-                        <Icon size={20} />
-                        <span className="fw-medium">{label}</span>
-                    </div>
-                </a>
-            ) : (
-                <NavLink
-                    to={href}
-                    className={({ isActive }) => `d-flex align-items-center justify-content-between px-3 py-2 rounded pointer user-select-none transition-all text-decoration-none ${isActive ? 'bg-primary text-white shadow-sm' : 'text-white hover-bg-dark-subtle'}`}
-                    style={{ transition: 'all 0.2s ease' }}
-                >
-                    <div className="d-flex align-items-center gap-3">
-                        <Icon size={20} />
-                        <span className="fw-medium">{label}</span>
-                    </div>
-                </NavLink>
-            )}
+                    {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                </button>
 
-            {/* Sub Items */}
-            {hasSubItems && isExpanded && (
-                <div className="ms-4 mt-1 border-start border-light border-opacity-25 ps-3">
-                    <div className="d-flex flex-column gap-1">
-                        {visibleSubItems.map((item, index) => (
-                            standalone ? (
-                                <a
-                                    key={index}
-                                    href={item.href}
-                                    className={`d-block px-2 py-1 text-decoration-none rounded transition-all text-white text-opacity-75 hover:bg-white hover:bg-opacity-10`}
-                                >
-                                    {item.label}
-                                </a>
-                            ) : (
+                {isOpen && (
+                    <div className="flex flex-col gap-1 ml-11 mt-1 animate-in slide-in-from-top-2 duration-300 overflow-hidden">
+                        {subItems.map((item, index) => {
+                            if (item.permission && !hasPermission(item.permission)) return null;
+                            const isSubActive = location.pathname === item.href;
+
+                            if (item.isExternal) {
+                                return (
+                                    <a
+                                        key={index}
+                                        href={item.href}
+                                        className={`px-4 py-2 text-sm font-bold rounded-xl transition-all ${isSubActive
+                                            ? 'text-primary-600 bg-primary-50/50'
+                                            : 'text-neutral-400 hover:text-neutral-900 hover:bg-neutral-50'
+                                            }`}
+                                    >
+                                        {item.label}
+                                    </a>
+                                );
+                            }
+
+                            return (
                                 <NavLink
                                     key={index}
                                     to={item.href}
-                                    className={({ isActive }) => `d-block px-2 py-1 text-decoration-none rounded transition-all ${isActive ? 'text-white fw-bold bg-white bg-opacity-10' : 'text-white text-opacity-75 hover:bg-white hover:bg-opacity-10'}`}
+                                    className={({ isActive }) =>
+                                        `px-4 py-2 text-sm font-bold rounded-xl transition-all ${isActive
+                                            ? 'text-primary-600 bg-primary-50/50'
+                                            : 'text-neutral-400 hover:text-neutral-900 hover:bg-neutral-50'
+                                        }`
+                                    }
                                 >
                                     {item.label}
                                 </NavLink>
-                            )
-                        ))}
+                            );
+                        })}
                     </div>
+                )}
+            </div>
+        );
+    }
+
+    if (isExternal) {
+        return (
+            <a
+                href={href}
+                className={`flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-300 group ${isActive
+                    ? 'bg-primary-50 text-primary-700'
+                    : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900'
+                    }`}
+            >
+                <div className={`p-2 rounded-xl transition-all duration-300 group-hover:scale-110 active:scale-95 ${isActive
+                    ? 'bg-primary-600 text-white shadow-lg shadow-primary-600/20'
+                    : 'bg-neutral-100 text-neutral-400 group-hover:bg-white group-hover:text-neutral-900 shadow-sm'
+                    }`}>
+                    <Icon size={18} />
                 </div>
-            )}
-        </div>
+                <span className="text-sm font-bold tracking-tight">{label}</span>
+            </a>
+        );
+    }
+
+    return (
+        <NavLink
+            to={href}
+            className={({ isActive }) =>
+                `flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-300 group ${isActive
+                    ? 'bg-primary-50 text-primary-700'
+                    : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900'
+                }`
+            }
+        >
+            <div className={`p-2 rounded-xl transition-all duration-300 group-hover:scale-110 active:scale-95 ${isActive
+                ? 'bg-primary-600 text-white shadow-lg shadow-primary-600/20'
+                : 'bg-neutral-100 text-neutral-400 group-hover:bg-white group-hover:text-neutral-900 shadow-sm'
+                }`}>
+                <Icon size={18} />
+            </div>
+            <span className="text-sm font-bold tracking-tight">{label}</span>
+        </NavLink>
     );
 };
 
-const Sidebar = ({ standalone = false }) => {
-    const { hasPermission } = useAuth();
-    const [openSection, setOpenSection] = useState(null);
+const Sidebar = () => {
     const [mobileOpen, setMobileOpen] = useState(false);
+    const [openSection, setOpenSection] = useState(null);
     const [empresa, setEmpresa] = useState({ nombre: 'Sistema', logo: null });
-    const [hideScroll, setHideScroll] = useState(true);
+    const { user } = useAuth();
+    const [hideScrollbar, setHideScrollbar] = useState(true);
 
     useEffect(() => {
         const fetchConfig = async () => {
@@ -150,41 +169,13 @@ const Sidebar = ({ standalone = false }) => {
                         nombre: response.data.nombre || 'Sistema',
                         logo: response.data.logo
                     });
-                    // Default to true if undefined, otherwise use the actual boolean value
-                    const scrollValue = response.data.ocultar_barra_scroll ?? true;
-                    console.log('Sidebar: Configuración cargada desde servidor - ocultar_barra_scroll:', scrollValue);
-                    setHideScroll(scrollValue);
+                    setHideScrollbar(response.data.ocultar_barra_scroll ?? true);
                 }
             } catch (error) {
-                console.error("Error loading sidebar config:", error);
+                console.error("Error loading config:", error);
             }
         };
-
         fetchConfig();
-
-        const handleConfigUpdate = (event) => {
-            // If event has detail (instant preview), use it directly
-            if (event.detail) {
-                if ('ocultar_barra_scroll' in event.detail) {
-                    const newValue = event.detail.ocultar_barra_scroll ?? true;
-                    setHideScroll(newValue);
-                }
-                if ('nombre' in event.detail || 'logo' in event.detail) {
-                    setEmpresa(prev => ({
-                        ...prev,
-                        nombre: event.detail.nombre || prev.nombre,
-                        logo: event.detail.logo_url || event.detail.logo || prev.logo
-                    }));
-                }
-            } else {
-                fetchConfig();
-            }
-        };
-        window.addEventListener('configUpdated', handleConfigUpdate);
-
-        return () => {
-            window.removeEventListener('configUpdated', handleConfigUpdate);
-        };
     }, []);
 
     const toggleSection = (section) => {
@@ -193,267 +184,187 @@ const Sidebar = ({ standalone = false }) => {
 
     return (
         <>
-            {/* Mobile Trigger */}
+            {/* Mobile Toggle */}
             <button
-                className="d-lg-none position-fixed top-0 start-0 m-3 btn btn-dark z-3 shadow"
                 onClick={() => setMobileOpen(!mobileOpen)}
-                style={{ zIndex: 1050 }}
+                className="lg:hidden fixed top-4 left-4 z-50 p-3 bg-white rounded-2xl shadow-premium border border-neutral-100"
             >
-                {mobileOpen ? <X size={24} /> : <Menu size={24} />}
+                {mobileOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
 
-            {/* Sidebar Container */}
-            <div
-                className={`d-flex flex-column flex-shrink-0 p-3 text-white bg-black position-fixed h-100 top-0 start-0 shadow-lg`}
-                style={{
-                    width: '300px',
-                    zIndex: 1040,
-                    transition: 'transform 0.3s ease-in-out',
-                    transform: mobileOpen ? 'translateX(0)' : 'translateX(0)', // Default for desktop
-                }}
-            >
-                {/* Logo Area */}
-                <div className="d-flex align-items-center gap-3 px-2 mb-4 pb-3 border-bottom border-light border-opacity-25">
-                    {empresa.logo ? (
-                        <div className="rounded overflow-hidden d-flex align-items-center justify-content-center shadow-sm" style={{ width: '40px', height: '40px', background: 'white' }}>
-                            <img src={empresa.logo} alt="Logo" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+            {/* Main Sidebar */}
+            <div className={`fixed lg:static inset-y-0 left-0 z-50 w-[280px] bg-white border-r border-neutral-100 flex flex-col transition-all duration-500 ease-in-out transform ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+                }`}>
+
+                {/* Header Section: Branding */}
+                <div className="p-6">
+                    <div className="flex items-center gap-4 group cursor-pointer">
+                        <div className="w-10 h-10 rounded-xl bg-primary-600 flex items-center justify-center shadow-lg shadow-primary-600/20 overflow-hidden">
+                            {empresa.logo ? (
+                                <img src={empresa.logo} alt="Logo" className="w-full h-full object-contain p-1" />
+                            ) : (
+                                <Sparkles size={20} className="text-white" />
+                            )}
                         </div>
-                    ) : (
-                        <div className="bg-primary rounded d-flex align-items-center justify-content-center shadow-sm" style={{ width: '40px', height: '40px' }}>
-                            <span className="text-white fw-bold fs-5">{empresa.nombre.charAt(0).toUpperCase()}</span>
+                        <div className="flex flex-column">
+                            <span className="text-sm font-bold text-neutral-900 tracking-tight text-truncate w-[160px]">{empresa.nombre}</span>
+                            <span className="text-[10px] text-primary-600 font-mono tracking-widest uppercase">Intelligent Pro</span>
                         </div>
-                    )}
-                    <span className="fs-5 fw-bold tracking-tight text-white text-truncate">{empresa.nombre}</span>
+                    </div>
                 </div>
 
-                {/* Scrollable Menu Area */}
-                <div className={`flex-grow-1 overflow-auto custom-scrollbar ${hideScroll ? 'hide-scrollbar' : ''}`}>
+                {/* Main Menu Sections */}
+                <div className={`flex-1 overflow-y-auto px-2 pb-6 ${hideScrollbar ? 'no-scrollbar' : 'scrollbar-thin'}`}>
+                    <div className="space-y-6">
 
-                    {(hasPermission('reportes') || hasPermission('ventas') || hasPermission('compras') || hasPermission('productos') || hasPermission('clientes') || hasPermission('proveedores')) && (
-                        <div className="mb-2 px-2 small fw-bold text-uppercase text-light text-opacity-50" style={{ fontSize: '0.75rem', letterSpacing: '0.05em' }}>
-                            Comercial
+                        {/* Section: Intelligence */}
+                        <div className="space-y-1">
+                            <span className="px-4 text-[11px] font-bold text-neutral-400 uppercase tracking-widest">Inteligencia</span>
+                            <SidebarItem icon={LayoutDashboard} label="Dashboard" href="/dashboard" permission="reportes" />
+                            <SidebarItem icon={BarChart3} label="Reportes" href="/reportes" permission="reportes" />
                         </div>
-                    )}
 
-                    <SidebarItem
-                        icon={LayoutDashboard}
-                        label="Dashboard"
-                        href="/dashboard"
-                        standalone={standalone}
-                        permission="reportes"
-                    />
+                        {/* Section: Operaciones */}
+                        <div className="space-y-1">
+                            <span className="px-4 text-[11px] font-bold text-neutral-400 uppercase tracking-widest">Operaciones</span>
+                            <SidebarItem
+                                icon={ClipboardList}
+                                label="Comprobantes"
+                                isOpen={openSection === 'operaciones'}
+                                onToggle={() => toggleSection('operaciones')}
+                                subItems={[
+                                    { label: 'Ventas', href: '/ventas', permission: 'ventas' },
+                                    { label: 'Compras', href: '/compras', permission: 'compras' },
+                                    { label: 'Pedidos', href: '/pedidos', permission: 'pedidos' },
+                                    { label: 'Presupuestos', href: '/presupuestos', permission: 'presupuestos' },
+                                    { label: 'Notas de Crédito', href: '/notas-credito', permission: 'ventas' },
+                                    { label: 'Notas de Débito', href: '/notas-debito', permission: 'ventas' },
+                                    { label: 'Remitos', href: '/remitos', permission: 'remitos' },
+                                ]}
+                            />
+                            <SidebarItem
+                                icon={Package}
+                                label="Productos"
+                                isOpen={openSection === 'productos'}
+                                onToggle={() => toggleSection('productos')}
+                                subItems={[
+                                    { label: 'Stock General', href: '/productos', permission: 'productos' },
+                                    { label: 'Ajustes Manuales', href: '/ajuste-stock', permission: 'productos' },
+                                    { label: 'Movimientos', href: '/movimientos-stock', permission: 'productos' },
+                                    { label: 'Precios', href: '/precios/actualizar', permission: 'productos' },
+                                ]}
 
-                    <SidebarItem
-                        icon={BarChart3}
-                        label="Reportes"
-                        href="/reportes"
-                        standalone={standalone}
-                        permission="reportes"
-                    />
-
-                    <SidebarItem
-                        icon={ClipboardList}
-                        label="Operaciones"
-                        isOpen={openSection === 'operaciones'}
-                        onToggle={() => toggleSection('operaciones')}
-                        standalone={standalone}
-                        subItems={[
-                            { label: 'Ventas', href: '/ventas', permission: 'ventas' },
-                            { label: 'Compras', href: '/compras', permission: 'compras' },
-                            { label: 'Pedidos', href: '/pedidos', permission: 'pedidos' },
-                            { label: 'Presupuestos', href: '/presupuestos', permission: 'presupuestos' },
-                            { label: 'Remitos', href: '/remitos', permission: 'remitos' },
-                            { label: 'Notas de Crédito', href: '/notas-credito', permission: 'ventas' },
-                            { label: 'Notas de Débito', href: '/notas-debito', permission: 'ventas' },
-                        ]}
-                    />
-
-                    <SidebarItem
-                        icon={Package}
-                        label="Gestión de Productos"
-                        isOpen={openSection === 'productos'}
-                        onToggle={() => toggleSection('productos')}
-                        standalone={standalone}
-                        permission="productos"
-                        subItems={[
-                            { label: 'Productos', href: '/productos', permission: 'productos' },
-                            { label: 'Actualizar Precios', href: '/precios/actualizar', permission: 'productos' },
-                            { label: 'Ajuste de Stock', href: '/ajuste-stock', permission: 'productos' },
-                            { label: 'Movimientos de Stock', href: '/movimientos-stock', permission: 'productos' },
-                        ]}
-                    />
-
-                    <SidebarItem
-                        icon={Users}
-                        label="Clientes"
-                        href="/clientes"
-                        standalone={standalone}
-                        permission="clientes"
-                    />
-
-                    <SidebarItem
-                        icon={Users}
-                        label="Proveedores"
-                        href="/proveedores"
-                        standalone={standalone}
-                        permission="proveedores"
-                    />
-
-                    {(hasPermission('configuracion')) && (
-                        <div className="my-3 px-2 small fw-bold text-uppercase text-light text-opacity-50" style={{ fontSize: '0.75rem', letterSpacing: '0.05em' }}>
-                            Datos Varios
+                            />
+                            <SidebarItem icon={Users} label="Clientes" href="/clientes" permission="clientes" />
+                            <SidebarItem icon={Users} label="Proveedores" href="/proveedores" permission="proveedores" />
                         </div>
-                    )}
 
-                    <SidebarItem
-                        icon={BookOpen}
-                        label="Maestros"
-                        isOpen={openSection === 'maestros'}
-                        onToggle={() => toggleSection('maestros')}
-                        standalone={standalone}
-                        permission="configuracion"
-                        subItems={[
-                            { label: 'Marcas', href: '/marcas' },
-                            { label: 'Categorías', href: '/categorias' },
-                            { label: 'Rubros', href: '/rubros' },
-                            { label: 'Unidades', href: '/unidades' },
-                            { label: 'Localidades', href: '/localidades' },
-                        ]}
-                    />
+                        {/* Section: Tesorería */}
+                        <div className="space-y-1">
+                            <span className="px-4 text-[11px] font-bold text-neutral-400 uppercase tracking-widest">Finanzas</span>
+                            <SidebarItem icon={Banknote} label="Caja" href="/caja" permission="caja" />
+                            <SidebarItem
+                                icon={Landmark}
+                                label="Bancos"
+                                isOpen={openSection === 'bancos'}
+                                onToggle={() => toggleSection('bancos')}
+                                permission="bancos"
+                                subItems={[
+                                    { label: 'Cuentas Bancarias', href: '/bancos' },
+                                    { label: 'Conciliación', href: '/bancos/conciliacion' },
+                                    { label: 'Cheques', href: '/cheques' },
+                                ]}
+                            />
 
-                    {(hasPermission('caja') || hasPermission('bancos') || hasPermission('ctacte')) && (
-                        <div className="my-3 px-2 small fw-bold text-uppercase text-light text-opacity-50" style={{ fontSize: '0.75rem', letterSpacing: '0.05em' }}>
-                            Tesorería
+                            <SidebarItem
+                                icon={CreditCard}
+                                label="Ctas. Corrientes"
+                                isOpen={openSection === 'ctas-corrientes'}
+                                onToggle={() => toggleSection('ctas-corrientes')}
+                                subItems={[
+                                    { label: 'Clientes', href: '/ctas-corrientes/clientes', permission: 'ctacte' },
+                                    { label: 'Proveedores', href: '/ctas-corrientes/proveedores', permission: 'ctacte' },
+                                ]}
+                            />
                         </div>
-                    )}
 
-                    <SidebarItem
-                        icon={Banknote}
-                        label="Caja"
-                        href="/caja"
-                        standalone={standalone}
-                        permission="caja"
-                    />
+                        {/* Section: Contabilidad */}
+                        <div className="space-y-1">
+                            <span className="px-4 text-[11px] font-bold text-neutral-400 uppercase tracking-widest">Core Contable</span>
+                            <SidebarItem
+                                icon={FileText}
+                                label="Contabilidad"
+                                isOpen={openSection === 'contabilidad'}
+                                onToggle={() => toggleSection('contabilidad')}
+                                permission="contabilidad"
+                                subItems={[
+                                    { label: 'Plan de Cuentas', href: '/contabilidad/plan-cuentas/' },
+                                    { label: 'Asientos', href: '/contabilidad/asientos/' },
+                                    { label: 'Libro Mayor', href: '/contabilidad/mayor/' },
+                                    { label: 'Balance', href: '/contabilidad/balance/' },
+                                    { label: 'Reportes Contables', href: '/contabilidad/reportes/' },
+                                ]}
 
-                    <SidebarItem
-                        icon={Landmark}
-                        label="Bancos"
-                        href="/bancos"
-                        standalone={standalone}
-                        permission="bancos"
-                    />
-
-                    <SidebarItem
-                        icon={CreditCard}
-                        label="Ctas. Corrientes"
-                        isOpen={openSection === 'ctas-corrientes'}
-                        onToggle={() => toggleSection('ctas-corrientes')}
-                        standalone={standalone}
-                        subItems={[
-                            { label: 'De Clientes', href: '/ctas-corrientes/clientes', permission: 'ctacte' },
-                            { label: 'De Proveedores', href: '/ctas-corrientes/proveedores', permission: 'ctacte' },
-                        ]}
-                    />
-
-                    {(hasPermission('contabilidad')) && (
-                        <div className="my-3 px-2 small fw-bold text-uppercase text-light text-opacity-50" style={{ fontSize: '0.75rem', letterSpacing: '0.05em' }}>
-                            Contabilidad
+                            />
                         </div>
-                    )}
 
-                    <SidebarItem
-                        icon={FileText}
-                        label="Contabilidad"
-                        isOpen={openSection === 'contabilidad'}
-                        onToggle={() => toggleSection('contabilidad')}
-                        standalone={standalone}
-                        permission="contabilidad"
-                        subItems={[
-                            { label: 'Plan de Cuentas', href: '/contabilidad/plan-cuentas/' },
-                            { label: 'Ejercicios Contables', href: '/contabilidad/ejercicios/' },
-                            { label: 'Asientos Manuales', href: '/contabilidad/asientos/' },
-                            { label: 'Libro Mayor', href: '/contabilidad/mayor/' },
-                            { label: 'Balance', href: '/contabilidad/balance/' },
-                            { label: 'Conciliación Bancaria', href: '/bancos/conciliacion' },
-                            { label: 'Gestión de Cheques', href: '/cheques' },
-                            { label: 'Reportes', href: '/contabilidad/reportes/' },
-                        ]}
-                    />
+                        {/* Section: Administración */}
+                        <div className="space-y-1">
+                            <SidebarItem icon={Settings} label="Parámetros" href="/parametros" permission="configuracion" />
+                            <SidebarItem icon={Building2} label="Mi Empresa" href="/configuracion/empresa" permission="configuracion" />
+                            <SidebarItem icon={Users} label="Usuarios" href="/usuarios" permission="usuarios" />
+                            <SidebarItem icon={Database} label="Backups" href="/backups" permission="configuracion" />
+                            <SidebarItem
+                                icon={BookOpen}
+                                label="Maestro"
+                                isOpen={openSection === 'maestro'}
+                                onToggle={() => toggleSection('maestro')}
+                                subItems={[
+                                    { label: 'Localidades', href: '/localidades', permission: 'configuracion' },
+                                    { label: 'Marcas', href: '/marcas', permission: 'productos' },
+                                    { label: 'Rubros', href: '/rubros', permission: 'productos' },
+                                    { label: 'Unidades', href: '/unidades', permission: 'productos' },
+                                ]}
+                            />
+                            <SidebarItem icon={Shield} label="Auditoría" href="/auditoria" permission="auditoria" />
+                            <SidebarItem icon={Activity} label="Estado Sistema" href="/estado" permission="configuracion" isExternal={true} />
 
-                    {(hasPermission('usuarios') || hasPermission('configuracion')) && (
-                        <div className="my-3 px-2 small fw-bold text-uppercase text-light text-opacity-50" style={{ fontSize: '0.75rem', letterSpacing: '0.05em' }}>
-                            Sistema
                         </div>
-                    )}
-                    <SidebarItem
-                        icon={Settings}
-                        label="Configuración"
-                        isOpen={openSection === 'configuracion'}
-                        onToggle={() => toggleSection('configuracion')}
-                        standalone={standalone}
-                        subItems={[
-                            { label: 'Datos de Empresa', href: '/configuracion/empresa', permission: 'configuracion' },
-                            { label: 'Parámetros', href: '/parametros', permission: 'configuracion' },
-                            { label: 'Usuarios', href: '/usuarios', permission: 'usuarios' },
-                            { label: 'Respaldos (Backups)', href: '/backups', permission: 'configuracion' },
-                        ]}
-                    />
 
-                    <div className="my-3 border-top border-light border-opacity-10"></div>
+                        {/* Section: Ayuda */}
+                        <div className="space-y-1">
+                            <span className="px-4 text-[11px] font-bold text-neutral-400 uppercase tracking-widest">Soporte</span>
+                            <SidebarItem icon={HelpCircle} label="Ayuda y Soporte" href="/ayuda" isExternal={true} />
 
-                    <SidebarItem
-                        icon={LogOut}
-                        label="Cerrar Sesión"
-                        href="/logout/"
-                        standalone={true}
-                    />
+                        </div>
 
+
+                    </div>
+                </div>
+
+                {/* Footer Section: User Profile & Logout */}
+                <div className="p-4 border-t border-neutral-100 bg-neutral-50/50 backdrop-blur-sm">
+                    <div className="flex items-center gap-3 p-3 rounded-2xl bg-white shadow-sm border border-neutral-100 group transition-all hover:shadow-premium-md">
+                        <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center border border-primary-200">
+                            <span className="text-primary-700 font-bold text-sm tracking-tighter">
+                                {user?.username?.substring(0, 2).toUpperCase() || 'US'}
+                            </span>
+                        </div>
+                        <div className="flex flex-column flex-1 min-w-0">
+                            <span className="text-sm font-bold text-neutral-900 truncate tracking-tight">{user?.username}</span>
+                            <span className="text-[10px] text-neutral-400 font-medium">Administrador</span>
+                        </div>
+                        <a href="/logout/" className="p-2 text-neutral-400 hover:text-error-600 transition-colors">
+                            <LogOut size={18} />
+                        </a>
+                    </div>
                 </div>
             </div>
 
-            {/* Overlay for mobile */}
+            {/* Backdrop Mobile */}
             {mobileOpen && (
-                <div
-                    className="d-lg-none position-fixed top-0 start-0 w-100 h-100 bg-black bg-opacity-50 z-2"
-                    style={{ zIndex: 1030 }}
-                    onClick={() => setMobileOpen(false)}
-                ></div>
+                <div className="lg:hidden fixed inset-0 bg-neutral-900/40 backdrop-blur-sm z-40 transition-opacity" onClick={() => setMobileOpen(false)} />
             )}
-
-            {/* CSS hack for responsive transform behavior not fully covered by BS utility classes */}
-            <style>{`
-                @media (max-width: 991.98px) {
-                    .d-flex.flex-column.position-fixed {
-                        transform: translateX(-100%);
-                    }
-                }
-                
-                /* Base Scrollbar (Visible by default if not hidden) */
-                .custom-scrollbar {
-                    scrollbar-width: thin;
-                    scrollbar-color: #475569 #000000;
-                }
-                .custom-scrollbar::-webkit-scrollbar {
-                    width: 8px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-track {
-                    background: #000000;
-                }
-                .custom-scrollbar::-webkit-scrollbar-thumb {
-                    background-color: #475569;
-                    border-radius: 4px;
-                    border: 2px solid #000000;
-                }
-
-                /* Hidden variant */
-                .hide-scrollbar::-webkit-scrollbar {
-                    display: none;
-                }
-                .hide-scrollbar {
-                    -ms-overflow-style: none;  /* IE and Edge */
-                    scrollbar-width: none !important;  /* Firefox */
-                }
-            `}</style>
         </>
     );
 };

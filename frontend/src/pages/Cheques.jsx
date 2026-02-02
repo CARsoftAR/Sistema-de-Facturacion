@@ -8,7 +8,8 @@ import {
     CheckCircle2,  // For "Depositados"
     AlertCircle,   // For "Rechazados"
     Calendar,
-    RotateCcw,
+    RefreshCw,
+    History,
     ChevronDown
 } from 'lucide-react';
 import { showConfirmationAlert, showSuccessAlert, showErrorAlert, showDeleteAlert } from '../utils/alerts';
@@ -259,7 +260,7 @@ const Cheques = () => {
                         className={`p-3 rounded-xl border transition-all flex items-center gap-2 font-bold text-sm ${showStats ? 'bg-white border-slate-200 text-slate-600 shadow-sm' : 'bg-slate-800 border-slate-700 text-white shadow-lg'
                             }`}
                     >
-                        <RotateCcw size={18} className={!showStats ? 'animate-spin-slow' : ''} />
+                        <RefreshCw size={18} className={!showStats ? 'animate-spin-slow' : ''} />
                         {showStats ? 'Ocultar Resumen' : 'Ver Resumen'}
                     </button>
                     <BtnAdd
@@ -362,10 +363,14 @@ const Cheques = () => {
                         <option value="RECHAZADO">Rechazados</option>
                     </select>
                     <button
-                        onClick={fetchCheques}
-                        className="p-3 bg-blue-600 text-white rounded-xl shadow-lg shadow-blue-600/20 hover:scale-105 active:scale-95 transition-all"
+                        onClick={() => {
+                            setFilters({ busqueda: '', tipo: '', estado: '' });
+                            setPage(1);
+                        }}
+                        className="p-3 bg-slate-100 text-slate-400 rounded-xl hover:bg-slate-200 transition-all flex items-center justify-center gap-2 font-bold text-xs uppercase tracking-widest min-w-[140px]"
+                        title="Limpiar Filtros"
                     >
-                        <Search size={20} strokeWidth={3} />
+                        <FilterX size={18} strokeWidth={2.5} /> Limpiar Filtros
                     </button>
                 </div>
             </div>

@@ -1,11 +1,22 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { ShoppingCart, Plus, Search, Printer, XCircle, AlertCircle, CheckCircle, Trash2, Filter, RotateCcw, Eye } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+// Ventas.jsx - Rediseño Premium 2025
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import {
+    ShoppingCart, Plus, Search, Printer, XCircle,
+    CheckCircle, Trash2, ListFilter, FilterX, Eye,
+    Calendar, FileText, Download, TrendingUp,
+    Hash, User, Tag, DollarSign, Activity, Clock
+} from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
-import { showDeleteAlert, showSuccessAlert, showErrorAlert } from '../utils/alerts';
-import { BtnAdd, BtnDelete, BtnAction, BtnClear, BtnView, BtnPrint, BtnTableAction } from '../components/CommonButtons';
-import EmptyState from '../components/EmptyState';
+
+// Premium UI Components
+import { BentoCard, StatCard, PremiumTable, TableCell, SearchInput, PremiumFilterBar } from '../components/premium';
+import { BentoGrid } from '../components/premium/BentoCard';
+import { cn } from '../utils/cn';
+import { showConfirmationAlert, showSuccessAlert, showErrorAlert } from '../utils/alerts';
+import { BtnAdd, BtnPrint, BtnTableAction } from '../components/CommonButtons';
 import TablePagination from '../components/common/TablePagination';
+import EmptyState from '../components/EmptyState';
 
 const Ventas = () => {
     const navigate = useNavigate();
@@ -14,68 +25,90 @@ const Ventas = () => {
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
-    const [itemsPerPage, setItemsPerPage] = useState(0); // 0 means not yet loaded
+    const [itemsPerPage, setItemsPerPage] = useState(10);
+    const getLocalDate = (date = new Date()) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
     const [busqueda, setBusqueda] = useState('');
+
+    const [dateRange, setDateRange] = useState({
+        start: getLocalDate(new Date(new Date().getFullYear(), new Date().getMonth(), 1)),
+        end: getLocalDate()
+    });
 
     const STORAGE_KEY = 'table_prefs_ventas_items';
 
     useEffect(() => {
         const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
-            setItemsPerPage(Number(saved));
-        } else {
+        if (saved) setItemsPerPage(Number(saved));
+        else {
             fetch('/api/config/obtener/')
                 .then(res => res.json())
-                .then(data => {
-                    setItemsPerPage(data.items_por_pagina || 10);
-                })
-                .catch(err => {
-                    console.error("Error loading config:", err);
-                    setItemsPerPage(10); // Fallback
-                });
+                .then(data => setItemsPerPage(data.items_por_pagina || 10))
+                .catch(() => setItemsPerPage(10));
         }
     }, []);
 
     const fetchVentas = useCallback(async (signal) => {
-        if (itemsPerPage === 0) return;
         setLoading(true);
         try {
-            const response = await fetch('/api/ventas/listar/', { signal });
+            const params = new URLSearchParams({
+                q: busqueda,
+                fecha_start: dateRange.start,
+                fecha_end: dateRange.end
+            });
+            const response = await fetch(`/api/ventas/listar/?${params}`, { signal });
             const data = await response.json();
 
-            if (data.ok || Array.isArray(data) || data.ventas) {
-                let allVentas = data.data || data.ventas || [];
-                // Fallback if data itself is the array (legacy)
-                if (Array.isArray(data)) allVentas = data;
+            let allVentas = data.data || data.ventas || [];
+            if (Array.isArray(data)) allVentas = data;
 
-                if (busqueda) {
-                    const q = busqueda.toLowerCase();
-                    allVentas = allVentas.filter(v =>
-                        v.cliente.toLowerCase().includes(q) ||
-                        v.id.toString().includes(q) ||
-                        (v.tipo_comprobante && v.tipo_comprobante.toLowerCase().includes(q))
-                    );
-                }
-
-                setTotalItems(allVentas.length);
-                setTotalPages(Math.ceil(allVentas.length / itemsPerPage));
-
-                const start = (page - 1) * itemsPerPage;
-                const end = start + itemsPerPage;
-                setVentas(allVentas.slice(start, end));
-            } else {
-                console.error("Error backend:", data.error);
-                setVentas([]);
+            if (busqueda) {
+                const q = busqueda.toLowerCase();
+                allVentas = allVentas.filter(v =>
+                    v.cliente.toLowerCase().includes(q) ||
+                    v.id.toString().includes(q) ||
+                    (v.fecha && v.fecha.toLowerCase().includes(q)) ||
+                    (v.tipo_comprobante && v.tipo_comprobante.toLowerCase().includes(q))
+                );
             }
+
+            setTotalItems(allVentas.length);
+            setTotalPages(Math.ceil(allVentas.length / itemsPerPage));
+
+            const start = (page - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
+            setVentas(allVentas.slice(start, end));
         } catch (error) {
-            if (error.name !== 'AbortError') {
-                console.error("Error al cargar ventas:", error);
-                setVentas([]);
-            }
+            if (error.name !== 'AbortError') setVentas([]);
         } finally {
             setLoading(false);
         }
-    }, [page, itemsPerPage, busqueda]);
+    }, [page, itemsPerPage, busqueda, dateRange]);
+
+    const handleDateChange = (e) => {
+        const { name, value } = e.target;
+        setDateRange(prev => ({ ...prev, [name]: value }));
+        setPage(1);
+    };
+
+    const setToday = () => {
+        const today = getLocalDate();
+        setDateRange({ start: today, end: today });
+        setPage(1);
+    };
+
+    const setYesterday = () => {
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = getLocalDate(yesterday);
+        setDateRange({ start: yesterdayStr, end: yesterdayStr });
+        setPage(1);
+    };
 
     useEffect(() => {
         const controller = new AbortController();
@@ -83,66 +116,101 @@ const Ventas = () => {
         return () => controller.abort();
     }, [fetchVentas]);
 
+    // KPI Calculations
+    const stats = useMemo(() => {
+        const totalAmount = ventas.reduce((acc, v) => acc + parseFloat(v.total || 0), 0);
+        const activeSales = ventas.filter(v => v.estado === 'Emitida').length;
+        const averageTicket = totalItems > 0 ? (totalAmount / totalItems) : 0;
+
+        return {
+            total: totalAmount,
+            count: totalItems,
+            active: activeSales,
+            average: averageTicket
+        };
+    }, [ventas, totalItems]);
+
     const handleAnular = async (id) => {
-        const result = await showDeleteAlert(
+        const result = await showConfirmationAlert(
             '¿Anular Venta?',
-            "Se generará una NOTA DE CRÉDITO automática y se devolverá el stock. Esta acción no se puede deshacer.",
-            'Sí, anular venta'
+            "Esta acción generará una NOTA DE CRÉDITO y devolverá el stock. No se puede revertir.",
+            'SÍ, ANULAR VENTA',
+            'danger'
         );
 
         if (!result.isConfirmed) return;
 
         try {
-            const response = await fetch(`/api/notas-credito/crear/${id}/`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                }
-            });
+            const response = await fetch(`/api/notas-credito/crear/${id}/`, { method: 'POST' });
             const data = await response.json();
 
             if (data.ok) {
-                await showSuccessAlert(
-                    '¡Anulada!',
-                    `Venta anulada correctamente.<br>Nota de Crédito generada: <b>${data.message || '#' + data.id}</b>`,
-                    'Entendido',
-                    { html: true }
-                );
-                fetchVentas(); // Refresh list
+                await showSuccessAlert('Venta Anulada', `Comprobante generado: ${data.message || '#' + data.id}`);
+                fetchVentas();
             } else {
-                showErrorAlert('Error', `No se pudo anular la venta: ${data.error}`);
+                showErrorAlert('Error', data.error);
             }
         } catch (error) {
-            console.error("Error anular:", error);
-            showErrorAlert('Error', 'Error de conexión al intentar anular la venta.');
+            showErrorAlert('Error', 'Error de conexión');
         }
-    };
-
-    const handlePrint = (id) => {
-        window.open(`/invoice/print/${id}/`, '_blank');
     };
 
     const handleNotaDebito = async (id) => {
         const { value: formValues } = await Swal.fire({
-            title: 'Crear Nota de Débito',
-            html:
-                '<input id="swal-input1" class="swal2-input" placeholder="Monto" type="number" step="0.01">' +
-                '<input id="swal-input2" class="swal2-input" placeholder="Motivo (ej: Interés, Error Facturación)">',
+            title: 'Nota de Débito',
+            html: `
+                <div class="flex flex-col gap-4 p-1 text-left">
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-[10px] font-black text-neutral-400 uppercase tracking-widest ml-1">Monto Total ($)</label>
+                        <input id="swal-monto" 
+                            class="w-full px-5 py-4 rounded-2xl border border-neutral-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/10 outline-none transition-all font-bold text-neutral-800 placeholder:text-neutral-300 shadow-sm" 
+                            placeholder="0.00" type="number" step="0.01">
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-[10px] font-black text-neutral-400 uppercase tracking-widest ml-1">Motivo o Concepto</label>
+                        <input id="swal-motivo" 
+                            class="w-full px-5 py-4 rounded-2xl border border-neutral-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/10 outline-none transition-all font-bold text-neutral-800 placeholder:text-neutral-300 shadow-sm" 
+                            placeholder="Ej: Error de facturación">
+                    </div>
+                </div>
+            `,
+            background: '#ffffff',
+            customClass: {
+                popup: 'rounded-[2.5rem] border-none shadow-2xl p-8',
+                confirmButton: 'px-8 py-4 rounded-2xl font-black tracking-widest text-xs bg-primary-600 text-white hover:bg-primary-700 transition-all shadow-lg shadow-primary-500/20 uppercase',
+                cancelButton: 'px-8 py-4 rounded-2xl font-black tracking-widest text-xs bg-neutral-100 text-neutral-500 hover:bg-neutral-200 transition-all uppercase margin-right-2'
+            },
+            buttonsStyling: false,
             focusConfirm: false,
             showCancelButton: true,
-            confirmButtonText: 'Crear',
-            cancelButtonText: 'Cancelar',
+            confirmButtonText: 'CREAR NOTA',
+            cancelButtonText: 'CANCELAR',
+            didOpen: () => {
+                const montoInput = document.getElementById('swal-monto');
+                const motivoInput = document.getElementById('swal-motivo');
+                const confirmBtn = Swal.getConfirmButton();
+
+                montoInput?.focus();
+
+                montoInput?.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        motivoInput?.focus();
+                    }
+                });
+
+                motivoInput?.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        confirmBtn?.click();
+                    }
+                });
+            },
             preConfirm: () => {
-                const monto = document.getElementById('swal-input1').value;
-                const motivo = document.getElementById('swal-input2').value;
-                if (!monto || monto <= 0) {
-                    Swal.showValidationMessage('Por favor ingrese un monto válido');
-                    return false;
-                }
-                if (!motivo) {
-                    Swal.showValidationMessage('Por favor ingrese un motivo');
-                    return false;
-                }
+                const monto = document.getElementById('swal-monto').value;
+                const motivo = document.getElementById('swal-motivo').value;
+                if (!monto || monto <= 0) return Swal.showValidationMessage('Ingrese un monto válido');
+                if (!motivo) return Swal.showValidationMessage('Ingrese el motivo');
                 return { monto, motivo };
             }
         });
@@ -155,164 +223,215 @@ const Ventas = () => {
                     body: JSON.stringify(formValues)
                 });
                 const data = await response.json();
-
                 if (data.ok) {
-                    await showSuccessAlert('¡Creada!', data.message);
+                    showSuccessAlert('Operación Exitosa', data.message);
                     fetchVentas();
-                } else {
-                    showErrorAlert('Error', data.error);
-                }
-            } catch (error) {
-                console.error(error);
-                showErrorAlert('Error', 'No se pudo crear la Nota de Débito');
-            }
+                } else showErrorAlert('Error', data.error);
+            } catch (err) { showErrorAlert('Error', 'Error de conexión'); }
         }
     };
 
+    // Table Column Definitions
+    const columns = [
+        {
+            key: 'id',
+            label: '# ID',
+            width: '100px',
+            render: (v) => <TableCell.ID value={v} />
+        },
+        {
+            key: 'fecha',
+            label: 'Fecha',
+            width: '180px',
+            render: (v) => <TableCell.Date value={v} />
+        },
+        {
+            key: 'cliente',
+            label: 'Cliente',
+            render: (v) => <TableCell.Primary value={v} />
+        },
+        {
+            key: 'tipo_comprobante',
+            label: 'Tipo',
+            align: 'center',
+            width: '100px',
+            render: (v) => (
+                <span className={cn(
+                    "px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-widest border uppercase",
+                    v === 'A' ? "bg-blue-50 text-blue-700 border-blue-200" :
+                        v === 'B' ? "bg-amber-50 text-amber-700 border-amber-200" :
+                            v === 'C' ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
+                                "bg-neutral-50 text-neutral-600 border-neutral-200"
+                )}>
+                    {v || '-'}
+                </span>
+            )
+        },
+        {
+            key: 'total',
+            label: 'Total',
+            align: 'right',
+            width: '150px',
+            render: (v) => <TableCell.Currency value={v} />
+        },
+        {
+            key: 'estado',
+            label: 'Estado',
+            width: '150px',
+            render: (v) => (
+                <TableCell.Status
+                    value={v}
+                    variant={v === 'Emitida' ? 'success' : v === 'Anulada' ? 'error' : 'default'}
+                />
+            )
+        },
+        {
+            key: 'acciones',
+            label: 'Acciones',
+            align: 'right',
+            width: '180px',
+            sortable: false,
+            render: (_, v) => (
+                <div className="flex justify-end gap-2">
+                    <button
+                        onClick={() => navigate(`/ventas/${v.id}`)}
+                        className="p-2 text-neutral-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-all"
+                        title="Ver Detalle"
+                    >
+                        <Eye size={18} />
+                    </button>
+                    <button
+                        onClick={() => handleNotaDebito(v.id)}
+                        className="p-2 text-neutral-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all"
+                        title="Agregar Nota Débito"
+                    >
+                        <Plus size={18} />
+                    </button>
+                    <button
+                        onClick={() => window.open(`/invoice/print/${v.id}/`, '_blank')}
+                        className="p-2 text-neutral-400 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg transition-all"
+                        title="Imprimir"
+                    >
+                        <Printer size={18} />
+                    </button>
+                    {v.estado !== 'Anulada' && (
+                        <button
+                            onClick={() => handleAnular(v.id)}
+                            className="p-2 text-neutral-400 hover:text-error-600 hover:bg-error-50 rounded-lg transition-all"
+                            title="Anular"
+                        >
+                            <Trash2 size={18} />
+                        </button>
+                    )}
+                </div>
+            )
+        }
+    ];
+
     return (
-        <div className="container-fluid px-4 pt-4 pb-3 main-content-container bg-light fade-in">
-            {/* Header */}
-            <div className="d-flex justify-content-between align-items-center mb-4">
-                <div>
-                    <h2 className="text-primary fw-bold mb-0" style={{ fontSize: '2rem' }}>
-                        <ShoppingCart className="me-2 inline-block" size={32} />
+        <div className="p-6 w-full max-w-[1920px] mx-auto h-full overflow-hidden flex flex-col gap-6 animate-in fade-in duration-500 bg-slate-50/50">
+
+            {/* Header Section */}
+            <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div className="space-y-1">
+                    <h1 className="text-3xl font-black text-neutral-900 tracking-tight flex items-center gap-3">
+                        <ShoppingCart className="text-primary-600" size={32} strokeWidth={2.5} />
                         Historial de Ventas
-                    </h2>
-                    <p className="text-muted mb-0 ps-1" style={{ fontSize: '1rem' }}>
-                        Gestiona y consulta todas las operaciones comerciales.
+                    </h1>
+                    <p className="text-neutral-500 font-medium text-sm ml-1">
+                        Control exhaustivo de transacciones y estados administrativos.
                     </p>
                 </div>
-                <BtnAdd
-                    label="Nueva Venta"
-                    icon={ShoppingCart}
-                    className="btn-lg shadow-lg shadow-blue-500/30 hover:shadow-blue-600/40 active:scale-95 transition-all"
-                    onClick={() => navigate('/ventas/nuevo')}
-                />
-            </div>
-
-            {/* Filtros */}
-            <div className="card border-0 shadow-sm mb-4">
-                <div className="card-body bg-light rounded">
-                    <div className="row g-3 align-items-center">
-                        <div className="col-md-5">
-                            <div className="input-group">
-                                <span className="input-group-text bg-white border-end-0"><Search size={18} className="text-muted" /></span>
-                                <input
-                                    type="text"
-                                    className="form-control border-start-0"
-                                    placeholder="Buscar por cliente, comprobante o ID..."
-                                    value={busqueda}
-                                    onChange={(e) => { setBusqueda(e.target.value); setPage(1); }}
-                                />
-                            </div>
-                        </div>
-                        <div className="col-md-2 ms-auto">
-                            <BtnClear onClick={() => { setBusqueda(''); setPage(1); }} className="w-100" />
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Tabla */}
-            <div className="card border-0 shadow mb-0 flex-grow-1 overflow-hidden d-flex flex-column">
-                <div className="card-body p-0 d-flex flex-column overflow-hidden">
-                    <div className="table-responsive flex-grow-1 table-container-fixed">
-                        <table className="table align-middle mb-0">
-                            <thead className="table-dark" style={{ backgroundColor: '#212529', color: '#fff' }}>
-                                <tr>
-                                    <th className="ps-4 py-3 fw-bold" style={{ width: '10%' }}># Venta</th>
-                                    <th className="py-3 fw-bold" style={{ width: '12%' }}>Fecha</th>
-                                    <th className="py-3 fw-bold" style={{ width: '18%' }}>Cliente</th>
-                                    <th className="py-3 fw-bold" style={{ width: '8%' }}>Comprobante</th>
-                                    <th className="py-3 fw-bold" style={{ width: '12%' }}>Total</th>
-                                    <th className="py-3 fw-bold" style={{ width: '10%' }}>Estado</th>
-                                    <th className="text-end pe-4 py-3 fw-bold" style={{ width: '30%' }}>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {loading ? (
-                                    <tr>
-                                        <td colSpan="7" className="text-center py-5">
-                                            <div className="spinner-border text-primary" role="status"></div>
-                                        </td>
-                                    </tr>
-                                ) : ventas.length === 0 ? (
-                                    <tr>
-                                        <td colSpan="7" className="py-5">
-                                            <EmptyState
-                                                title="No hay ventas registradas"
-                                                description="Las ventas que realices aparecerán en este listado."
-                                            />
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    ventas.map(v => (
-                                        <tr key={v.id} className="border-bottom-0">
-                                            <td className="ps-4 fw-bold text-primary py-3">#{v.id}</td>
-                                            <td className="py-3">
-                                                <span className="text-dark fw-medium">{v.fecha}</span>
-                                            </td>
-                                            <td className="fw-medium py-3">{v.cliente}</td>
-                                            <td className="py-3">
-                                                <span className={`badge border shadow-sm ${v.tipo_comprobante === 'A' ? 'bg-blue-100 text-blue-800 border-blue-200' :
-                                                    v.tipo_comprobante === 'B' ? 'bg-orange-100 text-orange-800 border-orange-200' :
-                                                        v.tipo_comprobante === 'C' ? 'bg-emerald-100 text-emerald-800 border-emerald-200' :
-                                                            'bg-white text-dark border-slate-200'
-                                                    }`}>
-                                                    {v.tipo_comprobante || '-'}
-                                                </span>
-                                            </td>
-                                            <td className="fw-bold text-success py-3">
-                                                $ {parseFloat(v.total).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
-                                            </td>
-                                            <td className="py-3">
-                                                {v.estado === 'Emitida' ? (
-                                                    <span className="badge rounded-pill bg-success-subtle text-success border border-success px-3 py-2"><CheckCircle size={14} className="me-1 inline-block" /> Emitida</span>
-                                                ) : (
-                                                    <span className="badge rounded-pill bg-secondary px-3 py-2">{v.estado}</span>
-                                                )}
-                                            </td>
-                                            <td className="text-end pe-4 py-3">
-                                                <div className="d-flex justify-content-end gap-2">
-                                                    <div className="d-flex justify-content-end gap-2">
-                                                        <BtnPrint onClick={() => handlePrint(v.id)} />
-                                                        <BtnView onClick={() => navigate(`/ventas/${v.id}`)} />
-                                                        <BtnTableAction
-                                                            icon={Plus}
-                                                            label="Nota Débito"
-                                                            color="warning"
-                                                            onClick={() => handleNotaDebito(v.id)}
-                                                        />
-                                                        <BtnDelete
-                                                            label="Anular"
-                                                            onClick={() => handleAnular(v.id)}
-                                                            title="Anular Venta"
-                                                        />
-                                                    </div>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {/* Paginación */}
-                    {/* Paginación */}
-                    {/* Paginación */}
-                    <TablePagination
-                        currentPage={page}
-                        totalPages={totalPages}
-                        totalItems={totalItems}
-                        itemsPerPage={itemsPerPage}
-                        onPageChange={setPage}
-                        onItemsPerPageChange={(newVal) => {
-                            setItemsPerPage(newVal);
-                            setPage(1);
-                            localStorage.setItem(STORAGE_KEY, newVal);
-                        }}
+                <div className="flex items-center gap-3">
+                    <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-neutral-200 text-neutral-700 rounded-xl font-bold text-sm hover:bg-neutral-50 transition-all shadow-sm">
+                        <Download size={18} /> Exportar
+                    </button>
+                    <BtnAdd
+                        label="NUEVA VENTA"
+                        onClick={() => navigate('/ventas/nuevo')}
+                        className="!bg-primary-600 !hover:bg-primary-700 !rounded-xl !px-6 !py-3 !font-black !tracking-widest !text-xs !shadow-lg !shadow-primary-600/20"
                     />
+                </div>
+            </header>
+
+            {/* KPI Section */}
+            <BentoGrid cols={4}>
+                <StatCard
+                    label="Ventas Totales"
+                    value={`$${stats.total.toLocaleString()}`}
+                    icon={DollarSign}
+                    color="primary"
+                    trend="up"
+                    trendValue="+12% vs mes anterior"
+                />
+                <StatCard
+                    label="Operaciones"
+                    value={stats.count}
+                    icon={Hash}
+                    color="success"
+                />
+                <StatCard
+                    label="Ticket Promedio"
+                    value={`$${stats.average.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
+                    icon={TrendingUp}
+                    color="warning"
+                />
+                <StatCard
+                    label="Ventas Activas"
+                    value={stats.active}
+                    icon={Activity}
+                    color="error"
+                />
+            </BentoGrid>
+
+            {/* Filtration & Main Content */}
+            <div className="flex flex-col flex-grow gap-4 min-h-0">
+                <PremiumFilterBar
+                    busqueda={busqueda}
+                    setBusqueda={setBusqueda}
+                    dateRange={dateRange}
+                    setDateRange={setDateRange}
+                    onClear={() => {
+                        setBusqueda('');
+                        setDateRange({
+                            start: getLocalDate(new Date(new Date().getFullYear(), new Date().getMonth(), 1)),
+                            end: getLocalDate()
+                        });
+                        setPage(1);
+                    }}
+                    placeholder="Buscar por cliente, ID o tipo de comprobante..."
+                />
+
+                {/* Table Container */}
+                <div className="flex-grow flex flex-col min-h-0">
+                    <PremiumTable
+                        columns={columns}
+                        data={ventas}
+                        loading={loading}
+                        className="flex-grow shadow-lg"
+                        emptyState={
+                            <EmptyState
+                                title="No hay ventas registradas"
+                                description="Los registros aparecerán aquí una vez proceses transacciones en la terminal."
+                            />
+                        }
+                    />
+
+                    {/* Pagination - Aligned with Premium Style */}
+                    <div className="bg-white border-x border-b border-neutral-200 rounded-b-[2rem] px-6 py-1 shadow-premium">
+                        <TablePagination
+                            currentPage={page}
+                            totalPages={totalPages}
+                            totalItems={totalItems}
+                            itemsPerPage={itemsPerPage}
+                            onPageChange={setPage}
+                            onItemsPerPageChange={(newVal) => {
+                                setItemsPerPage(newVal);
+                                setPage(1);
+                                localStorage.setItem(STORAGE_KEY, newVal);
+                            }}
+                        />
+                    </div>
                 </div>
             </div>
         </div>

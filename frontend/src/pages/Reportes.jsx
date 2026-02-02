@@ -1,57 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
-    FileText,
-    ShoppingCart,
-    Package,
-    Users,
-    Banknote,
-    Calendar,
-    Search,
-    Download,
-    Printer,
-    ChevronRight,
-    Filter,
-    ArrowUpCircle,
-    ArrowDownCircle,
-    ClipboardList
+    FileText, ShoppingCart, Package, Users, Banknote, Calendar, Search, Download, Printer,
+    ChevronRight, Filter, ArrowUpCircle, ArrowDownCircle, ClipboardList, Activity,
+    TrendingUp, ShieldCheck, MapPin, Mail, Phone, CreditCard, Receipt
 } from 'lucide-react';
 
-// Estilos base extraídos de Parametros.jsx para mantener consistencia
-const s = {
-    container: { padding: '40px', maxWidth: '1200px', margin: '0 auto' },
-    header: { marginBottom: '24px' },
-    title: { fontSize: '24px', fontWeight: 'bold', color: '#1e293b' },
-    subtitle: { color: '#64748b', fontSize: '14px' },
-    card: { backgroundColor: 'white', border: 'none', borderRadius: '24px', padding: '32px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' },
-    sectionTitle: { display: 'flex', alignItems: 'center', gap: '8px', fontSize: '16px', fontWeight: '700', color: '#3b82f6', marginBottom: '24px' },
-    label: { display: 'block', fontWeight: '600', color: '#334155', marginBottom: '8px', fontSize: '12px' },
-    input: { width: '100%', padding: '10px 14px', borderRadius: '12px', border: '1px solid #e2e8f0', outline: 'none', fontSize: '14px' },
-    reportItem: {
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '16px',
-        backgroundColor: '#f8fafc',
-        borderRadius: '16px',
-        border: '1px solid #f1f5f9',
-        marginBottom: '12px',
-        transition: 'all 0.2s',
-        cursor: 'pointer'
-    },
-    runBtn: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        backgroundColor: '#2563eb',
-        color: 'white',
-        padding: '10px 20px',
-        borderRadius: '12px',
-        fontWeight: '600',
-        border: 'none',
-        cursor: 'pointer',
-        fontSize: '14px'
-    }
-};
+// Premium UI Components
+import { BentoCard, BentoGrid, StatCard } from '../components/premium/BentoCard';
+import { SearchInput, PremiumSelect } from '../components/premium/PremiumInput';
+import { PremiumTable, TableCell } from '../components/premium/PremiumTable';
+import { BtnAction, BtnPrint } from '../components/CommonButtons';
+import { cn } from '../utils/cn';
+import { showSuccessAlert, showErrorAlert, showWarningAlert } from '../utils/alerts';
 
 const Reportes = () => {
     const [activeTab, setActiveTab] = useState('ventas');
@@ -81,114 +41,84 @@ const Reportes = () => {
     const [clientes, setClientes] = useState([]);
     const [proveedores, setProveedores] = useState([]);
 
-    // Cargar datos de la empresa
-    React.useEffect(() => {
+    // Cargar datos iniciales
+    useEffect(() => {
         const fetchEmpresa = async () => {
             try {
                 const res = await fetch('/api/config/obtener/');
                 const data = await res.json();
-                if (!data.error) {
-                    setEmpresa(data);
-                }
-            } catch (e) {
-                console.error('Error cargando datos de empresa:', e);
-            }
+                if (!data.error) setEmpresa(data);
+            } catch (e) { console.error('Error cargando empresa:', e); }
+        };
+        const fetchSelectors = async () => {
+            try {
+                const resCl = await fetch('/api/clientes/listar-simple/');
+                const dataCl = await resCl.json();
+                if (dataCl.ok && dataCl.clientes) setClientes(dataCl.clientes);
+
+                const resPr = await fetch('/api/proveedores/lista/');
+                const dataPr = await resPr.json();
+                if (dataPr.ok) setProveedores(dataPr.data || dataPr.proveedores || []);
+            } catch (e) { console.error('Error cargando selectores:', e); }
         };
         fetchEmpresa();
-    }, []);
-
-    const fetchSelectors = async () => {
-        try {
-            console.log('Cargando electores (clientes)...');
-            const resCl = await fetch('/api/clientes/listar-simple/');
-            const dataCl = await resCl.json();
-            if (dataCl.ok && dataCl.clientes) {
-                setClientes(dataCl.clientes);
-                console.log('Clientes cargados:', dataCl.clientes.length);
-            }
-        } catch (e) { console.error('Error cargando clientes:', e); }
-
-        try {
-            console.log('Cargando electores (proveedores)...');
-            const resPr = await fetch('/api/proveedores/lista/');
-            const dataPr = await resPr.json();
-            console.log('Respuesta proveedores API:', dataPr);
-
-            if (dataPr.ok && (dataPr.data || dataPr.proveedores)) {
-                setProveedores(dataPr.data || dataPr.proveedores);
-                console.log('Proveedores cargados (formato ok):', (dataPr.data || dataPr.proveedores).length);
-            } else if (Array.isArray(dataPr)) {
-                setProveedores(dataPr); // Fallback por si acaso
-                console.log('Proveedores cargados (formato array):', dataPr.length);
-            } else if (dataPr.proveedores) {
-                setProveedores(dataPr.proveedores);
-                console.log('Proveedores cargados (formato viejo):', dataPr.proveedores.length);
-            } else {
-                console.warn('Formato de respuesta de proveedores inesperado:', dataPr);
-            }
-        } catch (e) { console.error('Error cargando proveedores:', e); }
-    };
-
-    React.useEffect(() => {
         fetchSelectors();
     }, []);
 
-    React.useEffect(() => {
+    useEffect(() => {
         setReportData(null);
         setFiltros(initialFilters);
     }, [selectedReport]);
 
     const tabs = [
-        { id: 'ventas', label: 'Ventas', icon: ShoppingCart },
-        { id: 'caja', label: 'Caja', icon: Banknote },
-        { id: 'compras', label: 'Compras', icon: ArrowDownCircle },
-        { id: 'clientes', label: 'Clientes', icon: Users },
-        { id: 'proveedores', label: 'Proveedores', icon: Users },
-        { id: 'productos', label: 'Productos', icon: Package },
-        { id: 'contabilidad', label: 'Contabilidad', icon: FileText }
+        { id: 'ventas', label: 'Ventas', icon: ShoppingCart, color: 'indigo' },
+        { id: 'caja', label: 'Mov. Caja', icon: Banknote, color: 'emerald' },
+        { id: 'compras', label: 'Compras', icon: ArrowDownCircle, color: 'amber' },
+        { id: 'clientes', label: 'Clientes', icon: Users, color: 'blue' },
+        { id: 'proveedores', label: 'Proveedores', icon: rose => 'rose' }, // Corrección: solo color
+        { id: 'productos', label: 'Productos', icon: Package, color: 'purple' },
+        { id: 'contabilidad', label: 'Balances', icon: FileText, color: 'slate' }
     ];
+    // Reajuste de color manual para proveedores
+    tabs[4].color = 'rose';
 
     const reportOptions = {
         ventas: [
-            { id: 'v_diarias', title: 'Resumen de Ventas Diarias', desc: 'Listado detallado de ventas por día.' },
-            { id: 'v_articulos', title: 'Ventas por Artículo', desc: 'Ranking de productos más vendidos.' },
-            { id: 'iva_ventas', title: 'Libro IVA Ventas', desc: 'Reporte para presentaciones fiscales.' }
+            { id: 'v_diarias', title: 'Resumen de Ventas Diarias', desc: 'Listado detallado de transacciones por jornada.' },
+            { id: 'v_articulos', title: 'Ventas por Artículo', desc: 'Análisis de rotación y productos más vendidos.' },
+            { id: 'iva_ventas', title: 'Libro IVA Ventas', desc: 'Reporte fiscal detallado por alícuota.' }
         ],
         caja: [
-            { id: 'c_ingresos', title: 'Ingresos de Caja', desc: 'Listado de entradas de efectivo y cobros.' },
-            { id: 'c_gastos', title: 'Egresos de Caja', desc: 'Listado de gastos y retiros de efectivo.' },
-            { id: 'c_resumen', title: 'Resumen General de Caja', desc: 'Consolidado de todos los movimientos y saldos.' }
+            { id: 'c_ingresos', title: 'Detalle de Ingresos', desc: 'Todas las entradas de efectivo y cobros.' },
+            { id: 'c_gastos', title: 'Detalle de Egresos', desc: 'Listado de retiros, pagos y gastos operativos.' },
+            { id: 'c_resumen', title: 'Resumen Consolidado', desc: 'Balance general de movimientos y saldos finales.' }
         ],
         compras: [
-            { id: 'co_diarias', title: 'Resumen de Compras', desc: 'Carga de stock y facturas de proveedores.' },
-            { id: 'iva_compras', title: 'Libro IVA Compras', desc: 'Reporte detallado de créditos fiscales.' }
+            { id: 'co_diarias', title: 'Resumen de Compras', desc: 'Facturas de proveedores y carga de stock.' },
+            { id: 'iva_compras', title: 'Libro IVA Compras', desc: 'Créditos fiscales por período.' }
         ],
         clientes: [
-            { id: 'cl_saldos', title: 'Saldos de Clientes (General)', desc: 'Listado completo de saldos (debe y haber).' },
-            { id: 'cl_saldos_deudores', title: 'Saldos de Clientes Deudores', desc: 'Únicamente clientes con cuentas pendientes.' },
-            { id: 'cl_saldos_favor', title: 'Saldos de Clientes a Favor', desc: 'Únicamente clientes con saldo a su favor.' },
-            { id: 'cl_mov', title: 'Movimientos por Cliente', desc: 'Historial completo de un cliente específico.' }
+            { id: 'cl_saldos', title: 'Saldos Generales', desc: 'Estado de deuda de toda la cartera.' },
+            { id: 'cl_saldos_deudores', title: 'Cuentas a Cobrar', desc: 'Listado exclusivo de clientes con deuda.' },
+            { id: 'cl_saldos_favor', title: 'Saldos a Favor', desc: 'Clientes con depósitos anticipados.' },
+            { id: 'cl_mov', title: 'Estado de Cuenta Individual', desc: 'Historial detallado de un cliente específico.' }
         ],
         proveedores: [
-            { id: 'pr_saldos', title: 'Saldos de Proveedores (Deuda)', desc: 'Deudas pendientes con proveedores.' },
-            { id: 'pr_saldos_favor', title: 'Saldos de Proveedores a Favor', desc: 'Saldos a favor con proveedores.' },
-            { id: 'pr_mov', title: 'Movimientos por Proveedor', desc: 'Historial de pagos y facturas.' }
+            { id: 'pr_saldos', title: 'Deudas a Proveedores', desc: 'Saldos pendientes de pago.' },
+            { id: 'pr_saldos_favor', title: 'Pagos Anticipados', desc: 'Saldos a favor con proveedores.' },
+            { id: 'pr_mov', title: 'Cuenta Corriente Proveedor', desc: 'Seguimiento de compras y pagos.' }
         ],
         productos: [
-            { id: 'p_stock', title: 'Listado de Stock', desc: 'Existencias actuales y valorización.' },
-            { id: 'p_critico', title: 'Stock Crítico', desc: 'Productos por debajo del punto de reposición.' }
+            { id: 'p_stock', title: 'Inventario de Stock', desc: 'Existencias actuales y valorización de mercadería.' },
+            { id: 'p_critico', title: 'Alerta de Reposición', desc: 'Productos por debajo del stock mínimo.' }
         ],
         contabilidad: [
-            { id: 'co_resultados', title: 'Estado de Resultados', desc: 'Ganancias y pérdidas del ejercicio.' }
+            { id: 'co_resultados', title: 'Estado de Resultados', desc: 'Utilidades Brutas y Rentabilidad del Negocio.' }
         ]
     };
 
-    const handleGenerate = async (e) => {
-        if (e) e.preventDefault();
-        if (!selectedReport) {
-            alert('Por favor seleccione un reporte');
-            return;
-        }
+    const handleGenerate = async () => {
+        if (!selectedReport) return;
         setLoading(true);
         setReportData(null);
         try {
@@ -199,565 +129,288 @@ const Reportes = () => {
                 cliente_id: filtros.cliente_id || '',
                 proveedor_id: filtros.proveedor_id || ''
             });
-            console.log('Generando reporte con params:', Object.fromEntries(params));
             const response = await fetch(`/api/reportes/generar/?${params}`);
-            console.log('Response status:', response.status);
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('Error response:', errorText);
-                alert(`Error del servidor: ${response.status}`);
-                return;
-            }
-
+            if (!response.ok) throw new Error(`Status: ${response.status}`);
             const res = await response.json();
-            console.log('Response data:', res);
-            if (res.ok) {
-                setReportData(res);
-            } else {
-                alert(res.error || 'Error al generar reporte');
-            }
+            if (res.ok) setReportData(res);
+            else showErrorAlert('Error', res.error || 'No se pudo procesar el reporte');
         } catch (error) {
-            console.error('Error al generar reporte:', error);
-            alert('Error de conexión: ' + error.message);
+            console.error('Error:', error);
+            showErrorAlert('Error de Conexión', 'Hubo un problema al contactar con el servidor.');
         } finally {
             setLoading(false);
         }
-    };
-
-    const handlePrint = () => {
-        window.print();
     };
 
     const renderTable = () => {
         if (!reportData) return null;
         const { headers, data } = reportData;
 
-        const totals = {};
-        const numericColumns = [];
-
-        // Calcular totales para columnas numéricas
-        headers.forEach(h => {
-            const hLower = h.toLowerCase();
-            const isNumericHeader = hLower.includes('total') || hLower.includes('neto') ||
-                hLower.includes('iva') || hLower.includes('monto') || hLower.includes('costo') ||
-                hLower.includes('valor') || hLower.includes('debe') || hLower.includes('haber') ||
-                hLower.includes('saldo') || hLower.includes('cantidad') || hLower.includes('comprobantes') ||
-                hLower.includes('ingreso') || hLower.includes('egreso');
-
-            if (isNumericHeader && data.length > 0) {
-                // Determine if this is a "running balance" column
-                const isRunningBalance = hLower.includes('acum') ||
-                    (['cl_mov', 'pr_mov', 'c_resumen'].includes(selectedReport?.id) && hLower === 'saldo');
-
-                if (isRunningBalance) {
-                    // For running balances, the total is the terminal value
-                    const lastValue = data[data.length - 1][h];
-                    totals[h] = typeof lastValue === 'number' ? lastValue : 0;
-                } else {
-                    // For others, we sum
-                    const sum = data.reduce((acc, row) => {
-                        const val = row[h];
-                        return acc + (typeof val === 'number' ? val : 0);
-                    }, 0);
-                    totals[h] = sum;
-                }
-                numericColumns.push(h);
-            }
-        });
-
+        // Formateador dinámico
         const formatValue = (val, header) => {
             if (typeof val !== 'number') return val;
-            const hLower = header.toLowerCase();
-            const isCurrency = hLower.includes('total') || hLower.includes('neto') ||
-                hLower.includes('iva') || hLower.includes('monto') || hLower.includes('costo') ||
-                hLower.includes('valor') || hLower.includes('debe') || hLower.includes('haber') ||
-                hLower.includes('saldo') || hLower.includes('ingreso') || hLower.includes('egreso');
-
-            if (isCurrency) {
-                return val.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 2 });
-            }
-            return val.toLocaleString('es-AR');
+            const h = header.toLowerCase();
+            const isCurrency = h.includes('total') || h.includes('neto') || h.includes('iva') ||
+                h.includes('monto') || h.includes('costo') || h.includes('valor') ||
+                h.includes('debe') || h.includes('haber') || h.includes('saldo') ||
+                h.includes('ingreso') || h.includes('egreso');
+            if (isCurrency) return <TableCell.Currency value={val} />;
+            return val;
         };
 
         return (
-            <div className="report-table-container">
-                <table style={{
-                    width: '100%',
-                    borderCollapse: 'collapse',
-                    fontSize: '13px',
-                    border: '1px solid #cbd5e1'
-                }}>
-                    <thead>
-                        {/* Encabezado de reporte simplificado - se repite en cada página */}
-                        <tr className="d-none d-print-table-row">
-                            <th colSpan={headers.length} style={{ padding: 0, border: 'none', backgroundColor: 'white' }}>
-                                <div style={{
-                                    display: 'flex',
-                                    justifyContent: 'center',
-                                    borderBottom: '1px solid #cbd5e1',
-                                    paddingBottom: '4px',
-                                    marginBottom: '8px'
-                                }}>
-                                    <div style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                                        {selectedReport?.title}
-                                    </div>
-                                </div>
-                            </th>
-                        </tr>
-                        {/* Encabezado de columnas - Mejorado para impresión */}
-                        <tr style={{ backgroundColor: '#f8fafc', color: '#0f172a' }}>
+            <div className="bg-white rounded-[2rem] shadow-xl shadow-slate-200/40 border border-slate-100 overflow-hidden mt-6 overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                    <thead className="bg-slate-900 text-slate-400">
+                        <tr>
                             {headers.map((h, i) => (
-                                <th key={i} style={{
-                                    padding: '10px 12px',
-                                    textAlign: numericColumns.includes(h) ? 'right' : 'left',
-                                    fontWeight: '700',
-                                    fontSize: '11px',
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '0.5px',
-                                    borderBottom: '2px solid #cbd5e1',
-                                    borderTop: '1px solid #cbd5e1'
-                                }}>{h}</th>
+                                <th key={i} className="px-6 py-4 text-[10px] font-black uppercase tracking-widest whitespace-nowrap">
+                                    {h}
+                                </th>
                             ))}
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody className="divide-y divide-slate-50 italic">
                         {data.length > 0 ? data.map((row, i) => (
-                            <tr key={i} style={{
-                                backgroundColor: i % 2 === 0 ? '#ffffff' : '#f8fafc',
-                                borderBottom: '1px solid #e2e8f0'
-                            }}>
-                                {headers.map((h, j) => {
-                                    const val = row[h];
-                                    const isNumeric = typeof val === 'number';
-
-                                    // Lógica de colores condicionales
-                                    let textColor = '#1e293b'; // Default
-                                    const hLower = h.toLowerCase();
-
-                                    if (isNumeric) {
-                                        const isBalance = hLower.includes('saldo');
-                                        const isDebit = hLower.includes('debe') || hLower.includes('egreso') || hLower.includes('gasto');
-                                        const isCredit = hLower.includes('haber') || hLower.includes('ingreso');
-
-                                        if (isBalance) {
-                                            if (val > 0) textColor = '#ef4444'; // Deuda -> Rojo
-                                            if (val < 0) textColor = '#22c55e'; // A favor -> Verde
-                                        } else if (isDebit && val !== 0) {
-                                            textColor = '#ef4444'; // Salidas/Debe -> Rojo
-                                        } else if (isCredit && val !== 0) {
-                                            textColor = '#22c55e'; // Entradas/Haber -> Verde
-                                        }
-                                    }
-
-                                    return (
-                                        <td key={j} style={{
-                                            padding: '10px 12px',
-                                            color: textColor,
-                                            textAlign: isNumeric ? 'right' : 'left',
-                                            fontFamily: isNumeric ? "'Roboto Mono', monospace" : 'inherit',
-                                            fontWeight: (isNumeric && textColor !== '#1e293b') ? '600' : '400'
-                                        }}>
-                                            {formatValue(val, h)}
-                                        </td>
-                                    );
-                                })}
+                            <tr key={i} className="hover:bg-slate-50 transition-colors">
+                                {headers.map((h, j) => (
+                                    <td key={j} className="px-6 py-3.5 text-xs font-bold text-slate-700 whitespace-nowrap">
+                                        {formatValue(row[h], h)}
+                                    </td>
+                                ))}
                             </tr>
                         )) : (
                             <tr>
-                                <td colSpan={headers.length} style={{ padding: '32px', textAlign: 'center', color: '#64748b' }}>
-                                    No se encontraron datos para este reporte.
+                                <td colSpan={headers.length} className="px-6 py-20 text-center text-slate-400 font-black uppercase italic tracking-widest">
+                                    No se registran datos para este criterio
                                 </td>
                             </tr>
                         )}
                     </tbody>
-                    {data.length > 0 && numericColumns.length > 0 && (
-                        <tfoot>
-                            <tr style={{ backgroundColor: '#1e293b', color: 'white', fontWeight: '700' }}>
-                                {headers.map((h, i) => (
-                                    <td key={i} style={{
-                                        padding: '12px',
-                                        textAlign: numericColumns.includes(h) ? 'right' : 'left',
-                                        fontFamily: numericColumns.includes(h) ? "'Roboto Mono', monospace" : 'inherit',
-                                        borderTop: '2px solid #0f172a'
-                                    }}>
-                                        {i === 0 ? 'TOTALES' : (totals[h] !== undefined ? formatValue(totals[h], h) : '')}
-                                    </td>
-                                ))}
-                            </tr>
-                        </tfoot>
-                    )}
                 </table>
             </div>
         );
     };
 
-    const renderParameters = () => {
-        if (!selectedReport) return null;
-
-        const hasData = reportData && reportData.data && reportData.data.length > 0;
-
-        return (
-            <div className="fade-in" style={{ marginTop: '32px', borderTop: '1px solid #e2e8f0', paddingTop: '32px' }}>
-                <div style={s.sectionTitle} className="d-print-none">
-                    <Filter size={18} /> Parámetros para: {selectedReport.title}
-                </div>
-
-                <div className="d-print-none" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
-                    <div>
-                        <label style={s.label}>FECHA DESDE</label>
-                        <input
-                            type="date"
-                            style={s.input}
-                            value={filtros.fecha_desde}
-                            onChange={e => setFiltros({ ...filtros, fecha_desde: e.target.value })}
-                        />
-                    </div>
-                    <div>
-                        <label style={s.label}>FECHA HASTA</label>
-                        <input
-                            type="date"
-                            style={s.input}
-                            value={filtros.fecha_hasta}
-                            onChange={e => setFiltros({ ...filtros, fecha_hasta: e.target.value })}
-                        />
-                    </div>
-                    {selectedReport.id === 'cl_mov' && (
-                        <div style={{ gridColumn: 'span 2' }}>
-                            <label style={s.label}>SELECCIONAR CLIENTE</label>
-                            <select
-                                style={s.input}
-                                value={filtros.cliente_id}
-                                onChange={e => setFiltros({ ...filtros, cliente_id: e.target.value })}
-                            >
-                                <option value="">Seleccione un cliente...</option>
-                                {clientes.map(c => (
-                                    <option key={c.id} value={c.id}>{c.nombre}</option>
-                                ))}
-                            </select>
-                        </div>
-                    )}
-                    {selectedReport.id === 'pr_mov' && (
-                        <div style={{ gridColumn: 'span 2' }}>
-                            <label style={s.label}>SELECCIONAR PROVEEDOR</label>
-                            <select
-                                style={s.input}
-                                value={filtros.proveedor_id}
-                                onChange={e => setFiltros({ ...filtros, proveedor_id: e.target.value })}
-                            >
-                                <option value="">Seleccione un proveedor...</option>
-                                {proveedores.map(p => (
-                                    <option key={p.id} value={p.id}>{p.nombre}</option>
-                                ))}
-                            </select>
-                        </div>
-                    )}
-                </div>
-
-                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }} className="d-print-none">
-                    <button type="button" style={s.runBtn} onClick={handleGenerate} disabled={loading}>
-                        <Search size={18} /> {loading ? 'Generando...' : 'Generar Reporte'}
-                    </button>
-                    <button
-                        type="button"
-                        style={{
-                            ...s.runBtn,
-                            backgroundColor: hasData ? '#faf5ff' : '#e2e8f0',
-                            color: hasData ? '#7e22ce' : '#94a3b8',
-                            border: hasData ? '1px solid #e9d5ff' : 'none'
-                        }}
-                        onClick={handlePrint}
-                        disabled={!hasData}
-                    >
-                        <Printer size={18} /> Imprimir
-                    </button>
-                    <button
-                        type="button"
-                        style={{
-                            ...s.runBtn,
-                            backgroundColor: hasData ? '#f0fdf4' : '#e2e8f0',
-                            color: hasData ? '#15803d' : '#94a3b8',
-                            border: hasData ? '1px solid #bbf7d0' : 'none'
-                        }}
-                        onClick={() => window.open(`/api/reportes/exportar/?id=${selectedReport?.id}&fecha_desde=${filtros.fecha_desde}&fecha_hasta=${filtros.fecha_hasta}&cliente_id=${filtros.cliente_id}&proveedor_id=${filtros.proveedor_id}`, '_blank')}
-                        disabled={!hasData}
-                    >
-                        <Download size={18} /> Excel
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => {
-                            setSelectedReport(null);
-                            setReportData(null);
-                        }}
-                        style={{ ...s.runBtn, backgroundColor: 'transparent', color: '#ef4444', marginLeft: 'auto' }}
-                    >
-                        Volver
-                    </button>
-                </div>
-
-                {reportData && (
-                    <div className="report-results" style={{ marginTop: '32px' }}>
-                        {/* Encabezado del reporte para pantalla */}
-                        <div className="d-print-none" style={{
-                            marginBottom: '24px',
-                            padding: '20px',
-                            backgroundColor: '#f8fafc',
-                            borderRadius: '12px',
-                            border: '1px solid #e2e8f0'
-                        }}>
-                            <h3 style={{ margin: 0, color: '#1e293b', fontWeight: '700' }}>
-                                {selectedReport.title}
-                            </h3>
-                            <p style={{ margin: '8px 0 0', color: '#64748b', fontSize: '14px' }}>
-                                Período: {formatDateDisplay(filtros.fecha_desde)} al {formatDateDisplay(filtros.fecha_hasta)}
-                                {reportData.data && <span style={{ marginLeft: '16px' }}>• {reportData.data.length} registros</span>}
-                            </p>
-                        </div>
-
-                        {/* Encabezado profesional para impresión */}
-                        <div className="d-none d-print-block print-header" style={{ marginBottom: '30px' }}>
-                            {/* Cabecera con logo y datos de empresa */}
-                            <div style={{
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'flex-start',
-                                borderBottom: '3px solid #1e293b',
-                                paddingBottom: '15px',
-                                marginBottom: '20px'
-                            }}>
-                                <div>
-                                    <h1 style={{
-                                        margin: 0,
-                                        fontSize: '24px',
-                                        fontWeight: '800',
-                                        color: '#1e293b',
-                                        letterSpacing: '-0.5px'
-                                    }}>
-                                        {empresa.nombre_fantasia || empresa.nombre || 'Mi Empresa'}
-                                    </h1>
-                                </div>
-                                <div style={{ textAlign: 'right' }}>
-                                    <p style={{ margin: 0, fontSize: '11px', color: '#64748b' }}>
-                                        Fecha de emisión:
-                                    </p>
-                                    <p style={{ margin: '2px 0 0', fontSize: '13px', fontWeight: '600', color: '#1e293b' }}>
-                                        {new Date().toLocaleDateString('es-AR', {
-                                            day: '2-digit',
-                                            month: '2-digit',
-                                            year: 'numeric',
-                                            hour: '2-digit',
-                                            minute: '2-digit'
-                                        })}
-                                    </p>
-                                </div>
-                            </div>
-
-                            {/* Título del reporte */}
-                            <div style={{
-                                textAlign: 'center',
-                                marginBottom: '20px',
-                                padding: '15px',
-                                backgroundColor: '#f1f5f9',
-                                borderRadius: '4px'
-                            }}>
-                                <h2 style={{
-                                    margin: 0,
-                                    fontSize: '18px',
-                                    fontWeight: '700',
-                                    color: '#1e293b',
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '1px'
-                                }}>
-                                    {selectedReport.title}
-                                </h2>
-                                <p style={{
-                                    margin: '8px 0 0',
-                                    fontSize: '13px',
-                                    color: '#475569'
-                                }}>
-                                    Período: {formatDateDisplay(filtros.fecha_desde) || 'Desde el inicio'} al {formatDateDisplay(filtros.fecha_hasta) || 'Fecha actual'}
-                                </p>
-                            </div>
-                        </div>
-
-                        {/* Tabla de datos */}
-                        {renderTable()}
-
-                        {/* Pie de página para impresión */}
-                        <div className="d-none d-print-block" style={{
-                            marginTop: '30px',
-                            paddingTop: '15px',
-                            borderTop: '1px solid #cbd5e1',
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            fontSize: '10px',
-                            color: '#64748b'
-                        }}>
-                            <span>Generado el {new Date().toLocaleDateString('es-AR')} a las {new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}</span>
-                            <span>Total de registros: {reportData.data?.length || 0}</span>
-                            <span>Sistema de Facturación</span>
-                        </div>
-                    </div>
-                )}
-            </div>
-        );
-    };
-
     return (
-        <div style={s.container}>
+        <div className="h-[calc(100vh-64px)] overflow-hidden bg-slate-50/50 flex flex-col p-6 gap-6 d-print-container">
+            {/* Estilos para impresión Premium */}
             <style>
                 {`
-                    @media print {
-                        /* Ocultar elementos de navegación */
-                        .d-print-none { display: none !important; }
-                        
-                        /* Ocultar sidebar y header del layout principal */
-                        aside, nav, header, footer,
-                        [class*="sidebar"], [class*="Sidebar"],
-                        [class*="header"], [class*="Header"],
-                        [class*="navbar"], [class*="Navbar"],
-                        [class*="menu"], [class*="Menu"] {
-                            display: none !important;
-                        }
-                        
-                        /* Resetear el contenedor principal */
-                        body {
-                            background: white !important;
-                            margin: 0 !important;
-                            padding: 0 !important;
-                        }
-                        
-                        /* Hacer que el contenido use todo el ancho */
-                        main, [class*="content"], [class*="Content"],
-                        #root, .app, .App {
-                            margin: 0 !important;
-                            padding: 0 !important;
-                            width: 100% !important;
-                            max-width: 100% !important;
-                        }
-                        
-                        /* Ajustar el contenedor del reporte */
-                        div[style*="padding: 40px"] { 
-                            padding: 20px !important; 
-                        }
-                        div[style*="max-width: 1200px"] { 
-                            max-width: 100% !important; 
-                            margin: 0 !important; 
-                        }
-                        
-                        /* Mostrar solo los resultados del reporte */
-                        .report-results { 
-                            margin-top: 0 !important; 
-                            page-break-inside: avoid;
-                        }
-                        
-                        /* Estilos de tabla para impresión */
-                        table { 
-                            font-size: 10px !important; 
-                            width: 100% !important;
-                            border-collapse: collapse !important;
-                        }
-                        th { 
-                            background-color: #eee !important; 
-                            -webkit-print-color-adjust: exact;
-                            print-color-adjust: exact;
-                            padding: 8px !important;
-                            border: 1px solid #ddd !important;
-                        }
-                        td {
-                            padding: 6px !important;
-                            border: 1px solid #ddd !important;
-                        }
-                        
-                        /* Encabezado del reporte para impresión */
-                        .d-none.d-print-block {
-                            display: block !important;
-                        }
+                @media print {
+                    @page { margin: 1cm; size: landscape; }
+                    .d-print-none, aside, nav, header { display: none !important; }
+                    .d-print-container { 
+                        position: fixed !important; 
+                        top: 0 !important; left: 0 !important; 
+                        width: 100vw !important; height: 100vh !important;
+                        padding: 0 !important; margin: 0 !important;
+                        background: white !important;
                     }
+                    .report-body { padding: 2cm !important; }
+                    table { border: 1px solid #eee !important; font-size: 8pt !important; }
+                    th { background: #f8fafc !important; color: black !important; -webkit-print-color-adjust: exact; }
+                    .print-header { display: flex !important; justify-content: space-between; border-bottom: 2px solid black; padding-bottom: 15px; margin-bottom: 30px; }
+                }
+                .d-print-only { display: none; }
+                @media print { .d-print-only { display: block !important; } }
                 `}
             </style>
-            <header style={s.header} className="d-print-none">
-                <h1 style={s.title}>Reportes del Sistema</h1>
-                <p style={s.subtitle}>Informes, análisis y estadísticas de su negocio</p>
-            </header>
 
-            <div style={{ display: 'flex', gap: '32px', alignItems: 'flex-start' }}>
-                {/* Lado Izquierdo: Categorías */}
-                {!selectedReport && (
-                    <div style={{ width: '280px', flexShrink: 0 }} className="d-print-none">
-                        <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '16px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}>
-                            <div className="d-flex flex-column gap-2">
-                                {tabs.map(tab => {
-                                    const isActive = activeTab === tab.id;
-                                    return (
-                                        <button
-                                            key={tab.id}
-                                            onClick={() => {
-                                                setActiveTab(tab.id);
-                                                setSelectedReport(null);
-                                            }}
-                                            style={{
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: '12px',
-                                                padding: '12px 16px',
-                                                border: isActive ? '2px solid #1e293b' : '2px solid transparent',
-                                                borderRadius: '12px',
-                                                backgroundColor: isActive ? '#f8fafc' : 'transparent',
-                                                color: isActive ? '#2563eb' : '#64748b',
-                                                fontWeight: isActive ? '700' : '500',
-                                                cursor: 'pointer',
-                                                transition: 'all 0.2s',
-                                                textAlign: 'left'
-                                            }}
-                                        >
-                                            <tab.icon size={20} strokeWidth={isActive ? 2.5 : 2} color={isActive ? '#2563eb' : 'currentColor'} />
-                                            <span style={{ lineHeight: '1.2' }}>{tab.label}</span>
-                                        </button>
-                                    );
-                                })}
-                            </div>
+            {/* Header */}
+            <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 d-print-none">
+                <div className="space-y-1">
+                    <div className="flex items-center gap-3">
+                        <div className="bg-gradient-to-br from-indigo-600 to-indigo-700 p-2.5 rounded-2xl text-white shadow-lg shadow-indigo-600/20">
+                            <Activity size={24} strokeWidth={2.5} />
                         </div>
+                        <h1 className="text-3xl font-black text-slate-900 tracking-tight">Reportes e Inteligencia</h1>
+                    </div>
+                    <p className="text-slate-500 font-bold text-xs uppercase tracking-[0.15em] ml-14">
+                        Análisis detallado de operaciones y salud financiera.
+                    </p>
+                </div>
+
+                {selectedReport && (
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => { setSelectedReport(null); setReportData(null); }}
+                            className="px-6 py-2.5 text-slate-400 hover:text-rose-600 font-black text-xs tracking-widest uppercase transition-all"
+                        >
+                            Cambiar Reporte
+                        </button>
+                        <button
+                            onClick={() => window.print()}
+                            className="px-6 py-2.5 bg-slate-900 text-white rounded-xl font-black text-xs tracking-widest hover:bg-slate-800 transition-all flex items-center gap-2 shadow-xl shadow-slate-900/10"
+                        >
+                            <Printer size={18} /> IMPRIMIR PDF
+                        </button>
                     </div>
                 )}
+            </header>
 
-                {/* Lado Derecho: Opciones de Reporte */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ ...s.card, minHeight: !selectedReport ? '600px' : 'auto' }}>
-                        <div style={s.sectionTitle} className="d-print-none">
-                            {tabs.find(t => t.id === activeTab)?.label} - Opciones Disponibles
+            {/* Main Area */}
+            <div className="flex-1 flex gap-6 min-h-0 overflow-hidden report-body">
+
+                {/* Print Header (Only visible when printing) */}
+                <div className="d-print-only w-full">
+                    <div className="flex justify-between border-b-2 border-slate-900 pb-6 mb-8">
+                        <div>
+                            <h1 className="text-2xl font-black text-slate-900 uppercase">{empresa.nombre_fantasia || empresa.nombre}</h1>
+                            <p className="text-xs font-bold text-slate-500">CUIT: {empresa.cuit} • {empresa.direccion}</p>
                         </div>
-
-                        {!selectedReport ? (
-                            <div className="fade-in">
-                                {reportOptions[activeTab]?.map(report => (
-                                    <div
-                                        key={report.id}
-                                        style={s.reportItem}
-                                        onMouseEnter={(e) => {
-                                            e.currentTarget.style.backgroundColor = '#eff6ff';
-                                            e.currentTarget.style.borderColor = '#3b82f6';
-                                        }}
-                                        onMouseLeave={(e) => {
-                                            e.currentTarget.style.backgroundColor = '#f8fafc';
-                                            e.currentTarget.style.borderColor = '#f1f5f9';
-                                        }}
-                                        onClick={() => setSelectedReport(report)}
-                                    >
-                                        <div>
-                                            <div style={{ fontWeight: '700', color: '#1e293b', marginBottom: '2px' }}>{report.title}</div>
-                                            <div style={{ fontSize: '13px', color: '#64748b' }}>{report.desc}</div>
-                                        </div>
-                                        <ChevronRight size={20} color="#cbd5e1" />
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            renderParameters()
-                        )}
+                        <div className="text-right">
+                            <h2 className="text-lg font-black uppercase text-slate-800">{selectedReport?.title}</h2>
+                            <p className="text-xs font-bold text-slate-500">
+                                Período: {formatDateDisplay(filtros.fecha_desde)} al {formatDateDisplay(filtros.fecha_hasta)}
+                            </p>
+                        </div>
                     </div>
                 </div>
+
+                {!selectedReport ? (
+                    <>
+                        {/* Lateral Navigation */}
+                        <aside className="w-72 flex flex-col gap-2 d-print-none">
+                            {tabs.map(tab => {
+                                const isActive = activeTab === tab.id;
+                                const Icon = tab.icon;
+                                return (
+                                    <button
+                                        key={tab.id}
+                                        onClick={() => setActiveTab(tab.id)}
+                                        className={cn(
+                                            "w-full flex items-center gap-4 p-4 rounded-2xl transition-all group border-2 relative overflow-hidden",
+                                            isActive
+                                                ? `bg-white border-slate-900 shadow-xl shadow-slate-200 ring-4 ring-slate-100`
+                                                : "bg-white/50 border-transparent hover:border-slate-200"
+                                        )}
+                                    >
+                                        <div className={cn(
+                                            "p-2.5 rounded-xl transition-all",
+                                            isActive ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-400 group-hover:text-slate-600"
+                                        )}>
+                                            <Icon size={20} />
+                                        </div>
+                                        <span className={cn(
+                                            "font-black text-xs tracking-[0.1em] uppercase",
+                                            isActive ? "text-slate-900" : "text-slate-500"
+                                        )}>{tab.label}</span>
+                                        {isActive && <div className="absolute right-4 w-2 h-2 rounded-full bg-slate-900 animate-pulse" />}
+                                    </button>
+                                );
+                            })}
+                        </aside>
+
+                        {/* Report Selection Grid */}
+                        <main className="flex-1 overflow-y-auto pr-2 d-print-none">
+                            <BentoGrid cols={2} className="gap-6">
+                                {reportOptions[activeTab]?.map(report => (
+                                    <button
+                                        key={report.id}
+                                        onClick={() => setSelectedReport(report)}
+                                        className="text-left group"
+                                    >
+                                        <BentoCard className="h-full p-8 hover:scale-[1.02] transition-all cursor-pointer border border-transparent hover:border-indigo-100 hover:shadow-2xl hover:shadow-indigo-500/10 flex flex-col justify-between">
+                                            <div>
+                                                <div className="bg-slate-50 w-12 h-12 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-indigo-600 group-hover:text-white transition-all mb-6">
+                                                    <FileText size={24} />
+                                                </div>
+                                                <h3 className="text-xl font-black text-slate-900 mb-2 leading-tight uppercase tracking-tight">{report.title}</h3>
+                                                <p className="text-sm font-medium text-slate-500 leading-relaxed mb-6">{report.desc}</p>
+                                            </div>
+                                            <div className="flex items-center gap-2 text-indigo-600 font-black text-[10px] tracking-widest uppercase opacity-0 group-hover:opacity-100 transition-all translate-x-[-10px] group-hover:translate-x-0">
+                                                Configurar Reporte <ChevronRight size={14} strokeWidth={3} />
+                                            </div>
+                                        </BentoCard>
+                                    </button>
+                                ))}
+                            </BentoGrid>
+                        </main>
+                    </>
+                ) : (
+                    /* Report Runner / Results */
+                    <main className="flex-1 flex flex-col min-h-0">
+                        {/* Parameters Panel */}
+                        <BentoCard className="p-6 bg-white/80 backdrop-blur-md d-print-none shadow-premium border-slate-100">
+                            <div className="grid grid-cols-12 gap-6 items-end">
+                                <div className="col-span-12 lg:col-span-3">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-2 ml-1">Fecha Desde</label>
+                                    <input
+                                        type="date"
+                                        className="w-full px-5 py-3.5 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-500 focus:bg-white outline-none font-bold text-xs"
+                                        value={filtros.fecha_desde}
+                                        onChange={e => setFiltros({ ...filtros, fecha_desde: e.target.value })}
+                                    />
+                                </div>
+                                <div className="col-span-12 lg:col-span-3">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-2 ml-1">Fecha Hasta</label>
+                                    <input
+                                        type="date"
+                                        className="w-full px-5 py-3.5 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-500 focus:bg-white outline-none font-bold text-xs"
+                                        value={filtros.fecha_hasta}
+                                        onChange={e => setFiltros({ ...filtros, fecha_hasta: e.target.value })}
+                                    />
+                                </div>
+
+                                {selectedReport.id === 'cl_mov' && (
+                                    <div className="col-span-12 lg:col-span-4">
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-2 ml-1">Cliente Objetivo</label>
+                                        <PremiumSelect
+                                            value={filtros.cliente_id}
+                                            onChange={e => setFiltros({ ...filtros, cliente_id: e.target.value })}
+                                            options={[{ value: '', label: 'Seleccionar Cliente...' }, ...clientes.map(c => ({ value: c.id, label: c.nombre }))]}
+                                            className="!py-3.5 !text-xs !font-black"
+                                        />
+                                    </div>
+                                )}
+
+                                {selectedReport.id === 'pr_mov' && (
+                                    <div className="col-span-12 lg:col-span-4">
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-2 ml-1">Proveedor Objetivo</label>
+                                        <PremiumSelect
+                                            value={filtros.proveedor_id}
+                                            onChange={e => setFiltros({ ...filtros, proveedor_id: e.target.value })}
+                                            options={[{ value: '', label: 'Seleccionar Proveedor...' }, ...proveedores.map(p => ({ value: p.id, label: p.nombre }))]}
+                                            className="!py-3.5 !text-xs !font-black"
+                                        />
+                                    </div>
+                                )}
+
+                                <div className="col-span-12 lg:col-span-2">
+                                    <button
+                                        onClick={handleGenerate}
+                                        disabled={loading}
+                                        className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-xs tracking-widest uppercase hover:bg-indigo-700 shadow-xl shadow-indigo-600/20 active:scale-95 transition-all flex items-center justify-center gap-2"
+                                    >
+                                        {loading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <TrendingUp size={18} />}
+                                        {loading ? 'PROCESANDO' : 'GENERAR'}
+                                    </button>
+                                </div>
+                            </div>
+                        </BentoCard>
+
+                        {/* Results Container */}
+                        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden mt-4">
+                            {/* Stats Resumen (Si existen datos) */}
+                            {reportData && reportData.data && (
+                                <BentoGrid cols={3} className="mb-4 d-print-none">
+                                    <StatCard label="Total Registros" value={reportData.data.length} icon={ClipboardList} color="indigo" compact />
+                                    <StatCard label="Fecha Inicio" value={formatDateDisplay(filtros.fecha_desde)} icon={Calendar} color="emerald" compact />
+                                    <StatCard label="Fecha Termino" value={formatDateDisplay(filtros.fecha_hasta)} icon={Calendar} color="amber" compact />
+                                </BentoGrid>
+                            )}
+
+                            {renderTable()}
+                        </div>
+                    </main>
+                )}
+            </div>
+
+            {/* Print Footer Summary (Only visible when printing) */}
+            <div className="d-print-only mt-8 border-t border-slate-200 pt-4 flex justify-between text-[10px] font-bold text-slate-400 italic">
+                <span>Generado por {empresa.nombre} • {new Date().toLocaleString()}</span>
+                <span>Página 1 de 1</span>
             </div>
         </div>
     );

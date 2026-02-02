@@ -1,13 +1,16 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { Truck, Plus, Search, Trash2, Phone, Mail, MapPin, X, Save, Building2, CreditCard, RotateCcw, Users } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Truck, Plus, Search, Trash2, Phone, Mail, MapPin, X, Save, Building2, CreditCard, RotateCcw, Users, Star, ShieldCheck, Pencil } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { BtnAdd, BtnEdit, BtnDelete, BtnAction, BtnClear, BtnGuardar, BtnCancelar } from '../components/CommonButtons';
-import { showDeleteAlert } from '../utils/alerts';
+import { showDeleteAlert, showSuccessAlert, showErrorAlert } from '../utils/alerts';
 import TablePagination from '../components/common/TablePagination';
 import EmptyState from '../components/EmptyState';
+import { StatCard, PremiumTable, TableCell, PremiumFilterBar } from '../components/premium';
+import { BentoCard, BentoGrid } from '../components/premium/BentoCard';
+import { cn } from '../utils/cn';
 
 const Proveedores = () => {
+    const navigate = useNavigate();
     const [proveedores, setProveedores] = useState([]);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
@@ -49,10 +52,10 @@ const Proveedores = () => {
         notas: ''
     });
 
-    const fetchProveedores = useCallback(async () => {
+    const fetchProveedores = useCallback(async (signal) => {
         setLoading(true);
         try {
-            const response = await fetch('/api/proveedores/lista/');
+            const response = await fetch('/api/proveedores/lista/', { signal });
             const data = await response.json();
             let allProveedores = Array.isArray(data) ? data : (data.data || []);
 
@@ -73,15 +76,16 @@ const Proveedores = () => {
             setProveedores(allProveedores.slice(start, end));
 
         } catch (error) {
-            console.error("Error al cargar proveedores:", error);
-            setProveedores([]);
+            if (error.name !== 'AbortError') setProveedores([]);
         } finally {
             setLoading(false);
         }
     }, [page, itemsPerPage, busqueda]);
 
     useEffect(() => {
-        fetchProveedores();
+        const controller = new AbortController();
+        fetchProveedores(controller.signal);
+        return () => controller.abort();
     }, [fetchProveedores]);
 
     const handleEliminar = async (id) => {
@@ -175,140 +179,176 @@ const Proveedores = () => {
             if (data.ok || (!data.error && response.ok)) {
                 setShowModal(false);
                 fetchProveedores();
+                showSuccessAlert("Guardado", "Proveedor guardado correctamente");
             } else {
-                alert("Error: " + (data.error || "No se pudo guardar"));
+                showErrorAlert("Error", data.error || "No se pudo guardar");
             }
         } catch (error) {
             console.error(error);
-            alert("Error de conexión al guardar");
+            showErrorAlert("Error", "Error de conexión al guardar");
         }
     };
 
+    const columns = [
+        {
+            key: 'nombre',
+            label: 'Proveedor',
+            render: (v, p) => (
+                <div className="flex flex-col">
+                    <span className="font-black text-neutral-800 text-sm uppercase tracking-tight">{v}</span>
+                    <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider flex items-center gap-1">
+                        <MapPin size={10} /> {p.direccion || 'Sin dirección registrada'}
+                    </span>
+                </div>
+            )
+        },
+        {
+            key: 'cuit',
+            label: 'Identificación',
+            width: '160px',
+            render: (v, p) => (
+                <div className="flex flex-col">
+                    {v ? (
+                        <span className="font-mono text-xs font-black text-neutral-500 bg-neutral-100 px-2 py-1 rounded border border-neutral-200 w-fit">
+                            {v}
+                        </span>
+                    ) : <span className="text-neutral-300">---</span>}
+                    <span className="text-[10px] font-bold text-neutral-400 mt-1 uppercase tracking-widest">{p.condicion_fiscal || 'CF'}</span>
+                </div>
+            )
+        },
+        {
+            key: 'contacto',
+            label: 'Contacto',
+            width: '220px',
+            render: (_, p) => (
+                <div className="flex flex-col gap-0.5">
+                    {p.telefono && (
+                        <span className="text-xs font-bold text-neutral-600 flex items-center gap-1.5">
+                            <Phone size={12} className="text-neutral-400" /> {p.telefono}
+                        </span>
+                    )}
+                    {p.email && (
+                        <span className="text-xs font-medium text-neutral-400 flex items-center gap-1.5 lowercase">
+                            <Mail size={12} className="text-neutral-300" /> {p.email}
+                        </span>
+                    )}
+                    {!p.telefono && !p.email && <span className="text-neutral-300">---</span>}
+                </div>
+            )
+        },
+        {
+            key: 'acciones',
+            label: 'Acciones',
+            align: 'right',
+            width: '120px',
+            sortable: false,
+            render: (_, p) => (
+                <div className="flex justify-end gap-2">
+                    <button
+                        onClick={() => openModal(p)}
+                        className="p-2 text-neutral-400 hover:text-primary-600 hover:bg-primary-50 rounded-xl transition-all"
+                    >
+                        <Pencil size={18} />
+                    </button>
+                    <button
+                        onClick={() => handleEliminar(p.id)}
+                        className="p-2 text-neutral-400 hover:text-error-600 hover:bg-error-50 rounded-xl transition-all"
+                    >
+                        <Trash2 size={18} />
+                    </button>
+                </div>
+            )
+        }
+    ];
+
     return (
-        <div className="container-fluid px-4 pt-4 pb-0 h-100 d-flex flex-column bg-light fade-in" style={{ maxHeight: '100vh', overflow: 'hidden' }}>
+        <div className="p-6 w-full max-w-[1920px] mx-auto h-[calc(100vh-64px)] overflow-hidden flex flex-col gap-6 animate-in fade-in duration-500 bg-slate-50/50">
             {/* Header */}
-            <div className="d-flex justify-content-between align-items-center mb-4">
-                <div>
-                    <h2 className="text-primary fw-bold mb-0" style={{ fontSize: '2rem' }}>
-                        <Truck className="me-2 inline-block" size={32} />
-                        Proveedores
-                    </h2>
-                    <p className="text-muted mb-0 ps-1" style={{ fontSize: '1rem' }}>
-                        Administra tus proveedores y contactos.
+            <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div className="space-y-1">
+                    <h1 className="text-3xl font-black text-neutral-900 tracking-tight flex items-center gap-3">
+                        <Truck className="text-blue-600" size={32} strokeWidth={2.5} />
+                        Cartera de Proveedores
+                    </h1>
+                    <p className="text-neutral-500 font-medium text-sm ml-1">
+                        Gestión centralizada de proveedores y condiciones comerciales.
                     </p>
                 </div>
-                <BtnAdd label="Nuevo Proveedor" icon={Users} onClick={() => openModal()} className="btn-lg shadow-lg shadow-blue-500/30 hover:shadow-blue-600/40 active:scale-95 transition-all" />
-            </div>
-
-            {/* Filtros */}
-            <div className="card border-0 shadow-sm mb-4">
-                <div className="card-body bg-light rounded">
-                    <div className="row g-3">
-                        <div className="col-md-6">
-                            <div className="input-group">
-                                <span className="input-group-text bg-white border-end-0"><Search size={18} className="text-muted" /></span>
-                                <input
-                                    type="text"
-                                    className="form-control border-start-0"
-                                    placeholder="Buscar por nombre, CUIT o email..."
-                                    value={busqueda}
-                                    onChange={(e) => { setBusqueda(e.target.value); setPage(1); }}
-                                />
-                            </div>
-                        </div>
-                        <div className="col-md-1 ms-auto">
-                            <button onClick={fetchProveedores} className="btn btn-light w-100 border text-secondary" title="Actualizar Listado">
-                                <RotateCcw size={18} />
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Tabla */}
-            <div className="card border-0 shadow mb-4 flex-grow-1 overflow-hidden d-flex flex-column">
-                <div className="card-body p-0 d-flex flex-column overflow-hidden">
-                    <div className="table-responsive flex-grow-1 overflow-auto">
-                        <table className="table align-middle mb-0">
-                            <thead className="table-dark" style={{ backgroundColor: '#212529', color: '#fff' }}>
-                                <tr>
-                                    <th className="ps-4 py-3 fw-bold">Proveedor</th>
-                                    <th className="py-3 fw-bold">Identificación</th>
-                                    <th className="py-3 fw-bold">Contacto</th>
-                                    <th className="text-end pe-4 py-3 fw-bold">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {loading ? (
-                                    <tr>
-                                        <td colSpan="4" className="text-center py-5">
-                                            <div className="spinner-border text-primary" role="status"></div>
-                                        </td>
-                                    </tr>
-                                ) : proveedores.length === 0 ? (
-                                    <tr>
-                                        <td colSpan="4" className="py-5">
-                                            <EmptyState
-                                                icon={Truck}
-                                                title="No hay proveedores"
-                                                description="Agrega nuevos proveedores para gestionar tus compras."
-                                                iconColor="text-blue-500"
-                                                bgIconColor="bg-blue-50"
-                                            />
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    proveedores.map(p => (
-                                        <tr key={p.id} className="border-bottom-0">
-                                            <td className="ps-4 py-3">
-                                                <div className="fw-bold text-dark">{p.nombre}</div>
-                                                <div className="text-muted small fw-medium">
-                                                    {p.direccion ? (
-                                                        <><MapPin size={12} className="inline me-1" />{p.direccion}</>
-                                                    ) : 'Sin dirección'}
-                                                </div>
-                                            </td>
-                                            <td className="py-3">
-                                                {p.cuit ? (
-                                                    <span className="badge bg-light text-dark border shadow-sm fw-medium">{p.cuit}</span>
-                                                ) : (
-                                                    <span className="text-muted small">-</span>
-                                                )}
-                                                <div className="small text-muted mt-1 fw-medium">{p.condicion_fiscal || 'CF'}</div>
-                                            </td>
-                                            <td className="small text-muted py-3 fw-medium">
-                                                {p.telefono && <div className="d-flex align-items-center gap-1"><Phone size={12} className="opacity-75" /> {p.telefono}</div>}
-                                                {p.email && <div className="d-flex align-items-center gap-1"><Mail size={12} className="opacity-75" /> {p.email}</div>}
-                                                {!p.telefono && !p.email && '-'}
-                                            </td>
-                                            <td className="text-end pe-4 py-3">
-                                                <div className="d-flex justify-content-end gap-2">
-                                                    <BtnEdit onClick={() => openModal(p)} />
-                                                    <BtnDelete onClick={() => handleEliminar(p.id)} />
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {/* Paginación */}
-                    {/* Paginación */}
-                    {/* Paginación */}
-                    <TablePagination
-                        currentPage={page}
-                        totalPages={totalPages}
-                        totalItems={totalItems}
-                        itemsPerPage={itemsPerPage}
-                        onPageChange={setPage}
-                        onItemsPerPageChange={(newVal) => {
-                            setItemsPerPage(newVal);
-                            setPage(1);
-                            localStorage.setItem(STORAGE_KEY, newVal);
-                        }}
+                <div className="flex items-center gap-3">
+                    <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-neutral-200 text-neutral-700 rounded-xl font-bold text-sm hover:bg-neutral-50 transition-all shadow-sm">
+                        <CreditCard size={18} /> Cta. Corriente
+                    </button>
+                    <BtnAdd
+                        label="NUEVO PROVEEDOR"
+                        onClick={() => openModal()}
+                        className="!bg-blue-600 !hover:bg-blue-700 !rounded-xl !px-6 !py-3 !font-black !tracking-widest !text-xs !shadow-lg !shadow-blue-600/20"
                     />
+                </div>
+            </header>
+
+            {/* Stats */}
+            <BentoGrid cols={3}>
+                <StatCard
+                    label="Total Proveedores"
+                    value={totalItems}
+                    icon={Truck}
+                    color="primary"
+                />
+                <StatCard
+                    label="Compras del Mes"
+                    value="-- "
+                    icon={ShieldCheck}
+                    color="success"
+                />
+                <StatCard
+                    label="Proveedores Activos"
+                    value={totalItems}
+                    icon={Star}
+                    color="warning"
+                />
+            </BentoGrid>
+
+            {/* Filtration & Content */}
+            <div className="flex flex-col flex-grow gap-4 min-h-0">
+                <PremiumFilterBar
+                    busqueda={busqueda}
+                    setBusqueda={(v) => { setBusqueda(v); setPage(1); }}
+                    showQuickFilters={false}
+                    showDateRange={false}
+                    onClear={() => { setBusqueda(''); setPage(1); }}
+                    placeholder="Buscar por nombre, CUIT o email..."
+                />
+
+                <div className="flex-grow flex flex-col min-h-0">
+                    <PremiumTable
+                        columns={columns}
+                        data={proveedores}
+                        loading={loading}
+                        className="flex-grow shadow-lg"
+                        emptyState={
+                            <EmptyState
+                                title="No se encontraron proveedores"
+                                description="Verifica los filtros o agrega un nuevo proveedor a tu base de datos."
+                                icon={Truck}
+                            />
+                        }
+                    />
+
+                    <div className="bg-white border-x border-b border-neutral-200 rounded-b-[2rem] px-6 py-1 shadow-premium">
+                        <TablePagination
+                            currentPage={page}
+                            totalPages={totalPages}
+                            totalItems={totalItems}
+                            itemsPerPage={itemsPerPage}
+                            onPageChange={setPage}
+                            onItemsPerPageChange={(newVal) => {
+                                setItemsPerPage(newVal);
+                                setPage(1);
+                                localStorage.setItem(STORAGE_KEY, newVal);
+                            }}
+                        />
+                    </div>
                 </div>
             </div>
 
@@ -316,7 +356,6 @@ const Proveedores = () => {
             {showModal && (
                 <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
                     <div className="relative w-full max-w-4xl bg-white rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden transform transition-all scale-100 z-10 border border-slate-200">
-
                         {/* Header */}
                         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
                             <div className="flex items-center gap-3">
@@ -343,7 +382,6 @@ const Proveedores = () => {
                         {/* Body - Scrollable */}
                         <div className="p-6 overflow-y-auto bg-white flex-1 custom-scrollbar">
                             <form id="proveedor-form" onSubmit={handleSubmit} className="flex flex-col gap-5">
-
                                 {/* SECCIÓN 1: DATOS PRINCIPALES */}
                                 <div className="bg-slate-50/50 p-5 rounded-2xl border border-slate-100">
                                     <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
@@ -481,7 +519,6 @@ const Proveedores = () => {
                                         </div>
                                     </div>
                                 </div>
-
                             </form>
                         </div>
 

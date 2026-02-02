@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Printer, Eye, FileText, Calendar, Search,
-    Truck, Plus, X, ChevronRight, Filter
+    Truck, Plus, FilterX, ChevronRight, ListFilter
 } from 'lucide-react';
 import { BtnView, BtnPrint, BtnClear, BtnAdd } from '../components/CommonButtons';
 import EmptyState from '../components/EmptyState';
 import TablePagination from '../components/common/TablePagination';
+import { PremiumTable, TableCell, PremiumFilterBar } from '../components/premium';
+import { cn } from '../utils/cn';
 
 const STORAGE_KEY = 'table_prefs_remitos_items';
 
@@ -19,11 +21,23 @@ const Remitos = () => {
     const [totalItems, setTotalItems] = useState(0);
     const [itemsPerPage, setItemsPerPage] = useState(() => {
         const saved = localStorage.getItem(STORAGE_KEY);
-        return saved ? parseInt(saved, 10) : 10;
+        const parsed = parseInt(saved, 10);
+        return (parsed && parsed > 0) ? parsed : 10;
     });
+    const getLocalDate = (date = new Date()) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
+    const [dateRange, setDateRange] = useState({
+        start: getLocalDate(new Date(new Date().getFullYear(), new Date().getMonth(), 1)),
+        end: getLocalDate()
+    });
+
     const [filters, setFilters] = useState({
-        busqueda: '',
-        fecha: ''
+        busqueda: ''
     });
 
     useEffect(() => {
@@ -45,7 +59,8 @@ const Remitos = () => {
                 page,
                 per_page: itemsPerPage,
                 q: filters.busqueda,
-                fecha: filters.fecha
+                fecha_start: dateRange.start,
+                fecha_end: dateRange.end
             });
             const response = await fetch(`/api/remitos/listar/?${params}`);
             const data = await response.json();
@@ -63,7 +78,7 @@ const Remitos = () => {
         } finally {
             setLoading(false);
         }
-    }, [page, itemsPerPage, filters]);
+    }, [page, itemsPerPage, filters, dateRange]);
 
     useEffect(() => {
         fetchRemitos();
@@ -83,151 +98,168 @@ const Remitos = () => {
         setPage(1);
     };
 
-    const clearFilters = () => {
-        setFilters({ busqueda: '', fecha: '' });
+    const handleDateChange = (e) => {
+        const { name, value } = e.target;
+        setDateRange(prev => ({ ...prev, [name]: value }));
         setPage(1);
     };
 
-    // Helper para badge de estado (Similar a Compras pero con estados de Remito)
-    const getEstadoBadge = (estado) => {
-        switch (estado) {
-            case 'ENTREGADO': return <span className="badge rounded-pill bg-success-subtle text-success border border-success-subtle">Entregado</span>;
-            case 'ANULADO': return <span className="badge rounded-pill bg-danger-subtle text-danger border border-danger">Anulado</span>;
-            case 'GENERADO': return <span className="badge rounded-pill bg-primary-subtle text-primary border border-primary-subtle">Generado</span>;
-            case 'EN_CAMINO': return <span className="badge rounded-pill bg-warning-subtle text-warning-emphasis border border-warning-subtle">En Camino</span>;
-            default: return <span className="badge rounded-pill bg-secondary">{estado}</span>;
-        }
+    const setToday = () => {
+        const today = getLocalDate();
+        setDateRange({ start: today, end: today });
+        setPage(1);
     };
 
+    const setYesterday = () => {
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = getLocalDate(yesterday);
+        setDateRange({ start: yesterdayStr, end: yesterdayStr });
+        setPage(1);
+    };
+
+    const clearFilters = () => {
+        setFilters({ busqueda: '' });
+        setDateRange({
+            start: getLocalDate(new Date(new Date().getFullYear(), new Date().getMonth(), 1)),
+            end: getLocalDate()
+        });
+        setPage(1);
+    };
+
+    const columns = [
+        {
+            key: 'numero',
+            label: '# Número',
+            width: '180px',
+            render: (v) => <TableCell.ID value={v} />
+        },
+        {
+            key: 'fecha',
+            label: 'Fecha',
+            width: '180px',
+            render: (v) => <TableCell.Date value={v} />
+        },
+        {
+            key: 'cliente',
+            label: 'Cliente',
+            render: (v) => <TableCell.Primary value={v} />
+        },
+        {
+            key: 'venta_str',
+            label: 'Venta Asoc.',
+            width: '180px',
+            render: (v, row) => (
+                row.venta_id ? (
+                    <TableCell.Status value={`FC: ${v}`} variant="default" />
+                ) : <span className="text-neutral-300">-</span>
+            )
+        },
+        {
+            key: 'estado',
+            label: 'Estado',
+            width: '150px',
+            align: 'center',
+            render: (v) => {
+                const variantMap = {
+                    'ENTREGADO': 'success',
+                    'EN_CAMINO': 'warning',
+                    'GENERADO': 'info',
+                    'ANULADO': 'error'
+                };
+                return <TableCell.Status value={v === 'EN_CAMINO' ? 'EN CAMINO' : v} variant={variantMap[v] || 'default'} />;
+            }
+        },
+        {
+            key: 'acciones',
+            label: 'Acciones',
+            width: '150px',
+            align: 'right',
+            sortable: false,
+            render: (_, row) => (
+                <div className="flex justify-end items-center gap-1">
+                    <button
+                        onClick={() => handleView(row.id)}
+                        className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-400 hover:text-primary-600 transition-all"
+                        title="Ver Detalle"
+                    >
+                        <Eye size={18} />
+                    </button>
+                    <button
+                        onClick={() => handlePrint(row.id)}
+                        className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-400 hover:text-neutral-900 transition-all"
+                        title="Imprimir"
+                    >
+                        <Printer size={18} />
+                    </button>
+                </div>
+            )
+        }
+    ];
+
     return (
-        <div className="container-fluid px-4 pt-4 pb-3 main-content-container bg-light fade-in">
-            {/* Header */}
-            <div className="d-flex justify-content-between align-items-center mb-4">
-                <div>
-                    <h2 className="text-primary fw-bold mb-0" style={{ fontSize: '2rem' }}>
-                        <Truck className="me-2 inline-block" size={32} />
-                        Remitos
-                    </h2>
-                    <p className="text-muted mb-0 ps-1" style={{ fontSize: '1rem' }}>
-                        Gestión de entregas y traslados de mercadería.
-                    </p>
+        <div className="flex flex-col h-[calc(100vh-64px)] overflow-hidden bg-neutral-50/30">
+            {/* Header / Toolbar Area */}
+            <div className="p-8 pb-4">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                    <div>
+                        <div className="flex items-center gap-3 mb-1">
+                            <div className="p-2 bg-blue-600 rounded-2xl shadow-lg shadow-blue-600/20">
+                                <Truck size={24} className="text-white" />
+                            </div>
+                            <h1 className="text-3xl font-black text-neutral-900 tracking-tight">Remitos</h1>
+                        </div>
+                        <p className="text-neutral-500 font-medium ml-1">Gestión de entregas y traslados de mercadería.</p>
+                    </div>
+
+                    <div className="flex items-center gap-3 w-full md:w-auto">
+                        <PremiumFilterBar
+                            busqueda={filters.busqueda}
+                            setBusqueda={(val) => setFilters(prev => ({ ...prev, busqueda: val }))}
+                            dateRange={dateRange}
+                            setDateRange={setDateRange}
+                            onClear={clearFilters}
+                            placeholder="Buscar por cliente o número..."
+                            className="!px-0"
+                        />
+                    </div>
                 </div>
-                <BtnAdd
-                    label="Nuevo Remito"
-                    icon={Truck}
-                    className="btn-lg shadow-sm"
-                    onClick={() => navigate('/remitos/nuevo')}
-                />
             </div>
 
-            {/* Filtros */}
-            <div className="card border-0 shadow-sm mb-4">
-                <div className="card-body bg-light rounded">
-                    <div className="row g-3 align-items-center">
-                        <div className="col-md-5">
-                            <div className="input-group">
-                                <span className="input-group-text bg-white border-end-0"><Search size={18} className="text-muted" /></span>
-                                <input
-                                    type="text"
-                                    className="form-control border-start-0"
-                                    placeholder="Buscar por cliente o número..."
-                                    name="busqueda"
-                                    value={filters.busqueda}
-                                    onChange={handleFilterChange}
+            {/* Table Area */}
+            <div className="flex-1 px-8 pb-8 overflow-hidden min-h-0">
+                <div className="h-full bg-white rounded-[2.5rem] border border-neutral-200 shadow-xl shadow-neutral-200/50 flex flex-col overflow-hidden">
+                    <div className="flex-1 overflow-hidden">
+                        <PremiumTable
+                            columns={columns}
+                            data={remitos}
+                            loading={loading}
+                            emptyMessage={
+                                <EmptyState
+                                    icon={Truck}
+                                    title="Sin Remitos"
+                                    description="No se encontraron remitos que coincidan con los filtros."
+                                    iconColor="text-blue-500"
+                                    bgIconColor="bg-blue-50"
                                 />
-                            </div>
-                        </div>
-                        <div className="col-md-3">
-                            <input
-                                type="date"
-                                className="form-control"
-                                name="fecha"
-                                value={filters.fecha}
-                                onChange={handleFilterChange}
-                            />
-                        </div>
-                        <div className="col-md-2 ms-auto">
-                            <div className="d-flex gap-2">
-                                <BtnClear label="Limpiar" onClick={clearFilters} className="flex-grow-1" />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Tabla */}
-            <div className="card border-0 shadow mb-0 flex-grow-1 overflow-hidden d-flex flex-column">
-                <div className="card-body p-0 d-flex flex-column overflow-hidden">
-                    <div className="table-responsive flex-grow-1 table-container-fixed">
-                        <table className="table align-middle mb-0">
-                            <thead className="table-dark" style={{ backgroundColor: '#212529', color: '#fff' }}>
-                                <tr>
-                                    <th className="ps-4 py-3 fw-bold text-nowrap" style={{ width: '160px' }}>Número</th>
-                                    <th className="py-3 fw-bold">Fecha</th>
-                                    <th className="py-3 fw-bold">Cliente</th>
-                                    <th className="py-3 fw-bold">Venta Asoc.</th>
-                                    <th className="py-3 fw-bold text-center">Estado</th>
-                                    <th className="py-3 fw-bold text-end pe-4">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {loading && remitos.length === 0 ? (
-                                    <tr><td colSpan="6" className="text-center py-5"><div className="spinner-border text-primary" role="status"></div></td></tr>
-                                ) : remitos.length === 0 ? (
-                                    <tr>
-                                        <td colSpan="6" className="py-5">
-                                            <EmptyState
-                                                icon={Truck}
-                                                title="No se encontraron remitos"
-                                                description="Intenta ajustando los filtros de búsqueda."
-                                                iconColor="text-blue-500"
-                                                bgIconColor="bg-blue-50"
-                                            />
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    remitos.map((remito) => (
-                                        <tr key={remito.id} className="border-bottom-0 hover:bg-slate-50 transition-colors">
-                                            <td className="ps-4 fw-bold text-primary py-3">
-                                                {remito.numero}
-                                            </td>
-                                            <td className="py-3 fw-medium text-dark">{remito.fecha}</td>
-                                            <td className="fw-medium py-3 font-bold text-slate-700">{remito.cliente}</td>
-                                            <td className="py-3">
-                                                {remito.venta_id ? (
-                                                    <span className="badge bg-light text-dark border font-mono">
-                                                        FC: {remito.venta_str} <span className="text-muted ms-1">(ID: {remito.venta_id})</span>
-                                                    </span>
-                                                ) : (
-                                                    <span className="text-muted">-</span>
-                                                )}
-                                            </td>
-                                            <td className="text-center py-3">{getEstadoBadge(remito.estado)}</td>
-                                            <td className="text-end pe-4 py-3">
-                                                <div className="d-flex justify-content-end gap-2">
-                                                    <BtnView onClick={() => handleView(remito.id)} />
-                                                    <BtnPrint onClick={() => handlePrint(remito.id)} />
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
+                            }
+                        />
                     </div>
 
-                    <TablePagination
-                        currentPage={page}
-                        totalPages={totalPages}
-                        totalItems={totalItems}
-                        itemsPerPage={itemsPerPage}
-                        onPageChange={setPage}
-                        onItemsPerPageChange={(newVal) => {
-                            setItemsPerPage(newVal);
-                            setPage(1);
-                            localStorage.setItem(STORAGE_KEY, newVal);
-                        }}
-                    />
+                    <div className="px-6 py-4 border-t border-neutral-100 bg-neutral-50/50">
+                        <TablePagination
+                            currentPage={page}
+                            totalPages={totalPages}
+                            totalItems={totalItems}
+                            itemsPerPage={itemsPerPage}
+                            onPageChange={setPage}
+                            onItemsPerPageChange={(newVal) => {
+                                setItemsPerPage(newVal);
+                                setPage(1);
+                                localStorage.setItem(STORAGE_KEY, newVal);
+                            }}
+                        />
+                    </div>
                 </div>
             </div>
         </div>

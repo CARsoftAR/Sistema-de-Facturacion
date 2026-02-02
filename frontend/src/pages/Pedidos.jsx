@@ -1,11 +1,21 @@
-
-import React, { useState, useEffect, useCallback } from 'react';
+// Pedidos.jsx - Rediseño Premium 2025
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import {
+    ShoppingCart, Plus, Search, Printer, XCircle,
+    CheckCircle, Trash2, ListFilter, FilterX, Eye,
+    Calendar, FileText, Download, TrendingUp,
+    Hash, User, Tag, DollarSign, Activity, Clock
+} from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ShoppingCart, Plus, Search, Calendar, RefreshCw, Check, AlertCircle, FileText, Trash2, CheckCircle2, Clock, Eye, X } from 'lucide-react';
-import { BtnAdd, BtnDelete, BtnAction, BtnClear, BtnView, BtnPrint, BtnTableAction } from '../components/CommonButtons';
-import { showDeleteAlert } from '../utils/alerts';
-import EmptyState from '../components/EmptyState';
+import { showDeleteAlert, showConfirmationAlert, showSuccessAlert, showErrorAlert } from '../utils/alerts';
+
+// Premium UI Components
+import { BentoCard, StatCard, PremiumTable, TableCell, SearchInput, PremiumFilterBar } from '../components/premium';
+import { BentoGrid } from '../components/premium/BentoCard';
+import { cn } from '../utils/cn';
+import { BtnAdd } from '../components/CommonButtons';
 import TablePagination from '../components/common/TablePagination';
+import EmptyState from '../components/EmptyState';
 
 const Pedidos = () => {
     const navigate = useNavigate();
@@ -15,46 +25,35 @@ const Pedidos = () => {
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
-    const [itemsPerPage, setItemsPerPage] = useState(0);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
+
+    // Modal State
+    const [showModalFacturar, setShowModalFacturar] = useState(false);
+    const [pedidoFacturar, setPedidoFacturar] = useState(null);
+
+    const getLocalDate = (date = new Date()) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
+    const [dateRange, setDateRange] = useState({
+        start: searchParams.get('fecha_desde') || getLocalDate(new Date(new Date().getFullYear(), new Date().getMonth(), 1)),
+        end: searchParams.get('fecha_hasta') || getLocalDate()
+    });
 
     const STORAGE_KEY = 'table_prefs_pedidos_items';
 
-    useEffect(() => {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
-            setItemsPerPage(Number(saved));
-        } else {
-            fetch('/api/config/obtener/')
-                .then(res => res.json())
-                .then(data => {
-                    if (data.items_por_pagina) setItemsPerPage(data.items_por_pagina);
-                    else setItemsPerPage(10);
-                })
-                .catch(err => {
-                    console.error(err);
-                    setItemsPerPage(10); // Fallback
-                });
-        }
-    }, []);
-
-    // Filtros - Inicializar con valores de la URL si existen
     const [filters, setFilters] = useState({
         busqueda: searchParams.get('busqueda') || '',
-        estado: searchParams.get('estado') || '',
-        fecha_desde: searchParams.get('fecha_desde') || '',
-        fecha_hasta: searchParams.get('fecha_hasta') || ''
+        estado: searchParams.get('estado') || ''
     });
 
-    // Sincronizar filtros con la URL
     useEffect(() => {
-        setFilters({
-            busqueda: searchParams.get('busqueda') || '',
-            estado: searchParams.get('estado') || '',
-            fecha_desde: searchParams.get('fecha_desde') || '',
-            fecha_hasta: searchParams.get('fecha_hasta') || ''
-        });
-        setPage(1);
-    }, [searchParams]);
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) setItemsPerPage(Number(saved));
+    }, []);
 
     const fetchPedidos = useCallback(async () => {
         setLoading(true);
@@ -62,7 +61,9 @@ const Pedidos = () => {
             const params = new URLSearchParams({
                 page: page,
                 per_page: itemsPerPage,
-                ...filters
+                ...filters,
+                fecha_desde: dateRange.start,
+                fecha_hasta: dateRange.end
             });
 
             const response = await fetch(`/api/pedidos/lista/?${params}`);
@@ -73,81 +74,84 @@ const Pedidos = () => {
             setTotalItems(data.total || 0);
         } catch (error) {
             console.error("Error al cargar pedidos:", error);
+            setPedidos([]);
         } finally {
             setLoading(false);
         }
-    }, [page, filters, itemsPerPage]);
+    }, [page, filters, itemsPerPage, dateRange]);
 
     useEffect(() => {
         fetchPedidos();
     }, [fetchPedidos]);
 
-    const handleFilterChange = (e) => {
+    const handleDateChange = (e) => {
         const { name, value } = e.target;
+        setDateRange(prev => ({ ...prev, [name]: value }));
+        setPage(1);
+    };
+
+    const setToday = () => {
+        const today = getLocalDate();
+        setDateRange({ start: today, end: today });
+        setPage(1);
+    };
+
+    const setYesterday = () => {
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = getLocalDate(yesterday);
+        setDateRange({ start: yesterdayStr, end: yesterdayStr });
+        setPage(1);
+    };
+
+    const handleFilterChange = (name, value) => {
         setFilters(prev => ({ ...prev, [name]: value }));
         setPage(1);
     };
 
-    // Modal Facturar State
-    const [showModalFacturar, setShowModalFacturar] = useState(false);
-    const [pedidoFacturar, setPedidoFacturar] = useState(null);
+    // KPI Calculations (Based on current page/total items)
+    const stats = useMemo(() => {
+        const totalAmount = pedidos.reduce((acc, p) => acc + parseFloat(p.total || 0), 0);
+        const pendientes = pedidos.filter(p => p.estado === 'PENDIENTE').length;
+        const facturados = pedidos.filter(p => p.estado === 'FACTURADO').length;
 
-    // Modal Success State
-    const [showSuccessModal, setShowSuccessModal] = useState(false);
-    const [successData, setSuccessData] = useState(null);
+        return {
+            total: totalAmount,
+            count: totalItems,
+            pendientes: pendientes,
+            facturados: facturados
+        };
+    }, [pedidos, totalItems]);
 
     const handleFacturar = (id) => {
         setPedidoFacturar(id);
         setShowModalFacturar(true);
     };
 
-    const closeModal = () => {
-        setShowModalFacturar(false);
-        setPedidoFacturar(null);
-    };
-
-    const closeSuccessModal = () => {
-        setShowSuccessModal(false);
-        setSuccessData(null);
-    };
-
     const confirmFacturar = async () => {
         if (!pedidoFacturar) return;
-
         try {
             const res = await fetch(`/api/pedidos/facturar/${pedidoFacturar}/`, { method: 'POST' });
             const data = await res.json();
 
             if (data.ok) {
-                closeModal();
-                setSuccessData(data);
-                setShowSuccessModal(true);
+                setShowModalFacturar(false);
+                setPedidoFacturar(null);
+                await showSuccessAlert('Facturado', `Pedido convertido en Venta #${data.venta_id}`);
                 fetchPedidos();
             } else {
-                alert(`Error al facturar: ${data.error}`);
+                showErrorAlert('Error', data.error);
             }
         } catch (e) {
-            console.error("Error facturando", e);
-            alert("Error de conexión al facturar.");
+            showErrorAlert('Error', 'Error de conexión al facturar.');
         }
-    };
-
-    const handlePrint = (id) => {
-        window.open(`/pedidos/imprimir/${id}/?model=modern`, '_blank');
     };
 
     const handleDelete = async (id) => {
         const result = await showDeleteAlert(
             "¿Eliminar pedido?",
             "Esta acción eliminará el pedido de forma permanente. Si el pedido ya fue facturado, esta acción no revertirá la venta.",
-            'Eliminar',
-            {
-                iconComponent: (
-                    <div className="rounded-circle d-flex align-items-center justify-content-center bg-danger-subtle text-danger mx-auto" style={{ width: '80px', height: '80px' }}>
-                        <ShoppingCart size={40} strokeWidth={1.5} />
-                    </div>
-                )
-            }
+            'ELIMINAR PEDIDO'
         );
         if (!result.isConfirmed) return;
 
@@ -155,269 +159,230 @@ const Pedidos = () => {
             const res = await fetch(`/api/pedidos/eliminar/${id}/`, { method: 'POST' });
             const data = await res.json();
             if (res.ok && !data.error) {
+                showSuccessAlert('Eliminado', 'El pedido ha sido removido.');
                 fetchPedidos();
             } else {
-                alert(data.error || "No se pudo eliminar el pedido.");
+                showErrorAlert('Error', data.error || "No se pudo eliminar el pedido.");
             }
         } catch (e) {
-            console.error("Error eliminado", e);
+            showErrorAlert('Error', 'Error de conexión');
         }
     };
 
-    const formatCurrency = (val) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(val);
-
-    const getEstadoBadge = (estado) => {
-        switch (estado) {
-            case 'FACTURADO':
-                return <span className="badge rounded-pill bg-success-subtle text-success border border-success"><CheckCircle2 size={12} className="me-1 inline-block" /> Facturado</span>;
-            case 'PENDIENTE':
-                return <span className="badge rounded-pill bg-warning-subtle text-warning-emphasis border border-warning-subtle"><Clock size={12} className="me-1 inline-block" /> Pendiente</span>;
-            case 'CANCELADO':
-                return <span className="badge rounded-pill bg-danger-subtle text-danger border border-danger"><AlertCircle size={12} className="me-1 inline-block" /> Cancelado</span>;
-            default:
-                return <span className="badge rounded-pill bg-info-subtle text-info-emphasis border border-info-subtle">{estado}</span>;
+    const columns = [
+        {
+            key: 'id',
+            label: '# PEDIDO',
+            width: '100px',
+            render: (v) => <TableCell.ID value={v} />
+        },
+        {
+            key: 'fecha',
+            label: 'FECHA',
+            width: '180px',
+            render: (v) => <TableCell.Date value={v} />
+        },
+        {
+            key: 'cliente_nombre',
+            label: 'CLIENTE',
+            render: (v) => <TableCell.Primary value={v} />
+        },
+        {
+            key: 'total',
+            label: 'TOTAL',
+            align: 'right',
+            width: '150px',
+            render: (v) => <TableCell.Currency value={v} />
+        },
+        {
+            key: 'estado',
+            label: 'ESTADO',
+            width: '150px',
+            render: (v) => (
+                <TableCell.Status
+                    value={v}
+                    variant={v === 'FACTURADO' ? 'success' : v === 'PENDIENTE' ? 'warning' : 'default'}
+                />
+            )
+        },
+        {
+            key: 'acciones',
+            label: 'ACCIONES',
+            align: 'right',
+            width: '200px',
+            sortable: false,
+            render: (_, p) => (
+                <div className="flex justify-end gap-2">
+                    <button
+                        onClick={() => navigate(`/pedidos/${p.id}`)}
+                        className="p-2 text-neutral-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-all"
+                        title="Ver Detalle"
+                    >
+                        <Eye size={18} />
+                    </button>
+                    {p.estado !== 'FACTURADO' && p.estado !== 'CANCELADO' && (
+                        <button
+                            onClick={() => handleFacturar(p.id)}
+                            className="p-2 text-neutral-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
+                            title="Facturar Pedido"
+                        >
+                            <FileText size={18} />
+                        </button>
+                    )}
+                    <button
+                        onClick={() => window.open(`/api/pedidos/${p.id}/pdf/`, '_blank')}
+                        className="p-2 text-neutral-400 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg transition-all"
+                        title="Imprimir"
+                    >
+                        <Printer size={18} />
+                    </button>
+                    <button
+                        onClick={() => handleDelete(p.id)}
+                        className="p-2 text-neutral-400 hover:text-error-600 hover:bg-error-50 rounded-lg transition-all"
+                        title="Eliminar"
+                    >
+                        <Trash2 size={18} />
+                    </button>
+                </div>
+            )
         }
-    };
+    ];
 
     return (
-        <div className="container-fluid px-4 pt-4 pb-3 main-content-container bg-light fade-in">
-            {/* HEADER */}
-            <div className="d-flex justify-content-between align-items-center mb-4">
-                <div>
-                    <h2 className="text-primary fw-bold mb-0" style={{ fontSize: '2rem' }}>
-                        <ShoppingCart className="me-2 inline-block" size={32} />
-                        Pedidos
-                    </h2>
-                    <p className="text-muted mb-0 ps-1" style={{ fontSize: '1rem' }}>
-                        Gestiona los pedidos de clientes pendientes de facturación.
+        <div className="p-6 w-full max-w-[1920px] mx-auto h-full overflow-hidden flex flex-col gap-6 animate-in fade-in duration-500 bg-slate-50/50">
+
+            {/* Header Section */}
+            <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div className="space-y-1">
+                    <h1 className="text-3xl font-black text-neutral-900 tracking-tight flex items-center gap-3 font-outfit uppercase">
+                        <ShoppingCart className="text-blue-600" size={32} strokeWidth={2.5} />
+                        Gestión de Pedidos
+                    </h1>
+                    <p className="text-neutral-500 font-medium text-sm ml-1">
+                        Seguimiento y facturación de órdenes pendientes.
                     </p>
                 </div>
-                <BtnAdd
-                    label="Nuevo Pedido"
-                    icon={ShoppingCart}
-                    className="btn-lg shadow-lg shadow-blue-500/30 hover:shadow-blue-600/40 active:scale-95 transition-all"
-                    onClick={() => navigate('/pedidos/nuevo')}
-                />
-            </div>
-
-            {/* FILTROS */}
-            <div className="card border-0 shadow-sm mb-4">
-                <div className="card-body bg-light rounded">
-                    <div className="row g-3 align-items-center">
-                        {/* Buscador - Izquierda */}
-                        <div className="col-md-4">
-                            <div className="input-group">
-                                <span className="input-group-text bg-white border-end-0"><Search size={18} className="text-muted" /></span>
-                                <input
-                                    type="text"
-                                    className="form-control border-start-0"
-                                    placeholder="Buscar por cliente, ID..."
-                                    name="busqueda"
-                                    value={filters.busqueda}
-                                    onChange={handleFilterChange}
-                                />
-                            </div>
-                        </div>
-
-                        {/* Filtros - Centro/Derecha */}
-                        <div className="col-md-3">
-                            <select className="form-select" name="estado" value={filters.estado} onChange={handleFilterChange}>
-                                <option value="">Todos los Estados</option>
-                                <option value="PENDIENTE">Pendiente</option>
-                                <option value="PREPARACION">En Preparación</option>
-                                <option value="LISTO">Listo</option>
-                                <option value="FACTURADO">Facturado</option>
-                            </select>
-                        </div>
-
-                        {/* Fechas */}
-                        <div className="col-md-2">
-                            <input
-                                type="date"
-                                className="form-control"
-                                name="fecha_desde"
-                                value={filters.fecha_desde}
-                                onChange={handleFilterChange}
-                                title="Fecha Desde"
-                            />
-                        </div>
-                        <div className="col-md-2">
-                            <input
-                                type="date"
-                                className="form-control"
-                                name="fecha_hasta"
-                                value={filters.fecha_hasta}
-                                onChange={handleFilterChange}
-                                title="Fecha Hasta"
-                            />
-                        </div>
-
-                        {/* Botón Refrescar/Limpiar - Derecha Extrema */}
-                        <div className="col-md-1 ms-auto text-end">
-                            <BtnClear onClick={() => { setFilters({ busqueda: '', estado: '', fecha_desde: '', fecha_hasta: '' }); setPage(1); }} className="w-100" label="Limpiar" />
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-
-            {/* TABLA */}
-            <div className="card border-0 shadow mb-0 flex-grow-1 overflow-hidden d-flex flex-column">
-                <div className="card-body p-0 d-flex flex-column overflow-hidden">
-                    <div className="table-responsive flex-grow-1 table-container-fixed">
-                        <table className="table align-middle mb-0">
-                            <thead className="table-dark" style={{ backgroundColor: '#212529', color: '#fff' }}>
-                                <tr>
-                                    <th className="ps-4 py-3 fw-bold"># Pedido</th>
-                                    <th className="py-3 fw-bold">Fecha</th>
-                                    <th className="py-3 fw-bold">Cliente</th>
-                                    <th className="py-3 fw-bold">Items</th>
-                                    <th className="py-3 fw-bold">Total</th>
-                                    <th className="text-center py-3 fw-bold">Estado</th>
-                                    <th className="text-end pe-4 py-3 fw-bold">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {loading ? (
-                                    <tr>
-                                        <td colSpan="7" className="text-center py-5">
-                                            <div className="spinner-border text-primary" role="status"></div>
-                                        </td>
-                                    </tr>
-                                ) : pedidos.length === 0 ? (
-                                    <tr>
-                                        <td colSpan="7" className="py-5">
-                                            <EmptyState
-                                                title="No hay pedidos pendientes"
-                                                description="Los pedidos de clientes aparecerán aquí."
-                                            />
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    pedidos.map(p => (
-                                        <tr key={p.id} className="border-bottom-0">
-                                            <td className="ps-4 fw-bold text-primary py-3">#{p.id}</td>
-                                            <td className="py-3 fw-medium text-dark">{p.fecha}</td>
-                                            <td className="py-3 fw-medium">{p.cliente_nombre}</td>
-                                            <td className="py-3">
-                                                <span className="badge bg-light text-dark border fw-medium">{p.num_items} items</span>
-                                            </td>
-                                            <td className="fw-bold text-success py-3">
-                                                $ {parseFloat(p.total).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
-                                            </td>
-                                            <td className="text-center py-3">
-                                                {getEstadoBadge(p.estado)}
-                                            </td>
-                                            <td className="text-end pe-4 py-3">
-                                                <div className="d-flex justify-content-end gap-2">
-                                                    <BtnView onClick={() => navigate(`/pedidos/${p.id}`)} />
-                                                    {p.estado !== 'FACTURADO' && p.estado !== 'CANCELADO' && (
-                                                        <BtnTableAction
-                                                            icon={FileText}
-                                                            label="Facturar"
-                                                            color="success"
-                                                            onClick={() => handleFacturar(p.id)}
-                                                        />
-                                                    )}
-                                                    <BtnPrint onClick={() => window.open(`/api/pedidos/${p.id}/pdf/`, '_blank')} />
-                                                    <BtnDelete onClick={() => handleDelete(p.id)} />
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {/* PAGINACIÓN */}
-                    {/* PAGINACIÓN */}
-                    {/* PAGINACIÓN */}
-                    <TablePagination
-                        currentPage={page}
-                        totalPages={totalPages}
-                        totalItems={totalItems}
-                        itemsPerPage={itemsPerPage}
-                        onPageChange={setPage}
-                        onItemsPerPageChange={(newVal) => {
-                            setItemsPerPage(newVal);
-                            setPage(1);
-                            localStorage.setItem(STORAGE_KEY, newVal);
-                        }}
+                <div className="flex items-center gap-3">
+                    <BtnAdd
+                        label="NUEVO PEDIDO"
+                        onClick={() => navigate('/pedidos/nuevo')}
+                        className="!bg-blue-600 !hover:bg-blue-700 !rounded-xl !px-6 !py-3 !font-black !tracking-widest !text-xs !shadow-lg !shadow-blue-600/20"
                     />
                 </div>
+            </header>
+
+            {/* KPI Section */}
+            <BentoGrid cols={4}>
+                <StatCard
+                    label="Volume de Pedidos"
+                    value={`$${stats.total.toLocaleString()}`}
+                    icon={DollarSign}
+                    color="primary"
+                />
+                <StatCard
+                    label="Pedidos Pendientes"
+                    value={stats.pendientes}
+                    icon={Clock}
+                    color="warning"
+                />
+                <StatCard
+                    label="Facturados"
+                    value={stats.facturados}
+                    icon={CheckCircle}
+                    color="success"
+                />
+                <StatCard
+                    label="Total Órdenes"
+                    value={stats.count}
+                    icon={Hash}
+                    color="primary"
+                />
+            </BentoGrid>
+
+            {/* Filtration & Content */}
+            <div className="flex flex-col flex-grow gap-4 min-h-0">
+                <PremiumFilterBar
+                    busqueda={filters.busqueda}
+                    setBusqueda={(val) => handleFilterChange('busqueda', val)}
+                    dateRange={dateRange}
+                    setDateRange={setDateRange}
+                    onClear={() => {
+                        setFilters({ busqueda: '', estado: '' });
+                        setDateRange({
+                            start: getLocalDate(new Date(new Date().getFullYear(), new Date().getMonth(), 1)),
+                            end: getLocalDate()
+                        });
+                        setPage(1);
+                    }}
+                    placeholder="Buscar por cliente o ID de pedido..."
+                >
+                    <select
+                        className="bg-white border border-neutral-200 rounded-full px-6 h-[52px] text-[10px] font-black uppercase tracking-widest text-neutral-600 focus:ring-2 focus:ring-primary-500 transition-all outline-none shadow-sm cursor-pointer appearance-none pr-12 min-w-[200px] bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_1rem_center] bg-no-repeat"
+                        value={filters.estado}
+                        onChange={(e) => handleFilterChange('estado', e.target.value)}
+                    >
+                        <option value="">TODOS LOS ESTADOS</option>
+                        <option value="PENDIENTE">PENDIENTE</option>
+                        <option value="FACTURADO">FACTURADO</option>
+                    </select>
+                </PremiumFilterBar>
+
+                {/* Table */}
+                <div className="flex-grow flex flex-col min-h-0">
+                    <PremiumTable
+                        columns={columns}
+                        data={pedidos}
+                        loading={loading}
+                        className="flex-grow shadow-lg"
+                        emptyState={
+                            <EmptyState
+                                title="No hay pedidos pendientes"
+                                description="Los pedidos de clientes aparecerán aquí una vez generados."
+                            />
+                        }
+                    />
+
+                    {/* Pagination */}
+                    <div className="bg-white border-x border-b border-neutral-200 rounded-b-[2rem] px-6 py-1 shadow-premium relative z-10">
+                        <TablePagination
+                            currentPage={page}
+                            totalPages={totalPages}
+                            totalItems={totalItems}
+                            itemsPerPage={itemsPerPage}
+                            onPageChange={setPage}
+                            onItemsPerPageChange={(newVal) => {
+                                setItemsPerPage(newVal);
+                                setPage(1);
+                                localStorage.setItem(STORAGE_KEY, newVal);
+                            }}
+                        />
+                    </div>
+                </div>
             </div>
-            {/* Modal Custom de Facturación */}
-            {
-                showModalFacturar && (
-                    <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-                        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden transform transition-all animate-in fade-in zoom-in-95 duration-200 border border-slate-200">
 
-                            {/* Contenido Clean Style */}
-                            <div className="pt-8 px-6 pb-2 text-center relative z-10">
-                                <button
-                                    onClick={closeModal}
-                                    className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-2 rounded-full transition-all"
-                                >
-                                    <X size={24} />
-                                </button>
-
-                                <div className="mx-auto w-20 h-20 rounded-full flex items-center justify-center mb-4 shadow-sm bg-blue-50 text-blue-600 border border-blue-100">
-                                    <FileText size={40} strokeWidth={1.5} />
-                                </div>
-
-                                <h3 className="text-2xl font-black text-slate-800 mb-2">Facturar Pedido</h3>
-
-                                <p className="text-slate-500 font-medium text-sm px-4">
-                                    ¿Confirmas la facturación de este pedido? Se generará una venta y descontará stock.
-                                </p>
-                            </div>
-
-                            <div className="p-6">
-                                <div className="flex gap-3">
-                                    <button
-                                        onClick={closeModal}
-                                        className="flex-1 py-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-all text-sm uppercase tracking-wide"
-                                    >
-                                        Cancelar
-                                    </button>
-                                    <button
-                                        onClick={confirmFacturar}
-                                        className="flex-1 py-3.5 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-500/30 hover:bg-blue-700 hover:translate-y-px transition-all flex items-center justify-center gap-2 text-sm uppercase tracking-wide"
-                                    >
-                                        <Check size={20} strokeWidth={2.5} /> Confirmar
-                                    </button>
-                                </div>
-                            </div>
+            {/* Modal de Facturación */}
+            {showModalFacturar && (
+                <div className="fixed inset-0 z-[1500] flex items-center justify-center p-4 bg-neutral-950/80 backdrop-blur-md animate-in fade-in duration-300">
+                    <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-md p-10 transform scale-100 border border-neutral-200 text-center animate-in zoom-in-95">
+                        <div className="w-20 h-20 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mb-6 mx-auto shadow-sm">
+                            <FileText size={40} strokeWidth={2} />
+                        </div>
+                        <h3 className="text-2xl font-black text-neutral-900 mb-2 uppercase tracking-tight font-outfit">Facturar Pedido</h3>
+                        <p className="text-neutral-500 font-medium mb-10 leading-relaxed">
+                            ¿Confirmas la facturación de este pedido? Se generará una venta oficial y se descontará el stock de los productos.
+                        </p>
+                        <div className="flex gap-4">
+                            <button onClick={() => setShowModalFacturar(false)} className="flex-1 py-4 bg-neutral-100 text-neutral-400 font-black rounded-2xl hover:bg-neutral-200 transition-all uppercase tracking-widest text-xs">
+                                CANCELAR
+                            </button>
+                            <button onClick={confirmFacturar} className="flex-1 py-4 bg-blue-600 text-white font-black rounded-2xl hover:bg-blue-700 shadow-lg shadow-blue-500/30 transition-all uppercase tracking-widest text-xs">
+                                SÍ, FACTURAR
+                            </button>
                         </div>
                     </div>
-                )
-            }
-            {/* Modal Success */}
-            {
-                showSuccessModal && successData && (
-                    <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-                        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden text-center p-6 border border-slate-200">
-                            <div className="mx-auto bg-green-50 w-16 h-16 rounded-full flex items-center justify-center mb-4 text-green-600">
-                                <CheckCircle2 size={36} />
-                            </div>
-                            <h4 className="text-xl font-bold text-slate-800 mb-2">¡Facturado con Éxito!</h4>
-                            <p className="text-slate-500 text-sm mb-6 px-2">
-                                El pedido se ha convertido en la Venta <strong className="text-slate-800">#{successData.venta_id}</strong>.
-                            </p>
-                            <div className="flex flex-col gap-3">
-                                <button className="w-full py-3 bg-green-600 text-white font-bold rounded-xl shadow-lg hover:bg-green-700 transition-colors" onClick={closeSuccessModal}>
-                                    Aceptar
-                                </button>
-                                <a href={`/ventas/${successData.venta_id}/`} className="w-full py-2.5 text-blue-600 font-bold hover:bg-blue-50 rounded-xl transition-colors text-sm">
-                                    Ver Venta
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                )
-            }
-        </div >
+                </div>
+            )}
+        </div>
     );
 };
 

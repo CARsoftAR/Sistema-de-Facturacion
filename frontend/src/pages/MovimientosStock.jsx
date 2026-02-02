@@ -1,11 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Search, Filter, Download, ArrowUp, ArrowDown, Package, Calendar, RefreshCcw, Eraser } from 'lucide-react';
+import { ArrowLeft, Search, ListFilter, Download, ArrowUp, ArrowDown, Package, Calendar, RefreshCcw, FilterX } from 'lucide-react';
 import axios from 'axios';
 import TablePagination from '../components/common/TablePagination';
+import PremiumTable from '../components/premium/PremiumTable';
 import { BtnBack, BtnClear } from '../components/CommonButtons';
 import EmptyState from '../components/EmptyState';
+import { cn } from '../utils/cn';
+import { SearchInput } from '../components/premium/PremiumInput';
 import * as XLSX from 'xlsx';
+
+const STORAGE_KEY = 'table_prefs_movimientos_items';
 
 const MovimientosStock = () => {
     const navigate = useNavigate();
@@ -20,27 +25,25 @@ const MovimientosStock = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
-    const [itemsPerPage, setItemsPerPage] = useState(0);
-
-    const STORAGE_KEY = 'table_prefs_movimientos_items';
+    const [itemsPerPage, setItemsPerPage] = useState(() => {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        const parsed = parseInt(saved, 10);
+        return (parsed && parsed > 0) ? parsed : 10;
+    });
 
     useEffect(() => {
         const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
-            setItemsPerPage(Number(saved));
-        } else {
-            axios.get('/api/config/obtener/')
-                .then(res => {
-                    setItemsPerPage(res.data.items_por_pagina || 20);
+        if (!saved) {
+            fetch('/api/config/obtener/')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.items_por_pagina) setItemsPerPage(data.items_por_pagina);
                 })
-                .catch(err => {
-                    console.error("Error loading config:", err);
-                    setItemsPerPage(20);
-                });
+                .catch(console.error);
         }
     }, []);
 
-    const fetchMovimientos = async () => {
+    const fetchMovimientos = React.useCallback(async () => {
         setLoading(true);
         try {
             const params = {
@@ -59,27 +62,15 @@ const MovimientosStock = () => {
             setTotalItems(response.data.total || 0);
         } catch (error) {
             console.error('Error cargando movimientos:', error);
+            setMovimientos([]);
         } finally {
             setLoading(false);
         }
-    };
+    }, [currentPage, itemsPerPage, searchTerm, tipoFiltro, fechaDesde, fechaHasta]);
 
     useEffect(() => {
-        if (itemsPerPage > 0) {
-            fetchMovimientos();
-        }
-    }, [currentPage, tipoFiltro, fechaDesde, fechaHasta, itemsPerPage]);
-
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            if (currentPage === 1) {
-                fetchMovimientos();
-            } else {
-                setCurrentPage(1);
-            }
-        }, 500);
-        return () => clearTimeout(timer);
-    }, [searchTerm]);
+        fetchMovimientos();
+    }, [fetchMovimientos]);
 
     const handleExportExcel = () => {
         const data = movimientos.map(mov => ({
@@ -105,197 +96,213 @@ const MovimientosStock = () => {
         setCurrentPage(1);
     };
 
-    return (
-        <div className="container-fluid px-4 pt-4 pb-3 main-content-container bg-light fade-in d-flex flex-column" style={{ minHeight: 'calc(100vh - 80px)' }}>
-            {/* Header */}
-            <div className="d-flex justify-content-between align-items-center mb-4">
-                <div className="d-flex align-items-center gap-3">
-                    <div>
-                        <h2 className="text-primary fw-bold mb-0" style={{ fontSize: '2rem' }}>
-                            <RefreshCcw className="me-2 inline-block" size={32} />
-                            Movimientos de Stock
-                        </h2>
-                        <p className="text-muted mb-0 ps-1" style={{ fontSize: '1rem' }}>
-                            Historial completo detallado de entradas y salidas.
-                        </p>
-                    </div>
+    const columns = [
+        {
+            key: 'fecha',
+            label: 'Fecha',
+            width: '160px',
+            render: (value) => (
+                <div className="flex flex-col">
+                    <span className="font-bold text-neutral-800">
+                        {new Date(value).toLocaleDateString('es-AR')}
+                    </span>
+                    <span className="text-neutral-400 text-xs font-medium">
+                        {new Date(value).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
+                    </span>
                 </div>
-                <button
-                    className="btn btn-success btn-lg shadow-lg shadow-emerald-500/30 hover:shadow-emerald-600/40 active:scale-95 transition-all d-flex align-items-center gap-2 rounded-3xl font-bold border-0 px-4"
-                    onClick={handleExportExcel}
-                    disabled={movimientos.length === 0}
-                    style={{ backgroundColor: '#10b981' }}
-                >
-                    <Download size={20} />
-                    Exportar Excel
-                </button>
-            </div>
+            )
+        },
+        {
+            key: 'producto',
+            label: 'Producto',
+            width: '280px',
+            render: (_, row) => (
+                <div className="flex flex-col">
+                    <span className="inline-block w-fit mb-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-neutral-100 text-neutral-600 border border-neutral-200">
+                        {row.producto_codigo}
+                    </span>
+                    <span className="font-bold text-neutral-700 truncate" title={row.producto_descripcion}>
+                        {row.producto_descripcion}
+                    </span>
+                </div>
+            )
+        },
+        {
+            key: 'tipo',
+            label: 'Tipo',
+            width: '140px',
+            align: 'center',
+            render: (value) => (
+                value === 'IN' ? (
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-black border bg-emerald-50 text-emerald-600 border-emerald-100 gap-1">
+                        <ArrowUp size={12} strokeWidth={3} />
+                        ENTRADA
+                    </span>
+                ) : (
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-black border bg-rose-50 text-rose-600 border-rose-100 gap-1">
+                        <ArrowDown size={12} strokeWidth={3} />
+                        SALIDA
+                    </span>
+                )
+            )
+        },
+        {
+            key: 'cantidad',
+            label: 'Cant.',
+            width: '100px',
+            align: 'right',
+            render: (value, row) => (
+                <span className={`font-black text-lg ${row.tipo === 'IN' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                    {row.tipo === 'IN' ? '+' : '-'}{value}
+                </span>
+            )
+        },
+        {
+            key: 'referencia',
+            label: 'Referencia',
+            width: '200px',
+            render: (value) => (
+                <span className="inline-block px-2 py-1 rounded text-xs font-bold bg-neutral-100 text-neutral-600 border border-neutral-200 uppercase truncate max-w-full">
+                    {value}
+                </span>
+            )
+        },
+        {
+            key: 'observaciones',
+            label: 'Observaciones',
+            width: '250px',
+            render: (value) => (
+                <div className="text-neutral-500 text-sm italic truncate" title={value}>
+                    {value || '—'}
+                </div>
+            )
+        }
+    ];
 
-            {/* Filtros */}
-            <div className="card border-0 shadow-sm mb-4">
-                <div className="card-body bg-light rounded">
-                    <div className="row g-3 align-items-end">
-                        <div className="col-md-4">
-                            <div className="input-group">
-                                <span className="input-group-text bg-white border-end-0"><Search size={18} className="text-muted" /></span>
-                                <input
-                                    type="text"
-                                    className="form-control border-start-0"
-                                    placeholder="Buscar por código, descripción, referencia..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                />
+    return (
+        <div className="flex flex-col h-[calc(100vh-64px)] overflow-hidden bg-neutral-50/30">
+            {/* Header / Toolbar Area */}
+            <div className="p-8 pb-4">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-6">
+                    <div>
+                        <div className="flex items-center gap-3 mb-1">
+                            <div className="p-2 bg-emerald-600 rounded-2xl shadow-lg shadow-emerald-600/20">
+                                <RefreshCcw size={24} className="text-white" />
                             </div>
+                            <h1 className="text-3xl font-black text-neutral-900 tracking-tight">Movimientos de Stock</h1>
+                        </div>
+                        <p className="text-neutral-500 font-medium ml-1">Historial completo detallado de entradas y salidas.</p>
+                    </div>
+
+                    <button
+                        onClick={handleExportExcel}
+                        disabled={movimientos.length === 0}
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-emerald-200 hover:shadow-emerald-300 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <Download size={20} strokeWidth={3} />
+                        Exportar Excel
+                    </button>
+                </div>
+
+                {/* Filtros */}
+                <div className="bg-white p-4 rounded-2xl shadow-sm border border-neutral-200/60">
+                    <div className="flex flex-col md:flex-row gap-3 items-end">
+                        <div className="relative flex-1 w-full">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400 block mb-1 ml-1">Búsqueda</label>
+                            <SearchInput
+                                placeholder="Buscar por código, descripción, referencia..."
+                                value={searchTerm}
+                                onSearch={setSearchTerm}
+                                className="!py-3 border-neutral-200"
+                            />
                         </div>
 
-                        <div className="col-md-2">
-                            <div className="input-group">
-                                <span className="input-group-text bg-white border-end-0"><Filter size={18} className="text-muted" /></span>
+                        <div className="w-full md:w-48">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400 block mb-1 ml-1">Tipo</label>
+                            <div className="relative group">
+                                <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                                    <ListFilter size={18} className="text-neutral-400 group-focus-within:text-emerald-600 transition-colors" />
+                                </div>
                                 <select
-                                    className="form-select border-start-0"
+                                    className="w-full pl-12 pr-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl outline-none focus:ring-4 focus:ring-emerald-600/5 focus:border-emerald-600 transition-all font-bold text-neutral-800 appearance-none cursor-pointer shadow-sm"
                                     value={tipoFiltro}
                                     onChange={(e) => setTipoFiltro(e.target.value)}
                                 >
-                                    <option value="">Todos los Tipos</option>
+                                    <option value="">Todos</option>
                                     <option value="IN">Entradas</option>
                                     <option value="OUT">Salidas</option>
                                 </select>
                             </div>
                         </div>
 
-                        <div className="col-md-2">
-                            <div className="input-group">
-                                <span className="input-group-text bg-white border-end-0"><Calendar size={18} className="text-muted" /></span>
+                        <div className="w-full md:w-48">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400 block mb-1 ml-1">Desde</label>
+                            <div className="relative group">
+                                <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                                    <Calendar size={18} className="text-neutral-400 group-focus-within:text-emerald-600 transition-colors" />
+                                </div>
                                 <input
                                     type="date"
-                                    className="form-control border-start-0"
+                                    className="w-full pl-12 pr-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl outline-none focus:ring-4 focus:ring-emerald-600/5 focus:border-emerald-600 transition-all font-bold text-neutral-800 shadow-sm"
                                     value={fechaDesde}
                                     onChange={(e) => setFechaDesde(e.target.value)}
                                 />
                             </div>
                         </div>
 
-                        <div className="col-md-2">
-                            <div className="input-group">
-                                <span className="input-group-text bg-white border-end-0"><Calendar size={18} className="text-muted" /></span>
+                        <div className="w-full md:w-48">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400 block mb-1 ml-1">Hasta</label>
+                            <div className="relative group">
+                                <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                                    <Calendar size={18} className="text-neutral-400 group-focus-within:text-emerald-600 transition-colors" />
+                                </div>
                                 <input
                                     type="date"
-                                    className="form-control border-start-0"
+                                    className="w-full pl-12 pr-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl outline-none focus:ring-4 focus:ring-emerald-600/5 focus:border-emerald-600 transition-all font-bold text-neutral-800 shadow-sm"
                                     value={fechaHasta}
                                     onChange={(e) => setFechaHasta(e.target.value)}
                                 />
                             </div>
                         </div>
 
-                        <div className="col-md-2">
-                            <BtnClear onClick={limpiarFiltros} className="w-100" />
-                        </div>
+                        <button
+                            onClick={limpiarFiltros}
+                            className="p-4 bg-white border border-neutral-200 text-neutral-400 hover:text-neutral-900 hover:border-neutral-300 rounded-2xl transition-all shadow-sm"
+                            title="Limpiar Filtros"
+                        >
+                            <FilterX size={20} />
+                        </button>
                     </div>
                 </div>
             </div>
 
-            {/* Tabla */}
-            <div className="card border-0 shadow mb-0 flex-grow-1 overflow-hidden d-flex flex-column">
-                <div className="card-body p-0 d-flex flex-column overflow-hidden">
-                    <div className="table-responsive flex-grow-1">
-                        <table className="table align-middle mb-0">
-                            <thead className="table-dark" style={{ backgroundColor: '#212529', color: '#fff' }}>
-                                <tr>
-                                    <th className="ps-4 py-3 fw-bold" style={{ width: '12%' }}>Fecha</th>
-                                    <th className="py-3 fw-bold" style={{ width: '25%' }}>Producto</th>
-                                    <th className="py-3 fw-bold text-center" style={{ width: '10%' }}>Tipo</th>
-                                    <th className="py-3 fw-bold text-end" style={{ width: '10%' }}>Cant.</th>
-                                    <th className="py-3 fw-bold" style={{ width: '15%' }}>Referencia</th>
-                                    <th className="pe-4 py-3 fw-bold" style={{ width: '28%' }}>Observaciones</th>
-                                </tr>
-                            </thead>
-                            <tbody className="bg-white">
-                                {loading ? (
-                                    <tr>
-                                        <td colSpan="6" className="py-5 text-center">
-                                            <div className="spinner-border text-primary" role="status"></div>
-                                            <div className="mt-2 text-muted fw-bold">Cargando movimientos...</div>
-                                        </td>
-                                    </tr>
-                                ) : movimientos.length === 0 ? (
-                                    <tr>
-                                        <td colSpan="6" className="py-5">
-                                            <EmptyState
-                                                icon={Package}
-                                                title="No se encontraron movimientos"
-                                                description="Intenta ajustar los filtros para encontrar lo que buscas."
-                                            />
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    movimientos.map(mov => (
-                                        <tr key={mov.id} className="hover:bg-light transition-colors">
-                                            <td className="ps-4 py-3">
-                                                <div className="d-flex flex-column">
-                                                    <span className="fw-bold text-dark">
-                                                        {new Date(mov.fecha).toLocaleDateString('es-AR')}
-                                                    </span>
-                                                    <small className="text-muted font-monospace">
-                                                        {new Date(mov.fecha).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
-                                                    </small>
-                                                </div>
-                                            </td>
-                                            <td className="py-3">
-                                                <div className="d-flex flex-column">
-                                                    <span className="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace mb-1 w-fit" style={{ fontSize: '0.7rem' }}>
-                                                        {mov.producto_codigo}
-                                                    </span>
-                                                    <span className="fw-bold text-dark text-truncate" style={{ maxWidth: '250px' }} title={mov.producto_descripcion}>
-                                                        {mov.producto_descripcion}
-                                                    </span>
-                                                </div>
-                                            </td>
-                                            <td className="py-3 text-center">
-                                                {mov.tipo === 'IN' ? (
-                                                    <span className="badge rounded-pill bg-success-subtle text-success border border-success-subtle px-3 py-2 fw-bold d-inline-flex align-items-center gap-1">
-                                                        <ArrowUp size={14} strokeWidth={3} />
-                                                        ENTRADA
-                                                    </span>
-                                                ) : (
-                                                    <span className="badge rounded-pill bg-danger-subtle text-danger border border-danger-subtle px-3 py-2 fw-bold d-inline-flex align-items-center gap-1">
-                                                        <ArrowDown size={14} strokeWidth={3} />
-                                                        SALIDA
-                                                    </span>
-                                                )}
-                                            </td>
-                                            <td className="py-3 text-end">
-                                                <span className={`fw-black px-2 py-1 rounded ${mov.tipo === 'IN' ? 'text-success bg-success-subtle' : 'text-danger bg-danger-subtle'
-                                                    }`} style={{ fontSize: '1.1rem' }}>
-                                                    {mov.tipo === 'IN' ? '+' : '-'}{mov.cantidad}
-                                                </span>
-                                            </td>
-                                            <td className="py-3">
-                                                <span className="badge bg-secondary-subtle text-secondary border border-secondary-subtle text-uppercase" style={{ fontSize: '0.75rem' }}>
-                                                    {mov.referencia}
-                                                </span>
-                                            </td>
-                                            <td className="pe-4 py-3">
-                                                <div className="text-muted small italic text-truncate" style={{ maxWidth: '250px' }} title={mov.observaciones}>
-                                                    {mov.observaciones || '—'}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
+            {/* Table Area */}
+            <div className="flex-1 px-8 pb-8 overflow-hidden min-h-0">
+                <div className="h-full bg-white rounded-[2.5rem] border border-neutral-200 shadow-xl shadow-neutral-200/50 flex flex-col overflow-hidden">
+                    <div className="flex-1 overflow-hidden">
+                        <PremiumTable
+                            columns={columns}
+                            data={movimientos}
+                            loading={loading}
+                            emptyMessage={
+                                <EmptyState
+                                    icon={Package}
+                                    title="No se encontraron movimientos"
+                                    description="Intenta ajustar los filtros para encontrar lo que buscas."
+                                    iconColor="text-emerald-500"
+                                    bgIconColor="bg-emerald-50"
+                                />
+                            }
+                        />
                     </div>
-                </div>
 
-                {/* Footer / Paginación */}
-                {itemsPerPage > 0 && (
-                    <div className="card-footer bg-white border-top p-0">
+                    <div className="px-6 py-4 border-t border-neutral-100 bg-neutral-50/50">
                         <TablePagination
                             currentPage={currentPage}
                             totalPages={totalPages}
-                            onPageChange={setCurrentPage}
                             totalItems={totalItems}
                             itemsPerPage={itemsPerPage}
+                            onPageChange={setCurrentPage}
                             onItemsPerPageChange={(newVal) => {
                                 setItemsPerPage(newVal);
                                 setCurrentPage(1);
@@ -303,7 +310,7 @@ const MovimientosStock = () => {
                             }}
                         />
                     </div>
-                )}
+                </div>
             </div>
         </div>
     );

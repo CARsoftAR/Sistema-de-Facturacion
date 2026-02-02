@@ -1,0 +1,36 @@
+ESTÁNDAR DE PANTALLA GLOBAL PARA TABLAS (Ventas, Compras, Pedidos)
+
+1. Contenedor Principal:
+   className="p-6 w-full max-w-[1920px] mx-auto h-[calc(100vh-60px)] flex flex-col fade-in bg-slate-50/50"
+
+2. Cabecera (Header):
+   Margin bottom: mb-8
+   Título: h1 text-3xl font-black text-blue-600 flex items-center gap-3
+
+3. Sección de Filtros:
+   Margin bottom: mb-6
+   Contenedor: card border-0 shadow-sm
+   Cuerpo: card-body bg-light rounded
+   Layout: row g-3 align-items-center
+   Buscador: col-md-4 (input-group con Search icon)
+   Botón Limpiar: col-md-1 ms-auto text-end (BtnClear con className="w-100")
+
+4. Contenedor de Tabla:
+   Clase: card border-0 shadow-sm flex-grow-1 overflow-hidden d-flex flex-column
+   Cuerpo: card-body p-0 d-flex flex-column overflow-hidden
+   Responsive: table-responsive flex-grow-1
+
+5. Estilos de Tabla:
+   Clase: table align-middle mb-0
+   Header: thead className="table-dark" (Sin fw-bold manual)
+   Celdas: py-3
+   Acciones: pe-4 py-3 text-end (Flex gap-2 justify-end)
+
+6. Paginación:
+   Componente: TablePagination (dentro de card-body p-0, al final del listado)
+   Nota: Al estar en p-0, el borde superior del componente se alinea perfectamente con la tabla.
+
+7. Botones:
+   - BtnAdd (Azul principal en el header)
+   - BtnView, BtnPrint, BtnDelete, BtnTableAction (Para acciones de fila, estilo Soft/Premium)
+   - BtnClear (Estilo light/success para filtros)

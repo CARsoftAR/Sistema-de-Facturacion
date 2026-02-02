@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 import path from 'path'
 
 // https://vitejs.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [react()],
   build: {
     // Output build files to Django's staticfiles directory
@@ -22,6 +22,6 @@ export default defineConfig({
       }
     }
   },
-  // Base path for assets in production (must match Django static url)
-  base: '/static/dist/'
-})
+  // Base path: '/' for development, '/static/dist/' for production
+  base: mode === 'production' ? '/static/dist/' : '/'
+}))
