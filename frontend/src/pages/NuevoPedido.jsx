@@ -9,6 +9,7 @@ import {
 import { showWarningAlert, showSuccessAlert, showConfirmationAlert } from '../utils/alerts';
 import { useProductSearch } from '../hooks/useProductSearch';
 import { cn } from '../utils/cn';
+import { formatNumber } from '../utils/formats';
 
 function getCookie(name) {
     let cookieValue = null;
@@ -47,6 +48,10 @@ const NuevoPedido = () => {
     const [items, setItems] = useState([]);
     const [observaciones, setObservaciones] = useState('');
     const [guardando, setGuardando] = useState(false);
+    const [config, setConfig] = useState({
+        auto_foco_codigo_barras: false,
+        comportamiento_lector_pedidos: 'DEFAULT'
+    });
 
     // Modal Stock Custom
     const [modalStockOpen, setModalStockOpen] = useState(false);
@@ -70,13 +75,34 @@ const NuevoPedido = () => {
             setProductoSeleccionado(producto);
             setInputPrecio(producto.precio_efectivo.toString());
             setInputCantidad('1');
-            setTimeout(() => cantidadRef.current?.select(), 50);
+            if (config.comportamiento_lector_pedidos === 'DIRECTO') {
+                setTimeout(() => agregarProductoALista(), 50);
+            } else if (config.comportamiento_lector_pedidos === 'CANTIDAD') {
+                setTimeout(() => cantidadRef.current?.select(), 50);
+            }
         }
     });
 
     useEffect(() => {
-        setTimeout(() => clienteInputRef.current?.focus(), 400);
+        const fetchConfig = async () => {
+            try {
+                const response = await fetch('/api/config/obtener/');
+                const data = await response.json();
+                setConfig({
+                    auto_foco_codigo_barras: data.auto_foco_codigo_barras || false,
+                    comportamiento_lector_pedidos: data.comportamiento_lector_pedidos || 'DEFAULT',
+                });
+            } catch (err) { console.error(err); }
+        };
+        fetchConfig();
     }, []);
+
+    useEffect(() => {
+        setTimeout(() => {
+            if (config.auto_foco_codigo_barras) codigoRef.current?.focus();
+            else clienteInputRef.current?.focus();
+        }, 400);
+    }, [config]);
 
     useEffect(() => {
         if (!busquedaCliente || busquedaCliente.length < 2) {
@@ -299,7 +325,7 @@ const NuevoPedido = () => {
                                                 <span className="text-sm font-black tracking-tight">{p.codigo}</span>
                                                 <span className={cn("text-[9px] font-bold uppercase", idx === sugerenciaCodigoActiva ? "text-blue-100" : "text-neutral-400")}>{p.descripcion}</span>
                                             </div>
-                                            <span className="text-base font-black text-left">${p.precio_efectivo}</span>
+                                            <span className="text-base font-black text-left">${formatNumber(p.precio_efectivo)}</span>
                                         </div>
                                     ))}
                                 </div>
@@ -325,7 +351,7 @@ const NuevoPedido = () => {
                                                 <span className="text-sm font-black uppercase text-neutral-800 tracking-tight">{p.descripcion}</span>
                                                 <span className="text-[10px] font-black text-neutral-400 font-mono">{p.codigo} - STOCK: {p.stock}</span>
                                             </div>
-                                            <span className="text-lg font-black text-neutral-900">${p.precio_efectivo.toLocaleString()}</span>
+                                            <span className="text-lg font-black text-neutral-900">${formatNumber(p.precio_efectivo)}</span>
                                         </div>
                                     ))}
                                 </div>
@@ -338,6 +364,7 @@ const NuevoPedido = () => {
                                 type="number"
                                 value={inputCantidad}
                                 onChange={(e) => setInputCantidad(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && agregarProductoALista()}
                                 className="w-full py-3 bg-white border border-neutral-300 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 text-center font-black text-neutral-900 text-lg"
                             />
                         </div>
@@ -386,10 +413,10 @@ const NuevoPedido = () => {
                                             <button onClick={() => cambiarCantidad(item.id, item.cantidad + 1)} className="w-8 h-8 flex items-center justify-center text-neutral-400 hover:text-green-600 font-black text-lg">+</button>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-1 text-right font-bold text-xs text-neutral-500">${item.precio.toLocaleString()}</td>
+                                    <td className="px-6 py-1 text-right font-bold text-xs text-neutral-500">${formatNumber(item.precio)}</td>
                                     <td className="px-6 py-1 text-right">
                                         <span className="inline-block px-4 py-1.5 bg-neutral-900 text-white rounded-xl font-black text-base tracking-tighter">
-                                            ${item.subtotal.toLocaleString()}
+                                            ${formatNumber(item.subtotal)}
                                         </span>
                                     </td>
                                     <td className="px-6 py-1 text-center">
@@ -415,7 +442,7 @@ const NuevoPedido = () => {
                         <div className="space-y-1 text-left">
                             <p className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em] mb-1">Monto de Pedido</p>
                             <div className="flex items-baseline gap-2">
-                                <span className="text-6xl font-black text-blue-500 tracking-tighter select-none">${totalGeneral.toLocaleString()}</span>
+                                <span className="text-6xl font-black text-blue-500 tracking-tighter select-none">${formatNumber(totalGeneral)}</span>
                                 <span className="text-blue-800 text-xs font-black font-mono uppercase">Ars</span>
                             </div>
                         </div>

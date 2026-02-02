@@ -13,6 +13,7 @@ import { showDeleteAlert, showConfirmationAlert, showSuccessAlert, showErrorAler
 import { BentoCard, StatCard, PremiumTable, TableCell, SearchInput, PremiumFilterBar } from '../components/premium';
 import { BentoGrid } from '../components/premium/BentoCard';
 import { cn } from '../utils/cn';
+import { formatNumber } from '../utils/formats';
 import { BtnAdd } from '../components/CommonButtons';
 import TablePagination from '../components/common/TablePagination';
 import EmptyState from '../components/EmptyState';
@@ -275,7 +276,7 @@ const Pedidos = () => {
             <BentoGrid cols={4}>
                 <StatCard
                     label="Volume de Pedidos"
-                    value={`$${stats.total.toLocaleString()}`}
+                    value={`$${formatNumber(stats.total)}`}
                     icon={DollarSign}
                     color="primary"
                 />

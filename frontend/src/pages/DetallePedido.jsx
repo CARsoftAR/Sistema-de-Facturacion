@@ -4,6 +4,7 @@ import {
     Printer, ArrowLeft, ShoppingCart, User, Calendar, DollarSign, FileText, CheckCircle2, Clock, AlertCircle, Receipt, Hash
 } from 'lucide-react';
 import { BtnPrint, BtnBack } from '../components/CommonButtons';
+import { formatNumber } from '../utils/formats';
 
 const DetallePedido = () => {
     const { id } = useParams();
@@ -100,7 +101,7 @@ const DetallePedido = () => {
                                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-1">Total Pedido</label>
                                 <div className="flex items-baseline gap-2">
                                     <span className="text-3xl font-black bg-gradient-to-br from-slate-900 to-slate-700 bg-clip-text text-transparent leading-tight">
-                                        $ {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(pedido.total)}
+                                        $ {formatNumber(pedido.total)}
                                     </span>
                                     <span className="text-slate-400 font-medium text-xs">ARS</span>
                                 </div>
@@ -210,14 +211,14 @@ const DetallePedido = () => {
                                                 </td>
                                                 <td className="px-3 py-1.5 text-center">
                                                     <span className="inline-flex items-center justify-center min-w-[2.5rem] px-2 h-7 rounded-lg bg-slate-100 font-black text-slate-700 text-xs group-hover:bg-white group-hover:shadow-sm transition-all">
-                                                        {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(item.cantidad)}
+                                                        {formatNumber(item.cantidad)}
                                                     </span>
                                                 </td>
                                                 <td className="px-3 py-1.5 text-right text-slate-600 font-semibold text-sm">
-                                                    $ {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(item.precio_unitario)}
+                                                    $ {formatNumber(item.precio_unitario)}
                                                 </td>
                                                 <td className="px-4 py-1.5 text-right">
-                                                    <span className="font-black text-slate-900 text-base">$ {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(item.subtotal)}</span>
+                                                    <span className="font-black text-slate-900 text-base">$ {formatNumber(item.subtotal)}</span>
                                                 </td>
                                             </tr>
                                         ))}
@@ -236,11 +237,11 @@ const DetallePedido = () => {
                                             <div className="flex gap-6">
                                                 <div className="space-y-0.5">
                                                     <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Subtotal Neto</p>
-                                                    <p className="text-sm font-bold text-white/90 font-mono">$ {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(pedido.neto || 0)}</p>
+                                                    <p className="text-sm font-bold text-white/90 font-mono">$ {formatNumber(pedido.neto || 0)}</p>
                                                 </div>
                                                 <div className="space-y-0.5 border-l border-white/10 pl-6">
                                                     <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">IVA (21%)</p>
-                                                    <p className="text-sm font-bold text-white/90 font-mono">$ {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(pedido.iva_amount || 0)}</p>
+                                                    <p className="text-sm font-bold text-white/90 font-mono">$ {formatNumber(pedido.iva_amount || 0)}</p>
                                                 </div>
                                             </div>
                                         )}
@@ -251,7 +252,7 @@ const DetallePedido = () => {
                                             <div className="flex items-baseline justify-end gap-2">
                                                 <span className="text-slate-400 text-lg font-light">$</span>
                                                 <span className="text-4xl font-black text-white tracking-tighter">
-                                                    {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(pedido.total)}
+                                                    {formatNumber(pedido.total)}
                                                 </span>
                                                 <span className="text-slate-400 text-[10px] font-bold uppercase ml-1">ARS</span>
                                             </div>

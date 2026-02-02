@@ -1,51 +1,73 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import {
-    Save, Monitor, Zap, CheckCircle2, Settings, Loader2, ShoppingCart,
-    Printer, Laptop, Package, Calculator, FileText, Mail, Lock,
-    Server, Shield, HardDrive, Cloud, Folder, Activity, Key, Globe, Layout, Database
-} from 'lucide-react';
+import { Save, Monitor, Zap, CheckCircle2, Settings, Loader2, ShoppingCart, Printer, Laptop, Package, Calculator, FileText, Mail, Lock, Server, Shield, HardDrive, Cloud, Folder } from 'lucide-react';
 
-// Premium UI Components
-import { BentoCard, BentoGrid, StatCard } from '../components/premium/BentoCard';
-import { SearchInput, PremiumSelect } from '../components/premium/PremiumInput';
-import { showSuccessAlert, showErrorAlert, showConfirmationAlert, showWarningAlert } from '../utils/alerts';
-import { cn } from '../utils/cn';
+// Estilos base según directrices de la USER_REQUEST
+const s = {
+    container: { padding: '40px', maxWidth: '800px', margin: '0 auto' },
+    header: { marginBottom: '24px' },
+    title: { fontSize: '24px', fontWeight: 'bold', color: '#1e293b' },
+    subtitle: { color: '#64748b', fontSize: '14px' },
+    card: { backgroundColor: 'white', border: 'none', borderRadius: '24px', padding: '32px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' },
+    sectionTitle: { display: 'flex', alignItems: 'center', gap: '8px', fontSize: '16px', fontWeight: '700', color: '#3b82f6', marginBottom: '24px' },
+    fieldGroup: { marginBottom: '32px' },
+    label: { display: 'block', fontWeight: '600', color: '#334155', marginBottom: '8px', fontSize: '14px' },
+    inputWrapper: { position: 'relative', display: 'flex', alignItems: 'center' },
+    input: { width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', outline: 'none', transition: 'border 0.2s', fontSize: '14px' },
+    textarea: { width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', outline: 'none', transition: 'border 0.2s', fontSize: '14px', minHeight: '80px', resize: 'vertical' },
+    inputBadge: { position: 'absolute', right: '12px', color: '#64748b', fontSize: '13px' },
+    switchContainer: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px', backgroundColor: '#f8fafc', borderRadius: '16px', border: '1px solid #f1f5f9' },
+    saveBtn: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', backgroundColor: '#2563eb', color: 'white', padding: '14px', borderRadius: '16px', fontWeight: 'bold', border: 'none', cursor: 'pointer', marginTop: '32px', transition: 'all 0.2s' },
+    // Estilos de Modal
+    overlay: { position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 9999, backdropFilter: 'blur(4px)' },
+    modalCard: { backgroundColor: 'white', padding: '32px', borderRadius: '24px', textAlign: 'center', maxWidth: '400px', width: '90%', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)' },
+    iconCircle: { margin: '0 auto 20px', borderRadius: '50%', width: '64px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+    confirmBtn: { borderRadius: '16px', padding: '12px', color: 'white', fontWeight: 'bold', cursor: 'pointer', flex: 1, border: 'none', backgroundColor: '#2563eb', marginTop: '16px' }
+};
 
 const Parametros = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [activeTab, setActiveTab] = useState('general');
+    const [showSuccess, setShowSuccess] = useState(false);
 
-    // Estados de Configuración
-    const [config, setConfig] = useState({
-        habilita_remitos: true,
-        actualizar_precios_compra: false,
-        permitir_stock_negativo: false,
-        alerta_stock_minimo: true,
-        margen_ganancia_defecto: 0,
-        metodo_ganancia: 'MARKUP',
-        papel_impresion: 'A4',
-        pie_factura: '',
-        ocultar_barra_scroll: true,
-        ocultar_scroll_tablas: false,
-        ancho_contenido: 'max-w-7xl',
-        auto_foco_codigo_barras: false,
-        comportamiento_codigo_barras: 'DEFAULT',
-        discriminar_iva_compras: false,
-        discriminar_iva_ventas: false,
-        redondeo_precios: 1,
-        smtp_server: '',
-        smtp_port: 587,
-        smtp_user: '',
-        smtp_security: 'STARTTLS',
-        smtp_password: '',
-        backup_local_path: '',
-        backup_google_drive_enabled: false,
-        backup_google_drive_folder_id: ''
-    });
+    // Estados locales para los inputs (Aislamiento)
+    const [autoRemito, setAutoRemito] = useState(true);
+    const [autoUpdatePrices, setAutoUpdatePrices] = useState(false);
+    const [permitirStockNegativo, setPermitirStockNegativo] = useState(false);
+    const [alertaStockMinimo, setAlertaStockMinimo] = useState(true);
+    const [margenGananciaDefecto, setMargenGananciaDefecto] = useState(0);
+    const [metodoGanancia, setMetodoGanancia] = useState('MARKUP'); // 'MARKUP' o 'MARGIN'
 
+    // Nuevos estados
+    const [papelImpresion, setPapelImpresion] = useState('A4'); // 'A4', 'T80', 'T58'
+    const [pieFactura, setPieFactura] = useState('');
+    const [ocultarBarraScroll, setOcultarBarraScroll] = useState(true);
+    const [anchoContenido, setAnchoContenido] = useState('max-w-7xl');
+    const [autoFocoCodigoBarras, setAutoFocoCodigoBarras] = useState(false);
+    const [comportamientoCodigoBarras, setComportamientoCodigoBarras] = useState('DEFAULT');
+    const [discriminarIvaCompras, setDiscriminarIvaCompras] = useState(false);
+    const [discriminarIvaVentas, setDiscriminarIvaVentas] = useState(false);
+    const [redondeoPrecios, setRedondeoPrecios] = useState(1);
+
+    // Comportamiento por módulo
+    const [comportamientoLectorVentas, setComportamientoLectorVentas] = useState('DIRECTO');
+    const [comportamientoLectorCompras, setComportamientoLectorCompras] = useState('CANTIDAD');
+    const [comportamientoLectorPedidos, setComportamientoLectorPedidos] = useState('CANTIDAD');
+    const [comportamientoLectorPresupuestos, setComportamientoLectorPresupuestos] = useState('CANTIDAD');
+
+    // Estados SMTP
+    const [smtpServer, setSmtpServer] = useState('');
+    const [smtpPort, setSmtpPort] = useState(587);
+    const [smtpUser, setSmtpUser] = useState('');
+    const [smtpSecurity, setSmtpSecurity] = useState('STARTTLS');
+    const [smtpPassword, setSmtpPassword] = useState('');
     const [hasSmtpPassword, setHasSmtpPassword] = useState(false);
+
+    // Estados de Backups
+    const [backupLocalPath, setBackupLocalPath] = useState('');
+    const [backupGoogleDriveEnabled, setBackupGoogleDriveEnabled] = useState(false);
+    const [backupGoogleDriveFolderId, setBackupGoogleDriveFolderId] = useState('');
+    const [backupGoogleDriveCredentials, setBackupGoogleDriveCredentials] = useState(null);
     const [hasGoogleDriveCredentials, setHasGoogleDriveCredentials] = useState(false);
 
     useEffect(() => {
@@ -53,17 +75,49 @@ const Parametros = () => {
     }, []);
 
     const fetchConfig = async () => {
-        setLoading(true);
         try {
             const response = await axios.get('/api/config/obtener/');
             if (response.data) {
-                setConfig(prev => ({ ...prev, ...response.data }));
+                setAutoRemito(response.data.habilita_remitos !== false);
+                setAutoUpdatePrices(response.data.actualizar_precios_compra || false);
+                setPermitirStockNegativo(response.data.permitir_stock_negativo || false);
+                setAlertaStockMinimo(response.data.alerta_stock_minimo !== false);
+                setMargenGananciaDefecto(response.data.margen_ganancia_defecto || 0);
+                setMetodoGanancia(response.data.metodo_ganancia || 'MARKUP');
+
+                // Nuevos campos
+                setPapelImpresion(response.data.papel_impresion || 'A4');
+                setPieFactura(response.data.pie_factura || '');
+                setPieFactura(response.data.pie_factura || '');
+                setOcultarBarraScroll(response.data.ocultar_barra_scroll ?? true); // Default True
+                setAnchoContenido(response.data.ancho_contenido || 'max-w-7xl');
+                setAutoFocoCodigoBarras(response.data.auto_foco_codigo_barras || false);
+                setComportamientoCodigoBarras(response.data.comportamiento_codigo_barras || 'DEFAULT');
+                setDiscriminarIvaCompras(response.data.discriminar_iva_compras || false);
+                setDiscriminarIvaVentas(response.data.discriminar_iva_ventas || false);
+                setRedondeoPrecios(response.data.redondeo_precios || 1);
+
+                // Comportamiento por módulo
+                setComportamientoLectorVentas(response.data.comportamiento_lector_ventas || 'DIRECTO');
+                setComportamientoLectorCompras(response.data.comportamiento_lector_compras || 'CANTIDAD');
+                setComportamientoLectorPedidos(response.data.comportamiento_lector_pedidos || 'CANTIDAD');
+                setComportamientoLectorPresupuestos(response.data.comportamiento_lector_presupuestos || 'CANTIDAD');
+
+                // SMTP
+                setSmtpServer(response.data.smtp_server || '');
+                setSmtpPort(response.data.smtp_port || 587);
+                setSmtpUser(response.data.smtp_user || '');
+                setSmtpSecurity(response.data.smtp_security || 'STARTTLS');
                 setHasSmtpPassword(response.data.has_smtp_password || false);
+
+                // Backups
+                setBackupLocalPath(response.data.backup_local_path || '');
+                setBackupGoogleDriveEnabled(response.data.backup_google_drive_enabled || false);
+                setBackupGoogleDriveFolderId(response.data.backup_google_drive_folder_id || '');
                 setHasGoogleDriveCredentials(response.data.has_google_drive_credentials || false);
             }
         } catch (error) {
             console.error("Error cargando configuración:", error);
-            showErrorAlert("Error", "No se pudo cargar la configuración del sistema.");
         } finally {
             setLoading(false);
         }
@@ -72,24 +126,76 @@ const Parametros = () => {
     const handleSave = async () => {
         setSaving(true);
         try {
-            const response = await axios.post('/api/config/guardar/', config);
+            const payload = {
+                habilita_remitos: autoRemito,
+                actualizar_precios_compra: autoUpdatePrices,
+                permitir_stock_negativo: permitirStockNegativo,
+                alerta_stock_minimo: alertaStockMinimo,
+                margen_ganancia_defecto: parseFloat(margenGananciaDefecto) || 0,
+                metodo_ganancia: metodoGanancia,
+                papel_impresion: papelImpresion,
+                pie_factura: pieFactura,
+                ocultar_barra_scroll: ocultarBarraScroll,
+                ancho_contenido: anchoContenido,
+                auto_foco_codigo_barras: autoFocoCodigoBarras,
+                comportamiento_codigo_barras: comportamientoCodigoBarras,
+                discriminar_iva_compras: discriminarIvaCompras,
+                discriminar_iva_ventas: discriminarIvaVentas,
+                redondeo_precios: redondeoPrecios,
+
+                // Comportamiento por módulo
+                comportamiento_lector_ventas: comportamientoLectorVentas,
+                comportamiento_lector_compras: comportamientoLectorCompras,
+                comportamiento_lector_pedidos: comportamientoLectorPedidos,
+                comportamiento_lector_presupuestos: comportamientoLectorPresupuestos,
+
+                // SMTP Payload
+                smtp_server: smtpServer,
+                smtp_port: smtpPort,
+                smtp_user: smtpUser,
+                smtp_security: smtpSecurity,
+                smtp_password: smtpPassword, // Solo se envía si se editó
+
+                // Backups
+                backup_local_path: backupLocalPath,
+                backup_google_drive_enabled: backupGoogleDriveEnabled,
+                backup_google_drive_folder_id: backupGoogleDriveFolderId,
+                backup_google_drive_credentials: backupGoogleDriveCredentials
+            };
+
+            // Debug: ver qué se está enviando
+            console.log('=== PAYLOAD A ENVIAR ===');
+            console.log('backup_local_path:', payload.backup_local_path);
+            console.log('backup_google_drive_enabled:', payload.backup_google_drive_enabled);
+            console.log('backup_google_drive_folder_id:', payload.backup_google_drive_folder_id);
+            console.log('backup_google_drive_credentials:', payload.backup_google_drive_credentials);
+
+            const response = await axios.post('/api/config/guardar/', payload);
             if (response.data.ok) {
-                await showSuccessAlert("Configuración Guardada", "Los cambios se aplicarán de inmediato en todo el sistema.");
+                setShowSuccess(true);
+                // Notificar a otros componentes que la config cambió si es necesario
                 window.dispatchEvent(new Event('configUpdated'));
-            } else {
-                showErrorAlert("Error", response.data.error || "No se pudieron guardar los cambios.");
             }
         } catch (error) {
             console.error("Error guardando:", error);
-            showErrorAlert("Error de Conexión", "No se pudo comunicar con el servidor.");
+            alert("Error al guardar la configuración");
         } finally {
             setSaving(false);
         }
     };
 
-    const handleInputChange = (field, value) => {
-        setConfig(prev => ({ ...prev, [field]: value }));
+    const handleSelectFolder = async () => {
+        try {
+            const response = await axios.get('/api/config/seleccionar_carpeta/');
+            if (response.data.ok) {
+                setBackupLocalPath(response.data.path);
+            }
+        } catch (error) {
+            console.error("Error seleccionando carpeta:", error);
+        }
     };
+
+    const [activeTab, setActiveTab] = useState('general');
 
     const tabs = [
         { id: 'general', label: 'General', icon: Settings },
@@ -98,206 +204,817 @@ const Parametros = () => {
         { id: 'precios', label: 'Lógica Precios', icon: Zap },
         { id: 'facturacion', label: 'Facturación', icon: Printer },
         { id: 'compras', label: 'Compras y Costos', icon: ShoppingCart },
-        { id: 'email', label: 'Cuentas Correo', icon: Mail },
-        { id: 'backups', label: 'Backups y Nube', icon: HardDrive },
+        { id: 'email', label: 'Correo Electrónico', icon: Mail },
+        { id: 'backups', label: 'Backups', icon: HardDrive },
     ];
 
     if (loading) return (
-        <div className="flex flex-col items-center justify-center h-full gap-4">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-            <p className="text-slate-400 font-bold text-xs uppercase tracking-widest">Sincronizando Parámetros...</p>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+            <Loader2 className="animate-spin text-primary" size={48} />
         </div>
     );
 
     return (
-        <div className="h-[calc(100vh-64px)] overflow-hidden bg-slate-50/50 flex flex-col p-6 gap-6">
-
-            {/* Header */}
-            <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div className="space-y-1">
-                    <div className="flex items-center gap-3">
-                        <div className="bg-gradient-to-br from-indigo-600 to-indigo-700 p-2.5 rounded-2xl text-white shadow-lg shadow-indigo-600/20">
-                            <Settings size={24} strokeWidth={2.5} />
-                        </div>
-                        <h1 className="text-3xl font-black text-slate-900 tracking-tight">Preferencias del Sistema</h1>
-                    </div>
-                    <p className="text-slate-500 font-bold text-xs uppercase tracking-[0.15em] ml-14">
-                        Ajustes técnicos, reglas de negocio y personalización.
-                    </p>
-                </div>
-
-                <button
-                    onClick={handleSave}
-                    disabled={saving}
-                    className="flex items-center gap-3 px-8 py-3.5 bg-indigo-600 text-white rounded-2xl font-black text-xs tracking-widest hover:bg-indigo-700 active:scale-95 transition-all shadow-xl shadow-indigo-600/20 disabled:opacity-50"
-                >
-                    {saving ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Save size={18} />}
-                    {saving ? 'GUARDANDO...' : 'GUARDAR CONFIGURACIÓN'}
-                </button>
+        <div style={{ ...s.container, maxWidth: '1000px' }}>
+            <header style={s.header}>
+                <h1 style={s.title}>Parámetros del Sistema</h1>
+                <p style={s.subtitle}>Ajustes técnicos y comportamiento de módulos</p>
             </header>
 
-            {/* Main Layout */}
-            <div className="flex-1 flex gap-6 min-h-0">
-
-                {/* Lateral Navigation Tabs */}
-                <aside className="w-72 flex flex-col gap-2 overflow-y-auto pr-2 custom-scrollbar">
-                    {tabs.map(tab => {
-                        const isActive = activeTab === tab.id;
-                        const Icon = tab.icon;
-                        return (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveTab(tab.id)}
-                                className={cn(
-                                    "flex items-center gap-4 p-4 rounded-2xl transition-all group border-2 relative overflow-hidden",
-                                    isActive
-                                        ? "bg-white border-indigo-100 shadow-xl shadow-indigo-500/5 ring-4 ring-indigo-50/50"
-                                        : "bg-transparent border-transparent hover:bg-white hover:border-slate-100"
-                                )}
-                            >
-                                <div className={cn(
-                                    "p-2.5 rounded-xl transition-all",
-                                    isActive ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-400 group-hover:text-indigo-600 group-hover:bg-indigo-50"
-                                )}>
-                                    <Icon size={18} />
-                                </div>
-                                <span className={cn(
-                                    "font-black text-[10px] tracking-widest uppercase",
-                                    isActive ? "text-indigo-900" : "text-slate-500"
-                                )}>{tab.label}</span>
-                                {isActive && <div className="absolute right-0 top-0 bottom-0 w-1.5 bg-indigo-600" />}
-                            </button>
-                        );
-                    })}
-                </aside>
-
-                {/* Content Area */}
-                <main className="flex-1 min-w-0 overflow-y-auto pr-2 custom-scrollbar">
-                    <div className="space-y-6">
-
-                        {/* Tab Content Render */}
-                        <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-
-                            {/* General */}
-                            {activeTab === 'general' && (
-                                <section className="space-y-6">
-                                    <div className="flex items-center gap-3 mb-6">
-                                        <div className="bg-indigo-50 p-3 rounded-2xl text-indigo-600"><Globe size={24} /></div>
-                                        <div>
-                                            <h2 className="text-xl font-black text-slate-900 uppercase">Ajustes Generales</h2>
-                                            <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Reglas base del sistema operativo</p>
-                                        </div>
-                                    </div>
-
-                                    <BentoCard className="p-8 space-y-8">
-                                        <div className="flex items-center justify-between gap-6 p-6 bg-slate-50 rounded-[2rem] border border-slate-100 transition-all hover:bg-white hover:shadow-lg">
-                                            <div className="flex-1">
-                                                <h3 className="text-sm font-black text-slate-800 uppercase tracking-tight">Ajustar Precios desde Compras</h3>
-                                                <p className="text-xs text-slate-400 font-medium mt-1">Actualiza precios de venta automáticamente al recibir stock con nuevo costo.</p>
-                                            </div>
-                                            <div className="form-check form-switch pt-0 mb-0">
-                                                <input
-                                                    className="form-check-input w-12 h-6 cursor-pointer"
-                                                    type="checkbox"
-                                                    checked={config.actualizar_precios_compra}
-                                                    onChange={() => handleInputChange('actualizar_precios_compra', !config.actualizar_precios_compra)}
-                                                />
-                                            </div>
-                                        </div>
-                                    </BentoCard>
-                                </section>
-                            )}
-
-                            {/* Interfaz */}
-                            {activeTab === 'interfaz' && (
-                                <section className="space-y-6">
-                                    <div className="flex items-center gap-3 mb-6">
-                                        <div className="bg-amber-50 p-3 rounded-2xl text-amber-600"><Layout size={24} /></div>
-                                        <div>
-                                            <h2 className="text-xl font-black text-slate-900 uppercase">Apariencia e Interfaz</h2>
-                                            <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Personalización visual del entorno</p>
-                                        </div>
-                                    </div>
-
-                                    <BentoCard className="p-8 space-y-6">
-                                        <div className="flex items-center justify-between gap-6 p-6 bg-slate-50 rounded-[2rem] border border-slate-100 hover:bg-white hover:shadow-lg transition-all">
-                                            <div className="flex-1">
-                                                <h3 className="text-sm font-black text-slate-800 uppercase tracking-tight">Ocultar Barra de Desplazamiento Lateral</h3>
-                                                <p className="text-xs text-slate-400 font-medium mt-1">Maximiza el espacio de trabajo ocultando el scroll del menú.</p>
-                                            </div>
-                                            <div className="form-check form-switch pt-0 mb-0">
-                                                <input
-                                                    className="form-check-input w-12 h-6 cursor-pointer"
-                                                    type="checkbox"
-                                                    checked={config.ocultar_barra_scroll}
-                                                    onChange={() => handleInputChange('ocultar_barra_scroll', !config.ocultar_barra_scroll)}
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div className="flex items-center justify-between gap-6 p-6 bg-slate-50 rounded-[2rem] border border-slate-100 hover:bg-white hover:shadow-lg transition-all">
-                                            <div className="flex-1">
-                                                <h3 className="text-sm font-black text-slate-800 uppercase tracking-tight">Ocultar Scroll en Tablas Internas</h3>
-                                                <p className="text-xs text-slate-400 font-medium mt-1">Apariencia más limpia en el listado de productos de ventas y compras.</p>
-                                            </div>
-                                            <div className="form-check form-switch pt-0 mb-0">
-                                                <input
-                                                    className="form-check-input w-12 h-6 cursor-pointer"
-                                                    type="checkbox"
-                                                    checked={config.ocultar_scroll_tablas}
-                                                    onChange={() => handleInputChange('ocultar_scroll_tablas', !config.ocultar_scroll_tablas)}
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div className="pt-4">
-                                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-3 ml-2">Comportamiento del Lector de Código de Barras</label>
-                                            <div className="grid grid-cols-3 gap-3">
-                                                {[
-                                                    { id: 'DEFAULT', label: 'Estándar', desc: 'Básico' },
-                                                    { id: 'CANTIDAD', label: 'Cantidad', desc: 'Foco automático' },
-                                                    { id: 'DIRECTO', label: 'Directo (x1)', desc: 'Velocidad ultra' }
-                                                ].map(opt => (
-                                                    <button
-                                                        key={opt.id}
-                                                        onClick={() => handleInputChange('comportamiento_codigo_barras', opt.id)}
-                                                        className={cn(
-                                                            "p-4 rounded-2xl border-2 text-center transition-all",
-                                                            config.comportamiento_codigo_barras === opt.id
-                                                                ? "bg-amber-50 border-amber-500 text-amber-900 shadow-lg shadow-amber-500/10"
-                                                                : "bg-white border-slate-100 text-slate-400 hover:border-slate-200"
-                                                        )}
-                                                    >
-                                                        <div className="text-xs font-black uppercase tracking-tight mb-1">{opt.label}</div>
-                                                        <div className="text-[10px] opacity-70 italic">{opt.desc}</div>
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </BentoCard>
-                                </section>
-                            )}
-
-                            {/* Al final añado el botón de reset opcionalmente o solo el footer */}
+            <div style={{ display: 'flex', gap: '32px', alignItems: 'flex-start' }}>
+                {/* SIDEBAR DE TABS (Column izquierda) */}
+                <div style={{ width: '280px', flexShrink: 0 }}>
+                    <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '16px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}>
+                        <div className="d-flex flex-column gap-2">
+                            {tabs.map(tab => {
+                                const isActive = activeTab === tab.id;
+                                return (
+                                    <button
+                                        key={tab.id}
+                                        onClick={() => setActiveTab(tab.id)}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '12px',
+                                            padding: '12px 16px',
+                                            border: isActive ? '2px solid #1e293b' : '2px solid transparent',
+                                            borderRadius: '12px',
+                                            backgroundColor: isActive ? '#f8fafc' : 'transparent',
+                                            color: isActive ? '#2563eb' : '#64748b',
+                                            fontWeight: isActive ? '700' : '500',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s',
+                                            textAlign: 'left'
+                                        }}
+                                    >
+                                        <tab.icon size={20} strokeWidth={isActive ? 2.5 : 2} color={isActive ? '#2563eb' : 'currentColor'} />
+                                        <span style={{ lineHeight: '1.2' }}>{tab.label}</span>
+                                    </button>
+                                );
+                            })}
                         </div>
+                    </div>
 
-                        <div className="p-8 bg-slate-900 rounded-[2.5rem] text-white flex justify-between items-center shadow-2xl shadow-slate-900/20">
-                            <div>
-                                <h3 className="text-lg font-black uppercase tracking-tight">Panel de Control maestro</h3>
-                                <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">¿Has finalizado tus ajustes? No olvides guardar.</p>
+                    <button
+                        style={{
+                            ...s.saveBtn,
+                            marginTop: '24px',
+                            opacity: saving ? 0.7 : 1,
+                            cursor: saving ? 'not-allowed' : 'pointer'
+                        }}
+                        onClick={handleSave}
+                        disabled={saving}
+                    >
+                        {saving ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
+                        {saving ? 'Guardando...' : 'Guardar Todo'}
+                    </button>
+                </div>
+
+                {/* CONTENIDO (Columna derecha) */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{
+                        ...s.card,
+                        height: 'calc(100vh - 250px)',
+                        overflowY: 'auto',
+                        overflowX: 'hidden',
+                        paddingRight: '20px' // Espacio para la barra de scroll
+                    }}>
+
+                        {/* TAB 1: GENERAL */}
+                        {activeTab === 'general' && (
+                            <div className="fade-in">
+                                <div style={s.sectionTitle}>
+                                    <Settings size={20} /> Ajustes Generales
+                                </div>
+
+                                {/* REMITOS MOVED TO VENTAS TAB */}
+
+                                {/* AUTOMATIZACIÓN - PRECIOS */}
+                                <div style={s.fieldGroup}>
+                                    <label style={s.label}>ACTUALIZACIÓN DE PRECIOS</label>
+                                    <div style={s.switchContainer}>
+                                        <div style={{ paddingRight: '16px' }}>
+                                            <div style={{ fontWeight: '600', fontSize: '14px', color: '#1e293b' }}>Ajustar Precios desde Compras</div>
+                                            <div style={s.subtitle}>Actualiza precios de venta automáticamente al recibir stock con nuevo costo.</div>
+                                        </div>
+                                        <div className="form-check form-switch pt-0 mb-0">
+                                            <input
+                                                className="form-check-input"
+                                                type="checkbox"
+                                                checked={autoUpdatePrices}
+                                                onChange={() => setAutoUpdatePrices(!autoUpdatePrices)}
+                                                style={{ width: '40px', height: '20px', cursor: 'pointer' }}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
+                        )}
+
+                        {/* TAB 2: INTERFAZ */}
+                        {activeTab === 'interfaz' && (
+                            <div className="fade-in">
+                                <div style={s.sectionTitle}>
+                                    <Laptop size={20} /> Ajustes de Interfaz
+                                </div>
+
+                                {/* OCULTAR SCROLLBAR */}
+                                <div style={s.fieldGroup}>
+                                    <label style={s.label}>APARIENCIA DEL MENÚ</label>
+                                    <div style={s.switchContainer}>
+                                        <div style={{ paddingRight: '16px' }}>
+                                            <div style={{ fontWeight: '600', fontSize: '14px', color: '#1e293b' }}>Ocultar Barra de Desplazamiento</div>
+                                            <div style={s.subtitle}>Oculta la barra de scroll lateral para una apariencia más limpia.</div>
+                                        </div>
+                                        <div className="form-check form-switch pt-0 mb-0">
+                                            <input
+                                                className="form-check-input"
+                                                type="checkbox"
+                                                checked={ocultarBarraScroll}
+                                                onChange={() => {
+                                                    const newValue = !ocultarBarraScroll;
+                                                    setOcultarBarraScroll(newValue);
+                                                    window.dispatchEvent(new CustomEvent('configUpdated', {
+                                                        detail: { ocultar_barra_scroll: newValue }
+                                                    }));
+                                                }}
+                                                style={{ width: '40px', height: '20px', cursor: 'pointer' }}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                { /* ANCHO CONTENIDO - OCULTO
+                                <div style={s.fieldGroup}>
+                                    ...
+                                </div>
+                                */ }
+
+                                {/* COMPORTAMIENTO LECTOR VENTAS */}
+                                <div style={s.fieldGroup}>
+                                    <label style={s.label}>COMPORTAMIENTO LECTOR - VENTAS</label>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+                                        {[
+                                            { id: 'DEFAULT', label: 'Estándar', desc: 'Selecciona el producto' },
+                                            { id: 'CANTIDAD', label: 'Saltar a Cantidad', desc: 'Foco automático en cantidad' },
+                                            { id: 'DIRECTO', label: 'Ingreso Rápido', desc: 'Agrega x1 y limpia buscador' }
+                                        ].map(opt => (
+                                            <div
+                                                key={opt.id}
+                                                onClick={() => setComportamientoLectorVentas(opt.id)}
+                                                style={{
+                                                    ...s.switchContainer,
+                                                    flexDirection: 'column',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    cursor: 'pointer',
+                                                    textAlign: 'center',
+                                                    padding: '16px 10px',
+                                                    border: comportamientoLectorVentas === opt.id ? '2px solid #2563eb' : '1px solid #f1f5f9',
+                                                    backgroundColor: comportamientoLectorVentas === opt.id ? '#eff6ff' : '#f8fafc',
+                                                    transition: 'all 0.2s',
+                                                    position: 'relative'
+                                                }}
+                                            >
+                                                {comportamientoLectorVentas === opt.id && (
+                                                    <div style={{ position: 'absolute', top: '8px', right: '8px' }}>
+                                                        <CheckCircle2 size={16} color="#2563eb" />
+                                                    </div>
+                                                )}
+                                                <div style={{ fontSize: '13px', fontWeight: '700', color: '#1e293b', marginBottom: '2px' }}>{opt.label}</div>
+                                                <div style={{ fontSize: '10px', color: '#64748b' }}>{opt.desc}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* COMPORTAMIENTO LECTOR COMPRAS */}
+                                <div style={s.fieldGroup}>
+                                    <label style={s.label}>COMPORTAMIENTO LECTOR - COMPRAS</label>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+                                        {[
+                                            { id: 'DEFAULT', label: 'Estándar', desc: 'Selecciona el producto' },
+                                            { id: 'CANTIDAD', label: 'Saltar a Cantidad', desc: 'Foco automático en cantidad' },
+                                            { id: 'DIRECTO', label: 'Ingreso Rápido', desc: 'Agrega x1 y limpia buscador' }
+                                        ].map(opt => (
+                                            <div
+                                                key={opt.id}
+                                                onClick={() => setComportamientoLectorCompras(opt.id)}
+                                                style={{
+                                                    ...s.switchContainer,
+                                                    flexDirection: 'column',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    cursor: 'pointer',
+                                                    textAlign: 'center',
+                                                    padding: '16px 10px',
+                                                    border: comportamientoLectorCompras === opt.id ? '2px solid #2563eb' : '1px solid #f1f5f9',
+                                                    backgroundColor: comportamientoLectorCompras === opt.id ? '#eff6ff' : '#f8fafc',
+                                                    transition: 'all 0.2s',
+                                                    position: 'relative'
+                                                }}
+                                            >
+                                                {comportamientoLectorCompras === opt.id && (
+                                                    <div style={{ position: 'absolute', top: '8px', right: '8px' }}>
+                                                        <CheckCircle2 size={16} color="#2563eb" />
+                                                    </div>
+                                                )}
+                                                <div style={{ fontSize: '13px', fontWeight: '700', color: '#1e293b', marginBottom: '2px' }}>{opt.label}</div>
+                                                <div style={{ fontSize: '10px', color: '#64748b' }}>{opt.desc}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* COMPORTAMIENTO LECTOR PEDIDOS */}
+                                <div style={s.fieldGroup}>
+                                    <label style={s.label}>COMPORTAMIENTO LECTOR - PEDIDOS</label>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+                                        {[
+                                            { id: 'DEFAULT', label: 'Estándar', desc: 'Selecciona el producto' },
+                                            { id: 'CANTIDAD', label: 'Saltar a Cantidad', desc: 'Foco automático en cantidad' },
+                                            { id: 'DIRECTO', label: 'Ingreso Rápido', desc: 'Agrega x1 y limpia buscador' }
+                                        ].map(opt => (
+                                            <div
+                                                key={opt.id}
+                                                onClick={() => setComportamientoLectorPedidos(opt.id)}
+                                                style={{
+                                                    ...s.switchContainer,
+                                                    flexDirection: 'column',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    cursor: 'pointer',
+                                                    textAlign: 'center',
+                                                    padding: '16px 10px',
+                                                    border: comportamientoLectorPedidos === opt.id ? '2px solid #2563eb' : '1px solid #f1f5f9',
+                                                    backgroundColor: comportamientoLectorPedidos === opt.id ? '#eff6ff' : '#f8fafc',
+                                                    transition: 'all 0.2s',
+                                                    position: 'relative'
+                                                }}
+                                            >
+                                                {comportamientoLectorPedidos === opt.id && (
+                                                    <div style={{ position: 'absolute', top: '8px', right: '8px' }}>
+                                                        <CheckCircle2 size={16} color="#2563eb" />
+                                                    </div>
+                                                )}
+                                                <div style={{ fontSize: '13px', fontWeight: '700', color: '#1e293b', marginBottom: '2px' }}>{opt.label}</div>
+                                                <div style={{ fontSize: '10px', color: '#64748b' }}>{opt.desc}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+
+                                <div style={s.fieldGroup}>
+                                    <label style={s.label}>COMPORTAMIENTO LECTOR - PRESUPUESTOS</label>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+                                        {[
+                                            { id: 'DEFAULT', label: 'Estándar', desc: 'Selecciona el producto' },
+                                            { id: 'CANTIDAD', label: 'Saltar a Cantidad', desc: 'Foco automático en cantidad' },
+                                            { id: 'DIRECTO', label: 'Ingreso Rápido', desc: 'Agrega x1 y limpia buscador' }
+                                        ].map(opt => (
+                                            <div
+                                                key={opt.id}
+                                                onClick={() => setComportamientoLectorPresupuestos(opt.id)}
+                                                style={{
+                                                    ...s.switchContainer,
+                                                    flexDirection: 'column',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    cursor: 'pointer',
+                                                    textAlign: 'center',
+                                                    padding: '16px 10px',
+                                                    border: comportamientoLectorPresupuestos === opt.id ? '2px solid #2563eb' : '1px solid #f1f5f9',
+                                                    backgroundColor: comportamientoLectorPresupuestos === opt.id ? '#eff6ff' : '#f8fafc',
+                                                    transition: 'all 0.2s',
+                                                    position: 'relative'
+                                                }}
+                                            >
+                                                {comportamientoLectorPresupuestos === opt.id && (
+                                                    <div style={{ position: 'absolute', top: '8px', right: '8px' }}>
+                                                        <CheckCircle2 size={16} color="#2563eb" />
+                                                    </div>
+                                                )}
+                                                <div style={{ fontSize: '13px', fontWeight: '700', color: '#1e293b', marginBottom: '2px' }}>{opt.label}</div>
+                                                <div style={{ fontSize: '10px', color: '#64748b' }}>{opt.desc}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* TAB 3: VENTAS Y STOCK */}
+                        {activeTab === 'ventas' && (
+                            <div className="fade-in">
+                                <div style={s.sectionTitle}>
+                                    <Package size={20} /> Ventas y Stock
+                                </div>
+
+                                {/* STOCK NEGATIVO */}
+                                <div style={s.fieldGroup}>
+                                    <label style={s.label}>GESTIÓN DE INVENTARIO</label>
+                                    <div style={s.switchContainer}>
+                                        <div style={{ paddingRight: '16px' }}>
+                                            <div style={{ fontWeight: '600', fontSize: '14px', color: '#1e293b' }}>Permitir Stock Negativo</div>
+                                            <div style={s.subtitle}>Habilita la venta de productos aunque el stock sea cero o menor.</div>
+                                        </div>
+                                        <div className="form-check form-switch pt-0 mb-0">
+                                            <input
+                                                className="form-check-input"
+                                                type="checkbox"
+                                                checked={permitirStockNegativo}
+                                                onChange={() => setPermitirStockNegativo(!permitirStockNegativo)}
+                                                style={{ width: '40px', height: '20px', cursor: 'pointer' }}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* ALERTA STOCK MÍNIMO */}
+                                <div style={s.fieldGroup}>
+                                    <div style={s.switchContainer}>
+                                        <div style={{ paddingRight: '16px' }}>
+                                            <div style={{ fontWeight: '600', fontSize: '14px', color: '#1e293b' }}>Alertas de Stock Crítico</div>
+                                            <div style={s.subtitle}>Notificar visualmente cuando el stock esté por debajo del mínimo definido.</div>
+                                        </div>
+                                        <div className="form-check form-switch pt-0 mb-0">
+                                            <input
+                                                className="form-check-input"
+                                                type="checkbox"
+                                                checked={alertaStockMinimo}
+                                                onChange={() => setAlertaStockMinimo(!alertaStockMinimo)}
+                                                style={{ width: '40px', height: '20px', cursor: 'pointer' }}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* GENERAR REMITOS */}
+                                <div style={s.fieldGroup}>
+                                    <label style={s.label}>DOCUMENTACIÓN ADJUNTA</label>
+                                    <div style={s.switchContainer}>
+                                        <div style={{ paddingRight: '16px' }}>
+                                            <div style={{ fontWeight: '600', fontSize: '14px', color: '#1e293b' }}>Generar Remito Automático</div>
+                                            <div style={s.subtitle}>Al confirmar una venta, se emitirá siempre el remito de entrega.</div>
+                                        </div>
+                                        <div className="form-check form-switch pt-0 mb-0">
+                                            <input
+                                                className="form-check-input"
+                                                type="checkbox"
+                                                checked={autoRemito}
+                                                onChange={() => setAutoRemito(!autoRemito)}
+                                                style={{ width: '40px', height: '20px', cursor: 'pointer' }}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* DISCRIMINAR IVA EN VENTAS */}
+                                <div style={s.fieldGroup}>
+                                    <div style={s.switchContainer}>
+                                        <div style={{ paddingRight: '16px' }}>
+                                            <div style={{ fontWeight: '600', fontSize: '14px', color: '#1e293b' }}>Discriminar IVA en Ventas (Factura A)</div>
+                                            <div style={s.subtitle}>Habilita el desglose de IVA y permite emitir facturas tipo A para Responsables Inscriptos.</div>
+                                        </div>
+                                        <div className="form-check form-switch pt-0 mb-0">
+                                            <input
+                                                className="form-check-input"
+                                                type="checkbox"
+                                                checked={discriminarIvaVentas}
+                                                onChange={() => setDiscriminarIvaVentas(!discriminarIvaVentas)}
+                                                style={{ width: '40px', height: '20px', cursor: 'pointer' }}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* AUTO-FOCO CÓDIGO BARRAS */}
+                                <div style={s.fieldGroup}>
+                                    <div style={s.switchContainer}>
+                                        <div style={{ paddingRight: '16px' }}>
+                                            <div style={{ fontWeight: '600', fontSize: '14px', color: '#1e293b' }}>Auto-Foco en Código de Barras</div>
+                                            <div style={s.subtitle}>Al abrir la pantalla de venta, el cursor se posará automáticamente en el buscador.</div>
+                                        </div>
+                                        <div className="form-check form-switch pt-0 mb-0">
+                                            <input
+                                                className="form-check-input"
+                                                type="checkbox"
+                                                checked={autoFocoCodigoBarras}
+                                                onChange={() => setAutoFocoCodigoBarras(!autoFocoCodigoBarras)}
+                                                style={{ width: '40px', height: '20px', cursor: 'pointer' }}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* MARGEN DE GANANCIA POR DEFECTO */}
+                                <div style={s.fieldGroup}>
+                                    <label style={s.label}>MARGEN DE GANANCIA SUGERIDO</label>
+                                    <div style={s.inputWrapper}>
+                                        <input
+                                            type="text"
+                                            value={margenGananciaDefecto}
+                                            onChange={(e) => {
+                                                const val = e.target.value.replace(',', '.');
+                                                if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                                                    setMargenGananciaDefecto(val);
+                                                }
+                                            }}
+                                            style={s.input}
+                                            placeholder="0.00"
+                                        />
+                                        <span style={s.inputBadge}>% de utilidad sugerida</span>
+                                    </div>
+                                    <p style={{ ...s.subtitle, marginTop: '8px' }}>Porcentaje de margen que se aplicará por defecto al crear nuevos productos.</p>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* TAB 4: LÓGICA DE PRECIOS */}
+                        {activeTab === 'precios' && (
+                            <div className="fade-in">
+                                <div style={s.sectionTitle}>
+                                    <Zap size={20} /> Lógica de Precios
+                                </div>
+                                <p style={{ ...s.subtitle, marginBottom: '20px' }}>Selecciona cómo el sistema debe calcular el precio de venta final a partir del costo.</p>
+
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '32px' }}>
+                                    {/* OPCIÓN MARKUP */}
+                                    <div
+                                        onClick={() => setMetodoGanancia('MARKUP')}
+                                        style={{
+                                            ...s.switchContainer,
+                                            flexDirection: 'column',
+                                            alignItems: 'flex-start',
+                                            cursor: 'pointer',
+                                            border: metodoGanancia === 'MARKUP' ? '2px solid #2563eb' : '1px solid #f1f5f9',
+                                            backgroundColor: metodoGanancia === 'MARKUP' ? '#eff6ff' : '#f8fafc',
+                                            transition: 'all 0.2s',
+                                            position: 'relative',
+                                            overflow: 'hidden'
+                                        }}
+                                    >
+                                        {metodoGanancia === 'MARKUP' && (
+                                            <div style={{ position: 'absolute', top: '12px', right: '12px' }}>
+                                                <CheckCircle2 size={18} color="#2563eb" />
+                                            </div>
+                                        )}
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                                            <span style={{ fontWeight: '700', fontSize: '14px', color: '#1e293b' }}>Sobre el Costo (Markup)</span>
+                                        </div>
+                                        <p style={{ ...s.subtitle, fontSize: '12px', lineHeight: '1.4' }}>
+                                            Suma el porcentaje directamente al costo. <br />
+                                            <b>Ej: $100 + 30% = $130.</b>
+                                        </p>
+                                    </div>
+
+                                    {/* OPCIÓN MARGEN REAL */}
+                                    <div
+                                        onClick={() => setMetodoGanancia('MARGIN')}
+                                        style={{
+                                            ...s.switchContainer,
+                                            flexDirection: 'column',
+                                            alignItems: 'flex-start',
+                                            cursor: 'pointer',
+                                            border: metodoGanancia === 'MARGIN' ? '2px solid #2563eb' : '1px solid #f1f5f9',
+                                            backgroundColor: metodoGanancia === 'MARGIN' ? '#eff6ff' : '#f8fafc',
+                                            transition: 'all 0.2s',
+                                            position: 'relative',
+                                            overflow: 'hidden'
+                                        }}
+                                    >
+                                        {metodoGanancia === 'MARGIN' && (
+                                            <div style={{ position: 'absolute', top: '12px', right: '12px' }}>
+                                                <CheckCircle2 size={18} color="#2563eb" />
+                                            </div>
+                                        )}
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                                            <span style={{ fontWeight: '700', fontSize: '14px', color: '#1e293b' }}>Sobre la Venta (Margen Real)</span>
+                                        </div>
+                                        <p style={{ ...s.subtitle, fontSize: '12px', lineHeight: '1.4' }}>
+                                            Asegura que el porcentaje sea de la venta total. <br />
+                                            <b>Ej: $100 + 30% = $142.86.</b>
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* PREVIEW DINÁMICO */}
+                                <div style={{
+                                    backgroundColor: '#1e293b',
+                                    borderRadius: '20px',
+                                    padding: '24px',
+                                    color: 'white',
+                                    marginBottom: '32px',
+                                    boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)'
+                                }}>
+                                    <div style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                        Simulador de Proyección (Costo $100)
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                        <div style={{ textAlign: 'center' }}>
+                                            <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '4px' }}>COSTO</div>
+                                            <div style={{ fontSize: '18px', fontWeight: '700' }}>$100.00</div>
+                                        </div>
+                                        <div style={{ color: '#3b82f6' }}><Zap size={16} /></div>
+                                        <div style={{ textAlign: 'center' }}>
+                                            <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '4px' }}>GANANCIA</div>
+                                            <div style={{ fontSize: '18px', fontWeight: '700' }}>
+                                                {parseFloat(margenGananciaDefecto) || 30}%
+                                            </div>
+                                        </div>
+                                        <div style={{ color: '#3b82f6' }}><Zap size={16} /></div>
+                                        <div style={{ textAlign: 'center' }}>
+                                            <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '4px' }}>P. VENTA</div>
+                                            <div style={{
+                                                fontSize: '24px',
+                                                fontWeight: '900',
+                                                color: '#3b82f6',
+                                                textShadow: '0 0 20px rgba(59, 130, 246, 0.3)'
+                                            }}>
+                                                ${(() => {
+                                                    const m = parseFloat(margenGananciaDefecto) || 30;
+                                                    if (metodoGanancia === 'MARKUP') {
+                                                        return (100 * (1 + (m / 100))).toFixed(2);
+                                                    } else {
+                                                        if (m >= 100) return "---";
+                                                        return (100 / (1 - (m / 100))).toFixed(2);
+                                                    }
+                                                })()}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* TAB 5: FACTURACIÓN E IMPRESIÓN */}
+                        {activeTab === 'facturacion' && (
+                            <div className="fade-in">
+                                <div style={s.sectionTitle}>
+                                    <Printer size={20} /> Facturación e Impresión
+                                </div>
+
+                                {/* FORMATO DE PAPEL */}
+                                <div style={s.fieldGroup}>
+                                    <label style={s.label}>FORMATO DE IMPRESIÓN POR DEFECTO</label>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+                                        {[
+                                            { id: 'A4', label: 'Hoja A4', desc: 'Soporte Universal', icon: Monitor },
+                                            { id: 'T80', label: 'Ticket 80mm', desc: 'Térmica Grande', icon: Printer },
+                                            { id: 'T58', label: 'Ticket 58mm', desc: 'Térmica Chica', icon: Printer }
+                                        ].map(formato => (
+                                            <div
+                                                key={formato.id}
+                                                onClick={() => setPapelImpresion(formato.id)}
+                                                style={{
+                                                    ...s.switchContainer,
+                                                    flexDirection: 'column',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    cursor: 'pointer',
+                                                    textAlign: 'center',
+                                                    padding: '16px 10px',
+                                                    border: papelImpresion === formato.id ? '2px solid #2563eb' : '1px solid #f1f5f9',
+                                                    backgroundColor: papelImpresion === formato.id ? '#eff6ff' : '#f8fafc',
+                                                    transition: 'all 0.2s',
+                                                    position: 'relative'
+                                                }}
+                                            >
+                                                {papelImpresion === formato.id && (
+                                                    <div style={{ position: 'absolute', top: '8px', right: '8px' }}>
+                                                        <CheckCircle2 size={16} color="#2563eb" />
+                                                    </div>
+                                                )}
+                                                <formato.icon size={24} style={{ marginBottom: '8px', color: papelImpresion === formato.id ? '#2563eb' : '#64748b' }} />
+                                                <div style={{ fontSize: '13px', fontWeight: '700', color: '#1e293b', marginBottom: '2px' }}>{formato.label}</div>
+                                                <div style={{ fontSize: '10px', color: '#64748b' }}>{formato.desc}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* PIE DE FACTURA */}
+                                <div style={s.fieldGroup}>
+                                    <label style={s.label}>TEXTO AL PIE DE FACTURA (PERSONALIZADO)</label>
+                                    <textarea
+                                        style={s.textarea}
+                                        value={pieFactura}
+                                        onChange={(e) => setPieFactura(e.target.value)}
+                                        placeholder="Ej: Gracias por su compra. No se aceptan devoluciones sin el ticket."
+                                    />
+                                    <p style={{ ...s.subtitle, marginTop: '8px' }}>Este texto aparecerá fijo al final de todos los comprobantes impresos.</p>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* TAB 6: GESTIÓN DE COMPRAS Y COSTOS */}
+                        {activeTab === 'compras' && (
+                            <div className="fade-in">
+                                <div style={s.sectionTitle}>
+                                    <ShoppingCart size={20} /> Gestión de Compras y Costos
+                                </div>
+
+                                {/* DISCRIMINAR IVA EN COMPRAS */}
+                                <div style={s.fieldGroup}>
+                                    <div style={s.switchContainer}>
+                                        <div style={{ paddingRight: '16px' }}>
+                                            <div style={{ fontWeight: '600', fontSize: '14px', color: '#1e293b' }}>Discriminar IVA en Compras</div>
+                                            <div style={s.subtitle}>Permitir cargar Neto e IVA por separado al registrar una compra.</div>
+                                        </div>
+                                        <div className="form-check form-switch pt-0 mb-0">
+                                            <input
+                                                className="form-check-input"
+                                                type="checkbox"
+                                                checked={discriminarIvaCompras}
+                                                onChange={() => setDiscriminarIvaCompras(!discriminarIvaCompras)}
+                                                style={{ width: '40px', height: '20px', cursor: 'pointer' }}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* DISCRIMINAR IVA EN VENTAS (MOVED TO VENTAS TAB) */}
+
+                                {/* REDONDEO DE PRECIOS */}
+                                <div style={s.fieldGroup}>
+                                    <label style={s.label}>REDONDEO AUTOMÁTICO DE PRECIOS</label>
+                                    <select
+                                        style={s.input}
+                                        value={redondeoPrecios}
+                                        onChange={(e) => setRedondeoPrecios(parseInt(e.target.value))}
+                                    >
+                                        <option value={1}>Sin Redondeo (Exacto)</option>
+                                        <option value={10}>Múltiplos de 10</option>
+                                        <option value={50}>Múltiplos de 50</option>
+                                        <option value={100}>Múltiplos de 100</option>
+                                    </select>
+                                    <p style={{ ...s.subtitle, marginTop: '8px' }}>Se aplicará al actualizar precios automáticamente desde una compra.</p>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* TAB 7: CORREO ELECTRÓNICO */}
+                        {activeTab === 'email' && (
+                            <div className="fade-in">
+                                <div style={s.sectionTitle}>
+                                    <Mail size={20} /> Configuración de Correo (SMTP)
+                                </div>
+                                <p style={{ ...s.subtitle, marginBottom: '24px' }}>
+                                    Configura el servidor de correo saliente para enviar notificaciones, recuperaciones de contraseña y comprobantes.
+                                </p>
+
+                                {/* SERVIDOR Y PUERTO */}
+                                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px', marginBottom: '24px' }}>
+                                    <div>
+                                        <label style={s.label}>SERVIDOR SMTP</label>
+                                        <div style={s.inputWrapper}>
+                                            <input
+                                                type="text"
+                                                value={smtpServer}
+                                                onChange={(e) => setSmtpServer(e.target.value)}
+                                                style={s.input}
+                                                placeholder="Ej: smtp.gmail.com"
+                                            />
+                                            <span style={s.inputBadge}><Server size={14} /></span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label style={s.label}>PUERTO</label>
+                                        <input
+                                            type="number"
+                                            value={smtpPort}
+                                            onChange={(e) => setSmtpPort(e.target.value)}
+                                            style={s.input}
+                                            placeholder="587"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* SEGURIDAD */}
+                                <div style={s.fieldGroup}>
+                                    <label style={s.label}>SEGURIDAD DE CONEXIÓN</label>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                        {['STARTTLS', 'SSL'].map(sec => (
+                                            <div
+                                                key={sec}
+                                                onClick={() => setSmtpSecurity(sec)}
+                                                style={{
+                                                    ...s.switchContainer,
+                                                    justifyContent: 'center',
+                                                    cursor: 'pointer',
+                                                    border: smtpSecurity === sec ? '2px solid #2563eb' : '1px solid #f1f5f9',
+                                                    backgroundColor: smtpSecurity === sec ? '#eff6ff' : '#f8fafc',
+                                                    padding: '12px'
+                                                }}
+                                            >
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                    <Shield size={16} color={smtpSecurity === sec ? '#2563eb' : '#64748b'} />
+                                                    <span style={{ fontWeight: '600', color: smtpSecurity === sec ? '#1e293b' : '#64748b' }}>{sec}</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* CREDENCIALES */}
+                                <div style={{ backgroundColor: '#f8fafc', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+                                    <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px', color: '#334155', fontWeight: '700', fontSize: '14px' }}>
+                                        <Lock size={16} /> Credenciales de Autenticación
+                                    </div>
+
+                                    <div style={s.fieldGroup}>
+                                        <label style={s.label}>USUARIO / EMAIL</label>
+                                        <input
+                                            type="text"
+                                            value={smtpUser}
+                                            onChange={(e) => setSmtpUser(e.target.value)}
+                                            style={{ ...s.input, backgroundColor: 'white' }}
+                                            placeholder="tu_correo@gmail.com"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label style={s.label}>CONTRASEÑA / APP PASSWORD</label>
+                                        <input
+                                            type="password"
+                                            value={smtpPassword}
+                                            onChange={(e) => setSmtpPassword(e.target.value)}
+                                            style={{ ...s.input, backgroundColor: 'white' }}
+                                            placeholder={hasSmtpPassword ? "•••••••• (Guardada - Escribe para cambiar)" : "••••••••"}
+                                        />
+                                        <p style={{ ...s.subtitle, fontSize: '12px', marginTop: '8px' }}>
+                                            Para Gmail, debes usar una "Contraseña de Aplicación" si tienes 2FA activado.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* TAB 8: BACKUPS */}
+                        {activeTab === 'backups' && (
+                            <div className="fade-in">
+                                <div style={s.sectionTitle}>
+                                    <HardDrive size={20} /> Configuración de Backups
+                                </div>
+                                <p style={{ ...s.subtitle, marginBottom: '24px' }}>
+                                    Configure las ubicaciones donde se guardarán las copias de seguridad del sistema.
+                                </p>
+
+                                {/* RUTA LOCAL */}
+                                <div style={s.fieldGroup}>
+                                    <label style={s.label}>RUTA DE BACKUPS LOCALES</label>
+                                    <div style={s.inputWrapper}>
+                                        <input
+                                            type="text"
+                                            value={backupLocalPath}
+                                            onChange={(e) => setBackupLocalPath(e.target.value)}
+                                            style={s.input}
+                                            placeholder="Ej: C:\\Backups\\Sistema"
+                                        />
+                                        <span
+                                            style={{ ...s.inputBadge, cursor: 'pointer', backgroundColor: '#eff6ff', padding: '4px 8px', borderRadius: '8px', right: '8px', display: 'flex', alignItems: 'center', gap: '4px', color: '#2563eb', fontWeight: 'bold' }}
+                                            onClick={handleSelectFolder}
+                                            title="Seleccionar carpeta"
+                                        >
+                                            <Folder size={14} /> Seleccionar
+                                        </span>
+                                    </div>
+                                    <p style={{ ...s.subtitle, marginTop: '8px' }}>
+                                        Ruta absoluta donde se guardarán los archivos de backup en el servidor local.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* MODAL DE ÉXITO */}
+            {showSuccess && (
+                <div style={s.overlay}>
+                    <div style={s.modalCard} className="fade-in">
+                        <div style={{ ...s.iconCircle, backgroundColor: '#dcfce7' }}>
+                            <CheckCircle2 color="#16a34a" size={32} />
+                        </div>
+                        <h3 style={{ marginBottom: '8px', fontSize: '20px', fontWeight: 'bold', color: '#1e293b' }}>
+                            ¡Configuración Actualizada!
+                        </h3>
+                        <p style={{ ...s.subtitle, marginBottom: '24px' }}>
+                            Los cambios se han aplicado correctamente en todos los módulos del sistema.
+                        </p>
+                        <div style={{ display: 'flex' }}>
                             <button
-                                onClick={handleSave}
-                                disabled={saving}
-                                className="px-10 py-4 bg-white text-slate-900 rounded-2xl font-black text-xs tracking-widest hover:bg-indigo-50 transition-all flex items-center gap-3 uppercase shadow-lg disabled:opacity-50"
+                                style={s.confirmBtn}
+                                onClick={() => setShowSuccess(false)}
+                                className="btn-vibrate"
                             >
-                                {saving ? <Loader2 className="animate-spin text-indigo-600" /> : <CheckCircle2 size={18} className="text-indigo-600" />}
-                                Confirmar Cambios
+                                Entendido
                             </button>
                         </div>
                     </div>
-                </main>
-            </div>
+                </div>
+            )}
         </div>
     );
 };

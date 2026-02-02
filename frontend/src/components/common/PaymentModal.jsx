@@ -140,7 +140,10 @@ const PaymentModal = ({
         <div className="fixed inset-0 z-[1500] flex items-center justify-center p-4 bg-neutral-950/80 backdrop-blur-md animate-in fade-in duration-300">
             <form
                 onSubmit={handleConfirm}
-                className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-4xl max-h-[95vh] flex flex-col transform transition-all animate-in zoom-in-95 duration-300 border border-neutral-200 select-none overflow-hidden"
+                className={cn(
+                    "bg-white rounded-[2.5rem] shadow-2xl w-full max-h-[95vh] flex flex-col transform transition-all animate-in zoom-in-95 duration-300 border border-neutral-200 select-none overflow-hidden",
+                    mode === 'sale' ? "max-w-4xl" : "max-w-2xl"
+                )}
             >
                 {/* Header */}
                 <div className="px-8 py-5 flex items-center justify-between shrink-0 bg-white border-b border-neutral-100">
@@ -170,7 +173,10 @@ const PaymentModal = ({
                     <div className="grid grid-cols-12 gap-8">
 
                         {/* Columna Izquierda: Información de Pago */}
-                        <div className="col-span-12 lg:col-span-7 space-y-6">
+                        <div className={cn(
+                            "col-span-12 space-y-6",
+                            mode === 'sale' ? "lg:col-span-7" : "lg:col-span-12"
+                        )}>
 
                             {/* Monto Principal */}
                             <div className="bg-neutral-50 border border-neutral-200 rounded-3xl p-6 relative transition-all group focus-within:border-primary-500/30 focus-within:bg-white focus-within:shadow-xl focus-within:shadow-primary-500/5">
@@ -275,11 +281,11 @@ const PaymentModal = ({
                             )}
                         </div>
 
-                        {/* Columna Derecha: Impuestos */}
-                        <div className="col-span-12 lg:col-span-5 space-y-6">
+                        {/* Columna Derecha: Impuestos (Solo en Ventas por ahora) */}
+                        {mode === 'sale' && (
+                            <div className="col-span-12 lg:col-span-5 space-y-6">
 
-                            {/* Percepciones (+) */}
-                            {(mode === 'sale' || mode === 'purchase') && (
+                                {/* Percepciones (+) */}
                                 <div className="bg-white border border-neutral-100 rounded-[2rem] p-6 shadow-sm space-y-5">
                                     <div className="flex items-center gap-2 text-neutral-400 border-b border-neutral-50 pb-3">
                                         <Receipt size={18} />
@@ -314,46 +320,8 @@ const PaymentModal = ({
                                         </div>
                                     </div>
                                 </div>
-                            )}
-
-                            {/* Retenciones (-) */}
-                            {mode === 'purchase' && (
-                                <div className="bg-rose-50/30 border border-rose-100 rounded-[2rem] p-6 shadow-sm space-y-5">
-                                    <div className="flex items-center gap-2 text-rose-500 border-b border-rose-100 pb-3">
-                                        <Activity size={18} />
-                                        <span className="text-[11px] font-black uppercase tracking-[0.2em]">Retenciones (-)</span>
-                                    </div>
-                                    <div className="grid grid-cols-1 gap-4">
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-rose-400 uppercase tracking-widest ml-1">IVA $</label>
-                                            <input
-                                                type="text"
-                                                value={retentions.iva}
-                                                onChange={(e) => handleCurrencyInputChange(e, setRetentions, 'iva')}
-                                                onBlur={() => handleBlurFormat(setRetentions, 'iva')}
-                                                className={cn(
-                                                    "w-full px-4 py-3 text-base font-black border rounded-xl focus:ring-4 focus:ring-rose-500/10 focus:border-rose-400 outline-none transition-all",
-                                                    parseFromAR(retentions.iva) === 0 ? "bg-white/50 border-rose-100 text-rose-300" : "bg-white border-rose-300 text-rose-600"
-                                                )}
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-rose-400 uppercase tracking-widest ml-1">IIBB $</label>
-                                            <input
-                                                type="text"
-                                                value={retentions.iibb}
-                                                onChange={(e) => handleCurrencyInputChange(e, setRetentions, 'iibb')}
-                                                onBlur={() => handleBlurFormat(setRetentions, 'iibb')}
-                                                className={cn(
-                                                    "w-full px-4 py-3 text-base font-black border rounded-xl focus:ring-4 focus:ring-rose-500/10 focus:border-rose-400 outline-none transition-all",
-                                                    parseFromAR(retentions.iibb) === 0 ? "bg-white/50 border-rose-100 text-rose-300" : "bg-white border-rose-300 text-rose-600"
-                                                )}
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
+                            </div>
+                        )}
                     </div>
                 </div>
 

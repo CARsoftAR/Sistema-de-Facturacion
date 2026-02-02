@@ -60,6 +60,10 @@ def api_config_obtener(request):
             'ancho_contenido': empresa.ancho_contenido,
             'auto_foco_codigo_barras': empresa.auto_foco_codigo_barras,
             'comportamiento_codigo_barras': empresa.comportamiento_codigo_barras,
+            'comportamiento_lector_ventas': empresa.comportamiento_lector_ventas,
+            'comportamiento_lector_compras': empresa.comportamiento_lector_compras,
+            'comportamiento_lector_pedidos': empresa.comportamiento_lector_pedidos,
+            'comportamiento_lector_presupuestos': empresa.comportamiento_lector_presupuestos,
             'discriminar_iva_compras': empresa.discriminar_iva_compras,
             'discriminar_iva_ventas': empresa.discriminar_iva_ventas,
             'redondeo_precios': empresa.redondeo_precios,
@@ -151,6 +155,10 @@ def api_config_guardar(request):
         if 'ancho_contenido' in data: empresa.ancho_contenido = data['ancho_contenido']
         if 'auto_foco_codigo_barras' in data: empresa.auto_foco_codigo_barras = data['auto_foco_codigo_barras']
         if 'comportamiento_codigo_barras' in data: empresa.comportamiento_codigo_barras = data['comportamiento_codigo_barras']
+        if 'comportamiento_lector_ventas' in data: empresa.comportamiento_lector_ventas = data['comportamiento_lector_ventas']
+        if 'comportamiento_lector_compras' in data: empresa.comportamiento_lector_compras = data['comportamiento_lector_compras']
+        if 'comportamiento_lector_pedidos' in data: empresa.comportamiento_lector_pedidos = data['comportamiento_lector_pedidos']
+        if 'comportamiento_lector_presupuestos' in data: empresa.comportamiento_lector_presupuestos = data['comportamiento_lector_presupuestos']
         if 'discriminar_iva_compras' in data: empresa.discriminar_iva_compras = data['discriminar_iva_compras']
         if 'discriminar_iva_ventas' in data: empresa.discriminar_iva_ventas = data['discriminar_iva_ventas']
         if 'redondeo_precios' in data: empresa.redondeo_precios = data['redondeo_precios']

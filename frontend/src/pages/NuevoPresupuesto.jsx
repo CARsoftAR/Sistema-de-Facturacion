@@ -8,6 +8,7 @@ import {
 import { BtnSave, BtnCancel, BtnBack } from '../components/CommonButtons';
 import { useProductSearch } from '../hooks/useProductSearch';
 import { cn } from '../utils/cn';
+import { formatNumber } from '../utils/formats';
 import { showWarningAlert, showSuccessAlert, showConfirmationAlert } from '../utils/alerts';
 
 // Obtener CSRF Token
@@ -57,12 +58,12 @@ const NuevoPresupuesto = () => {
             setInputPrecio(precioStr);
             setInputCantidad('1');
 
-            if (config.comportamiento_codigo_barras === 'DIRECTO') {
+            if (config.comportamiento_lector_presupuestos === 'DIRECTO') {
                 // Ingreso Rápido: Agregar inmediatamente
                 setTimeout(() => {
                     handleAutoAdd(producto, 1, parseFloat(precioStr));
                 }, 50);
-            } else if (config.comportamiento_codigo_barras === 'CANTIDAD') {
+            } else if (config.comportamiento_lector_presupuestos === 'CANTIDAD') {
                 // Saltar a Cantidad
                 setTimeout(() => cantidadRef.current?.select(), 50);
             }
@@ -81,7 +82,7 @@ const NuevoPresupuesto = () => {
     const [cargandoConfig, setCargandoConfig] = useState(true);
     const [config, setConfig] = useState({
         auto_foco_codigo_barras: false,
-        comportamiento_codigo_barras: 'DEFAULT'
+        comportamiento_lector_presupuestos: 'DEFAULT'
     });
 
     // Referencias
@@ -98,7 +99,7 @@ const NuevoPresupuesto = () => {
                 const data = await response.json();
                 setConfig({
                     auto_foco_codigo_barras: data.auto_foco_codigo_barras || false,
-                    comportamiento_codigo_barras: data.comportamiento_codigo_barras || 'DEFAULT'
+                    comportamiento_lector_presupuestos: data.comportamiento_lector_presupuestos || 'DEFAULT'
                 });
             } catch (error) {
                 console.error("Error fetching config:", error);
@@ -474,7 +475,7 @@ const NuevoPresupuesto = () => {
                                                 <span className="text-sm font-black tracking-tight">{p.codigo}</span>
                                                 <span className={cn("text-[9px] font-bold uppercase", idx === sugerenciaCodigoActiva ? "text-primary-100" : "text-neutral-400")}>{p.descripcion}</span>
                                             </div>
-                                            <span className="text-base font-black">${p.precio_efectivo}</span>
+                                            <span className="text-base font-black">${formatNumber(p.precio_efectivo)}</span>
                                         </div>
                                     ))}
                                 </div>
@@ -500,7 +501,7 @@ const NuevoPresupuesto = () => {
                                                 <span className="text-sm font-black uppercase text-neutral-800 tracking-tight">{p.descripcion}</span>
                                                 <span className="text-[10px] font-black text-neutral-400 font-mono">{p.codigo} - STOCK: {p.stock}</span>
                                             </div>
-                                            <span className="text-lg font-black text-neutral-900">${p.precio_efectivo.toLocaleString()}</span>
+                                            <span className="text-lg font-black text-neutral-900">${formatNumber(p.precio_efectivo)}</span>
                                         </div>
                                     ))}
                                 </div>
@@ -559,10 +560,10 @@ const NuevoPresupuesto = () => {
                                             <button onClick={() => cambiarCantidad(item.id, item.cantidad + 1)} className="w-8 h-8 flex items-center justify-center text-neutral-400 hover:text-success-600 font-black text-lg">+</button>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-1 text-right font-bold text-xs text-neutral-500">${item.precio.toLocaleString()}</td>
+                                    <td className="px-6 py-1 text-right font-bold text-xs text-neutral-500">${formatNumber(item.precio)}</td>
                                     <td className="px-6 py-1 text-right">
                                         <span className="inline-block px-4 py-1.5 bg-neutral-900 text-white rounded-xl font-black text-base tracking-tighter">
-                                            ${item.subtotal.toLocaleString()}
+                                            ${formatNumber(item.subtotal)}
                                         </span>
                                     </td>
                                     <td className="px-6 py-1 text-center">
@@ -587,18 +588,18 @@ const NuevoPresupuesto = () => {
                     <div className="flex items-center gap-10">
                         <div className="space-y-1">
                             <p className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em] mb-1">Subtotal Neto</p>
-                            <p className="text-xl font-black text-neutral-100 tracking-tighter">${totalNeto.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                            <p className="text-xl font-black text-neutral-100 tracking-tighter">${formatNumber(totalNeto)}</p>
                         </div>
                         <div className="w-px h-10 bg-white/10 hidden md:block"></div>
                         <div className="space-y-1">
                             <p className="text-[10px] font-black text-primary-400 uppercase tracking-[0.2em] mb-1">IVA Total (21%)</p>
-                            <p className="text-xl font-black text-primary-200 tracking-tighter">${totalIVA.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                            <p className="text-xl font-black text-primary-200 tracking-tighter">${formatNumber(totalIVA)}</p>
                         </div>
                         <div className="w-px h-12 bg-white/10 hidden md:block"></div>
                         <div className="space-y-1">
                             <p className="text-[10px] font-black text-success-500 uppercase tracking-[0.3em] mb-2">Total Presupuestado</p>
                             <div className="flex items-baseline gap-2">
-                                <span className="text-6xl font-black text-success-500 tracking-tighter select-none shadow-glow-success-lg">${totalGeneral.toLocaleString()}</span>
+                                <span className="text-6xl font-black text-success-500 tracking-tighter select-none shadow-glow-success-lg">${formatNumber(totalGeneral)}</span>
                                 <span className="text-success-800 text-xs font-black font-mono uppercase">Ars</span>
                             </div>
                         </div>

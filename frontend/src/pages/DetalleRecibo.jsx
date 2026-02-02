@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { formatNumber } from '../utils/formats';
 import {
     ArrowLeft,
     Printer,
@@ -123,7 +124,7 @@ const DetalleRecibo = () => {
                                 </div>
                                 <div className="col-6 text-end">
                                     <small className="text-muted d-block mb-1">Monto Total</small>
-                                    <h4 className="fw-bold text-primary mb-0">${recibo.total.toLocaleString()}</h4>
+                                    <h4 className="fw-bold text-primary mb-0">${formatNumber(recibo.total)}</h4>
                                 </div>
                             </div>
 
@@ -190,7 +191,7 @@ const DetalleRecibo = () => {
                                                     )}
                                                 </td>
                                                 <td className="text-end fw-bold text-dark pe-3">
-                                                    ${item.monto.toLocaleString()}
+                                                    ${formatNumber(item.monto)}
                                                 </td>
                                             </tr>
                                         );
@@ -199,7 +200,7 @@ const DetalleRecibo = () => {
                                 <tfoot>
                                     <tr>
                                         <td colSpan="2" className="text-end fw-bold py-3 text-muted">TOTAL PAGADO</td>
-                                        <td className="text-end fw-bold py-3 text-primary fs-5 pe-3">${recibo.total.toLocaleString()}</td>
+                                        <td className="text-end fw-bold py-3 text-primary fs-5 pe-3">${formatNumber(recibo.total)}</td>
                                     </tr>
                                 </tfoot>
                             </table>

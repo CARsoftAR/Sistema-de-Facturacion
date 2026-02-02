@@ -465,5 +465,9 @@ urlpatterns = [
     # AFIP
     path("api/afip/test-conexion/", views_afip.api_afip_test_conexion, name="api_afip_test_conexion"),
     path("api/afip/ultimo-comprobante/", views_afip.api_afip_consultar_ultimo, name="api_afip_ultimo_comprobante"),
+    
+    # MANUAL DE USUARIO
+    path("api/manual/listar/", views.api_manual_listar, name="api_manual_listar"),
+    path("api/manual/leer/<str:slug>/", views.api_manual_leer, name="api_manual_leer"),
 
 ]

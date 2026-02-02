@@ -198,9 +198,9 @@ const DetalleNotaDebito = () => {
                                         {items.map((item, index) => (
                                             <tr key={index} className="hover:bg-red-50/50 transition-all duration-200 group">
                                                 <td className="px-4 py-1.5">
-                                                    <p className="font-bold text-slate-900 text-sm leading-tight group-hover:text-red-700 transition-colors">{item.descripcion}</p>
-                                                    {item.codigo && (
-                                                        <p className="text-[9px] text-slate-400 font-mono mt-0.5 uppercase tracking-wide">{item.codigo}</p>
+                                                    <p className="font-bold text-slate-900 text-sm leading-tight group-hover:text-red-700 transition-colors">{item.producto_descripcion}</p>
+                                                    {item.producto_codigo && (
+                                                        <p className="text-[9px] text-slate-400 font-mono mt-0.5 uppercase tracking-wide">{item.producto_codigo}</p>
                                                     )}
                                                 </td>
                                                 <td className="px-3 py-1.5 text-center">

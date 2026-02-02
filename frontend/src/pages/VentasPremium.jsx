@@ -5,6 +5,7 @@ import { BentoGrid, BentoCard, StatCard, ActionCard } from '../components/premiu
 import { PremiumTable, TableCell } from '../components/premium/PremiumTable';
 import { SearchInput, PremiumSelect } from '../components/premium/PremiumInput';
 import { BtnAdd } from '../components/CommonButtons';
+import { formatNumber } from '../utils/formats';
 import EmptyState from '../components/EmptyState';
 
 /**
@@ -180,7 +181,7 @@ const VentasPremium = () => {
                 <BentoGrid cols={3}>
                     <StatCard
                         label="Ventas Hoy"
-                        value={`$${stats.totalHoy.toLocaleString('es-AR')}`}
+                        value={`$${formatNumber(stats.totalHoy)}`}
                         icon={DollarSign}
                         trend={stats.tendencia}
                         trendValue={`${stats.cantidadHoy} operaciones`}

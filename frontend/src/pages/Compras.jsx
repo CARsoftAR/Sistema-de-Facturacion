@@ -29,6 +29,7 @@ import PaymentModal from '../components/common/PaymentModal';
 import { StatCard, PremiumTable, TableCell, SearchInput, PremiumFilterBar } from '../components/premium';
 import { BentoGrid, BentoCard } from '../components/premium/BentoCard';
 import { cn } from '../utils/cn';
+import { formatNumber } from '../utils/formats';
 
 const STORAGE_KEY = 'table_prefs_compras_items';
 
@@ -331,7 +332,7 @@ const Compras = () => {
             </header>
 
             <BentoGrid cols={4}>
-                <StatCard label="Abastecimiento Total" value={`$${stats.total.toLocaleString()}`} icon={DollarSign} color="primary" />
+                <StatCard label="Abastecimiento Total" value={`$${formatNumber(stats.total)}`} icon={DollarSign} color="primary" />
                 <StatCard label="Ordenes Pendientes" value={stats.pendientes} icon={Clock} color="warning" />
                 <StatCard label="Material Recibido" value={stats.recibidas} icon={CheckCircle2} color="success" />
                 <StatCard label="Registros Totales" value={stats.count} icon={Hash} color="primary" />

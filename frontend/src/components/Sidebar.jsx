@@ -82,8 +82,8 @@ const SidebarItem = ({ icon: Icon, label, href, subItems, isOpen, onToggle, perm
                                         key={index}
                                         href={item.href}
                                         className={`px-4 py-2 text-sm font-bold rounded-xl transition-all ${isSubActive
-                                            ? 'text-primary-600 bg-primary-50/50'
-                                            : 'text-neutral-400 hover:text-neutral-900 hover:bg-neutral-50'
+                                            ? 'text-primary-700 bg-primary-50'
+                                            : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50'
                                             }`}
                                     >
                                         {item.label}
@@ -97,8 +97,8 @@ const SidebarItem = ({ icon: Icon, label, href, subItems, isOpen, onToggle, perm
                                     to={item.href}
                                     className={({ isActive }) =>
                                         `px-4 py-2 text-sm font-bold rounded-xl transition-all ${isActive
-                                            ? 'text-primary-600 bg-primary-50/50'
-                                            : 'text-neutral-400 hover:text-neutral-900 hover:bg-neutral-50'
+                                            ? 'text-primary-700 bg-primary-50'
+                                            : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50'
                                         }`
                                     }
                                 >
@@ -219,14 +219,14 @@ const Sidebar = () => {
 
                         {/* Section: Intelligence */}
                         <div className="space-y-1">
-                            <span className="px-4 text-[11px] font-bold text-neutral-400 uppercase tracking-widest">Inteligencia</span>
+                            <span className="px-4 text-[12px] font-black text-neutral-400 uppercase tracking-[0.15em]">Inteligencia</span>
                             <SidebarItem icon={LayoutDashboard} label="Dashboard" href="/dashboard" permission="reportes" />
                             <SidebarItem icon={BarChart3} label="Reportes" href="/reportes" permission="reportes" />
                         </div>
 
                         {/* Section: Operaciones */}
                         <div className="space-y-1">
-                            <span className="px-4 text-[11px] font-bold text-neutral-400 uppercase tracking-widest">Operaciones</span>
+                            <span className="px-4 text-[12px] font-black text-neutral-400 uppercase tracking-[0.15em]">Operaciones</span>
                             <SidebarItem
                                 icon={ClipboardList}
                                 label="Comprobantes"
@@ -261,7 +261,7 @@ const Sidebar = () => {
 
                         {/* Section: Tesorería */}
                         <div className="space-y-1">
-                            <span className="px-4 text-[11px] font-bold text-neutral-400 uppercase tracking-widest">Finanzas</span>
+                            <span className="px-4 text-[12px] font-black text-neutral-400 uppercase tracking-[0.15em]">Finanzas</span>
                             <SidebarItem icon={Banknote} label="Caja" href="/caja" permission="caja" />
                             <SidebarItem
                                 icon={Landmark}
@@ -290,7 +290,7 @@ const Sidebar = () => {
 
                         {/* Section: Contabilidad */}
                         <div className="space-y-1">
-                            <span className="px-4 text-[11px] font-bold text-neutral-400 uppercase tracking-widest">Core Contable</span>
+                            <span className="px-4 text-[12px] font-black text-neutral-400 uppercase tracking-[0.15em]">Core Contable</span>
                             <SidebarItem
                                 icon={FileText}
                                 label="Contabilidad"
@@ -333,8 +333,8 @@ const Sidebar = () => {
 
                         {/* Section: Ayuda */}
                         <div className="space-y-1">
-                            <span className="px-4 text-[11px] font-bold text-neutral-400 uppercase tracking-widest">Soporte</span>
-                            <SidebarItem icon={HelpCircle} label="Ayuda y Soporte" href="/ayuda" isExternal={true} />
+                            <span className="px-4 text-[12px] font-black text-neutral-400 uppercase tracking-[0.15em]">Soporte</span>
+                            <SidebarItem icon={HelpCircle} label="Manual de Usuario" href="/manual" />
 
                         </div>
 

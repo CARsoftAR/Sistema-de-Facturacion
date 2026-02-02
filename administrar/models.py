@@ -175,6 +175,12 @@ class Empresa(models.Model):
         default='DEFAULT',
         verbose_name="Comportamiento Escaneo Código de Barras"
     )
+
+    # NUEVO: Comportamiento por módulo
+    comportamiento_lector_ventas = models.CharField(max_length=20, choices=COMPORTAMIENTO_CODIGO_CHOICES, default='DIRECTO')
+    comportamiento_lector_compras = models.CharField(max_length=20, choices=COMPORTAMIENTO_CODIGO_CHOICES, default='CANTIDAD')
+    comportamiento_lector_pedidos = models.CharField(max_length=20, choices=COMPORTAMIENTO_CODIGO_CHOICES, default='CANTIDAD')
+    comportamiento_lector_presupuestos = models.CharField(max_length=20, choices=COMPORTAMIENTO_CODIGO_CHOICES, default='CANTIDAD')
     margen_ganancia_defecto = models.DecimalField(max_digits=5, decimal_places=2, default=0.0, verbose_name="Margen de Ganancia por Defecto (%)")
     metodo_ganancia = models.CharField(
         max_length=10, 

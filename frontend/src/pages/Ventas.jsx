@@ -13,6 +13,7 @@ import Swal from 'sweetalert2';
 import { BentoCard, StatCard, PremiumTable, TableCell, SearchInput, PremiumFilterBar } from '../components/premium';
 import { BentoGrid } from '../components/premium/BentoCard';
 import { cn } from '../utils/cn';
+import { formatNumber } from '../utils/formats';
 import { showConfirmationAlert, showSuccessAlert, showErrorAlert } from '../utils/alerts';
 import { BtnAdd, BtnPrint, BtnTableAction } from '../components/CommonButtons';
 import TablePagination from '../components/common/TablePagination';
@@ -155,80 +156,8 @@ const Ventas = () => {
         }
     };
 
-    const handleNotaDebito = async (id) => {
-        const { value: formValues } = await Swal.fire({
-            title: 'Nota de Débito',
-            html: `
-                <div class="flex flex-col gap-4 p-1 text-left">
-                    <div class="flex flex-col gap-1.5">
-                        <label class="text-[10px] font-black text-neutral-400 uppercase tracking-widest ml-1">Monto Total ($)</label>
-                        <input id="swal-monto" 
-                            class="w-full px-5 py-4 rounded-2xl border border-neutral-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/10 outline-none transition-all font-bold text-neutral-800 placeholder:text-neutral-300 shadow-sm" 
-                            placeholder="0.00" type="number" step="0.01">
-                    </div>
-                    <div class="flex flex-col gap-1.5">
-                        <label class="text-[10px] font-black text-neutral-400 uppercase tracking-widest ml-1">Motivo o Concepto</label>
-                        <input id="swal-motivo" 
-                            class="w-full px-5 py-4 rounded-2xl border border-neutral-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/10 outline-none transition-all font-bold text-neutral-800 placeholder:text-neutral-300 shadow-sm" 
-                            placeholder="Ej: Error de facturación">
-                    </div>
-                </div>
-            `,
-            background: '#ffffff',
-            customClass: {
-                popup: 'rounded-[2.5rem] border-none shadow-2xl p-8',
-                confirmButton: 'px-8 py-4 rounded-2xl font-black tracking-widest text-xs bg-primary-600 text-white hover:bg-primary-700 transition-all shadow-lg shadow-primary-500/20 uppercase',
-                cancelButton: 'px-8 py-4 rounded-2xl font-black tracking-widest text-xs bg-neutral-100 text-neutral-500 hover:bg-neutral-200 transition-all uppercase margin-right-2'
-            },
-            buttonsStyling: false,
-            focusConfirm: false,
-            showCancelButton: true,
-            confirmButtonText: 'CREAR NOTA',
-            cancelButtonText: 'CANCELAR',
-            didOpen: () => {
-                const montoInput = document.getElementById('swal-monto');
-                const motivoInput = document.getElementById('swal-motivo');
-                const confirmBtn = Swal.getConfirmButton();
-
-                montoInput?.focus();
-
-                montoInput?.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        motivoInput?.focus();
-                    }
-                });
-
-                motivoInput?.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        confirmBtn?.click();
-                    }
-                });
-            },
-            preConfirm: () => {
-                const monto = document.getElementById('swal-monto').value;
-                const motivo = document.getElementById('swal-motivo').value;
-                if (!monto || monto <= 0) return Swal.showValidationMessage('Ingrese un monto válido');
-                if (!motivo) return Swal.showValidationMessage('Ingrese el motivo');
-                return { monto, motivo };
-            }
-        });
-
-        if (formValues) {
-            try {
-                const response = await fetch(`/api/notas-debito/crear/${id}/`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(formValues)
-                });
-                const data = await response.json();
-                if (data.ok) {
-                    showSuccessAlert('Operación Exitosa', data.message);
-                    fetchVentas();
-                } else showErrorAlert('Error', data.error);
-            } catch (err) { showErrorAlert('Error', 'Error de conexión'); }
-        }
+    const handleNotaDebito = (id) => {
+        navigate(`/notas-debito/nuevo?venta_id=${id}`);
     };
 
     // Table Column Definitions
@@ -358,7 +287,7 @@ const Ventas = () => {
             <BentoGrid cols={4}>
                 <StatCard
                     label="Ventas Totales"
-                    value={`$${stats.total.toLocaleString()}`}
+                    value={`$${formatNumber(stats.total)}`}
                     icon={DollarSign}
                     color="primary"
                     trend="up"
@@ -372,7 +301,7 @@ const Ventas = () => {
                 />
                 <StatCard
                     label="Ticket Promedio"
-                    value={`$${stats.average.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
+                    value={`$${formatNumber(stats.average)}`}
                     icon={TrendingUp}
                     color="warning"
                 />

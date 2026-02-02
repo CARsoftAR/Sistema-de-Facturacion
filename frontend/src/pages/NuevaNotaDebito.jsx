@@ -87,6 +87,19 @@ const NuevaNotaDebito = () => {
                 Swal.fire('Error', data.error, 'error');
             } else {
                 setVenta(data);
+                // Pre-cargar items de la venta
+                if (data.detalles) {
+                    const initialItems = data.detalles.map(d => ({
+                        id: d.producto_id || d.id,
+                        codigo: d.producto_codigo,
+                        descripcion: d.producto_descripcion,
+                        cantidad: d.cantidad,
+                        precio: d.precio_unitario,
+                        subtotal: d.subtotal,
+                        es_original: true
+                    }));
+                    setItems(initialItems);
+                }
             }
         } catch (e) {
             console.error(e);

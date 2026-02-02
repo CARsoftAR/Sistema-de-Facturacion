@@ -27,6 +27,7 @@ import {
     SearchInput,
     PremiumModal,
 } from '../components/premium';
+import { formatNumber } from '../utils/formats';
 
 /**
  * DashboardPremium - Ejemplo de Dashboard con UI/UX Premium
@@ -123,7 +124,7 @@ const DashboardPremium = () => {
                 <StatsGrid cols={4}>
                     <StatCard
                         label="Ventas del Mes"
-                        value={`$${stats.ventasMes.toLocaleString('es-AR')}`}
+                        value={`$${formatNumber(stats.ventasMes)}`}
                         icon={DollarSign}
                         trend="up"
                         trendValue="+12.5%"
@@ -143,7 +144,7 @@ const DashboardPremium = () => {
                     />
                     <StatCard
                         label="Productos en Stock"
-                        value={stats.productosStock.toLocaleString('es-AR')}
+                        value={formatNumber(stats.productosStock)}
                         icon={Package}
                         trend="up"
                         trendValue="+8.1%"

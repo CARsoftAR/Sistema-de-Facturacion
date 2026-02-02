@@ -244,7 +244,8 @@ def api_nota_credito_detalle(request, id):
         
         items = [{
             'id': d.id,
-            'producto': d.producto.descripcion,
+            'producto_descripcion': d.producto.descripcion,
+            'producto_codigo': d.producto.codigo,
             'cantidad': float(d.cantidad),
             'precio_unitario': float(d.precio_unitario),
             'subtotal': float(d.subtotal)
@@ -275,7 +276,8 @@ def api_nota_debito_detalle(request, id):
         
         items = [{
             'id': d.id,
-            'producto': d.producto.descripcion,
+            'producto_descripcion': d.producto.descripcion,
+            'producto_codigo': d.producto.codigo,
             'cantidad': float(d.cantidad),
             'precio_unitario': float(d.precio_unitario),
             'subtotal': float(d.subtotal)

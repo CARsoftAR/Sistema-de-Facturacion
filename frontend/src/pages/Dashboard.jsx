@@ -20,6 +20,7 @@ import {
     Activity
 } from 'lucide-react';
 import { cn } from '../utils/cn';
+import { formatNumber } from '../utils/formats';
 
 const Dashboard = () => {
     const [stats, setStats] = useState(null);
@@ -192,7 +193,7 @@ const Dashboard = () => {
                     </div>
                     <div>
                         <p className="text-xs font-bold text-neutral-400 uppercase tracking-widest mb-1">Ventas {getPeriodLabel()}</p>
-                        <h3 className="text-3xl font-black text-neutral-900">${rentabilidad.ventas.toLocaleString()}</h3>
+                        <h3 className="text-3xl font-black text-neutral-900">${formatNumber(rentabilidad.ventas)}</h3>
                     </div>
                 </div>
 
@@ -211,7 +212,7 @@ const Dashboard = () => {
                     </div>
                     <div>
                         <p className="text-xs font-bold text-neutral-400 uppercase tracking-widest mb-1">Utilidad {getPeriodLabel()}</p>
-                        <h3 className="text-3xl font-black text-neutral-900">${(rentabilidad.ganancia_neta || 0).toLocaleString()}</h3>
+                        <h3 className="text-3xl font-black text-neutral-900">${formatNumber(rentabilidad.ganancia_neta || 0)}</h3>
                     </div>
                 </div>
 
@@ -223,12 +224,12 @@ const Dashboard = () => {
                         </div>
                         <div className="text-right">
                             <span className="text-[10px] font-bold text-success-600 block">Ingresos Hoy</span>
-                            <span className="text-sm font-bold text-neutral-900">${(kpi.ingresos_caja_hoy || 0).toLocaleString()}</span>
+                            <span className="text-sm font-bold text-neutral-900">${formatNumber(kpi.ingresos_caja_hoy || 0)}</span>
                         </div>
                     </div>
                     <div>
                         <p className="text-xs font-bold text-neutral-400 uppercase tracking-widest mb-1">Caja Disponible</p>
-                        <h3 className="text-3xl font-black text-neutral-900">${kpi.caja_hoy.toLocaleString()}</h3>
+                        <h3 className="text-3xl font-black text-neutral-900">${formatNumber(kpi.caja_hoy)}</h3>
                     </div>
                 </div>
 
@@ -240,7 +241,7 @@ const Dashboard = () => {
                         </div>
                         <div className="text-right">
                             <span className="text-[10px] font-bold text-warning-600 block">Por cobrar</span>
-                            <span className="text-sm font-bold text-neutral-900">${(kpi.monto_pedidos_pendientes || 0).toLocaleString()}</span>
+                            <span className="text-sm font-bold text-neutral-900">${formatNumber(kpi.monto_pedidos_pendientes || 0)}</span>
                         </div>
                     </div>
                     <div>
@@ -314,10 +315,10 @@ const Dashboard = () => {
                                             {/* Labels (Always visible) */}
                                             <div className="absolute -top-12 left-1/2 -translate-x-1/2 flex flex-col items-center z-30 w-max pointer-events-none">
                                                 <span className="text-white text-[10px] font-bold drop-shadow-md">
-                                                    ${val.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                                    ${formatNumber(val)}
                                                 </span>
                                                 <span className="text-red-400 text-[9px] font-bold drop-shadow-sm -mt-0.5">
-                                                    ${costVal.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                                    ${formatNumber(costVal)}
                                                 </span>
                                             </div>
 
@@ -325,7 +326,7 @@ const Dashboard = () => {
                                             <div className="hidden group-hover:flex absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center bg-white p-3 rounded-xl shadow-2xl z-50 min-w-[100px] border border-neutral-200 animation-fade-in-up">
                                                 <span className="text-[9px] text-neutral-500 uppercase font-bold tracking-widest mb-1">UTILIDAD</span>
                                                 <span className={`text-lg font-black ${utilidad >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                                                    ${utilidad.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                                    ${formatNumber(utilidad)}
                                                 </span>
                                             </div>
                                         </div>

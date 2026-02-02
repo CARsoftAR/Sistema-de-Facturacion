@@ -59,6 +59,7 @@ import Localidades from './pages/Localidades'
 import Bancos from './pages/Bancos'
 import ReportesContables from './pages/ReportesContables'
 import MiPerfil from './pages/MiPerfil'
+import ManualUsuario from './pages/ManualUsuario'
 import { useAuth } from './context/AuthContext'
 
 // Premium Components (Testing)
@@ -241,6 +242,8 @@ function App() {
               <Route path="/backups" element={<ProtectedRoute permission="configuracion"><Backups /></ProtectedRoute>} />
               <Route path="/usuarios" element={<ProtectedRoute permission="usuarios"><Usuarios /></ProtectedRoute>} />
               <Route path="/auditoria" element={<ProtectedRoute permission="auditoria"><Auditoria /></ProtectedRoute>} />
+              <Route path="/manual" element={<ProtectedRoute><ManualUsuario /></ProtectedRoute>} />
+              <Route path="/ayuda" element={<ProtectedRoute><ManualUsuario /></ProtectedRoute>} />
 
 
               {/* PREMIUM DESIGN - Testing Routes (Sin protección para ver ahora) */}

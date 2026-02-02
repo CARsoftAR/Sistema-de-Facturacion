@@ -9592,8 +9592,9 @@ def api_nota_credito_detalle(request, id):
         for det in nc.detalles.all():
             detalles.append({
                 'id': det.id,
-                'producto': det.producto.descripcion,
-                'cantidad': det.cantidad,
+                'producto_descripcion': det.producto.descripcion,
+                'producto_codigo': det.producto.codigo,
+                'cantidad': float(det.cantidad),
                 'precio_unitario': float(det.precio_unitario),
                 'subtotal': float(det.subtotal)
             })
@@ -9697,8 +9698,9 @@ def api_nota_debito_detalle(request, id):
         for det in nd.detalles.all():
             detalles.append({
                 'id': det.id,
-                'producto': det.producto.descripcion,
-                'cantidad': det.cantidad,
+                'producto_descripcion': det.producto.descripcion,
+                'producto_codigo': det.producto.codigo,
+                'cantidad': float(det.cantidad),
                 'precio_unitario': float(det.precio_unitario),
                 'subtotal': float(det.subtotal)
             })
@@ -11251,4 +11253,53 @@ def api_mi_perfil_imagen(request):
         
     except Exception as e:
         return JsonResponse({'ok': False, 'error': str(e)}, status=500)
+
+
+from pathlib import Path
+from django.conf import settings
+
+@login_required
+def api_manual_listar(request):
+    """API para listar los capítulos del manual de usuario"""
+    try:
+        # Usar Path para mayor robustez en Windows/Linux
+        base_dir = Path(settings.BASE_DIR)
+        manual_path = base_dir / 'documentacion' / 'manual_usuario'
+        
+        if not manual_path.exists():
+            return JsonResponse({"ok": False, "error": f"Carpeta no encontrada en {manual_path}"}, status=404)
+        
+        files = []
+        # Obtener todos los archivos .md ordenados
+        for f in sorted(manual_path.glob('*.md')):
+            slug = f.stem # Nombre sin extensión
+            nombre_limpio = slug.replace('_', ' ')
+            files.append({
+                "slug": slug,
+                "nombre": nombre_limpio
+            })
+        
+        return JsonResponse({"ok": True, "data": files})
+    except Exception as e:
+        return JsonResponse({"ok": False, "error": str(e)}, status=500)
+
+@login_required
+def api_manual_leer(request, slug):
+    """API para leer el contenido de un capítulo específico del manual"""
+    try:
+        # Sanitizar slug
+        slug = "".join(x for x in slug if x.isalnum() or x in "._-")
+        base_dir = Path(settings.BASE_DIR)
+        file_path = base_dir / 'documentacion' / 'manual_usuario' / f"{slug}.md"
+        
+        if not file_path.exists():
+            return JsonResponse({"ok": False, "error": f"Capítulo {slug} no encontrado"}, status=404)
+        
+        with open(file_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+            
+        return JsonResponse({"ok": True, "content": content})
+    except Exception as e:
+        return JsonResponse({"ok": False, "error": str(e)}, status=500)
+
 

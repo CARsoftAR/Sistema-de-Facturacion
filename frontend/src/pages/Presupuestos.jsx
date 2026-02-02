@@ -11,6 +11,7 @@ import {
 import { BentoCard, StatCard, PremiumTable, TableCell, SearchInput, PremiumFilterBar } from '../components/premium';
 import { BentoGrid } from '../components/premium/BentoCard';
 import { cn } from '../utils/cn';
+import { formatNumber } from '../utils/formats';
 import { showDeleteAlert, showSuccessAlert, showErrorAlert, showConfirmationAlert } from '../utils/alerts';
 import { BtnAdd } from '../components/CommonButtons';
 import TablePagination from '../components/common/TablePagination';
@@ -313,7 +314,7 @@ const Presupuestos = () => {
             <BentoGrid cols={4}>
                 <StatCard
                     label="Volume Presupuestado"
-                    value={`$${stats.total.toLocaleString()}`}
+                    value={`$${formatNumber(stats.total)}`}
                     icon={DollarSign}
                     color="primary"
                 />

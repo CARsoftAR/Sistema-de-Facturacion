@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { showDeleteAlert } from '../utils/alerts';
 import { BtnAdd } from '../components/CommonButtons';
+import { formatNumber } from '../utils/formats';
 
 // Helper recursivo para aplanar el plan de cuentas
 const flattenCuentas = (nodes, result = []) => {
@@ -293,8 +294,8 @@ const Asientos = () => {
                                             <td className="ps-4 fw-bold text-primary py-3">#{as.numero}</td>
                                             <td className="text-dark py-3">{as.fecha}</td>
                                             <td className="font-medium text-secondary py-3">{as.descripcion}</td>
-                                            <td className="text-success fw-bold py-3">$ {as.total_debe.toLocaleString()}</td>
-                                            <td className="text-primary fw-bold py-3">$ {as.total_haber.toLocaleString()}</td>
+                                            <td className="text-success fw-bold py-3">$ {formatNumber(as.total_debe)}</td>
+                                            <td className="text-primary fw-bold py-3">$ {formatNumber(as.total_haber)}</td>
                                             <td className="text-end pe-4 py-3">
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); handleDelete(as.id) }}
@@ -457,11 +458,11 @@ const Asientos = () => {
                                 <div className="flex gap-8">
                                     <div className="flex flex-col items-end">
                                         <span className="text-xs uppercase text-slate-400 font-bold">Total Debe</span>
-                                        <span className="font-mono text-lg font-bold text-green-600">$ {totalDebe.toLocaleString()}</span>
+                                        <span className="font-mono text-lg font-bold text-green-600">$ {formatNumber(totalDebe)}</span>
                                     </div>
                                     <div className="flex flex-col items-end">
                                         <span className="text-xs uppercase text-slate-400 font-bold">Total Haber</span>
-                                        <span className="font-mono text-lg font-bold text-indigo-600">$ {totalHaber.toLocaleString()}</span>
+                                        <span className="font-mono text-lg font-bold text-indigo-600">$ {formatNumber(totalHaber)}</span>
                                     </div>
                                     <div className="flex flex-col items-end">
                                         <span className="text-xs uppercase text-slate-400 font-bold">Diferencia</span>

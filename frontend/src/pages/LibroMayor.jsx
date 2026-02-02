@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { formatNumber } from '../utils/formats';
 // Usaremos iconos de Bootstrap como en Productos.jsx
 
 const flattenCuentas = (nodes, result = []) => {
@@ -207,8 +208,8 @@ const LibroMayor = () => {
                                 <div className="card-body p-3 d-flex align-items-center justify-content-between">
                                     <div>
                                         <p className="text-uppercase text-muted fw-bold mb-1" style={{ fontSize: '0.75rem', letterSpacing: '0.5px' }}>Saldo Inicial</p>
-                                        <h4 className="fw-bold text-secondary mb-0 text-truncate" title={`$ ${resumen.saldo_inicial.toLocaleString()}`}>
-                                            $ {resumen.saldo_inicial.toLocaleString()}
+                                        <h4 className="fw-bold text-secondary mb-0 text-truncate" title={`$ ${formatNumber(resumen.saldo_inicial)}`}>
+                                            $ {formatNumber(resumen.saldo_inicial)}
                                         </h4>
                                     </div>
                                     <div className="bg-secondary bg-opacity-10 p-3 rounded-circle d-flex align-items-center justify-content-center" style={{ width: '50px', height: '50px' }}>
@@ -225,8 +226,8 @@ const LibroMayor = () => {
                                 <div className="card-body p-3 d-flex align-items-center justify-content-between">
                                     <div>
                                         <p className="text-uppercase text-muted fw-bold mb-1" style={{ fontSize: '0.75rem', letterSpacing: '0.5px' }}>Total Debe</p>
-                                        <h4 className="fw-bold text-success mb-0 text-truncate" title={`$ ${resumen.total_debe.toLocaleString()}`}>
-                                            $ {resumen.total_debe.toLocaleString()}
+                                        <h4 className="fw-bold text-success mb-0 text-truncate" title={`$ ${formatNumber(resumen.total_debe)}`}>
+                                            $ {formatNumber(resumen.total_debe)}
                                         </h4>
                                     </div>
                                     <div className="bg-success bg-opacity-10 p-3 rounded-circle d-flex align-items-center justify-content-center" style={{ width: '50px', height: '50px' }}>
@@ -243,8 +244,8 @@ const LibroMayor = () => {
                                 <div className="card-body p-3 d-flex align-items-center justify-content-between">
                                     <div>
                                         <p className="text-uppercase text-muted fw-bold mb-1" style={{ fontSize: '0.75rem', letterSpacing: '0.5px' }}>Total Haber</p>
-                                        <h4 className="fw-bold text-primary mb-0 text-truncate" title={`$ ${resumen.total_haber.toLocaleString()}`}>
-                                            $ {resumen.total_haber.toLocaleString()}
+                                        <h4 className="fw-bold text-primary mb-0 text-truncate" title={`$ ${formatNumber(resumen.total_haber)}`}>
+                                            $ {formatNumber(resumen.total_haber)}
                                         </h4>
                                     </div>
                                     <div className="bg-primary bg-opacity-10 p-3 rounded-circle d-flex align-items-center justify-content-center" style={{ width: '50px', height: '50px' }}>
@@ -261,8 +262,8 @@ const LibroMayor = () => {
                                 <div className="card-body p-3 d-flex align-items-center justify-content-between">
                                     <div className="overflow-hidden me-2">
                                         <p className="text-uppercase text-muted fw-bold mb-1" style={{ fontSize: '0.75rem', letterSpacing: '0.5px' }}>Saldo Final</p>
-                                        <h4 className={`fw-bold mb-0 text-truncate ${resumen.saldo_final < 0 ? 'text-danger' : 'text-dark'}`} title={`$ ${resumen.saldo_final.toLocaleString()}`}>
-                                            $ {resumen.saldo_final.toLocaleString()}
+                                        <h4 className={`fw-bold mb-0 text-truncate ${resumen.saldo_final < 0 ? 'text-danger' : 'text-dark'}`} title={`$ ${formatNumber(resumen.saldo_final)}`}>
+                                            $ {formatNumber(resumen.saldo_final)}
                                         </h4>
                                     </div>
                                     <div className="d-flex flex-column gap-1">
@@ -311,13 +312,13 @@ const LibroMayor = () => {
                                                     <td className="fw-bold text-primary py-3">#{mov.asiento_numero}</td>
                                                     <td className="text-secondary py-3">{mov.descripcion}</td>
                                                     <td className="text-end text-success fw-bold py-3">
-                                                        {mov.debe > 0 ? `$ ${mov.debe.toLocaleString()}` : '-'}
+                                                        {mov.debe > 0 ? `$ ${formatNumber(mov.debe)}` : '-'}
                                                     </td>
                                                     <td className="text-end text-danger fw-bold py-3">
-                                                        {mov.haber > 0 ? `$ ${mov.haber.toLocaleString()}` : '-'}
+                                                        {mov.haber > 0 ? `$ ${formatNumber(mov.haber)}` : '-'}
                                                     </td>
                                                     <td className="text-end pe-4 fw-bold text-dark py-3">
-                                                        $ {mov.saldo.toLocaleString()}
+                                                        $ {formatNumber(mov.saldo)}
                                                     </td>
                                                 </tr>
                                             ))

@@ -232,15 +232,24 @@ const NotasDebito = () => {
                         <p className="text-neutral-500 font-medium ml-1">Gestión de recargos y ajustes financieros.</p>
                     </div>
 
-                    <PremiumFilterBar
-                        busqueda={filters.busqueda}
-                        setBusqueda={(val) => setFilters(prev => ({ ...prev, busqueda: val }))}
-                        dateRange={dateRange}
-                        setDateRange={setDateRange}
-                        onClear={clearFilters}
-                        placeholder="Buscar número o cliente..."
-                        className="!px-0"
-                    />
+                    <div className="flex items-center gap-4 w-full md:w-auto">
+                        <PremiumFilterBar
+                            busqueda={filters.busqueda}
+                            setBusqueda={(val) => setFilters(prev => ({ ...prev, busqueda: val }))}
+                            dateRange={dateRange}
+                            setDateRange={setDateRange}
+                            onClear={clearFilters}
+                            placeholder="Buscar número o cliente..."
+                            className="!px-0 flex-1"
+                        />
+                        <button
+                            onClick={() => navigate('/notas-debito/nuevo')}
+                            className="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl transition-all font-black text-sm shadow-lg shadow-indigo-600/20 uppercase tracking-widest flex-shrink-0"
+                        >
+                            <Plus size={18} strokeWidth={3} />
+                            Nueva Nota
+                        </button>
+                    </div>
                 </div>
             </div>
 

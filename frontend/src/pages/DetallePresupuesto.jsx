@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Printer, FileText, User, Calendar, DollarSign, Clock, CheckCircle2, AlertCircle, ShoppingCart, XCircle } from 'lucide-react';
 import { BtnAction, BtnBack } from '../components/CommonButtons';
+import { formatNumber } from '../utils/formats';
 import { showConfirmationAlert, showSuccessAlert, showErrorAlert } from '../utils/alerts';
 
 const DetallePresupuesto = () => {
@@ -249,7 +250,7 @@ const DetallePresupuesto = () => {
                                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-1">Total Estimado</label>
                                 <div className="flex items-baseline gap-2">
                                     <span className="text-3xl font-black bg-gradient-to-br from-slate-900 to-slate-700 bg-clip-text text-transparent leading-tight">
-                                        $ {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(presupuesto.total)}
+                                        $ {formatNumber(presupuesto.total)}
                                     </span>
                                     <span className="text-slate-400 font-medium text-xs">ARS</span>
                                 </div>
@@ -332,14 +333,14 @@ const DetallePresupuesto = () => {
                                                 </td>
                                                 <td className="px-3 py-1.5 text-center">
                                                     <span className="inline-flex items-center justify-center min-w-[2.5rem] px-2 h-7 rounded-lg bg-slate-100 font-black text-slate-700 text-xs group-hover:bg-white group-hover:shadow-sm transition-all">
-                                                        {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(item.cantidad)}
+                                                        {formatNumber(item.cantidad)}
                                                     </span>
                                                 </td>
                                                 <td className="px-3 py-1.5 text-right text-slate-600 font-semibold text-sm">
-                                                    $ {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(item.precio_unitario)}
+                                                    $ {formatNumber(item.precio_unitario)}
                                                 </td>
                                                 <td className="px-4 py-1.5 text-right">
-                                                    <span className="font-black text-slate-900 text-base">$ {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(item.subtotal)}</span>
+                                                    <span className="font-black text-slate-900 text-base">$ {formatNumber(item.subtotal)}</span>
                                                 </td>
                                             </tr>
                                         ))}
@@ -359,7 +360,7 @@ const DetallePresupuesto = () => {
                                             <div className="flex items-baseline justify-end gap-2">
                                                 <span className="text-slate-400 text-lg font-light">$</span>
                                                 <span className="text-4xl font-black text-white tracking-tighter">
-                                                    {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(presupuesto.total)}
+                                                    {formatNumber(presupuesto.total)}
                                                 </span>
                                                 <span className="text-slate-400 text-[10px] font-bold uppercase ml-1">ARS</span>
                                             </div>

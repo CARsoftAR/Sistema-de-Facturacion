@@ -4,6 +4,7 @@ import {
     Printer, ArrowLeft, ShoppingCart, Truck, Calendar, DollarSign, FileText, CheckCircle2, Clock, AlertCircle, XCircle, User, Receipt
 } from 'lucide-react';
 import { BtnPrint, BtnBack } from '../components/CommonButtons';
+import { formatNumber } from '../utils/formats';
 import Swal from 'sweetalert2';
 
 const DetalleCompra = () => {
@@ -160,7 +161,7 @@ const DetalleCompra = () => {
                                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-1">Total Orden</label>
                                 <div className="flex items-baseline gap-2">
                                     <span className="text-3xl font-black bg-gradient-to-br from-slate-900 to-slate-700 bg-clip-text text-transparent leading-tight">
-                                        $ {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(compra.total)}
+                                        $ {formatNumber(compra.total)}
                                     </span>
                                     <span className="text-slate-400 font-medium text-xs">ARS</span>
                                 </div>
@@ -252,14 +253,14 @@ const DetalleCompra = () => {
                                                 </td>
                                                 <td className="px-3 py-1.5 text-center">
                                                     <span className="inline-flex items-center justify-center min-w-[2.5rem] px-2 h-7 rounded-lg bg-slate-100 font-black text-slate-700 text-xs group-hover:bg-white group-hover:shadow-sm transition-all">
-                                                        {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(item.cantidad)}
+                                                        {formatNumber(item.cantidad)}
                                                     </span>
                                                 </td>
                                                 <td className="px-3 py-1.5 text-right text-slate-600 font-semibold text-sm">
-                                                    $ {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(item.costo_unitario)}
+                                                    $ {formatNumber(item.costo_unitario)}
                                                 </td>
                                                 <td className="px-4 py-1.5 text-right">
-                                                    <span className="font-black text-slate-900 text-base">$ {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(item.subtotal)}</span>
+                                                    <span className="font-black text-slate-900 text-base">$ {formatNumber(item.subtotal)}</span>
                                                 </td>
                                             </tr>
                                         ))}
@@ -278,12 +279,12 @@ const DetalleCompra = () => {
                                             <div className="flex gap-6">
                                                 <div className="space-y-0.5">
                                                     <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Subtotal</p>
-                                                    <p className="text-sm font-bold text-white/90 font-mono">$ {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(compra.subtotal)}</p>
+                                                    <p className="text-sm font-bold text-white/90 font-mono">$ {formatNumber(compra.subtotal)}</p>
                                                 </div>
                                                 {compra.iva && (
                                                     <div className="space-y-0.5 border-l border-white/10 pl-6">
                                                         <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">IVA</p>
-                                                        <p className="text-sm font-bold text-white/90 font-mono">$ {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(compra.iva)}</p>
+                                                        <p className="text-sm font-bold text-white/90 font-mono">$ {formatNumber(compra.iva)}</p>
                                                     </div>
                                                 )}
                                             </div>
@@ -295,7 +296,7 @@ const DetalleCompra = () => {
                                             <div className="flex items-baseline justify-end gap-2">
                                                 <span className="text-slate-400 text-lg font-light">$</span>
                                                 <span className="text-4xl font-black text-white tracking-tighter">
-                                                    {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2 }).format(compra.total)}
+                                                    {formatNumber(compra.total)}
                                                 </span>
                                                 <span className="text-slate-400 text-[10px] font-bold uppercase ml-1">ARS</span>
                                             </div>

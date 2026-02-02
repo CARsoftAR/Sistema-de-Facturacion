@@ -10,6 +10,7 @@ import { showWarningAlert, showSuccessAlert, showConfirmationAlert } from '../ut
 import { useProductSearch } from '../hooks/useProductSearch';
 import PaymentModal from '../components/common/PaymentModal';
 import { cn } from '../utils/cn';
+import { formatNumber } from '../utils/formats';
 
 function getCookie(name) {
     let cookieValue = null;
@@ -56,7 +57,7 @@ const NuevaCompra = () => {
 
     const [config, setConfig] = useState({
         auto_foco_codigo_barras: false,
-        comportamiento_codigo_barras: 'DEFAULT'
+        comportamiento_lector_compras: 'DEFAULT'
     });
 
     const {
@@ -77,7 +78,7 @@ const NuevaCompra = () => {
             setProductoSeleccionado(producto);
             setInputCosto(producto.costo ? producto.costo.toString() : '');
             setInputCantidad('1');
-            if (config.comportamiento_codigo_barras === 'DIRECTO' && producto.costo > 0) {
+            if (config.comportamiento_lector_compras === 'DIRECTO' && producto.costo > 0) {
                 setTimeout(() => handleAutoAdd(producto, 1, producto.costo), 50);
             } else {
                 setTimeout(() => cantidadRef.current?.select(), 50);
@@ -92,7 +93,7 @@ const NuevaCompra = () => {
                 const data = await response.json();
                 setConfig({
                     auto_foco_codigo_barras: data.auto_foco_codigo_barras || false,
-                    comportamiento_codigo_barras: data.comportamiento_codigo_barras || 'DEFAULT',
+                    comportamiento_lector_compras: data.comportamiento_lector_compras || 'DEFAULT',
                     discriminar_iva_compras: data.discriminar_iva_compras || false
                 });
                 setDiscriminarIVA(data.discriminar_iva_compras || false);
@@ -387,7 +388,7 @@ const NuevaCompra = () => {
                                                 <span className="text-sm font-black uppercase text-neutral-800 tracking-tight">{p.descripcion}</span>
                                                 <span className="text-[10px] font-black text-neutral-400 font-mono">{p.codigo} - COSTO: ${p.costo || 0}</span>
                                             </div>
-                                            <span className="text-lg font-black text-neutral-900">${(p.costo || 0).toLocaleString()}</span>
+                                            <span className="text-lg font-black text-neutral-900">${formatNumber(p.costo || 0)}</span>
                                         </div>
                                     ))}
                                 </div>
@@ -458,10 +459,10 @@ const NuevaCompra = () => {
                                             <button onClick={() => cambiarCantidad(item.id, item.cantidad + 1)} className="w-8 h-8 flex items-center justify-center text-neutral-400 hover:text-success-600 font-black text-lg">+</button>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-1 text-right font-bold text-xs text-neutral-500">${item.costo.toLocaleString()}</td>
+                                    <td className="px-6 py-1 text-right font-bold text-xs text-neutral-500">${formatNumber(item.costo)}</td>
                                     <td className="px-6 py-1 text-right">
                                         <span className="inline-block px-4 py-1.5 bg-neutral-900 text-white rounded-xl font-black text-base tracking-tighter">
-                                            ${item.subtotal.toLocaleString()}
+                                            ${formatNumber(item.subtotal)}
                                         </span>
                                     </td>
                                     <td className="px-6 py-1 text-center">
@@ -488,12 +489,12 @@ const NuevaCompra = () => {
                             <>
                                 <div className="space-y-1">
                                     <p className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em] mb-1">Subtotal Neto</p>
-                                    <p className="text-xl font-black text-neutral-100 tracking-tighter">${totalNeto.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                                    <p className="text-xl font-black text-neutral-100 tracking-tighter">${formatNumber(totalNeto)}</p>
                                 </div>
                                 <div className="w-px h-10 bg-white/10 hidden md:block"></div>
                                 <div className="space-y-1">
                                     <p className="text-[10px] font-black text-primary-400 uppercase tracking-[0.2em] mb-1">IVA Total</p>
-                                    <p className="text-xl font-black text-primary-200 tracking-tighter">${totalIVA.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                                    <p className="text-xl font-black text-primary-200 tracking-tighter">${formatNumber(totalIVA)}</p>
                                 </div>
                                 <div className="w-px h-12 bg-white/10 hidden md:block"></div>
                             </>
@@ -501,7 +502,7 @@ const NuevaCompra = () => {
                         <div className="space-y-1">
                             <p className="text-[10px] font-black text-success-500 uppercase tracking-[0.3em] mb-2">Monto Final Compra</p>
                             <div className="flex items-baseline gap-2">
-                                <span className="text-6xl font-black text-emerald-500 tracking-tighter select-none shadow-glow-emerald-lg">${totalGeneral.toLocaleString()}</span>
+                                <span className="text-6xl font-black text-emerald-500 tracking-tighter select-none shadow-glow-emerald-lg">${formatNumber(totalGeneral)}</span>
                                 <span className="text-emerald-800 text-xs font-black font-mono uppercase">Ars</span>
                             </div>
                         </div>

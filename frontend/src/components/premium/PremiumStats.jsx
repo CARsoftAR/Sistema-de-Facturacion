@@ -1,6 +1,7 @@
 import React from 'react';
 import { TrendingUp, TrendingDown, Minus, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import { formatNumber } from '../../utils/formats';
 import { BentoCard } from './BentoCard';
 
 /**
@@ -293,7 +294,7 @@ export const ProgressCard = ({
             </div>
             {(value !== undefined && max !== undefined) && (
                 <p className="text-xs text-neutral-500 mt-2">
-                    {value.toLocaleString()} de {max.toLocaleString()}
+                    {formatNumber(value)} de {formatNumber(max)}
                 </p>
             )}
         </BentoCard>
