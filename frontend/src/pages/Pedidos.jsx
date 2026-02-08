@@ -39,9 +39,12 @@ const Pedidos = () => {
         return `${year}-${month}-${day}`;
     };
 
+    // Si viene un filtro de estado desde la URL (ej: desde dashboard), no aplicar filtro de fechas por defecto
+    const hasStatusFilter = searchParams.get('estado');
+
     const [dateRange, setDateRange] = useState({
-        start: searchParams.get('fecha_desde') || getLocalDate(new Date(new Date().getFullYear(), new Date().getMonth(), 1)),
-        end: searchParams.get('fecha_hasta') || getLocalDate()
+        start: searchParams.get('fecha_desde') || (hasStatusFilter ? '' : getLocalDate(new Date(new Date().getFullYear(), new Date().getMonth(), 1))),
+        end: searchParams.get('fecha_hasta') || (hasStatusFilter ? '' : getLocalDate())
     });
 
     const STORAGE_KEY = 'table_prefs_pedidos_items';
@@ -301,49 +304,50 @@ const Pedidos = () => {
             </BentoGrid>
 
             {/* Filtration & Content */}
-            <div className="flex flex-col flex-grow gap-4 min-h-0">
-                <PremiumFilterBar
-                    busqueda={filters.busqueda}
-                    setBusqueda={(val) => handleFilterChange('busqueda', val)}
-                    dateRange={dateRange}
-                    setDateRange={setDateRange}
-                    onClear={() => {
-                        setFilters({ busqueda: '', estado: '' });
-                        setDateRange({
-                            start: getLocalDate(new Date(new Date().getFullYear(), new Date().getMonth(), 1)),
-                            end: getLocalDate()
-                        });
-                        setPage(1);
-                    }}
-                    placeholder="Buscar por cliente o ID de pedido..."
+            {/* Filtration & Content */}
+            <PremiumFilterBar
+                busqueda={filters.busqueda}
+                setBusqueda={(val) => handleFilterChange('busqueda', val)}
+                dateRange={dateRange}
+                setDateRange={setDateRange}
+                onClear={() => {
+                    setFilters({ busqueda: '', estado: '' });
+                    setDateRange({
+                        start: getLocalDate(new Date(new Date().getFullYear(), new Date().getMonth(), 1)),
+                        end: getLocalDate()
+                    });
+                    setPage(1);
+                }}
+                placeholder="Buscar por cliente o ID de pedido..."
+            >
+                <select
+                    className="bg-white border border-neutral-200 rounded-full px-6 h-[52px] text-[10px] font-black uppercase tracking-widest text-neutral-600 focus:ring-2 focus:ring-primary-500 transition-all outline-none shadow-sm cursor-pointer appearance-none pr-12 min-w-[200px] bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_1rem_center] bg-no-repeat"
+                    value={filters.estado}
+                    onChange={(e) => handleFilterChange('estado', e.target.value)}
                 >
-                    <select
-                        className="bg-white border border-neutral-200 rounded-full px-6 h-[52px] text-[10px] font-black uppercase tracking-widest text-neutral-600 focus:ring-2 focus:ring-primary-500 transition-all outline-none shadow-sm cursor-pointer appearance-none pr-12 min-w-[200px] bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_1rem_center] bg-no-repeat"
-                        value={filters.estado}
-                        onChange={(e) => handleFilterChange('estado', e.target.value)}
-                    >
-                        <option value="">TODOS LOS ESTADOS</option>
-                        <option value="PENDIENTE">PENDIENTE</option>
-                        <option value="FACTURADO">FACTURADO</option>
-                    </select>
-                </PremiumFilterBar>
+                    <option value="">TODOS LOS ESTADOS</option>
+                    <option value="PENDIENTE">PENDIENTE</option>
+                    <option value="FACTURADO">FACTURADO</option>
+                </select>
+            </PremiumFilterBar>
 
-                {/* Table */}
-                <div className="flex-grow flex flex-col min-h-0">
-                    <PremiumTable
-                        columns={columns}
-                        data={pedidos}
-                        loading={loading}
-                        className="flex-grow shadow-lg"
-                        emptyState={
-                            <EmptyState
-                                title="No hay pedidos pendientes"
-                                description="Los pedidos de clientes aparecerán aquí una vez generados."
-                            />
-                        }
-                    />
+            {/* Table */}
+            <div className="flex-grow flex flex-col min-h-0">
+                <PremiumTable
+                    columns={columns}
+                    data={pedidos}
+                    loading={loading}
+                    className={cn("flex-grow shadow-lg", pedidos.length > 0 ? "rounded-b-none" : "")}
+                    emptyState={
+                        <EmptyState
+                            title="No hay pedidos pendientes"
+                            description="Los pedidos de clientes aparecerán aquí una vez generados."
+                        />
+                    }
+                />
 
-                    {/* Pagination */}
+                {/* Pagination */}
+                {pedidos.length > 0 && (
                     <div className="bg-white border-x border-b border-neutral-200 rounded-b-[2rem] px-6 py-1 shadow-premium relative z-10">
                         <TablePagination
                             currentPage={page}
@@ -358,7 +362,7 @@ const Pedidos = () => {
                             }}
                         />
                     </div>
-                </div>
+                )}
             </div>
 
             {/* Modal de Facturación */}

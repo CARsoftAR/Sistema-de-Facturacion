@@ -7,9 +7,15 @@ import {
     Activity, Star, TrendingUp, ShieldCheck
 } from 'lucide-react';
 
+// Alerts & Utilities
+import { showConfirmationAlert, showSuccessAlert, showErrorAlert } from '../utils/alerts';
+
 // Premium UI Components
 import { StatCard, PremiumTable, TableCell, PremiumFilterBar } from '../components/premium';
 import { BentoCard, BentoGrid } from '../components/premium/BentoCard';
+import { BtnAdd } from '../components/CommonButtons';
+import TablePagination from '../components/common/TablePagination';
+import EmptyState from '../components/EmptyState';
 import { cn } from '../utils/cn';
 
 const Clientes = () => {
@@ -130,7 +136,7 @@ const Clientes = () => {
             label: 'Cliente / Razón Social',
             render: (v, c) => (
                 <div className="flex flex-col">
-                    <span className="font-black text-neutral-800 text-sm uppercase tracking-tight">{v}</span>
+                    <TableCell.Primary value={v} />
                     <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider flex items-center gap-1">
                         <MapPin size={10} /> {c.direccion || 'Sin domicilio registrado'}
                     </span>
@@ -140,17 +146,18 @@ const Clientes = () => {
         {
             key: 'cuit',
             label: 'Identificación',
-            width: '160px',
+            width: '180px',
             render: (v) => v ? (
-                <span className="font-mono text-xs font-black text-neutral-500 bg-neutral-100 px-2 py-1 rounded border border-neutral-200">
-                    {v}
-                </span>
+                <TableCell.Secondary
+                    value={v}
+                    className="font-mono bg-neutral-100 px-3 py-1 rounded-lg border border-neutral-200 w-fit"
+                />
             ) : <span className="text-neutral-300">---</span>
         },
         {
             key: 'contacto',
             label: 'Contacto',
-            width: '220px',
+            width: '240px',
             render: (_, c) => (
                 <div className="flex flex-col gap-0.5">
                     {c.telefono && (
@@ -193,13 +200,15 @@ const Clientes = () => {
                 <div className="flex justify-end gap-2 group-hover:opacity-100 transition-all">
                     <button
                         onClick={() => navigate(`/clientes/editar/${c.id}`)}
-                        className="p-2 text-neutral-400 hover:text-primary-600 hover:bg-primary-50 rounded-xl transition-all"
+                        className="p-2 text-neutral-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-all"
+                        title="Editar"
                     >
                         <Pencil size={18} />
                     </button>
                     <button
                         onClick={() => handleDelete(c.id)}
-                        className="p-2 text-neutral-400 hover:text-error-600 hover:bg-error-50 rounded-xl transition-all"
+                        className="p-2 text-neutral-400 hover:text-error-600 hover:bg-error-50 rounded-lg transition-all"
+                        title="Eliminar"
                     >
                         <Trash2 size={18} />
                     </button>
@@ -258,57 +267,55 @@ const Clientes = () => {
                 />
             </BentoGrid>
 
-            {/* Main Content Area */}
-            <div className="flex flex-col flex-grow gap-4 min-h-0">
-                <PremiumFilterBar
-                    busqueda={filters.busqueda}
-                    setBusqueda={(v) => handleFilterChange('busqueda', v)}
-                    showQuickFilters={false}
-                    showDateRange={false}
-                    onClear={() => { setFilters({ busqueda: '', condicion_fiscal: '' }); setPage(1); }}
-                    placeholder="Buscar por nombre, apellido, razón social o CUIT..."
+            {/* Filters & Main Content */}
+            <PremiumFilterBar
+                busqueda={filters.busqueda}
+                setBusqueda={(v) => handleFilterChange('busqueda', v)}
+                showQuickFilters={false}
+                showDateRange={false}
+                onClear={() => { setFilters({ busqueda: '', condicion_fiscal: '' }); setPage(1); }}
+                placeholder="Buscar por nombre, apellido, razón social o CUIT..."
+            >
+                <select
+                    className="bg-white border border-neutral-200 rounded-full px-6 h-[52px] text-[10px] font-black uppercase tracking-widest text-neutral-600 focus:ring-2 focus:ring-primary-500 transition-all outline-none shadow-sm cursor-pointer appearance-none pr-12 min-w-[200px] bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_1rem_center] bg-no-repeat"
+                    value={filters.condicion_fiscal}
+                    onChange={(e) => handleFilterChange('condicion_fiscal', e.target.value)}
                 >
-                    <select
-                        className="bg-white border border-neutral-200 rounded-full px-6 h-[52px] text-[10px] font-black uppercase tracking-widest text-neutral-600 focus:ring-2 focus:ring-primary-500 transition-all outline-none shadow-sm cursor-pointer appearance-none pr-12 min-w-[200px] bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_1rem_center] bg-no-repeat"
-                        value={filters.condicion_fiscal}
-                        onChange={(e) => handleFilterChange('condicion_fiscal', e.target.value)}
-                    >
-                        <option value="">TODAS LAS CONDICIONES FISCALES</option>
-                        <option value="CF">CONSUMIDOR FINAL</option>
-                        <option value="RI">RESPONSABLE INSCRIPTO</option>
-                        <option value="MT">MONOTRIBUTO</option>
-                    </select>
-                </PremiumFilterBar>
+                    <option value="">TODAS LAS CONDICIONES FISCALES</option>
+                    <option value="CF">CONSUMIDOR FINAL</option>
+                    <option value="RI">RESPONSABLE INSCRIPTO</option>
+                    <option value="MT">MONOTRIBUTO</option>
+                </select>
+            </PremiumFilterBar>
 
-                <div className="flex-grow flex flex-col min-h-0">
-                    <PremiumTable
-                        columns={columns}
-                        data={clientes}
-                        loading={loading}
-                        className="flex-grow shadow-lg"
-                        emptyState={
-                            <EmptyState
-                                title="No se encontraron clientes"
-                                description="Verifica los filtros o agrega un nuevo cliente a tu base de datos."
-                                icon={Users}
-                            />
-                        }
-                    />
-
-                    <div className="bg-white border-x border-b border-neutral-200 rounded-b-[2rem] px-6 py-1 shadow-premium">
-                        <TablePagination
-                            currentPage={page}
-                            totalPages={totalPages}
-                            totalItems={totalItems}
-                            itemsPerPage={itemsPerPage}
-                            onPageChange={setPage}
-                            onItemsPerPageChange={(newVal) => {
-                                setItemsPerPage(newVal);
-                                setPage(1);
-                                localStorage.setItem(STORAGE_KEY, newVal);
-                            }}
+            <div className="flex-grow flex flex-col min-h-0">
+                <PremiumTable
+                    columns={columns}
+                    data={clientes}
+                    loading={loading}
+                    className="flex-grow shadow-lg"
+                    emptyState={
+                        <EmptyState
+                            title="No se encontraron clientes"
+                            description="Verifica los filtros o agrega un nuevo cliente a tu base de datos."
+                            icon={Users}
                         />
-                    </div>
+                    }
+                />
+
+                <div className="bg-white border-x border-b border-neutral-200 rounded-b-[2rem] px-6 py-1 shadow-premium">
+                    <TablePagination
+                        currentPage={page}
+                        totalPages={totalPages}
+                        totalItems={totalItems}
+                        itemsPerPage={itemsPerPage}
+                        onPageChange={setPage}
+                        onItemsPerPageChange={(newVal) => {
+                            setItemsPerPage(newVal);
+                            setPage(1);
+                            localStorage.setItem(STORAGE_KEY, newVal);
+                        }}
+                    />
                 </div>
             </div>
         </div>

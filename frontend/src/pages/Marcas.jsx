@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Tag, Plus, Search, Edit2, Trash2, Box, Info, CheckCircle2, Bookmark, Save } from 'lucide-react';
 import { showConfirmationAlert, showSuccessAlert, showErrorAlert } from '../utils/alerts';
-import { BtnAdd, BtnEdit, BtnDelete } from '../components/CommonButtons';
+import { BtnAdd } from '../components/CommonButtons';
 import { PremiumTable, TableCell } from '../components/premium/PremiumTable';
 import { BentoCard, StatCard, BentoGrid } from '../components/premium/BentoCard';
-import { SearchInput } from '../components/premium/PremiumInput';
+import PremiumFilterBar from '../components/premium/PremiumFilterBar';
+import TablePagination from '../components/common/TablePagination';
 import { cn } from '../utils/cn';
 
 const Marcas = () => {
@@ -15,6 +16,10 @@ const Marcas = () => {
     const [formData, setFormData] = useState({ id: null, nombre: '', descripcion: '' });
     const [saving, setSaving] = useState(false);
 
+    // Pagination State
+    const [page, setPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
+
     useEffect(() => {
         fetchMarcas();
     }, []);
@@ -24,7 +29,9 @@ const Marcas = () => {
         try {
             const response = await fetch('/api/marcas/listar/');
             const data = await response.json();
-            if (data.ok || Array.isArray(data.data)) setMarcas(data.data || []);
+            if (data.ok || Array.isArray(data.data)) {
+                setMarcas(data.data || []);
+            }
         } catch (error) {
             console.error("Error fetching marcas:", error);
             showErrorAlert("Error", "No se pudo obtener el listado de marcas.");
@@ -136,16 +143,21 @@ const Marcas = () => {
         );
     }, [marcas, searchTerm]);
 
+    const paginatedData = useMemo(() => {
+        const start = (page - 1) * itemsPerPage;
+        return filteredData.slice(start, start + itemsPerPage);
+    }, [filteredData, page, itemsPerPage]);
+
     const columns = [
         {
             key: 'nombre',
             label: 'Nombre Comercial',
-            render: (v) => <span className="font-black text-slate-800 uppercase tracking-tight">{v}</span>
+            render: (v) => <TableCell.Primary value={v} />
         },
         {
             key: 'descripcion',
             label: 'Descripción / Notas',
-            render: (v) => <span className="text-slate-500 font-medium italic text-xs">{v || 'Sin descripción'}</span>
+            render: (v) => <TableCell.Secondary value={v || 'Sin descripción'} />
         },
         {
             key: 'acciones',
@@ -153,11 +165,19 @@ const Marcas = () => {
             align: 'right',
             width: '120px',
             render: (_, row) => (
-                <div className="flex justify-end gap-2 group-hover:opacity-100 opacity-0 transition-all">
-                    <button onClick={() => openModal(row)} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all">
+                <div className="flex justify-end gap-2">
+                    <button
+                        onClick={() => openModal(row)}
+                        className="p-2 text-neutral-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-all"
+                        title="Editar"
+                    >
                         <Edit2 size={18} />
                     </button>
-                    <button onClick={() => handleDelete(row.id, row.nombre)} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all">
+                    <button
+                        onClick={() => handleDelete(row.id, row.nombre)}
+                        className="p-2 text-neutral-400 hover:text-error-600 hover:bg-error-50 rounded-lg transition-all"
+                        title="Eliminar"
+                    >
                         <Trash2 size={18} />
                     </button>
                 </div>
@@ -172,41 +192,61 @@ const Marcas = () => {
             <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div className="space-y-1">
                     <div className="flex items-center gap-3">
-                        <div className="bg-gradient-to-br from-amber-500 to-amber-600 p-2.5 rounded-2xl text-white shadow-lg shadow-amber-500/20">
+                        <div className="bg-gradient-to-br from-indigo-600 to-indigo-700 p-2.5 rounded-2xl text-white shadow-lg shadow-indigo-600/20">
                             <Tag size={24} strokeWidth={2.5} />
                         </div>
-                        <h1 className="text-3xl font-black text-slate-900 tracking-tight">Marcas Registradas</h1>
+                        <h1 className="text-3xl font-black text-slate-900 tracking-tight font-outfit uppercase">
+                            Marcas Registradas
+                        </h1>
                     </div>
                     <p className="text-slate-500 font-bold text-xs uppercase tracking-[0.15em] ml-14">
                         Identidad de productos y fabricantes.
                     </p>
                 </div>
 
-                <BtnAdd label="NUEVA MARCA" onClick={() => openModal()} className="!bg-slate-900 !rounded-xl !px-8 !font-black !tracking-widest !text-[10px] !shadow-xl !shadow-slate-900/20" />
+                <BtnAdd
+                    label="NUEVA MARCA"
+                    onClick={() => openModal()}
+                    className="!bg-slate-900 !rounded-xl !px-8 !py-3.5 !font-black !tracking-widest !text-[11px] !shadow-xl !shadow-slate-900/20 active:scale-95 transition-all text-white"
+                />
             </header>
 
             {/* Stats */}
             <BentoGrid cols={4}>
-                <StatCard label="Total Marcas" value={marcas.length} icon={Bookmark} color="amber" />
+                <StatCard label="Total Marcas" value={marcas.length} icon={Bookmark} color="primary" />
                 <StatCard label="Consistencia" value="Óptima" icon={CheckCircle2} color="success" />
             </BentoGrid>
 
-            {/* Content Area */}
-            <div className="flex-1 flex flex-col gap-4 min-h-0">
-                <BentoCard className="p-4 bg-white/80 backdrop-blur-md border-slate-100 shadow-premium">
-                    <SearchInput
-                        placeholder="Buscar marcas por nombre o descripción..."
-                        onSearch={setSearchTerm}
-                        className="!py-3 border-slate-200"
-                    />
-                </BentoCard>
+            {/* Filters */}
+            <PremiumFilterBar
+                busqueda={searchTerm}
+                setBusqueda={(v) => { setSearchTerm(v); setPage(1); }}
+                showQuickFilters={false}
+                showDateRange={false}
+                onClear={() => { setSearchTerm(''); setPage(1); }}
+                placeholder="Buscar marcas por nombre o descripción..."
+            />
 
-                <div className="flex-1 flex flex-col min-h-0">
-                    <PremiumTable
-                        columns={columns}
-                        data={filteredData}
-                        loading={loading}
-                        className="flex-1 shadow-lg"
+            {/* Content Area */}
+            <div className="flex-grow flex flex-col min-h-0">
+                <PremiumTable
+                    columns={columns}
+                    data={paginatedData}
+                    loading={loading}
+                    className="flex-grow shadow-lg"
+                />
+
+                <div className="bg-white border-x border-b border-neutral-200 rounded-b-[2rem] px-6 py-1 shadow-premium">
+                    <TablePagination
+                        currentPage={page}
+                        totalPages={Math.ceil(filteredData.length / itemsPerPage)}
+                        totalItems={filteredData.length}
+                        itemsPerPage={itemsPerPage}
+                        onPageChange={setPage}
+                        onItemsPerPageChange={(newVal) => {
+                            setItemsPerPage(newVal);
+                            setPage(1);
+                        }}
                     />
                 </div>
             </div>
@@ -227,7 +267,7 @@ const Marcas = () => {
                                     </div>
                                     <span className="text-[10px] font-black tracking-[0.2em] uppercase text-amber-400">Branding / Identidad</span>
                                 </div>
-                                <h1 className="text-3xl font-black uppercase tracking-tight">Formulario de Marca</h1>
+                                <h1 className="text-3xl font-black uppercase tracking-tight font-outfit">Formulario de Marca</h1>
                             </div>
                         </div>
 
@@ -240,7 +280,7 @@ const Marcas = () => {
                                 <input
                                     type="text"
                                     autoFocus
-                                    className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-amber-500 focus:bg-white outline-none font-bold text-slate-700 transition-all uppercase"
+                                    className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-500 focus:bg-white outline-none font-bold text-slate-700 transition-all uppercase"
                                     placeholder="Ej: Coca Cola, Nike..."
                                     value={formData.nombre}
                                     onChange={e => setFormData({ ...formData, nombre: e.target.value })}
@@ -254,7 +294,7 @@ const Marcas = () => {
                                 </label>
                                 <textarea
                                     rows="3"
-                                    className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-amber-500 focus:bg-white outline-none font-medium text-slate-600 transition-all resize-none"
+                                    className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-500 focus:bg-white outline-none font-medium text-slate-600 transition-all resize-none"
                                     placeholder="Opcional: Detalles o descripción..."
                                     value={formData.descripcion}
                                     onChange={e => setFormData({ ...formData, descripcion: e.target.value })}
@@ -272,7 +312,7 @@ const Marcas = () => {
                                 <button
                                     type="submit"
                                     disabled={saving}
-                                    className="flex-1 py-4 bg-amber-600 text-white rounded-2xl font-black text-xs tracking-widest uppercase hover:bg-amber-700 shadow-xl shadow-amber-600/20 active:scale-95 transition-all flex items-center justify-center gap-2"
+                                    className="flex-1 py-4 bg-slate-900 text-white rounded-2xl font-black text-xs tracking-widest uppercase hover:bg-slate-800 shadow-xl shadow-slate-900/20 active:scale-95 transition-all flex items-center justify-center gap-2"
                                 >
                                     {saving ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Save size={18} />}
                                     {formData.id ? 'ACTUALIZAR' : 'REGISTRAR'}
@@ -287,3 +327,4 @@ const Marcas = () => {
 };
 
 export default Marcas;
+

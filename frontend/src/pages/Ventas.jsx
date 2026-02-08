@@ -337,7 +337,7 @@ const Ventas = () => {
                         columns={columns}
                         data={ventas}
                         loading={loading}
-                        className="flex-grow shadow-lg"
+                        className={cn("flex-grow shadow-lg", ventas.length > 0 ? "rounded-b-none" : "")}
                         emptyState={
                             <EmptyState
                                 title="No hay ventas registradas"
@@ -347,20 +347,22 @@ const Ventas = () => {
                     />
 
                     {/* Pagination - Aligned with Premium Style */}
-                    <div className="bg-white border-x border-b border-neutral-200 rounded-b-[2rem] px-6 py-1 shadow-premium">
-                        <TablePagination
-                            currentPage={page}
-                            totalPages={totalPages}
-                            totalItems={totalItems}
-                            itemsPerPage={itemsPerPage}
-                            onPageChange={setPage}
-                            onItemsPerPageChange={(newVal) => {
-                                setItemsPerPage(newVal);
-                                setPage(1);
-                                localStorage.setItem(STORAGE_KEY, newVal);
-                            }}
-                        />
-                    </div>
+                    {ventas.length > 0 && (
+                        <div className="bg-white border-x border-b border-neutral-200 rounded-b-[2rem] px-6 py-1 shadow-premium">
+                            <TablePagination
+                                currentPage={page}
+                                totalPages={totalPages}
+                                totalItems={totalItems}
+                                itemsPerPage={itemsPerPage}
+                                onPageChange={setPage}
+                                onItemsPerPageChange={(newVal) => {
+                                    setItemsPerPage(newVal);
+                                    setPage(1);
+                                    localStorage.setItem(STORAGE_KEY, newVal);
+                                }}
+                            />
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

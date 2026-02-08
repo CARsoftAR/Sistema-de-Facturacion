@@ -1,9 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { MapPin, Plus, Search, Edit2, Trash2 } from 'lucide-react';
-import { showDeleteAlert, showToast } from '../utils/alerts';
-import { BtnAdd, BtnEdit, BtnDelete } from '../components/CommonButtons';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { MapPin, Plus, Search, Edit2, Trash2, Box, Info, CheckCircle2, Bookmark, Save, Layers, Navigation } from 'lucide-react';
+import { showConfirmationAlert, showSuccessAlert, showErrorAlert } from '../utils/alerts';
+import { BtnAdd } from '../components/CommonButtons';
+import { PremiumTable, TableCell } from '../components/premium/PremiumTable';
+import { BentoCard, StatCard, BentoGrid } from '../components/premium/BentoCard';
+import PremiumFilterBar from '../components/premium/PremiumFilterBar';
 import TablePagination from '../components/common/TablePagination';
-import StandardModal from '../components/common/StandardModal';
+import { cn } from '../utils/cn';
 
 const Localidades = () => {
     const [localidades, setLocalidades] = useState([]);
@@ -14,7 +17,7 @@ const Localidades = () => {
     const [saving, setSaving] = useState(false);
 
     // Pagination
-    const [currentPage, setCurrentPage] = useState(1);
+    const [page, setPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
 
     useEffect(() => {
@@ -34,7 +37,7 @@ const Localidades = () => {
             }
         } catch (error) {
             console.error("Error fetching localidades:", error);
-            showToast('Error al cargar localidades', 'error');
+            showErrorAlert("Error", "No se pudo conectar con el servidor.");
         } finally {
             setLoading(false);
         }
@@ -42,6 +45,8 @@ const Localidades = () => {
 
     const handleSave = async (e) => {
         if (e) e.preventDefault();
+        if (!formData.nombre.trim()) return;
+
         setSaving(true);
         try {
             const getCookie = (name) => {
@@ -70,26 +75,26 @@ const Localidades = () => {
 
             const data = await response.json();
             if (data.ok) {
-                showToast(formData.id ? 'Localidad actualizada' : 'Localidad creada', 'success');
+                showSuccessAlert(formData.id ? 'Localidad actualizada' : 'Localidad creada', `"${formData.nombre}" guardada correctamente.`);
                 setShowModal(false);
                 fetchLocalidades();
             } else {
-                const errorMsg = data.errors ? Object.values(data.errors).flat().join(', ') : 'Error al guardar';
-                showToast(errorMsg, 'error');
+                showErrorAlert("Error", data.error || "No se pudo guardar.");
             }
         } catch (error) {
             console.error("Error saving localidad:", error);
-            showToast('Error de conexión', 'error');
+            showErrorAlert("Error", "Fallo técnico al intentar guardar.");
         } finally {
             setSaving(false);
         }
     };
 
     const handleDelete = async (id, nombre) => {
-        const result = await showDeleteAlert(
-            '¿Eliminar Localidad?',
-            `Se eliminará la localidad "${nombre}".`,
-            'Eliminar'
+        const result = await showConfirmationAlert(
+            `¿Eliminar Localidad?`,
+            `Se removerá la localidad "${nombre}".`,
+            "SÍ, ELIMINAR",
+            "danger"
         );
 
         if (result.isConfirmed) {
@@ -116,166 +121,207 @@ const Localidades = () => {
 
                 const data = await response.json();
                 if (data.ok) {
-                    showToast('Localidad eliminada', 'success');
+                    showSuccessAlert("Eliminado", "La localidad ha sido removida.");
                     fetchLocalidades();
                 } else {
-                    showToast(data.error || 'Error al eliminar', 'error');
+                    showErrorAlert("Error", data.error || "No se pudo eliminar.");
                 }
             } catch (error) {
                 console.error("Error deleting localidad:", error);
-                showToast('Error de conexión', 'error');
+                showErrorAlert("Error", "No se pudo procesar la eliminación.");
             }
         }
     };
 
-    const openNew = () => {
-        setFormData({ id: null, nombre: '', codigo_postal: '' });
+    const openModal = (loc = null) => {
+        if (loc) setFormData({ id: loc.id, nombre: loc.nombre, codigo_postal: loc.codigo_postal || '' });
+        else setFormData({ id: null, nombre: '', codigo_postal: '' });
         setShowModal(true);
     };
 
-    const openEdit = (localidad) => {
-        setFormData({ id: localidad.id, nombre: localidad.nombre, codigo_postal: localidad.codigo_postal });
-        setShowModal(true);
-    };
+    const filteredData = useMemo(() => {
+        return localidades.filter(l =>
+            l.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (l.codigo_postal && l.codigo_postal.toString().includes(searchTerm))
+        );
+    }, [localidades, searchTerm]);
 
-    // Filtering
-    const filteredLocalidades = localidades.filter(l =>
-        l.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (l.codigo_postal && l.codigo_postal.toString().includes(searchTerm))
-    );
+    const paginatedData = useMemo(() => {
+        const start = (page - 1) * itemsPerPage;
+        return filteredData.slice(start, start + itemsPerPage);
+    }, [filteredData, page, itemsPerPage]);
 
-    // Pagination Logic
-    const totalItems = filteredLocalidades.length;
-    const totalPages = Math.ceil(totalItems / itemsPerPage);
-    const indexOfLastItem = currentPage * itemsPerPage;
-    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-    const currentItems = filteredLocalidades.slice(indexOfFirstItem, indexOfLastItem);
+    const columns = [
+        {
+            key: 'nombre',
+            label: 'Ciudad / Localidad',
+            render: (v) => <TableCell.Primary value={v} />
+        },
+        {
+            key: 'codigo_postal',
+            label: 'Código Postal',
+            render: (v) => <TableCell.Secondary value={v || 'S/CP'} className="font-mono bg-slate-100 px-3 py-1 rounded-lg border border-slate-200 w-fit" />
+        },
+        {
+            key: 'acciones',
+            label: 'Acciones',
+            align: 'right',
+            width: '120px',
+            render: (_, row) => (
+                <div className="flex justify-end gap-2">
+                    <button
+                        onClick={() => openModal(row)}
+                        className="p-2 text-neutral-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-all"
+                        title="Editar"
+                    >
+                        <Edit2 size={18} />
+                    </button>
+                    <button
+                        onClick={() => handleDelete(row.id, row.nombre)}
+                        className="p-2 text-neutral-400 hover:text-error-600 hover:bg-error-50 rounded-lg transition-all"
+                        title="Eliminar"
+                    >
+                        <Trash2 size={18} />
+                    </button>
+                </div>
+            )
+        }
+    ];
 
     return (
-        <div className="container-fluid px-4 pt-4 pb-0 h-100 d-flex flex-column bg-light fade-in">
+        <div className="h-[calc(100vh-64px)] overflow-hidden bg-slate-50/50 flex flex-col p-6 gap-6">
+
             {/* Header */}
-            <div className="d-flex justify-content-between align-items-center mb-4">
-                <div>
-                    <h2 className="text-primary fw-bold mb-0" style={{ fontSize: '2rem' }}>
-                        <MapPin className="me-2 inline-block" size={32} />
-                        Localidades
-                    </h2>
-                    <p className="text-muted mb-0 ps-1">Gestión de ciudades y localidades</p>
-                </div>
-                <BtnAdd label="Nueva Localidad" onClick={openNew} className="btn-lg shadow-sm" />
-            </div>
-
-            {/* Filters */}
-            <div className="card border-0 shadow-sm rounded-3 mb-3">
-                <div className="card-body p-2">
-                    <div className="position-relative" style={{ maxWidth: '400px' }}>
-                        <Search className="position-absolute top-50 start-0 translate-middle-y ms-3 text-muted" size={18} />
-                        <input
-                            type="text"
-                            className="form-control ps-5 border-0 bg-light"
-                            placeholder="Buscar localidades..."
-                            value={searchTerm}
-                            onChange={e => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-                        />
+            <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div className="space-y-1">
+                    <div className="flex items-center gap-3">
+                        <div className="bg-gradient-to-br from-emerald-600 to-emerald-700 p-2.5 rounded-2xl text-white shadow-lg shadow-emerald-600/20">
+                            <MapPin size={24} strokeWidth={2.5} />
+                        </div>
+                        <h1 className="text-3xl font-black text-slate-900 tracking-tight font-outfit uppercase">Localidades</h1>
                     </div>
+                    <p className="text-slate-500 font-bold text-xs uppercase tracking-[0.15em] ml-14">
+                        Gestión geográfica de puntos de entrega.
+                    </p>
                 </div>
-            </div>
 
-            {/* Table */}
-            <div className="card border-0 shadow mb-0 flex-grow-1 overflow-hidden d-flex flex-column">
-                <div className="card-body p-0 d-flex flex-column overflow-hidden">
-                    <div className="table-responsive flex-grow-1">
-                        <table className="table align-middle mb-0 table-hover">
-                            <thead className="table-dark">
-                                <tr>
-                                    <th className="ps-4 py-3">Nombre</th>
-                                    <th className="py-3">Código Postal</th>
-                                    <th className="text-end pe-4 py-3">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {loading ? (
-                                    <tr>
-                                        <td colSpan="3" className="text-center py-5">
-                                            <div className="spinner-border text-primary" role="status">
-                                                <span className="visually-hidden">Cargando...</span>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ) : currentItems.length === 0 ? (
-                                    <tr>
-                                        <td colSpan="3" className="text-center py-5 text-muted">
-                                            No se encontraron localidades.
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    currentItems.map(localidad => (
-                                        <tr key={localidad.id}>
-                                            <td className="ps-4 fw-bold">{localidad.nombre}</td>
-                                            <td className="text-muted small">
-                                                <span className="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-10 font-monospace">
-                                                    {localidad.codigo_postal || 'S/CP'}
-                                                </span>
-                                            </td>
-                                            <td className="text-end pe-4">
-                                                <div className="d-flex justify-content-end gap-2">
-                                                    <BtnEdit onClick={() => openEdit(localidad)} title="Editar" />
-                                                    <BtnDelete onClick={() => handleDelete(localidad.id, localidad.nombre)} title="Eliminar" />
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+                <BtnAdd
+                    label="NUEVA LOCALIDAD"
+                    onClick={() => openModal()}
+                    className="!bg-slate-900 !rounded-xl !px-8 !py-3.5 !font-black !tracking-widest !text-[11px] !shadow-xl !shadow-slate-900/20 active:scale-95 transition-all text-white"
+                />
+            </header>
 
-                    {/* Pagination */}
+            {/* Stats */}
+            <BentoGrid cols={4}>
+                <StatCard label="Total Localidades" value={localidades.length} icon={Navigation} color="emerald" />
+                <StatCard label="Estado" value="Activo" icon={CheckCircle2} color="emerald" />
+            </BentoGrid>
+
+            {/* Filters Area */}
+            <PremiumFilterBar
+                busqueda={searchTerm}
+                setBusqueda={(v) => { setSearchTerm(v); setPage(1); }}
+                showQuickFilters={false}
+                showDateRange={false}
+                onClear={() => { setSearchTerm(''); setPage(1); }}
+                placeholder="Filtrar por nombre o código postal..."
+            />
+
+            <div className="flex-grow flex flex-col min-h-0">
+                <PremiumTable
+                    columns={columns}
+                    data={paginatedData}
+                    loading={loading}
+                    className="flex-grow shadow-lg"
+                />
+
+                <div className="bg-white border-x border-b border-neutral-200 rounded-b-[2rem] px-6 py-1 shadow-premium">
                     <TablePagination
-                        currentPage={currentPage}
-                        totalPages={totalPages}
-                        totalItems={totalItems}
+                        currentPage={page}
+                        totalPages={Math.ceil(filteredData.length / itemsPerPage)}
+                        totalItems={filteredData.length}
                         itemsPerPage={itemsPerPage}
-                        onPageChange={setCurrentPage}
-                        onItemsPerPageChange={setItemsPerPage}
+                        onPageChange={setPage}
+                        onItemsPerPageChange={(newVal) => {
+                            setItemsPerPage(newVal);
+                            setPage(1);
+                        }}
                     />
                 </div>
             </div>
 
-            {/* Standard Modal */}
-            <StandardModal
-                isOpen={showModal}
-                onClose={() => setShowModal(false)}
-                title={formData.id ? 'Editar Localidad' : 'Nueva Localidad'}
-                onSubmit={handleSave}
-                isLoading={saving}
-                headerIcon={<MapPin size={20} />}
-            >
-                <form id="localidad-form" onSubmit={handleSave} className="space-y-4">
-                    <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Nombre</label>
-                        <input
-                            type="text"
-                            className="w-full px-4 py-2 text-base font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
-                            required
-                            autoFocus
-                            placeholder="Ej: Buenos Aires, Córdoba, Rosario"
-                            value={formData.nombre}
-                            onChange={e => setFormData({ ...formData, nombre: e.target.value })}
-                        />
+            {/* Modal Premium */}
+            {showModal && (
+                <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 animate-in zoom-in-95 duration-200">
+                        {/* Header Modal */}
+                        <div className="bg-slate-900 px-8 py-10 text-white relative">
+                            <div className="absolute top-0 right-0 p-8 opacity-10">
+                                <MapPin size={120} strokeWidth={1} />
+                            </div>
+                            <div className="relative z-10">
+                                <div className="flex items-center gap-3 mb-2">
+                                    <div className="bg-white/10 p-2 rounded-xl backdrop-blur-md">
+                                        <Layers size={20} className="text-emerald-400" />
+                                    </div>
+                                    <span className="text-[10px] font-black tracking-[0.2em] uppercase text-emerald-400">Logística / Ubicación</span>
+                                </div>
+                                <h1 className="text-3xl font-black uppercase tracking-tight font-outfit">Datos de Localidad</h1>
+                            </div>
+                        </div>
+
+                        {/* Form Body */}
+                        <form onSubmit={handleSave} className="p-8 space-y-6">
+                            <div className="space-y-2">
+                                <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">
+                                    <Box size={14} /> Nombre de Localidad
+                                </label>
+                                <input
+                                    type="text"
+                                    autoFocus
+                                    className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-emerald-500 focus:bg-white outline-none font-bold text-slate-700 transition-all uppercase"
+                                    placeholder="Ej: BUENOS AIRES, CÓRDOBA..."
+                                    value={formData.nombre}
+                                    onChange={e => setFormData({ ...formData, nombre: e.target.value })}
+                                    required
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">
+                                    <Info size={14} /> Código Postal
+                                </label>
+                                <input
+                                    type="text"
+                                    className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-emerald-500 focus:bg-white outline-none font-bold text-slate-700 transition-all font-mono"
+                                    placeholder="Ej: 1004"
+                                    value={formData.codigo_postal}
+                                    onChange={e => setFormData({ ...formData, codigo_postal: e.target.value })}
+                                />
+                            </div>
+
+                            <div className="flex gap-3 pt-4">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowModal(false)}
+                                    className="flex-1 py-4 bg-slate-100 text-slate-500 rounded-2xl font-black text-xs tracking-widest uppercase hover:bg-slate-200 transition-all"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={saving}
+                                    className="flex-1 py-4 bg-slate-900 text-white rounded-2xl font-black text-xs tracking-widest uppercase hover:bg-slate-800 shadow-xl shadow-slate-900/20 active:scale-95 transition-all flex items-center justify-center gap-2"
+                                >
+                                    {saving ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Save size={18} />}
+                                    {formData.id ? 'ACTUALIZAR' : 'REGISTRAR'}
+                                </button>
+                            </div>
+                        </form>
                     </div>
-                    <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Código Postal</label>
-                        <input
-                            type="text"
-                            className="w-full px-4 py-2 text-base text-slate-700 bg-slate-50 border border-slate-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all font-monospace"
-                            placeholder="Ej: 1004"
-                            value={formData.codigo_postal}
-                            onChange={e => setFormData({ ...formData, codigo_postal: e.target.value })}
-                        />
-                    </div>
-                </form>
-            </StandardModal>
+                </div>
+            )}
         </div>
     );
 };

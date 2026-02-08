@@ -125,7 +125,7 @@ export const StatCard = ({
                 {Icon && (
                     <div className={cn(
                         'p-3 rounded-lg transition-transform group-hover:scale-110',
-                        colorClasses[color].icon
+                        (colorClasses[color] || colorClasses.primary).icon
                     )}>
                         <Icon size={24} strokeWidth={2} />
                     </div>

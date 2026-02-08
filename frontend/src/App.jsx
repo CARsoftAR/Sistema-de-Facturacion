@@ -23,6 +23,7 @@ import Ejercicios from './pages/Ejercicios'
 import Asientos from './pages/Asientos'
 import LibroMayor from './pages/LibroMayor'
 import Balance from './pages/Balance'
+import AccountingDashboard from './pages/AccountingDashboard'
 import Remitos from './pages/Remitos'
 import NotasCredito from './pages/NotasCredito'
 import DetalleRemito from './pages/DetalleRemito'
@@ -42,6 +43,11 @@ import MovimientosStock from './pages/MovimientosStock'
 import NuevoProveedor from './pages/NuevoProveedor'
 import Auditoria from './pages/Auditoria'
 import Backups from './pages/Backups'
+import VentasModule from './pages/VentasModule'
+import ComprasModule from './pages/ComprasModule'
+import TesoreriaModule from './pages/TesoreriaModule'
+import MaestrosModule from './pages/MaestrosModule'
+import StockModule from './pages/StockModule'
 
 
 import Parametros from './pages/Parametros'
@@ -153,12 +159,11 @@ function App() {
               <Route path="/proveedores" element={<ProtectedRoute permission="proveedores"><Proveedores /></ProtectedRoute>} />
               <Route path="/proveedores/nuevo" element={<ProtectedRoute permission="proveedores"><NuevoProveedor /></ProtectedRoute>} />
               <Route path="/proveedores/editar/:id" element={<ProtectedRoute permission="proveedores"><NuevoProveedor /></ProtectedRoute>} />
+              <Route path="/stock" element={<ProtectedRoute permission="productos"><StockModule /></ProtectedRoute>} />
               <Route path="/productos" element={<ProtectedRoute permission="productos"><Productos /></ProtectedRoute>} />
-              <Route path="/productos/nuevo" element={<ProtectedRoute permission="productos"><NuevoProducto /></ProtectedRoute>} />
               <Route path="/productos/editar/:id" element={<ProtectedRoute permission="productos"><NuevoProducto /></ProtectedRoute>} />
               <Route path="/ajuste-stock" element={<ProtectedRoute permission="productos"><AjusteStock /></ProtectedRoute>} />
               <Route path="/movimientos-stock" element={<ProtectedRoute permission="productos"><MovimientosStock /></ProtectedRoute>} />
-              <Route path="/precios/actualizar" element={<ProtectedRoute permission="productos"><ActualizarPrecios /></ProtectedRoute>} />
               <Route path="/precios/actualizar" element={<ProtectedRoute permission="productos"><ActualizarPrecios /></ProtectedRoute>} />
               <Route path="/parametros" element={<ProtectedRoute permission="configuracion"><Parametros /></ProtectedRoute>} />
               <Route path="/reportes" element={<ProtectedRoute permission="reportes"><Reportes /></ProtectedRoute>} />
@@ -168,14 +173,15 @@ function App() {
               <Route path="/rubros" element={<ProtectedRoute permission="productos"><Rubros /></ProtectedRoute>} />
               <Route path="/unidades" element={<ProtectedRoute permission="productos"><Unidades /></ProtectedRoute>} />
               <Route path="/localidades" element={<ProtectedRoute permission="configuracion"><Localidades /></ProtectedRoute>} />
+              <Route path="/contabilidad" element={<ProtectedRoute permission="contabilidad"><AccountingDashboard /></ProtectedRoute>} />
               <Route path="/contabilidad/plan-cuentas" element={<ProtectedRoute permission="contabilidad"><PlanCuentas /></ProtectedRoute>} />
               <Route path="/contabilidad/ejercicios" element={<ProtectedRoute permission="contabilidad"><Ejercicios /></ProtectedRoute>} />
               <Route path="/contabilidad/asientos" element={<ProtectedRoute permission="contabilidad"><Asientos /></ProtectedRoute>} />
               <Route path="/contabilidad/mayor" element={<ProtectedRoute permission="contabilidad"><LibroMayor /></ProtectedRoute>} />
               <Route path="/contabilidad/balance" element={<ProtectedRoute permission="contabilidad"><Balance /></ProtectedRoute>} />
               <Route path="/contabilidad/reportes" element={<ProtectedRoute permission="contabilidad"><ReportesContables /></ProtectedRoute>} />
-              <Route path="/ventas" element={<ProtectedRoute permission="ventas"><Ventas /></ProtectedRoute>} />
-              <Route path="/ventas/" element={<ProtectedRoute permission="ventas"><Ventas /></ProtectedRoute>} />
+              <Route path="/ventas" element={<ProtectedRoute permission="ventas"><VentasModule /></ProtectedRoute>} />
+              <Route path="/ventas/lista" element={<ProtectedRoute permission="ventas"><Ventas /></ProtectedRoute>} />
               <Route path="/ventas/nuevo" element={<ProtectedRoute permission="ventas"><NuevaVenta /></ProtectedRoute>} />
               <Route path="/ventas/nuevo/" element={<ProtectedRoute permission="ventas"><NuevaVenta /></ProtectedRoute>} />
               <Route path="/ventas/:id" element={<ProtectedRoute permission="ventas"><DetalleVenta /></ProtectedRoute>} />
@@ -194,8 +200,8 @@ function App() {
               <Route path="/presupuestos/:id" element={<ProtectedRoute permission="ventas"><DetallePresupuesto /></ProtectedRoute>} />
               <Route path="/presupuestos/:id/" element={<ProtectedRoute permission="ventas"><DetallePresupuesto /></ProtectedRoute>} />
 
-              <Route path="/compras" element={<ProtectedRoute permission="compras"><Compras /></ProtectedRoute>} />
-              <Route path="/compras/" element={<ProtectedRoute permission="compras"><Compras /></ProtectedRoute>} />
+              <Route path="/compras" element={<ProtectedRoute permission="compras"><ComprasModule /></ProtectedRoute>} />
+              <Route path="/compras/lista" element={<ProtectedRoute permission="compras"><Compras /></ProtectedRoute>} />
               <Route path="/compras/nueva" element={<ProtectedRoute permission="compras"><NuevaCompra /></ProtectedRoute>} />
               <Route path="/compras/nueva/" element={<ProtectedRoute permission="compras"><NuevaCompra /></ProtectedRoute>} />
               <Route path="/compras/:id" element={<ProtectedRoute permission="compras"><DetalleCompra /></ProtectedRoute>} />
@@ -224,8 +230,8 @@ function App() {
               <Route path="/notas-debito/:id/" element={<ProtectedRoute permission="ventas"><DetalleNotaDebito /></ProtectedRoute>} />
               <Route path="/comprobantes/nd/:id" element={<ProtectedRoute permission="ventas"><DetalleNotaDebito /></ProtectedRoute>} />
               <Route path="/proveedores" element={<ProtectedRoute permission="proveedores"><Proveedores /></ProtectedRoute>} />
+              <Route path="/tesoreria" element={<ProtectedRoute permission="caja"><TesoreriaModule /></ProtectedRoute>} />
               <Route path="/caja" element={<ProtectedRoute permission="caja"><Caja /></ProtectedRoute>} />
-              <Route path="/caja/" element={<ProtectedRoute permission="caja"><Caja /></ProtectedRoute>} />
               <Route path="/bancos" element={<ProtectedRoute permission="bancos"><Bancos /></ProtectedRoute>} />
               <Route path="/cheques" element={<ProtectedRoute permission="bancos"><Cheques /></ProtectedRoute>} />
               <Route path="/bancos/conciliacion" element={<ProtectedRoute permission="bancos"><ConciliacionBancaria /></ProtectedRoute>} />
@@ -236,6 +242,7 @@ function App() {
               <Route path="/ctas-corrientes/proveedores/:id" element={<ProtectedRoute permission="ctacte"><DetalleCuentaCorrienteProveedor /></ProtectedRoute>} />
               <Route path="/recibos/:id" element={<ProtectedRoute permission="ctacte"><DetalleRecibo /></ProtectedRoute>} />
 
+              <Route path="/maestro" element={<ProtectedRoute><MaestrosModule /></ProtectedRoute>} />
               <Route path="/perfil" element={<ProtectedRoute><MiPerfil /></ProtectedRoute>} />
               <Route path="/mi-perfil" element={<ProtectedRoute><MiPerfil /></ProtectedRoute>} />
 

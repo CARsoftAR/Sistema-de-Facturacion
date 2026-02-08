@@ -1,6 +1,14 @@
+
 import React, { useState, useEffect } from 'react';
-import { FileText, Download, Calendar, Activity } from 'lucide-react';
-import { showToast } from '../utils/alerts';
+import {
+    FileText, Download, Calendar, Activity,
+    BookOpen, Layers, PieChart, TrendingUp, Search, Clock
+} from 'lucide-react';
+import axios from 'axios';
+import { BentoCard } from '../components/premium/BentoCard';
+import { PremiumSelect, PremiumInput } from '../components/premium/PremiumInput';
+import { showSuccessAlert, showErrorAlert } from '../utils/alerts';
+import { cn } from '../utils/cn';
 
 const ReportesContables = () => {
     const [ejercicios, setEjercicios] = useState([]);
@@ -15,230 +23,181 @@ const ReportesContables = () => {
 
     const fetchEjercicios = async () => {
         try {
-            const response = await fetch('/api/contabilidad/ejercicios/');
-            const data = await response.json();
-            // Data format: { data: [...] }
-            if (data.data) {
-                setEjercicios(data.data);
-                if (data.data.length > 0) {
-                    // Seleccionar el actual (abierto) o el último
-                    const actual = data.data.find(e => e.estado === 'ABIERTO');
-                    setSelectedEjercicio(actual ? actual.id : data.data[0].id);
+            const response = await axios.get('/api/contabilidad/ejercicios/');
+            if (response.data.success) {
+                setEjercicios(response.data.ejercicios);
+                if (response.data.ejercicios.length > 0) {
+                    const actual = response.data.ejercicios.find(e => !e.cerrado);
+                    setSelectedEjercicio(actual ? actual.id : response.data.ejercicios[0].id);
                 }
             }
         } catch (error) {
             console.error("Error loading ejercicios:", error);
-            showToast('Error al cargar ejercicios', 'error');
+            showErrorAlert("Error", "Error al cargar la lista de ejercicios fiscales");
         } finally {
             setLoadingEjercicios(false);
         }
     };
 
-    const handleDownload = async (reportType) => {
+    const handleDownload = (reportType) => {
         if (!selectedEjercicio) {
-            showToast('Seleccione un ejercicio contable', 'warning');
+            showErrorAlert("Faltan Datos", "Seleccione un ejercicio contable");
             return;
         }
 
-        setLoadingDownload(true);
-        try {
-            const params = new URLSearchParams({
-                ejercicio_id: selectedEjercicio,
-                fecha_desde: fechas.desde,
-                fecha_hasta: fechas.hasta
-            });
+        const params = new URLSearchParams({
+            ejercicio_id: selectedEjercicio,
+            fecha_desde: fechas.desde,
+            fecha_hasta: fechas.hasta
+        });
 
-            // Map frontend report type to backend API endpoint
-            let endpoint = '';
-            let filename = 'reporte.xlsx';
+        let endpoint = '';
+        let filename = 'reporte.xlsx';
 
-            switch (reportType) {
-                case 'diario':
-                    endpoint = '/api/contabilidad/reportes/libro-diario/';
-                    filename = 'libro_diario.xlsx';
-                    break;
-                case 'mayor':
-                    endpoint = '/api/contabilidad/reportes/mayor/exportar/'; // Verify endpoint
-                    // Actually checking urls.py: api/contabilidad/mayor/exportar/ 
-                    endpoint = '/api/contabilidad/mayor/exportar/';
-                    filename = 'libro_mayor.xlsx';
-                    break;
-                case 'balance':
-                    endpoint = '/api/contabilidad/balance/exportar/';
-                    filename = 'balance_general.xlsx';
-                    break;
-                case 'resultados':
-                    endpoint = '/api/contabilidad/reportes/estado-resultados/';
-                    filename = 'estado_resultados.xlsx';
-                    break;
-                default:
-                    return;
-            }
-
-            const url = `${endpoint}?${params.toString()}`;
-
-            // Trigger download
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', filename);
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-
-            showToast('Descarga iniciada', 'success');
-
-        } catch (error) {
-            console.error("Error downloading report:", error);
-            showToast('Error al descargar reporte', 'error');
-        } finally {
-            setLoadingDownload(false);
+        switch (reportType) {
+            case 'diario':
+                endpoint = '/api/contabilidad/reportes/libro-diario/';
+                filename = 'libro_diario.xlsx';
+                break;
+            case 'mayor':
+                endpoint = '/api/contabilidad/mayor/exportar/';
+                filename = 'libro_mayor.xlsx';
+                break;
+            case 'balance':
+                endpoint = '/api/contabilidad/balance/exportar/';
+                filename = 'balance_general.xlsx';
+                break;
+            case 'resultados':
+                endpoint = '/api/contabilidad/reportes/estado-resultados/';
+                filename = 'estado_resultados.xlsx';
+                break;
+            default:
+                return;
         }
+
+        const url = `${endpoint}?${params.toString()}`;
+        window.open(url, '_blank');
+        showSuccessAlert("¡Éxito!", "La descarga se ha iniciado correctamente.");
     };
 
     return (
-        <div className="container-fluid px-4 pt-4 pb-0 h-100 d-flex flex-column bg-light fade-in">
+        <div className="flex flex-col h-[calc(100vh-100px)] p-6 gap-6 overflow-hidden bg-neutral-50/50">
             {/* Header */}
-            <div className="d-flex justify-content-between align-items-center mb-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
                 <div>
-                    <h2 className="text-primary fw-bold mb-0" style={{ fontSize: '2rem' }}>
-                        <FileText className="me-2 inline-block" size={32} />
-                        Reportes Contables
-                    </h2>
-                    <p className="text-muted mb-0 ps-1">Generación y exportación de libros contables.</p>
+                    <h1 className="text-3xl font-black text-neutral-800 tracking-tight flex items-center gap-3">
+                        <div className="p-2 bg-indigo-600 rounded-xl text-white shadow-lg shadow-indigo-500/20">
+                            <FileText size={28} strokeWidth={2.5} />
+                        </div>
+                        Central de Reportes
+                    </h1>
+                    <p className="text-neutral-500 mt-1 font-medium flex items-center gap-2">
+                        <Layers size={14} /> Emisión de Libros Legales y Estados Contables
+                    </p>
                 </div>
             </div>
 
-            {/* Controls */}
-            <div className="card border-0 shadow-sm mb-4">
-                <div className="card-body">
-                    <div className="row g-3 align-items-end">
-                        <div className="col-md-4">
-                            <label className="form-label small fw-bold text-muted text-uppercase">Ejercicio Contable</label>
-                            {loadingEjercicios ? (
-                                <div className="spinner-border spinner-border-sm text-primary d-block" role="status"></div>
-                            ) : (
-                                <select
-                                    className="form-select bg-light border-0 fw-bold"
-                                    value={selectedEjercicio}
-                                    onChange={(e) => setSelectedEjercicio(e.target.value)}
-                                >
-                                    {ejercicios.map(ej => (
-                                        <option key={ej.id} value={ej.id}>
-                                            {ej.descripcion} ({new Date(ej.fecha_inicio).toLocaleDateString()} - {new Date(ej.fecha_fin).toLocaleDateString()}) - {ej.estado}
-                                        </option>
-                                    ))}
-                                </select>
-                            )}
-                        </div>
-                        <div className="col-md-3">
-                            <label className="form-label small fw-bold text-muted text-uppercase">Fecha Desde (Opcional)</label>
-                            <input
-                                type="date"
-                                className="form-control bg-light border-0"
-                                value={fechas.desde}
-                                onChange={(e) => setFechas({ ...fechas, desde: e.target.value })}
-                            />
-                        </div>
-                        <div className="col-md-3">
-                            <label className="form-label small fw-bold text-muted text-uppercase">Fecha Hasta (Opcional)</label>
-                            <input
-                                type="date"
-                                className="form-control bg-light border-0"
-                                value={fechas.hasta}
-                                onChange={(e) => setFechas({ ...fechas, hasta: e.target.value })}
-                            />
-                        </div>
+            {/* Filtros Globales */}
+            <BentoCard className="p-4 shrink-0 overflow-visible">
+                <div className="flex flex-wrap items-end gap-4">
+                    <div className="flex-1 min-w-[300px]">
+                        <PremiumSelect
+                            label="Ejercicio Fiscal"
+                            icon={<Calendar size={18} />}
+                            value={selectedEjercicio}
+                            onChange={(e) => setSelectedEjercicio(e.target.value)}
+                            options={ejercicios.map(ej => ({
+                                value: ej.id,
+                                label: `${ej.descripcion} (${new Date(ej.fecha_inicio).toLocaleDateString()} - ${new Date(ej.fecha_fin).toLocaleDateString()})`
+                            }))}
+                        />
+                    </div>
+                    <div className="w-48">
+                        <PremiumInput
+                            label="Desde (Opcional)"
+                            type="date"
+                            value={fechas.desde}
+                            onChange={(e) => setFechas({ ...fechas, desde: e.target.value })}
+                        />
+                    </div>
+                    <div className="w-48">
+                        <PremiumInput
+                            label="Hasta (Opcional)"
+                            type="date"
+                            value={fechas.hasta}
+                            onChange={(e) => setFechas({ ...fechas, hasta: e.target.value })}
+                        />
                     </div>
                 </div>
-            </div>
+            </BentoCard>
 
-            {/* Reports Grid */}
-            <div className="row g-4">
-                {/* Libro Diario */}
-                <div className="col-md-6 col-lg-3">
-                    <div className="card h-100 border-0 shadow-sm hover-shadow transition-all">
-                        <div className="card-body text-center p-4">
-                            <div className="bg-blue-50 text-blue-600 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style={{ width: 64, height: 64 }}>
-                                <FileText size={32} />
-                            </div>
-                            <h5 className="fw-bold text-dark mb-2">Libro Diario</h5>
-                            <p className="text-muted small mb-4">Detalle cronológico de todos los asientos contables registrados.</p>
-                            <button
-                                className="btn btn-primary w-100 fw-bold"
-                                onClick={() => handleDownload('diario')}
-                                disabled={loadingDownload}
-                            >
-                                <Download size={18} className="me-2" />
-                                Descargar Excel
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Libro Mayor */}
-                <div className="col-md-6 col-lg-3">
-                    <div className="card h-100 border-0 shadow-sm hover-shadow transition-all">
-                        <div className="card-body text-center p-4">
-                            <div className="bg-indigo-50 text-indigo-600 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style={{ width: 64, height: 64 }}>
-                                <Calendar size={32} />
-                            </div>
-                            <h5 className="fw-bold text-dark mb-2">Libro Mayor</h5>
-                            <p className="text-muted small mb-4">Saldos y movimientos acumulados por cada cuenta contable.</p>
-                            <button
-                                className="btn btn-primary w-100 fw-bold"
-                                onClick={() => handleDownload('mayor')}
-                                disabled={loadingDownload}
-                            >
-                                <Download size={18} className="me-2" />
-                                Descargar Excel
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Balance General */}
-                <div className="col-md-6 col-lg-3">
-                    <div className="card h-100 border-0 shadow-sm hover-shadow transition-all">
-                        <div className="card-body text-center p-4">
-                            <div className="bg-green-50 text-green-600 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style={{ width: 64, height: 64 }}>
-                                <Activity size={32} />
-                            </div>
-                            <h5 className="fw-bold text-dark mb-2">Balance General</h5>
-                            <p className="text-muted small mb-4">Situación patrimonial de la empresa (Activo, Pasivo y Patrimonio).</p>
-                            <button
-                                className="btn btn-primary w-100 fw-bold"
-                                onClick={() => handleDownload('balance')}
-                                disabled={loadingDownload}
-                            >
-                                <Download size={18} className="me-2" />
-                                Descargar Excel
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Estado de Resultados */}
-                <div className="col-md-6 col-lg-3">
-                    <div className="card h-100 border-0 shadow-sm hover-shadow transition-all">
-                        <div className="card-body text-center p-4">
-                            <div className="bg-purple-50 text-purple-600 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style={{ width: 64, height: 64 }}>
-                                <Activity size={32} />
-                            </div>
-                            <h5 className="fw-bold text-dark mb-2">Estado de Resultados</h5>
-                            <p className="text-muted small mb-4">Informe de pérdidas y ganancias del ejercicio seleccionado.</p>
-                            <button
-                                className="btn btn-primary w-100 fw-bold"
-                                onClick={() => handleDownload('resultados')}
-                                disabled={loadingDownload}
-                            >
-                                <Download size={18} className="me-2" />
-                                Descargar Excel
-                            </button>
-                        </div>
-                    </div>
+            {/* Grid de Reportes */}
+            <div className="flex-1 overflow-y-auto no-scrollbar">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 pb-6">
+                    <ReportCard
+                        title="Libro Diario"
+                        description="Listado cronológico de todos los asientos y movimientos comerciales."
+                        icon={<BookOpen className="text-blue-600" />}
+                        onDownload={() => handleDownload('diario')}
+                        color="blue"
+                    />
+                    <ReportCard
+                        title="Libro Mayor"
+                        description="Detalle acumulado de débitos, créditos y saldos por cada cuenta."
+                        icon={<Activity className="text-indigo-600" />}
+                        onDownload={() => handleDownload('mayor')}
+                        color="indigo"
+                    />
+                    <ReportCard
+                        title="Sumas y Saldos"
+                        description="Balance de comprobación para verificar la igualdad patrimonial."
+                        icon={<PieChart className="text-emerald-600" />}
+                        onDownload={() => handleDownload('balance')}
+                        color="emerald"
+                    />
+                    <ReportCard
+                        title="Resultados"
+                        description="Estado de pérdidas y ganancias devengadas en el período seleccionado."
+                        icon={<TrendingUp className="text-purple-600" />}
+                        onDownload={() => handleDownload('resultados')}
+                        color="purple"
+                    />
                 </div>
             </div>
         </div>
+    );
+};
+
+const ReportCard = ({ title, description, icon, onDownload, color }) => {
+    const colorClasses = {
+        blue: "bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white",
+        indigo: "bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white",
+        emerald: "bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white",
+        purple: "bg-purple-50 text-purple-600 group-hover:bg-purple-600 group-hover:text-white",
+    };
+
+    return (
+        <BentoCard className="flex flex-col p-8 group hover:shadow-2xl hover:shadow-neutral-200/50 transition-all duration-300 border border-neutral-100 hover:border-primary-200">
+            <div className={cn(
+                "w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-500 mb-6 shadow-sm",
+                colorClasses[color]
+            )}>
+                {React.cloneElement(icon, { size: 32, strokeWidth: 2.5 })}
+            </div>
+
+            <h3 className="text-xl font-black text-neutral-800 mb-3 group-hover:text-primary-600 transition-colors">{title}</h3>
+            <p className="text-sm font-medium text-neutral-500 mb-8 leading-relaxed">
+                {description}
+            </p>
+
+            <button
+                onClick={onDownload}
+                className="mt-auto flex items-center justify-center gap-3 py-4 rounded-xl bg-neutral-900 text-white font-black text-xs uppercase tracking-widest hover:bg-primary-600 shadow-lg transition-all active:scale-95"
+            >
+                <Download size={18} />
+                Descargar Excel
+            </button>
+        </BentoCard>
     );
 };
 

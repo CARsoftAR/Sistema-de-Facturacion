@@ -1,11 +1,19 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
-    FileText, Plus, Search, Trash2, Save, X, Calendar, DollarSign, Filter, RefreshCw
+    FileText, Plus, Trash2, Save, X, Calendar, DollarSign, Filter, RefreshCw,
+    BookOpen, Layers, CheckCircle2, AlertCircle, Search, Clock, Hash, TrendingUp, TrendingDown
 } from 'lucide-react';
-import { showDeleteAlert } from '../utils/alerts';
-import { BtnAdd } from '../components/CommonButtons';
+import axios from 'axios';
+import { showDeleteAlert, showSuccessAlert, showErrorAlert } from '../utils/alerts';
+import { BtnAdd, BtnSave, BtnCancel } from '../components/CommonButtons';
 import { formatNumber } from '../utils/formats';
+import { PremiumFilterBar, BentoCard, StatCard, PremiumTable, TableCell } from '../components/premium';
+import { BentoGrid } from '../components/premium/BentoCard';
+import { SearchableSelect } from '../components/premium/SearchableSelect';
+import TablePagination from '../components/common/TablePagination';
+import EmptyState from '../components/EmptyState';
+import { cn } from '../utils/cn';
 
 // Helper recursivo para aplanar el plan de cuentas
 const flattenCuentas = (nodes, result = []) => {
@@ -24,10 +32,18 @@ const Asientos = () => {
     // --- Estado Principal ---
     const [asientos, setAsientos] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [filtros, setFiltros] = useState({ fechaInicio: '', fechaFin: '', ejercicio: '' });
+    const [busqueda, setBusqueda] = useState('');
+    const [dateRange, setDateRange] = useState({ start: '', end: '' });
+
+    // --- Paginación ---
+    const [page, setPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [totalItems, setTotalItems] = useState(0);
+    const [totalPages, setTotalPages] = useState(1);
 
     // --- Estado Modal / Editor ---
     const [modalOpen, setModalOpen] = useState(false);
+    const [saving, setSaving] = useState(false);
     const [formData, setFormData] = useState({
         id: null,
         ejercicio_id: '',
@@ -48,12 +64,12 @@ const Asientos = () => {
     const fetchMaestros = async () => {
         try {
             const [resEj, resCuentas] = await Promise.all([
-                fetch('/api/contabilidad/ejercicios/').then(r => r.json()),
-                fetch('/api/contabilidad/plan-cuentas/').then(r => r.json())
+                axios.get('/api/contabilidad/ejercicios/'),
+                axios.get('/api/contabilidad/plan-cuentas/')
             ]);
 
-            if (resEj.success) setEjercicios(resEj.ejercicios);
-            if (resCuentas.success) setCuentasPlanas(flattenCuentas(resCuentas.cuentas));
+            if (resEj.data.success) setEjercicios(resEj.data.ejercicios);
+            if (resCuentas.data.success) setCuentasPlanas(flattenCuentas(resCuentas.data.cuentas));
         } catch (error) {
             console.error("Error cargando maestros:", error);
         }
@@ -62,15 +78,9 @@ const Asientos = () => {
     const fetchAsientos = async () => {
         setLoading(true);
         try {
-            const res = await fetch('/api/contabilidad/asientos/');
-            const data = await res.json();
-            if (data.success) {
-                setAsientos(data.asientos);
-                // Sugerir próximo número (simple logic)
-                const maxNum = data.asientos.length > 0
-                    ? Math.max(...data.asientos.map(a => parseInt(a.numero) || 0))
-                    : 0;
-                // No actualizamos formData aquí para no pisar ediciones, solo referencia
+            const res = await axios.get('/api/contabilidad/asientos/');
+            if (res.data.success) {
+                setAsientos(res.data.asientos);
             }
         } catch (error) {
             console.error("Error fetching asientos:", error);
@@ -83,6 +93,48 @@ const Asientos = () => {
         fetchMaestros();
         fetchAsientos();
     }, []);
+
+
+    // --- Filtrado ---
+    const filteredAsientos = useMemo(() => {
+        // ... (existing logic remains)
+        return asientos.filter(as => {
+            const matchesSearch = busqueda === '' ||
+                as.descripcion.toLowerCase().includes(busqueda.toLowerCase()) ||
+                as.numero.toString().includes(busqueda);
+
+            const asDate = as.fecha ? as.fecha.split(' ')[0] : '';
+            const matchesStart = !dateRange.start || asDate >= dateRange.start;
+            const matchesEnd = !dateRange.end || asDate <= dateRange.end;
+
+            return matchesSearch && matchesStart && matchesEnd;
+        });
+    }, [asientos, busqueda, dateRange]);
+
+    // Calcular datos paginados
+    const paginatedAsientos = useMemo(() => {
+        const start = (page - 1) * itemsPerPage;
+        const end = start + itemsPerPage;
+        return filteredAsientos.slice(start, end);
+    }, [filteredAsientos, page, itemsPerPage]);
+
+    useEffect(() => {
+        setTotalItems(filteredAsientos.length);
+        setTotalPages(Math.ceil(filteredAsientos.length / itemsPerPage));
+    }, [filteredAsientos, itemsPerPage]);
+
+    const stats = useMemo(() => {
+        const totalDebe = filteredAsientos.reduce((acc, as) => acc + (parseFloat(as.total_debe) || 0), 0);
+        const totalHaber = filteredAsientos.reduce((acc, as) => acc + (parseFloat(as.total_haber) || 0), 0);
+        const ultimo = filteredAsientos.length > 0 ? filteredAsientos[0].fecha?.split(' ')[0] : '-';
+
+        return {
+            totalDebe,
+            totalHaber,
+            count: filteredAsientos.length,
+            ultimo
+        };
+    }, [filteredAsientos]);
 
     // --- Lógica del Formulario ---
     const handleMoveChange = (idx, field, val) => {
@@ -115,62 +167,41 @@ const Asientos = () => {
     const balanceado = Math.abs(diferencia) < 0.01;
 
     const handleSave = async (e) => {
-        e.preventDefault();
+        if (e) e.preventDefault();
         if (!balanceado) {
-            alert(`El asiento está descuadrado por ${diferencia.toFixed(2)}`);
+            showErrorAlert("Asiento Descuadrado", `El asiento tiene una diferencia de $ ${diferencia.toFixed(2)}`);
             return;
         }
         if (!formData.ejercicio_id) {
-            alert("Seleccione un ejercicio fiscal");
+            showErrorAlert("Faltan Datos", "Debe seleccionar un ejercicio fiscal");
             return;
         }
 
-        const url = `/api/contabilidad/asientos/crear/`; // Solo crear por ahora, editar es complejo
-
+        setSaving(true);
         try {
-            const getCookie = (name) => {
-                let cookieValue = null;
-                if (document.cookie && document.cookie !== '') {
-                    const cookies = document.cookie.split(';');
-                    for (let i = 0; i < cookies.length; i++) {
-                        const cookie = cookies[i].trim();
-                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                            break;
-                        }
-                    }
-                }
-                return cookieValue;
-            };
-
-            const res = await fetch(url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken')
-                },
-                body: JSON.stringify(formData)
+            const res = await axios.post(`/api/contabilidad/asientos/crear/`, formData, {
+                headers: { 'X-CSRFToken': document.cookie.split('csrftoken=')[1]?.split(';')[0] }
             });
-
-            const data = await res.json();
-            if (data.ok || data.success) {
+            if (res.data.ok || res.data.success) {
+                showSuccessAlert("¡Éxito!", "El asiento ha sido registrado correctamente.");
                 setModalOpen(false);
                 fetchAsientos();
             } else {
-                alert(data.error || "Error al guardar");
+                showErrorAlert("Error", res.data.error || "No se pudo registrar el asiento.");
             }
         } catch (error) {
-            alert("Error de conexión");
+            showErrorAlert("Error", error.response?.data?.error || "Error de conexión con el servidor.");
+        } finally {
+            setSaving(false);
         }
     };
 
     const openNew = () => {
-        // Encontrar ejercicio activo (no cerrado) por defecto
         const defaultEj = ejercicios.find(e => !e.cerrado);
         setFormData({
             id: null,
             ejercicio_id: defaultEj ? defaultEj.id : '',
-            numero: (asientos.length + 1).toString(), // Sugerencia
+            numero: '',
             fecha: new Date().toISOString().split('T')[0],
             descripcion: '',
             movimientos: [
@@ -182,317 +213,426 @@ const Asientos = () => {
     };
 
     const loadDetalle = async (id) => {
-        // Cargar detalle para ver/editar (solo ver por ahora si no implementamos API editar completa)
         try {
-            const res = await fetch(`/api/contabilidad/asientos/${id}/`);
-            const data = await res.json();
-            if (data.ok) {
-                const as = data.asiento;
+            const res = await axios.get(`/api/contabilidad/asientos/${id}/`);
+            if (res.data.ok) {
+                const as = res.data.asiento;
                 setFormData({
                     id: as.id,
                     ejercicio_id: as.ejercicio_id,
                     numero: as.numero,
-                    fecha: as.fecha,
+                    fecha: as.fecha.split(' ')[0],
                     descripcion: as.descripcion,
                     movimientos: as.movimientos.map(m => ({
-                        ...m,
-                        // flatten key names if needed, backend uses similar
+                        id: m.id,
+                        cuenta_id: m.cuenta_id,
+                        debe: parseFloat(m.debe),
+                        haber: parseFloat(m.haber)
                     }))
                 });
                 setModalOpen(true);
             }
-        } catch (err) { console.error(err); }
+        } catch (err) {
+            showErrorAlert("Error", "No se pudo cargar el detalle del asiento");
+        }
     };
 
     const handleDelete = async (id) => {
         const result = await showDeleteAlert(
             "¿Eliminar asiento?",
             "Esta acción eliminará el asiento contable de forma permanente. Los saldos de las cuentas se recalcularán.",
-            'Eliminar',
-            {
-                iconComponent: (
-                    <div className="rounded-circle d-flex align-items-center justify-content-center bg-danger-subtle text-danger mx-auto" style={{ width: '80px', height: '80px' }}>
-                        <FileText size={40} strokeWidth={1.5} />
-                    </div>
-                )
-            }
+            'Eliminar'
         );
         if (!result.isConfirmed) return;
-        // API call...
-        try {
-            const getCookie = (name) => {
-                let cookieValue = null;
-                if (document.cookie && document.cookie !== '') {
-                    const cookies = document.cookie.split(';');
-                    for (let i = 0; i < cookies.length; i++) {
-                        const cookie = cookies[i].trim();
-                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                            break;
-                        }
-                    }
-                }
-                return cookieValue;
-            };
 
-            const res = await fetch(`/api/contabilidad/asientos/${id}/eliminar/`, {
-                method: 'POST',
-                headers: { 'X-CSRFToken': getCookie('csrftoken') }
+        try {
+            const res = await axios.post(`/api/contabilidad/asientos/${id}/eliminar/`, {}, {
+                headers: { 'X-CSRFToken': document.cookie.split('csrftoken=')[1]?.split(';')[0] }
             });
-            const data = await res.json();
-            if (data.ok) {
+            if (res.data.ok) {
+                showSuccessAlert("Eliminado", "Asiento eliminado correctamente");
                 fetchAsientos();
             } else {
-                alert(data.error);
+                showErrorAlert("Error", res.data.error);
             }
-        } catch (err) { alert("Error al eliminar"); }
+        } catch (err) {
+            showErrorAlert("Error", "Error al intentar eliminar el asiento");
+        }
     };
 
+    // --- Configuración de Columnas de la Tabla ---
+    const columns = [
+        {
+            key: 'numero',
+            label: 'NÚMERO',
+            width: '120px',
+            render: (val) => (
+                <span className="font-bold text-primary-600 hover:underline cursor-pointer">
+                    #{val}
+                </span>
+            )
+        },
+        {
+            key: 'fecha',
+            label: 'FECHA',
+            width: '150px',
+            render: (val) => <TableCell.Date value={val ? val.split(' ')[0] : '-'} />
+        },
+        {
+            key: 'descripcion',
+            label: 'DESCRIPCIÓN',
+            render: (val) => <TableCell.Primary value={val} />
+        },
+        {
+            key: 'total_debe',
+            label: 'DEBE',
+            width: '150px',
+            align: 'right',
+            render: (val) => <span className="text-emerald-600 font-black tabular-nums">$ {formatNumber(val)}</span>
+        },
+        {
+            key: 'total_haber',
+            label: 'HABER',
+            width: '150px',
+            align: 'right',
+            render: (val) => <span className="text-primary-600 font-black tabular-nums">$ {formatNumber(val)}</span>
+        },
+        {
+            key: 'acciones',
+            label: 'ACCIONES',
+            width: '100px',
+            align: 'right',
+            sortable: false,
+            render: (_, row) => (
+                <div className="flex justify-end gap-2">
+                    <button
+                        onClick={(e) => { e.stopPropagation(); handleDelete(row.id) }}
+                        className="p-2 text-neutral-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
+                        title="Eliminar"
+                    >
+                        <Trash2 size={18} />
+                    </button>
+                </div>
+            )
+        }
+    ];
+
     return (
-        <div className="p-6 max-w-7xl mx-auto">
-            <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-                <div>
-                    <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight flex items-center gap-3">
-                        <FileText className="text-blue-600" size={32} />
+        <div className="p-6 w-full max-w-[1920px] mx-auto h-[calc(100vh-100px)] overflow-hidden flex flex-col gap-6 animate-in fade-in duration-500 bg-slate-50/50">
+            {/* Header Section */}
+            <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0">
+                <div className="space-y-1">
+                    <h1 className="text-3xl font-black text-neutral-900 tracking-tight flex items-center gap-3">
+                        <div className="p-2 bg-primary-600 rounded-2xl text-white shadow-xl shadow-primary-500/30">
+                            <BookOpen size={30} strokeWidth={2.5} />
+                        </div>
                         Asientos Contables
                     </h1>
-                    <p className="text-slate-500 mt-1 font-medium">Registro manual de operaciones y ajustes.</p>
+                    <p className="text-neutral-500 font-medium text-sm ml-1 flex items-center gap-2">
+                        <Clock size={14} className="text-primary-500" /> Registro manual de operaciones y centralizaciones automáticas.
+                    </p>
                 </div>
-                <BtnAdd
-                    label="Nuevo Asiento"
-                    icon={FileText}
-                    onClick={openNew}
-                    className="btn-lg shadow-sm text-white border-0"
-                    style={{ background: '#2563eb' }}
-                />
-            </div>
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => fetchAsientos()}
+                        className="flex items-center gap-2 px-6 py-3 bg-white border border-neutral-200 text-neutral-700 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-neutral-50 transition-all shadow-sm"
+                    >
+                        <RefreshCw size={18} className={loading ? "animate-spin" : ""} /> Sincronizar
+                    </button>
+                    <BtnAdd
+                        label="NUEVO ASIENTO"
+                        onClick={openNew}
+                        className="!bg-primary-600 !hover:bg-primary-700 !rounded-xl !px-8 !py-4 !font-black !tracking-widest !text-xs !shadow-xl !shadow-primary-600/20"
+                    />
+                </div>
+            </header>
 
-            {/* List - ESTÁNDAR */}
-            <div className="card border-0 shadow mb-4 flex-grow-1 overflow-hidden d-flex flex-column">
-                <div className="card-body p-0 d-flex flex-column overflow-hidden">
-                    {loading ? (
-                        <div className="p-12 text-center text-slate-400">
-                            <div className="spinner-border text-primary" role="status"></div>
-                            <p className="mt-2">Cargando asientos...</p>
-                        </div>
-                    ) : (
-                        <div className="table-responsive flex-grow-1 overflow-auto">
-                            <table className="table align-middle mb-0">
-                                <thead className="bg-white border-bottom">
-                                    <tr>
-                                        <th className="ps-4 py-3 text-dark fw-bold">Número</th>
-                                        <th className="py-3 text-dark fw-bold">Fecha</th>
-                                        <th className="py-3 text-dark fw-bold">Descripción</th>
-                                        <th className="py-3 text-dark fw-bold">Total Debe</th>
-                                        <th className="py-3 text-dark fw-bold">Total Haber</th>
-                                        <th className="text-end pe-4 py-3 text-dark fw-bold">Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {asientos.map(as => (
-                                        <tr key={as.id} className="cursor-pointer border-bottom-0" onClick={() => loadDetalle(as.id)}>
-                                            <td className="ps-4 fw-bold text-primary py-3">#{as.numero}</td>
-                                            <td className="text-dark py-3">{as.fecha}</td>
-                                            <td className="font-medium text-secondary py-3">{as.descripcion}</td>
-                                            <td className="text-success fw-bold py-3">$ {formatNumber(as.total_debe)}</td>
-                                            <td className="text-primary fw-bold py-3">$ {formatNumber(as.total_haber)}</td>
-                                            <td className="text-end pe-4 py-3">
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); handleDelete(as.id) }}
-                                                    className="btn btn-danger btn-sm d-inline-flex align-items-center justify-content-center px-2 shadow-sm"
-                                                    title="Eliminar"
-                                                    style={{ width: '34px' }}
-                                                >
-                                                    <Trash2 size={16} />
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
+            {/* KPI Section */}
+            <BentoGrid cols={4} className="shrink-0">
+                <StatCard
+                    label="Débitos Totales"
+                    value={`$${formatNumber(stats.totalDebe)}`}
+                    icon={TrendingUp}
+                    color="success"
+                    description="Suma total del Debe"
+                />
+                <StatCard
+                    label="Créditos Totales"
+                    value={`$${formatNumber(stats.totalHaber)}`}
+                    icon={TrendingDown}
+                    color="primary"
+                    description="Suma total del Haber"
+                />
+                <StatCard
+                    label="Registros"
+                    value={stats.count}
+                    icon={Hash}
+                    color="warning"
+                    description="Cantidad de asientos"
+                />
+                <StatCard
+                    label="Último Registro"
+                    value={stats.ultimo}
+                    icon={Calendar}
+                    color="neutral"
+                    description="Fecha de actividad"
+                />
+            </BentoGrid>
+
+            {/* Content Area: Filter + Table */}
+            <div className="flex flex-col flex-1 min-h-0 gap-4">
+                <PremiumFilterBar
+                    busqueda={busqueda}
+                    setBusqueda={setBusqueda}
+                    dateRange={dateRange}
+                    setDateRange={setDateRange}
+                    onClear={() => { setBusqueda(''); setDateRange({ start: '', end: '' }); setPage(1); }}
+                    placeholder="Buscar por descripción o número de asiento..."
+                    className="!px-0"
+                />
+
+                <div className="flex flex-col flex-1 min-h-0">
+                    <PremiumTable
+                        columns={columns}
+                        data={paginatedAsientos}
+                        loading={loading}
+                        onRowClick={(row) => loadDetalle(row.id)}
+                        className="flex-1 shadow-lg border border-neutral-200/60 !bg-white rounded-t-[2rem]"
+                        emptyState={
+                            <EmptyState
+                                title="No se encontraron asientos"
+                                description="Ajusta los filtros o crea un nuevo asiento manual para comenzar."
+                            />
+                        }
+                    />
+
+                    {/* Pagination Bar */}
+                    <div className="bg-white border-x border-b border-neutral-200 rounded-b-[2rem] px-8 py-2 shadow-premium shrink-0">
+                        <TablePagination
+                            currentPage={page}
+                            totalPages={totalPages}
+                            totalItems={totalItems}
+                            itemsPerPage={itemsPerPage}
+                            onPageChange={setPage}
+                            onItemsPerPageChange={(val) => { setItemsPerPage(val); setPage(1); }}
+                        />
+                    </div>
                 </div>
             </div>
 
             {/* Modal */}
             {modalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
-                        {/* Header Fixed */}
-                        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 shrink-0">
-                            <h3 className="font-bold text-lg text-slate-800">
-                                {formData.id ? `Ver Asiento #${formData.numero}` : 'Nuevo Asiento'}
-                            </h3>
-                            <button onClick={() => setModalOpen(false)} className="text-slate-400 hover:text-slate-600">
-                                <X size={24} />
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-neutral-950/60 backdrop-blur-xl animate-in fade-in duration-500">
+                    <div className="bg-white rounded-[3rem] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.3)] w-full max-w-5xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[90vh] border-0">
+                        {/* Modal Header */}
+                        <div className="px-8 py-6 border-b border-neutral-100 flex justify-between items-center bg-neutral-50/50 shrink-0">
+                            <div className="flex items-center gap-5">
+                                <div className={cn(
+                                    "p-4 rounded-[1.5rem] shadow-lg",
+                                    formData.id ? "bg-primary-600 text-white shadow-primary-500/30" : "bg-emerald-600 text-white shadow-emerald-500/30"
+                                )}>
+                                    <FileText size={28} strokeWidth={2.5} />
+                                </div>
+                                <div>
+                                    <h3 className="font-black text-2xl text-neutral-900 leading-tight">
+                                        {formData.id ? `Asiento Contable #${formData.numero}` : 'Nuevo Registro Diario'}
+                                    </h3>
+                                    <p className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.2em] mt-1">
+                                        {formData.id ? 'Vista de consulta operativa' : 'Carga manual de movimientos de partida doble'}
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setModalOpen(false)}
+                                className="p-3 hover:bg-white hover:shadow-md rounded-2xl transition-all text-neutral-400 hover:text-rose-500"
+                            >
+                                <X size={24} strokeWidth={2.5} />
                             </button>
                         </div>
 
-                        <div className="p-6 overflow-y-auto grow">
+                        {/* Modal Body */}
+                        <div className="p-8 overflow-y-auto grow space-y-8 no-scrollbar">
                             {/* Master Fields */}
-                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Ejercicio</label>
-                                    <select
-                                        className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg"
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+                                <div className="md:col-span-1">
+                                    <PremiumSelect
+                                        label="Ejercicio Fiscal"
                                         value={formData.ejercicio_id}
                                         onChange={e => setFormData({ ...formData, ejercicio_id: e.target.value })}
                                         disabled={formData.id}
-                                    >
-                                        <option value="">Seleccionar...</option>
-                                        {ejercicios.map(e => <option key={e.id} value={e.id}>{e.descripcion}</option>)}
-                                    </select>
+                                        options={ejercicios.map(e => ({ value: e.id, label: e.descripcion }))}
+                                    />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Número</label>
-                                    <input
+                                    <PremiumInput
+                                        label="Identificador / N°"
                                         type="number"
-                                        className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg"
                                         value={formData.numero}
                                         onChange={e => setFormData({ ...formData, numero: e.target.value })}
                                         disabled={formData.id}
+                                        className="!text-lg font-black text-primary-700"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Fecha</label>
-                                    <input
+                                    <PremiumInput
+                                        label="Fecha de Registro"
                                         type="date"
-                                        className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg"
                                         value={formData.fecha}
                                         onChange={e => setFormData({ ...formData, fecha: e.target.value })}
                                         disabled={formData.id}
+                                        icon={Calendar}
                                     />
                                 </div>
                                 <div className="md:col-span-1">
-                                    {/* Spacer or Status */}
+                                    <div className={cn(
+                                        "h-full flex items-center justify-center p-6 rounded-[2rem] border-2 border-dashed transition-all",
+                                        balanceado ? "border-emerald-200 bg-emerald-50/30 text-emerald-600" : "border-rose-200 bg-rose-50/30 text-rose-600"
+                                    )}>
+                                        <div className="text-center">
+                                            <p className="text-[10px] font-black uppercase tracking-widest mb-1">Estado de Partida</p>
+                                            <div className="flex items-center gap-2 font-black uppercase text-xs">
+                                                {balanceado ? <CheckCircle2 size={18} strokeWidth={3} /> : <AlertCircle size={18} strokeWidth={3} />}
+                                                {balanceado ? 'Balanceado' : 'Descuadrado'}
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div className="md:col-span-4">
-                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Descripción</label>
-                                    <input
+                                    <PremiumInput
+                                        label="Descripción / Glosa del Asiento"
                                         type="text"
-                                        className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg font-medium"
                                         value={formData.descripcion}
                                         onChange={e => setFormData({ ...formData, descripcion: e.target.value })}
                                         disabled={formData.id}
-                                        placeholder="Ej: Ajuste de caja por diferencia de cambio"
+                                        placeholder="Ej: Pago de sueldos administración..."
+                                        icon={Search}
                                     />
                                 </div>
                             </div>
 
-                            {/* Lines Header */}
-                            <div className="flex bg-slate-100 p-2 rounded-t-lg font-bold text-xs uppercase text-slate-500">
-                                <div className="flex-1 px-2">Cuenta</div>
-                                <div className="w-40 px-2 text-right">Debe</div>
-                                <div className="w-40 px-2 text-right">Haber</div>
-                                {!formData.id && <div className="w-10"></div>}
-                            </div>
+                            {/* Detalle de Movimientos */}
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <h4 className="font-black text-neutral-900 flex items-center gap-3">
+                                        <div className="w-2 h-8 bg-primary-600 rounded-full shadow-lg shadow-primary-500/20"></div>
+                                        MOVIMIENTOS DE LAS CUENTAS
+                                    </h4>
+                                    {!formData.id && (
+                                        <button
+                                            onClick={addRow}
+                                            className="px-6 py-2.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2 shadow-sm border border-neutral-200/50"
+                                        >
+                                            <Plus size={16} strokeWidth={3} /> Agregar Fila
+                                        </button>
+                                    )}
+                                </div>
 
-                            {/* Dynamic Rows */}
-                            <div className="space-y-2 mt-2">
-                                {formData.movimientos.map((mov, idx) => (
-                                    <div key={mov.id || idx} className="flex gap-2 items-center">
-                                        <div className="flex-1">
-                                            <select
-                                                className="w-full p-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500"
-                                                value={mov.cuenta_id}
-                                                onChange={e => handleMoveChange(idx, 'cuenta_id', e.target.value)}
-                                                disabled={formData.id}
-                                            >
-                                                <option value="">Seleccionar cuenta...</option>
-                                                {cuentasPlanas.map(c => (
-                                                    <option key={c.id} value={c.id}>{c.codigo} - {c.nombre}</option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        <div className="w-40">
-                                            <input
-                                                type="number"
-                                                step="0.01"
-                                                className="w-full p-2 border border-slate-200 rounded-lg text-right font-mono text-sm focus:ring-2 focus:ring-green-500"
-                                                value={mov.debe}
-                                                onChange={e => handleMoveChange(idx, 'debe', e.target.value)}
-                                                disabled={formData.id}
-                                                placeholder="0.00"
-                                            />
-                                        </div>
-                                        <div className="w-40">
-                                            <input
-                                                type="number"
-                                                step="0.01"
-                                                className="w-full p-2 border border-slate-200 rounded-lg text-right font-mono text-sm focus:ring-2 focus:ring-indigo-500"
-                                                value={mov.haber}
-                                                onChange={e => handleMoveChange(idx, 'haber', e.target.value)}
-                                                disabled={formData.id}
-                                                placeholder="0.00"
-                                            />
-                                        </div>
-                                        {!formData.id && (
-                                            <div className="w-10 flex justify-center">
-                                                <button
-                                                    onClick={() => removeRow(idx)}
-                                                    className="text-slate-300 hover:text-red-500 transition-colors"
-                                                >
-                                                    <Trash2 size={18} />
-                                                </button>
-                                            </div>
-                                        )}
+                                <div className="rounded-[2rem] border border-neutral-100 overflow-hidden shadow-xl bg-white">
+                                    <div className="grid grid-cols-[1fr_180px_180px_60px] bg-neutral-900 px-8 py-4 font-black text-[10px] text-neutral-400 uppercase tracking-[0.2em]">
+                                        <div>Cuenta Contable / Imputación</div>
+                                        <div className="text-right">DEBE (+)</div>
+                                        <div className="text-right">HABER (-)</div>
+                                        <div></div>
                                     </div>
-                                ))}
-                            </div>
 
-                            {!formData.id && (
-                                <button
-                                    onClick={addRow}
-                                    className="mt-4 text-blue-600 font-bold text-sm flex items-center gap-1 hover:underline"
-                                >
-                                    <Plus size={16} /> Agregar Línea
-                                </button>
-                            )}
+                                    <div className="divide-y divide-neutral-50 max-h-[400px] overflow-y-auto no-scrollbar">
+                                        {formData.movimientos.map((mov, idx) => (
+                                            <div key={mov.id || idx} className="grid grid-cols-[1fr_180px_180px_60px] gap-4 items-center px-6 py-4 hover:bg-neutral-50 transition-colors">
+                                                <div className="relative overflow-visible">
+                                                    <SearchableSelect
+                                                        value={mov.cuenta_id}
+                                                        onChange={e => handleMoveChange(idx, 'cuenta_id', e.target.value)}
+                                                        disabled={formData.id}
+                                                        options={cuentasPlanas.map(c => ({ value: c.id, label: `${c.codigo} - ${c.nombre}` }))}
+                                                        placeholder="Vincular cuenta..."
+                                                        className="!border-0 !bg-neutral-100 !rounded-xl !h-12"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <input
+                                                        type="number"
+                                                        step="0.01"
+                                                        className="w-full h-12 px-4 bg-emerald-50/50 border border-emerald-100 rounded-xl text-right font-black text-lg text-emerald-700 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all placeholder:text-emerald-300"
+                                                        value={mov.debe}
+                                                        onChange={e => handleMoveChange(idx, 'debe', e.target.value)}
+                                                        disabled={formData.id}
+                                                        placeholder="0.00"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <input
+                                                        type="number"
+                                                        step="0.01"
+                                                        className="w-full h-12 px-4 bg-primary-50/50 border border-primary-100 rounded-xl text-right font-black text-lg text-primary-700 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition-all placeholder:text-primary-300"
+                                                        value={mov.haber}
+                                                        onChange={e => handleMoveChange(idx, 'haber', e.target.value)}
+                                                        disabled={formData.id}
+                                                        placeholder="0.00"
+                                                    />
+                                                </div>
+                                                <div className="flex justify-center">
+                                                    {!formData.id && (
+                                                        <button
+                                                            onClick={() => removeRow(idx)}
+                                                            className="p-3 text-neutral-300 hover:text-rose-500 hover:bg-rose-50 rounded-2xl transition-all"
+                                                        >
+                                                            <Trash2 size={20} strokeWidth={2} />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
-                        {/* Footer & Totals */}
-                        <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 shrink-0">
-                            <div className="flex justify-between items-center mb-4 text-sm">
-                                <div className="font-bold text-slate-500">Totales</div>
-                                <div className="flex gap-8">
-                                    <div className="flex flex-col items-end">
-                                        <span className="text-xs uppercase text-slate-400 font-bold">Total Debe</span>
-                                        <span className="font-mono text-lg font-bold text-green-600">$ {formatNumber(totalDebe)}</span>
+                        {/* Modal Footer / Totals */}
+                        <div className="px-10 py-8 border-t border-neutral-100 bg-neutral-900 shrink-0">
+                            <div className="flex flex-col md:flex-row justify-between items-center gap-10">
+                                <div className="flex gap-12">
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em] mb-1">Total Debe</span>
+                                        <span className="font-black text-3xl text-emerald-400 tracking-tighter">$ {formatNumber(totalDebe)}</span>
                                     </div>
-                                    <div className="flex flex-col items-end">
-                                        <span className="text-xs uppercase text-slate-400 font-bold">Total Haber</span>
-                                        <span className="font-mono text-lg font-bold text-indigo-600">$ {formatNumber(totalHaber)}</span>
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] font-black text-primary-500 uppercase tracking-[0.2em] mb-1">Total Haber</span>
+                                        <span className="font-black text-3xl text-primary-400 tracking-tighter">$ {formatNumber(totalHaber)}</span>
                                     </div>
-                                    <div className="flex flex-col items-end">
-                                        <span className="text-xs uppercase text-slate-400 font-bold">Diferencia</span>
-                                        <span className={`font-mono text-lg font-bold ${balanceado ? 'text-slate-400' : 'text-red-500'}`}>
-                                            $ {diferencia.toFixed(2)}
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.2em] mb-1">Diferencia</span>
+                                        <span className={cn(
+                                            "font-black text-3xl tracking-tighter",
+                                            balanceado ? "text-neutral-600" : "text-rose-500 animate-pulse"
+                                        )}>
+                                            $ {Math.abs(diferencia).toFixed(2)}
                                         </span>
                                     </div>
                                 </div>
-                            </div>
 
-                            {!formData.id && (
-                                <div className="flex gap-4">
-                                    <button
-                                        type="button"
-                                        onClick={() => setModalOpen(false)}
-                                        className="flex-1 py-3 rounded-xl font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 transition-colors"
-                                    >
-                                        Cancelar
-                                    </button>
-                                    <button
-                                        onClick={handleSave}
-                                        disabled={!balanceado}
-                                        className={`flex-1 py-3 rounded-xl font-bold text-white shadow-lg transition-colors flex items-center justify-center gap-2 ${balanceado ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-500/30' : 'bg-slate-400 cursor-not-allowed'
-                                            }`}
-                                    >
-                                        <Save size={18} />
-                                        Guardar Asiento
-                                    </button>
-                                </div>
-                            )}
+                                {!formData.id && (
+                                    <div className="flex gap-4 w-full md:w-auto">
+                                        <button
+                                            onClick={() => setModalOpen(false)}
+                                            className="px-8 py-4 bg-neutral-800 text-neutral-400 hover:text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all"
+                                        >
+                                            DESCARTAR
+                                        </button>
+                                        <button
+                                            onClick={handleSave}
+                                            disabled={!balanceado || saving}
+                                            className={cn(
+                                                "px-10 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-2xl",
+                                                balanceado && !saving
+                                                    ? "bg-emerald-600 text-white shadow-emerald-500/20 hover:bg-emerald-700"
+                                                    : "bg-neutral-800 text-neutral-600 cursor-not-allowed border border-neutral-700"
+                                            )}
+                                        >
+                                            {saving ? "REGISTRANDO..." : "REGISTRAR ASIENTO"}
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>

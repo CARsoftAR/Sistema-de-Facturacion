@@ -1,6 +1,6 @@
 // Dashboard Component - Intelligent Redesign 2025
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import {
     ShoppingCart,
     Wallet,
@@ -23,6 +23,7 @@ import { cn } from '../utils/cn';
 import { formatNumber } from '../utils/formats';
 
 const Dashboard = () => {
+    const navigate = useNavigate();
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -234,7 +235,10 @@ const Dashboard = () => {
                 </div>
 
                 {/* Pendientes Card */}
-                <div className="bg-white p-6 rounded-3xl shadow-premium border border-neutral-100 group hover:shadow-premium-lg transition-all border-l-4 border-l-warning-500">
+                <div
+                    onClick={() => navigate('/pedidos?estado=PENDIENTE,PREPARACION')}
+                    className="bg-white p-6 rounded-3xl shadow-premium border border-neutral-100 group hover:shadow-premium-lg transition-all border-l-4 border-l-warning-500 cursor-pointer"
+                >
                     <div className="flex justify-between items-start mb-4">
                         <div className="p-3 bg-warning-50 rounded-2xl text-warning-600">
                             <Clock size={24} />
@@ -251,7 +255,10 @@ const Dashboard = () => {
                 </div>
 
                 {/* Stock Alerta Card */}
-                <div className="bg-white p-6 rounded-3xl shadow-premium border border-neutral-100 group hover:shadow-premium-lg transition-all border-l-4 border-l-error-500">
+                <div
+                    onClick={() => navigate('/productos?stock=bajo')}
+                    className="bg-white p-6 rounded-3xl shadow-premium border border-neutral-100 group hover:shadow-premium-lg transition-all border-l-4 border-l-error-500 cursor-pointer"
+                >
                     <div className="flex justify-between items-start mb-4">
                         <div className="p-3 bg-error-50 rounded-2xl text-error-600">
                             <AlertTriangle size={24} />

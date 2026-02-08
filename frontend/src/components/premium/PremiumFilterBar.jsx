@@ -43,8 +43,8 @@ export const PremiumFilterBar = ({
         setDateRange({ start: yesterdayStr, end: yesterdayStr });
     };
 
-    const isToday = dateRange.start === getLocalDate() && dateRange.end === getLocalDate();
-    const isYesterday = dateRange.start === getLocalDate(new Date(new Date().setDate(new Date().getDate() - 1))) && dateRange.end === getLocalDate(new Date(new Date().setDate(new Date().getDate() - 1)));
+    const isToday = dateRange?.start === getLocalDate() && dateRange?.end === getLocalDate();
+    const isYesterday = dateRange?.start === getLocalDate(new Date(new Date().setDate(new Date().getDate() - 1))) && dateRange?.end === getLocalDate(new Date(new Date().setDate(new Date().getDate() - 1)));
 
     return (
         <div className={cn("flex flex-col lg:flex-row items-center gap-4 py-0 px-2 w-full", className)}>

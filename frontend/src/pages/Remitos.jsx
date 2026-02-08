@@ -198,55 +198,53 @@ const Remitos = () => {
     ];
 
     return (
-        <div className="flex flex-col h-[calc(100vh-64px)] overflow-hidden bg-neutral-50/30">
-            {/* Header / Toolbar Area */}
-            <div className="p-8 pb-4">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                    <div>
-                        <div className="flex items-center gap-3 mb-1">
-                            <div className="p-2 bg-blue-600 rounded-2xl shadow-lg shadow-blue-600/20">
-                                <Truck size={24} className="text-white" />
-                            </div>
-                            <h1 className="text-3xl font-black text-neutral-900 tracking-tight">Remitos</h1>
-                        </div>
-                        <p className="text-neutral-500 font-medium ml-1">Gestión de entregas y traslados de mercadería.</p>
-                    </div>
-
-                    <div className="flex items-center gap-3 w-full md:w-auto">
-                        <PremiumFilterBar
-                            busqueda={filters.busqueda}
-                            setBusqueda={(val) => setFilters(prev => ({ ...prev, busqueda: val }))}
-                            dateRange={dateRange}
-                            setDateRange={setDateRange}
-                            onClear={clearFilters}
-                            placeholder="Buscar por cliente o número..."
-                            className="!px-0"
-                        />
-                    </div>
+        <div className="p-6 w-full max-w-[1920px] mx-auto h-[calc(100vh-64px)] overflow-hidden flex flex-col gap-6 animate-in fade-in duration-500 bg-slate-50/50">
+            {/* Header Section */}
+            <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div className="space-y-1">
+                    <h1 className="text-3xl font-black text-neutral-900 tracking-tight flex items-center gap-3">
+                        <Truck className="text-blue-600" size={32} strokeWidth={2.5} />
+                        Remitos
+                    </h1>
+                    <p className="text-neutral-500 font-medium text-sm ml-1">
+                        Gestión de entregas y traslados de mercadería.
+                    </p>
                 </div>
-            </div>
+                <div className="flex items-center gap-3">
+                    <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-neutral-200 text-neutral-700 rounded-xl font-bold text-sm hover:bg-neutral-50 transition-all shadow-sm">
+                        <Printer size={18} /> Exportar
+                    </button>
+                </div>
+            </header>
 
-            {/* Table Area */}
-            <div className="flex-1 px-8 pb-8 overflow-hidden min-h-0">
-                <div className="h-full bg-white rounded-[2.5rem] border border-neutral-200 shadow-xl shadow-neutral-200/50 flex flex-col overflow-hidden">
-                    <div className="flex-1 overflow-hidden">
-                        <PremiumTable
-                            columns={columns}
-                            data={remitos}
-                            loading={loading}
-                            emptyMessage={
-                                <EmptyState
-                                    icon={Truck}
-                                    title="Sin Remitos"
-                                    description="No se encontraron remitos que coincidan con los filtros."
-                                    iconColor="text-blue-500"
-                                    bgIconColor="bg-blue-50"
-                                />
-                            }
+            <PremiumFilterBar
+                busqueda={filters.busqueda}
+                setBusqueda={(val) => setFilters(prev => ({ ...prev, busqueda: val }))}
+                dateRange={dateRange}
+                setDateRange={setDateRange}
+                onClear={clearFilters}
+                placeholder="Buscar por cliente o número..."
+            />
+
+            {/* Table Container */}
+            <div className="flex-grow flex flex-col min-h-0">
+                <PremiumTable
+                    columns={columns}
+                    data={remitos}
+                    loading={loading}
+                    className={cn("flex-grow shadow-lg", remitos.length > 0 ? "rounded-b-none" : "")}
+                    emptyState={
+                        <EmptyState
+                            icon={Truck}
+                            title="Sin Remitos"
+                            description="No se encontraron remitos que coincidan con los filtros."
                         />
-                    </div>
+                    }
+                />
 
-                    <div className="px-6 py-4 border-t border-neutral-100 bg-neutral-50/50">
+                {/* Pagination */}
+                {remitos.length > 0 && (
+                    <div className="bg-white border-x border-b border-neutral-200 rounded-b-[2rem] px-6 py-1 shadow-premium">
                         <TablePagination
                             currentPage={page}
                             totalPages={totalPages}
@@ -260,7 +258,7 @@ const Remitos = () => {
                             }}
                         />
                     </div>
-                </div>
+                )}
             </div>
         </div>
     );

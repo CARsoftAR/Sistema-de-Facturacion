@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Tag, TrendingUp, TrendingDown, DollarSign, Percent, AlertTriangle, Save, RefreshCw, CheckCircle, X } from 'lucide-react';
+import { Tag, TrendingUp, TrendingDown, DollarSign, Percent, AlertTriangle, Save, RefreshCw, CheckCircle2, X } from 'lucide-react';
 import { showSuccessAlert, showWarningAlert, showConfirmationAlert } from '../utils/alerts';
+import { BentoCard } from '../components/premium/BentoCard';
+import { cn } from '../utils/cn';
 
 const ActualizarPrecios = () => {
     // State
@@ -34,7 +36,6 @@ const ActualizarPrecios = () => {
                     fetch('/api/marcas/listar/').then(r => r.json())
                 ]);
 
-                // Asegurar que sean arrays
                 const rubrosData = resRubros.rubros || resRubros.data || resRubros;
                 const marcasData = resMarcas.marcas || resMarcas.data || resMarcas;
 
@@ -73,7 +74,6 @@ const ActualizarPrecios = () => {
             return;
         }
 
-        // Confirmación con diseño premium
         const result = await showConfirmationAlert(
             '¿Confirmar Actualización?',
             '¿Estás seguro de aplicar esta actualización masiva? Esta acción no se puede deshacer.',
@@ -85,7 +85,6 @@ const ActualizarPrecios = () => {
 
         setLoading(true);
 
-        // Calculate actual value based on increase/decrease
         let finalValue = parseFloat(value);
         if (operationType === 'decrease') {
             finalValue = -finalValue;
@@ -97,11 +96,10 @@ const ActualizarPrecios = () => {
             campos: fieldsToUpdate,
             rubros: scope === 'rubro' ? [parseInt(selectedRubro)] : [],
             marcas: scope === 'marca' ? [parseInt(selectedMarca)] : [],
-            productos: [] // Future: support specific product selection
+            productos: []
         };
 
         try {
-            // Get CSRF Token
             const getCookie = (name) => {
                 let cookieValue = null;
                 if (document.cookie && document.cookie !== '') {
@@ -142,136 +140,151 @@ const ActualizarPrecios = () => {
     };
 
     return (
-        <div className="h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-indigo-50/30 to-slate-50 flex flex-col">
-            <div className="flex-1 overflow-hidden p-6 flex flex-col">
+        <div className="h-screen overflow-hidden bg-white flex flex-col">
+            <div className="flex-1 overflow-hidden p-8 flex flex-col gap-8 max-w-[1400px] mx-auto w-full">
 
-                {/* Header - Compacto */}
-                <div className="mb-4">
-                    <div className="flex items-center gap-3">
-                        <div className="bg-gradient-to-br from-indigo-600 to-indigo-700 p-2 rounded-xl text-white shadow-md">
-                            <RefreshCw size={20} />
+                {/* Header */}
+                <header className="flex flex-col gap-1">
+                    <div className="flex items-center gap-4">
+                        <div className="bg-gradient-to-br from-indigo-600 to-indigo-700 p-3 rounded-2xl text-white shadow-xl shadow-indigo-200">
+                            <RefreshCw size={24} strokeWidth={2.5} />
                         </div>
                         <div>
-                            <h1 className="text-2xl font-black text-slate-900">Actualización Masiva de Precios</h1>
-                            <p className="text-sm text-slate-600 font-medium mt-0.5">
+                            <h1 className="text-3xl font-black text-slate-900 tracking-tight leading-none uppercase font-outfit">
+                                Actualización Masiva de Precios
+                            </h1>
+                            <p className="text-slate-500 font-medium text-sm mt-2">
                                 Ajusta los precios de tus productos globalmente, por rubro o marca.
                             </p>
                         </div>
                     </div>
-                </div>
+                </header>
 
-                {/* Contenido Principal */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 min-h-0">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 flex-1 min-h-0">
 
-                    {/* COLUMNA IZQUIERDA - Configuración */}
-                    <div className="space-y-4 overflow-y-auto pr-2" style={{ scrollbarWidth: 'thin' }}>
+                    {/* COLUMNA IZQUIERDA - CONFIGURACIÓN */}
+                    <div className="lg:col-span-6 space-y-6 overflow-y-auto pr-4 scrollbar-premium">
 
-                        {/* Card 1: Alcance */}
-                        <div className="bg-white p-4 rounded-2xl shadow-md border border-slate-200/50">
-                            <div className="flex items-center gap-2 mb-3">
-                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center text-white font-black text-sm shadow-md">
-                                    1
-                                </div>
-                                <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Alcance</h3>
+                        {/* Step 1: Alcance */}
+                        <BentoCard className="p-8 border-slate-100" hover={false}>
+                            <div className="flex items-center gap-4 mb-6">
+                                <span className="flex items-center justify-center w-8 h-8 rounded-full bg-indigo-600 text-white font-black text-xs">1</span>
+                                <h3 className="font-extrabold text-slate-800 uppercase tracking-widest text-xs">ALCANCE</h3>
                             </div>
 
-                            <div className="flex p-1 bg-slate-100 rounded-xl border border-slate-200 mb-3">
+                            <div className="flex p-1.5 bg-slate-100 rounded-[2rem] border border-slate-200 mb-6 w-full shadow-sm">
                                 {['todos', 'rubro', 'marca'].map(opt => (
                                     <button
                                         key={opt}
                                         onClick={() => setScope(opt)}
-                                        className={`flex-1 py-2 rounded-lg text-sm font-black capitalize transition-all ${scope === opt
-                                            ? 'bg-white text-indigo-600 shadow-md scale-[1.02]'
-                                            : 'text-slate-400 hover:text-slate-600'
-                                            }`}
+                                        className={cn(
+                                            "flex-1 py-3 rounded-[1.5rem] text-xs font-black uppercase tracking-tight transition-all duration-300",
+                                            scope === opt
+                                                ? "bg-white text-indigo-600 shadow-md scale-[1.01]"
+                                                : "text-slate-400 hover:text-slate-600"
+                                        )}
                                     >
                                         {opt}
                                     </button>
                                 ))}
                             </div>
 
-                            {scope === 'rubro' && (
-                                <div className="animate-in fade-in slide-in-from-top-2 duration-200">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-1 ml-1">Seleccionar Rubro</label>
-                                    <select
-                                        className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none font-medium text-slate-800"
-                                        value={selectedRubro}
-                                        onChange={(e) => setSelectedRubro(e.target.value)}
-                                    >
-                                        <option value="">-- Elige un Rubro --</option>
-                                        {rubros.map(r => (
-                                            <option key={r.id} value={r.id}>{r.nombre}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                            )}
+                            <div className="min-h-[80px]">
+                                {scope === 'rubro' && (
+                                    <div className="animate-in fade-in slide-in-from-top-4 duration-300">
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-2 ml-1">Seleccionar Rubro</label>
+                                        <select
+                                            className="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-500 focus:bg-white outline-none font-bold text-slate-700 transition-all appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_1rem_center] bg-no-repeat"
+                                            value={selectedRubro}
+                                            onChange={(e) => setSelectedRubro(e.target.value)}
+                                        >
+                                            <option value="">ELIJA UN RUBRO</option>
+                                            {rubros.map(r => (
+                                                <option key={r.id} value={r.id}>{r.nombre}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
 
-                            {scope === 'marca' && (
-                                <div className="animate-in fade-in slide-in-from-top-2 duration-200">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-1 ml-1">Seleccionar Marca</label>
-                                    <select
-                                        className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none font-medium text-slate-800"
-                                        value={selectedMarca}
-                                        onChange={(e) => setSelectedMarca(e.target.value)}
-                                    >
-                                        <option value="">-- Elige una Marca --</option>
-                                        {marcas.map(m => (
-                                            <option key={m.id} value={m.id}>{m.nombre}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                            )}
-                        </div>
+                                {scope === 'marca' && (
+                                    <div className="animate-in fade-in slide-in-from-top-4 duration-300">
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-2 ml-1">Seleccionar Marca</label>
+                                        <select
+                                            className="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-500 focus:bg-white outline-none font-bold text-slate-700 transition-all appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_1rem_center] bg-no-repeat"
+                                            value={selectedMarca}
+                                            onChange={(e) => setSelectedMarca(e.target.value)}
+                                        >
+                                            <option value="">ELIJA UNA MARCA</option>
+                                            {marcas.map(m => (
+                                                <option key={m.id} value={m.id}>{m.nombre}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
+                            </div>
+                        </BentoCard>
 
-                        {/* Card 2: Ajuste */}
-                        <div className="bg-white p-4 rounded-2xl shadow-md border border-slate-200/50">
-                            <div className="flex items-center gap-2 mb-3">
-                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center text-white font-black text-sm shadow-md">
-                                    2
-                                </div>
-                                <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Ajuste</h3>
+                        {/* Step 2: Ajuste */}
+                        <BentoCard className="p-8 border-slate-100" hover={false}>
+                            <div className="flex items-center gap-4 mb-6">
+                                <span className="flex items-center justify-center w-8 h-8 rounded-full bg-indigo-600 text-white font-black text-xs">2</span>
+                                <h3 className="font-extrabold text-slate-800 uppercase tracking-widest text-xs">AJUSTE</h3>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3 mb-3">
-                                {/* Operation Type */}
-                                <div className="bg-slate-50 p-1 rounded-lg flex border border-slate-200">
+                            <div className="grid grid-cols-2 gap-4 mb-6">
+                                <div className="flex p-1 bg-slate-100 rounded-2xl border border-slate-200">
                                     <button
                                         onClick={() => setOperationType('increase')}
-                                        className={`flex-1 py-2 rounded-md text-xs font-black flex items-center justify-center gap-1 transition-all ${operationType === 'increase' ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg shadow-emerald-500/30' : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'
-                                            }`}
+                                        className={cn(
+                                            "flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all",
+                                            operationType === 'increase'
+                                                ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20"
+                                                : "text-slate-400 hover:bg-white/50"
+                                        )}
                                     >
                                         <TrendingUp size={14} strokeWidth={3} /> Aumentar
                                     </button>
                                     <button
                                         onClick={() => setOperationType('decrease')}
-                                        className={`flex-1 py-2 rounded-md text-xs font-black flex items-center justify-center gap-1 transition-all ${operationType === 'decrease' ? 'bg-gradient-to-r from-rose-500 to-rose-600 text-white shadow-lg shadow-rose-500/30' : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'
-                                            }`}
+                                        className={cn(
+                                            "flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all",
+                                            operationType === 'decrease'
+                                                ? "bg-rose-500 text-white shadow-lg shadow-rose-500/20"
+                                                : "text-slate-400 hover:bg-white/50"
+                                        )}
                                     >
                                         <TrendingDown size={14} strokeWidth={3} /> Disminuir
                                     </button>
                                 </div>
 
-                                {/* Value Type */}
-                                <div className="bg-slate-50 p-1 rounded-lg flex border border-slate-200">
+                                <div className="flex p-1 bg-slate-100 rounded-2xl border border-slate-200">
                                     <button
                                         onClick={() => setValueType('PORCENTAJE')}
-                                        className={`flex-1 py-2 rounded-md text-xs font-black flex items-center justify-center gap-1 transition-all ${valueType === 'PORCENTAJE' ? 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white shadow-lg shadow-indigo-500/30' : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'
-                                            }`}
+                                        className={cn(
+                                            "flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all",
+                                            valueType === 'PORCENTAJE'
+                                                ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20"
+                                                : "text-slate-400 hover:bg-white/50"
+                                        )}
                                     >
-                                        <Percent size={14} strokeWidth={3} /> %
+                                        <Percent size={14} strokeWidth={3} /> % %
                                     </button>
                                     <button
                                         onClick={() => setValueType('MONTO')}
-                                        className={`flex-1 py-2 rounded-md text-xs font-black flex items-center justify-center gap-1 transition-all ${valueType === 'MONTO' ? 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white shadow-lg shadow-indigo-500/30' : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'
-                                            }`}
+                                        className={cn(
+                                            "flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all",
+                                            valueType === 'MONTO'
+                                                ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20"
+                                                : "text-slate-400 hover:bg-white/50"
+                                        )}
                                     >
-                                        <DollarSign size={14} strokeWidth={3} /> Fijo
+                                        <DollarSign size={14} strokeWidth={3} /> $ Fijo
                                     </button>
                                 </div>
                             </div>
 
-                            <div className="relative">
-                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-black text-lg">
+                            <div className="relative group">
+                                <div className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 font-extrabold text-2xl group-focus-within:text-indigo-500 transition-colors">
                                     {valueType === 'MONTO' ? '$' : '%'}
                                 </div>
                                 <input
@@ -279,27 +292,22 @@ const ActualizarPrecios = () => {
                                     value={value}
                                     onChange={(e) => setValue(e.target.value)}
                                     placeholder={valueType === 'MONTO' ? "0.00" : "Ej: 15"}
-                                    className="w-full pl-12 pr-4 py-3 text-2xl font-black text-slate-800 bg-white border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all placeholder:text-slate-300"
+                                    className="w-full pl-14 pr-8 py-6 text-4xl font-black text-slate-800 bg-white border-2 border-slate-100 rounded-[2rem] focus:border-indigo-500 outline-none transition-all placeholder:text-slate-200"
                                 />
                             </div>
-                        </div>
+                        </BentoCard>
                     </div>
 
-                    {/* COLUMNA DERECHA - Precios y Acción */}
-                    <div className="flex flex-col min-h-0 bg-white rounded-2xl shadow-md border border-slate-200/50 overflow-hidden">
+                    {/* COLUMNA DERECHA - PRECIOS A IMPACTAR */}
+                    <div className="lg:col-span-6 flex flex-col min-h-0 bg-white rounded-[2.5rem] border border-slate-100 shadow-premium overflow-hidden">
 
-                        {/* Header */}
-                        <div className="p-4 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white">
-                            <div className="flex items-center gap-2">
-                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center text-white font-black text-sm shadow-md">
-                                    3
-                                </div>
-                                <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Precios a Impactar</h3>
+                        {/* Scroll Content */}
+                        <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-2 scrollbar-premium">
+                            <div className="flex items-center gap-4 mb-6">
+                                <span className="flex items-center justify-center w-8 h-8 rounded-full bg-indigo-600 text-white font-black text-xs">3</span>
+                                <h3 className="font-extrabold text-slate-800 uppercase tracking-widest text-xs">PRECIOS A IMPACTAR</h3>
                             </div>
-                        </div>
 
-                        {/* Contenido scrolleable */}
-                        <div className="flex-1 overflow-y-auto p-4 space-y-2" style={{ scrollbarWidth: 'thin' }}>
                             {[
                                 { id: 'costo', label: 'Costo (Base)' },
                                 { id: 'precio_efectivo', label: 'Precio Efectivo / Contado' },
@@ -309,19 +317,30 @@ const ActualizarPrecios = () => {
                             ].map(field => (
                                 <label
                                     key={field.id}
-                                    className={`flex items-center justify-between p-3 rounded-xl border-2 cursor-pointer transition-all ${selectedFields[field.id]
-                                        ? 'border-indigo-500 bg-indigo-50'
-                                        : 'border-slate-200 hover:bg-slate-50'
-                                        }`}
+                                    className={cn(
+                                        "flex items-center justify-between px-6 py-3.5 rounded-2xl border-2 cursor-pointer transition-all duration-300 active:scale-[0.98]",
+                                        selectedFields[field.id]
+                                            ? "border-indigo-600 bg-indigo-50/50"
+                                            : "border-slate-50 bg-white hover:border-indigo-200"
+                                    )}
                                 >
-                                    <span className={`font-bold text-sm ${selectedFields[field.id] ? 'text-indigo-700' : 'text-slate-700'}`}>
+                                    <span className={cn(
+                                        "font-black text-[11px] uppercase tracking-tight transition-colors",
+                                        selectedFields[field.id] ? "text-indigo-700" : "text-slate-500"
+                                    )}>
                                         {field.label}
                                     </span>
-                                    <div className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all ${selectedFields[field.id]
-                                        ? 'bg-indigo-500 border-indigo-500 text-white'
-                                        : 'border-slate-300 bg-white'
-                                        }`}>
-                                        {selectedFields[field.id] && <CheckCircle size={16} strokeWidth={3} />}
+                                    <div className={cn(
+                                        "w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all duration-300",
+                                        selectedFields[field.id]
+                                            ? "bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-600/30"
+                                            : "border-slate-200 bg-white"
+                                    )}>
+                                        {selectedFields[field.id] ? (
+                                            <CheckCircle2 size={16} strokeWidth={3} />
+                                        ) : (
+                                            <div className="w-3.5 h-3.5 rounded-full bg-slate-50" />
+                                        )}
                                     </div>
                                     <input
                                         type="checkbox"
@@ -333,32 +352,33 @@ const ActualizarPrecios = () => {
                             ))}
                         </div>
 
-                        {/* Footer - Barra de acción */}
-                        <div className="p-4 m-4 rounded-2xl bg-slate-900 text-white shadow-xl">
-                            <div className="flex items-center justify-center gap-2 text-amber-400 font-black text-xs mb-3 uppercase tracking-widest">
-                                <AlertTriangle size={16} strokeWidth={3} />
-                                <span>Cambios Permanentes</span>
-                            </div>
-                            <button
-                                onClick={handleSubmit}
-                                disabled={loading}
-                                className={`w-full py-3 rounded-xl font-black text-white shadow-xl flex items-center justify-center gap-2 transition-all ${loading
-                                    ? 'bg-slate-600 cursor-not-allowed'
-                                    : 'bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 active:scale-[0.98]'
-                                    }`}
-                            >
-                                {loading ? (
-                                    <>
+                        {/* Sticky Footer */}
+                        <div className="p-4 bg-slate-100">
+                            <div className="bg-slate-900 rounded-[2rem] p-6 shadow-2xl">
+                                <div className="flex items-center justify-center gap-3 text-amber-400 font-black text-[10px] mb-4 uppercase tracking-[0.2em]">
+                                    <AlertTriangle size={18} strokeWidth={2.5} />
+                                    <span>Cambios Permanentes</span>
+                                </div>
+                                <button
+                                    onClick={handleSubmit}
+                                    disabled={loading}
+                                    className={cn(
+                                        "w-full py-4 rounded-2xl font-black text-white shadow-2xl flex items-center justify-center gap-3 transition-all duration-300 active:scale-[0.97] uppercase tracking-widest text-xs",
+                                        loading
+                                            ? "bg-slate-700 cursor-not-allowed opacity-50"
+                                            : "bg-indigo-600 hover:bg-indigo-500 shadow-indigo-500/20"
+                                    )}
+                                >
+                                    {loading ? (
                                         <RefreshCw size={18} className="animate-spin" strokeWidth={3} />
-                                        Procesando...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Save size={18} strokeWidth={3} />
-                                        Aplicar Cambios
-                                    </>
-                                )}
-                            </button>
+                                    ) : (
+                                        <>
+                                            <Save size={18} strokeWidth={3} />
+                                            Aplicar Cambios
+                                        </>
+                                    )}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -368,3 +388,4 @@ const ActualizarPrecios = () => {
 };
 
 export default ActualizarPrecios;
+

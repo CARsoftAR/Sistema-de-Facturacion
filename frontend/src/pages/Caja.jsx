@@ -7,9 +7,16 @@ import {
 import Swal from 'sweetalert2';
 import { BtnAdd, BtnAction } from '../components/CommonButtons';
 import TablePagination from '../components/common/TablePagination';
-import { PremiumTable, TableCell } from '../components/premium/PremiumTable';
-import { BentoCard, BentoGrid, StatCard } from '../components/premium/BentoCard';
-import { SearchInput, PremiumSelect } from '../components/premium/PremiumInput';
+import {
+    PremiumTable,
+    TableCell,
+    BentoCard,
+    BentoGrid,
+    StatCard,
+    PremiumFilterBar,
+    SearchInput,
+    PremiumSelect
+} from '../components/premium';
 import { showConfirmationAlert, showSuccessAlert, showErrorAlert, showWarningAlert, showDeleteAlert } from '../utils/alerts';
 import { cn } from '../utils/cn';
 
@@ -31,12 +38,9 @@ const Caja = () => {
     });
 
     // Filtros
-    const [filters, setFilters] = useState({
-        fecha_desde: '',
-        fecha_hasta: '',
-        tipo: '',
-        busqueda: ''
-    });
+    const [busqueda, setBusqueda] = useState('');
+    const [dateRange, setDateRange] = useState({ start: '', end: '' });
+    const [tipo, setTipo] = useState('');
 
     // Modales
     const [showMovimientoModal, setShowMovimientoModal] = useState(false);
@@ -74,7 +78,10 @@ const Caja = () => {
             const params = new URLSearchParams({
                 page,
                 per_page: itemsPerPage,
-                ...filters
+                busqueda,
+                fecha_desde: dateRange.start,
+                fecha_hasta: dateRange.end,
+                tipo
             });
             const response = await fetch(`/api/caja/movimientos/?${params}`);
             const data = await response.json();
@@ -92,20 +99,20 @@ const Caja = () => {
         } finally {
             setLoading(false);
         }
-    }, [page, itemsPerPage, filters]);
+    }, [page, itemsPerPage, busqueda, dateRange, tipo]);
 
     useEffect(() => {
         fetchCajaData();
     }, [fetchCajaData]);
 
-    const handleFilterChange = (name, value) => {
-        setFilters(prev => ({ ...prev, [name]: value }));
+    useEffect(() => {
         setPage(1);
-    };
+    }, [busqueda, dateRange, tipo]);
 
     const resetFilters = () => {
-        setFilters({ fecha_desde: '', fecha_hasta: '', tipo: '', busqueda: '' });
-        setPage(1);
+        setBusqueda('');
+        setDateRange({ start: '', end: '' });
+        setTipo('');
     };
 
     const handleSaveMovimiento = async (e) => {
@@ -453,60 +460,29 @@ const Caja = () => {
             {/* Main Area */}
             <div className="flex-1 flex flex-col gap-4 min-h-0">
 
-                {/* Filtros */}
-                <BentoCard className="p-4 bg-white/80 backdrop-blur-md">
-                    <div className="grid grid-cols-12 gap-4 items-end">
-                        <div className="col-span-12 lg:col-span-4">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-1.5 ml-1">Búsqueda rápida</label>
-                            <SearchInput
-                                placeholder="Concepto, usuario, referencia..."
-                                value={filters.busqueda}
-                                onSearch={(v) => handleFilterChange('busqueda', v)}
-                                className="!py-3"
-                            />
-                        </div>
-                        <div className="col-span-12 lg:col-span-2">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-1.5 ml-1">Desde</label>
-                            <input
-                                type="date"
-                                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none font-bold text-xs text-slate-700"
-                                value={filters.fecha_desde}
-                                onChange={(e) => handleFilterChange('fecha_desde', e.target.value)}
-                            />
-                        </div>
-                        <div className="col-span-12 lg:col-span-2">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-1.5 ml-1">Hasta</label>
-                            <input
-                                type="date"
-                                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none font-bold text-xs text-slate-700"
-                                value={filters.fecha_hasta}
-                                onChange={(e) => handleFilterChange('fecha_hasta', e.target.value)}
-                            />
-                        </div>
-                        <div className="col-span-12 lg:col-span-2">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-1.5 ml-1">Tipo Mov.</label>
-                            <PremiumSelect
-                                value={filters.tipo}
-                                onChange={(e) => handleFilterChange('tipo', e.target.value)}
-                                options={[
-                                    { value: '', label: 'TODOS' },
-                                    { value: 'Ingreso', label: 'INGRESOS' },
-                                    { value: 'Egreso', label: 'EGRESOS' }
-                                ]}
-                                className="!py-3 !text-xs !font-black !tracking-widest"
-                            />
-                        </div>
-                        <div className="col-span-12 lg:col-span-4 flex justify-end gap-2">
-                            <button
-                                onClick={resetFilters}
-                                className="p-3 bg-slate-100 text-slate-400 rounded-xl hover:bg-slate-200 transition-all flex items-center justify-center gap-2 font-bold text-xs uppercase tracking-widest min-w-[140px]"
-                                title="Limpiar Filtros"
-                            >
-                                <FilterX size={18} strokeWidth={2.5} /> Limpiar Filtros
-                            </button>
-                        </div>
+                <PremiumFilterBar
+                    busqueda={busqueda}
+                    setBusqueda={setBusqueda}
+                    dateRange={dateRange}
+                    setDateRange={setDateRange}
+                    onClear={resetFilters}
+                    placeholder="Buscar por concepto, usuario o referencia..."
+                >
+                    <div className="flex items-center gap-3 bg-white px-6 h-[52px] rounded-full border border-neutral-200 shadow-sm">
+                        <ListFilter size={16} className="text-neutral-400" />
+                        <span className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">Tipo</span>
+                        <PremiumSelect
+                            value={tipo}
+                            onChange={(e) => setTipo(e.target.value)}
+                            options={[
+                                { value: '', label: 'TODOS' },
+                                { value: 'Ingreso', label: 'INGRESOS' },
+                                { value: 'Egreso', label: 'EGRESOS' }
+                            ]}
+                            className="!border-none !bg-transparent !p-0 !h-auto !text-xs !font-bold !text-neutral-700 !shadow-none outline-none cursor-pointer"
+                        />
                     </div>
-                </BentoCard>
+                </PremiumFilterBar>
 
                 {/* Tabla */}
                 <div className="flex-1 flex flex-col min-h-0">

@@ -2825,6 +2825,7 @@ def api_productos_lista(request):
                 "precio_efectivo": float(p.precio_efectivo),
                 "costo": float(p.costo) if p.costo else 0,
                 "stock": p.stock,
+                "stock_minimo": float(p.stock_minimo),
                 "iva_alicuota": float(p.iva_alicuota) if p.iva_alicuota is not None else 21.0
             })
 
@@ -8814,22 +8815,32 @@ def api_presupuestos_listar(request):
         presupuestos = Presupuesto.objects.select_related('cliente').order_by('-fecha')
 
         if q:
-            presupuestos = presupuestos.filter(cliente__nombre__icontains=q)
+            from django.db.models import Q
+            from django.db.models.functions import Cast
+            from django.db.models import CharField
+            presupuestos = presupuestos.annotate(fecha_str=Cast('fecha', CharField())).filter(
+                Q(cliente__nombre__icontains=q) |
+                Q(id__icontains=q) |
+                Q(fecha_str__icontains=q)
+            )
 
         if fecha_start and fecha_end:
+            from django.utils import timezone
             import datetime
             try:
-                dt_start = datetime.datetime.strptime(fecha_start, '%Y-%m-%d').date()
-                dt_end = datetime.datetime.strptime(fecha_end, '%Y-%m-%d').date()
-                presupuestos = presupuestos.filter(fecha__date__range=(dt_start, dt_end))
+                tz = timezone.get_current_timezone()
+                dt_start = timezone.make_aware(datetime.datetime.combine(datetime.datetime.strptime(fecha_start, '%Y-%m-%d').date(), datetime.time.min), tz)
+                dt_end = timezone.make_aware(datetime.datetime.combine(datetime.datetime.strptime(fecha_end, '%Y-%m-%d').date(), datetime.time.max), tz)
+                presupuestos = presupuestos.filter(fecha__range=(dt_start, dt_end))
             except (ValueError, TypeError):
                 pass
         
-        # Obtenemos todos los resultados para filtrar por estado virtual (VENCIDO) si es necesario
+        # Obtenemos resultados para filtrar por estado virtual (VENCIDO)
         all_presupuestos = list(presupuestos)
         today = datetime.date.today()
         
         filtered_data = []
+        from django.utils import timezone as dj_timezone
         for p in all_presupuestos:
             # Calcular vencimiento
             fecha_venc = p.fecha.date() + datetime.timedelta(days=p.validez)
@@ -8839,21 +8850,41 @@ def api_presupuestos_listar(request):
             # Aplicar filtro de estado si existe
             if estado and estado != estado_real:
                 continue
-                
+            
+            # Si hay búsqueda 'q', también intentamos buscar en el estado real (ej: 'VENCIDO')
+            if q and q.upper() not in estado_real.upper() and q.lower() not in p.cliente.nombre.lower() and q not in str(p.id):
+                # Ya filtramos por QuerySet, pero el estado virtual solo se puede filtrar aquí
+                # Si el usuario buscó "VENCIDO" y este no lo es, pero el QuerySet lo trajo, lo sacamos
+                pass # El QuerySet ya hizo la mayor parte del trabajo, para el estado virtual es especial
+
+            local_fecha = dj_timezone.localtime(p.fecha)
             filtered_data.append({
                 'id': p.id,
-                'fecha': p.fecha.strftime('%d/%m/%Y'),
+                'fecha': local_fecha.strftime('%d/%m/%Y'),
                 'cliente': p.cliente.nombre,
                 'vencimiento': fecha_venc.strftime('%d/%m/%Y'),
                 'total': float(p.total),
                 'estado': estado_real
             })
 
-        total = len(filtered_data)
+        total_items = len(filtered_data)
+        # Calcular KPIs sobre TODO el set filtrado (antes de paginar)
+        stats = {
+            'total_monto': sum(p['total'] for p in filtered_data),
+            'pendientes': sum(1 for p in filtered_data if p['estado'] == 'PENDIENTE'),
+            'aprobados': sum(1 for p in filtered_data if p['estado'] in ['APROBADO', 'APROBADO (Vendido)']),
+            'count': total_items
+        }
+
         start = (page - 1) * per_page
         end = start + per_page
         
-        return JsonResponse({'ok': True, 'data': filtered_data[start:end], 'total': total})
+        return JsonResponse({
+            'ok': True, 
+            'data': filtered_data[start:end], 
+            'total': total_items,
+            'stats': stats
+        })
     except Exception as e:
         return JsonResponse({'ok': False, 'error': str(e)})
 
@@ -10021,7 +10052,7 @@ def api_dashboard_stats(request):
     } for p in pedidos_pendientes_qs[:10]] # Limit to 10 for dashboard
 
     # Low Stock Query & List
-    stock_bajo_qs = Producto.objects.filter(Q(stock__lte=F('stock_minimo')) | Q(stock__lte=5)).order_by('stock')
+    stock_bajo_qs = Producto.objects.filter(Q(stock__lte=F('stock_minimo')) | Q(stock__lte=10)).order_by('stock')
     stock_bajo_count = stock_bajo_qs.count()
     stock_bajo_list = [{
         'id': p.id,
@@ -11303,3 +11334,165 @@ def api_manual_leer(request, slug):
         return JsonResponse({"ok": False, "error": str(e)}, status=500)
 
 
+
+
+# ==========================================
+# AUTOMATIZACIONES CONTABLES
+# ==========================================
+
+@login_required
+def api_contabilidad_centralizar_ventas(request):
+    """API para centralizar ventas del día en el libro diario"""
+    from administrar.models import Venta, Asiento, ItemAsiento, EjercicioContable, PlanCuenta
+    from django.db.models import Max
+    import datetime
+    from django.http import JsonResponse
+    
+    try:
+        hoy = datetime.date.today()
+        ventas = Venta.objects.filter(fecha__date=hoy, estado__in=["Emitida", "Pagada"])
+        
+        ejercicio = EjercicioContable.objects.filter(cerrado=False).last()
+        if not ejercicio:
+            return JsonResponse({"ok": False, "error": "No hay ejercicio contable abierto"}, status=400)
+            
+        # Buscar cuentas (Ventas, Deudores, IVA)
+        cta_ventas = PlanCuenta.objects.filter(codigo__in=["4.1.01", "4.1.01.001"]).first() or PlanCuenta.objects.filter(nombre__icontains="Venta", imputable=True).first()
+        cta_deudores = PlanCuenta.objects.filter(codigo__in=["1.1.02.001", "1.1.03.001"]).first() or PlanCuenta.objects.filter(nombre__icontains="Deudor", imputable=True).first()
+        cta_iva = PlanCuenta.objects.filter(codigo__in=["2.1.02.001", "2.1.03.001"]).first() or PlanCuenta.objects.filter(nombre__icontains="IVA D", imputable=True).first()
+        
+        if not (cta_ventas and cta_deudores):
+            return JsonResponse({"ok": False, "error": "No se encontraron las cuentas de Ventas o Deudores en el Plan de Cuentas"}, status=400)
+            
+        count = 0
+        for v in ventas:
+            if Asiento.objects.filter(origen="VENTAS", referencia_id=v.id).exists():
+                continue
+                
+            num = (Asiento.objects.filter(ejercicio=ejercicio).aggregate(m=Max("numero"))["m"] or 0) + 1
+            asiento = Asiento.objects.create(
+                numero=num,
+                fecha=v.fecha,
+                descripcion=f"Centralización Venta #{v.id} - {v.cliente.nombre[:50]}",
+                ejercicio=ejercicio,
+                origen="VENTAS",
+                referencia_id=v.id
+            )
+            
+            # DEBE: Deudores
+            ItemAsiento.objects.create(asiento=asiento, cuenta=cta_deudores, debe=v.total, haber=0)
+            # HABER: Ventas
+            ItemAsiento.objects.create(asiento=asiento, cuenta=cta_ventas, debe=0, haber=v.neto)
+            # HABER: IVA
+            if v.iva_amount > 0 and cta_iva:
+                ItemAsiento.objects.create(asiento=asiento, cuenta=cta_iva, debe=0, haber=v.iva_amount)
+            count += 1
+            
+        return JsonResponse({"ok": True, "mensaje": f"Se centralizaron {count} ventas del día."})
+    except Exception as e:
+        return JsonResponse({"ok": False, "error": str(e)}, status=500)
+
+@login_required
+def api_contabilidad_centralizar_compras(request):
+    """API para centralizar compras del día"""
+    from administrar.models import Compra, Asiento, ItemAsiento, EjercicioContable, PlanCuenta
+    from django.db.models import Max
+    import datetime
+    from django.http import JsonResponse
+    
+    try:
+        hoy = datetime.date.today()
+        compras = Compra.objects.filter(fecha__date=hoy, estado="REGISTRADA")
+        
+        ejercicio = EjercicioContable.objects.filter(cerrado=False).last()
+        if not ejercicio:
+            return JsonResponse({"ok": False, "error": "No hay ejercicio contable abierto"}, status=400)
+            
+        cta_mercaderia = PlanCuenta.objects.filter(codigo__in=["1.1.03.001", "1.1.05.001"]).first() or PlanCuenta.objects.filter(nombre__icontains="Mercader", imputable=True).first()
+        cta_proveedores = PlanCuenta.objects.filter(codigo__in=["2.1.01.001"]).first() or PlanCuenta.objects.filter(nombre__icontains="Proveedor", imputable=True).first()
+        cta_iva_c = PlanCuenta.objects.filter(codigo__in=["1.1.04.001"]).first() or PlanCuenta.objects.filter(nombre__icontains="IVA C", imputable=True).first()
+        
+        if not (cta_mercaderia and cta_proveedores):
+            return JsonResponse({"ok": False, "error": "No se encontraron las cuentas de Mercaderías o Proveedores"}, status=400)
+            
+        count = 0
+        for c in compras:
+            if Asiento.objects.filter(origen="COMPRAS", referencia_id=c.id).exists():
+                continue
+                
+            num = (Asiento.objects.filter(ejercicio=ejercicio).aggregate(m=Max("numero"))["m"] or 0) + 1
+            asiento = Asiento.objects.create(
+                numero=num,
+                fecha=c.fecha,
+                descripcion=f"Centralización Compra #{c.id} - {c.proveedor.nombre[:50]}",
+                ejercicio=ejercicio,
+                origen="COMPRAS",
+                referencia_id=c.id
+            )
+            
+            # DEBE: Mercadería (Neto)
+            ItemAsiento.objects.create(asiento=asiento, cuenta=cta_mercaderia, debe=c.neto, haber=0)
+            # DEBE: IVA (si aplica)
+            if c.iva > 0 and cta_iva_c:
+                ItemAsiento.objects.create(asiento=asiento, cuenta=cta_iva_c, debe=c.iva, haber=0)
+            # HABER: Proveedores (Total)
+            ItemAsiento.objects.create(asiento=asiento, cuenta=cta_proveedores, debe=0, haber=c.total)
+            count += 1
+            
+        return JsonResponse({"ok": True, "mensaje": f"Se centralizaron {count} compras del día."})
+    except Exception as e:
+        return JsonResponse({"ok": False, "error": str(e)}, status=500)
+
+@login_required
+def api_contabilidad_centralizar_cmv(request):
+    """API para generar el asiento de Costo de Mercadería Vendida"""
+    from administrar.models import Venta, DetalleVenta, Asiento, ItemAsiento, EjercicioContable, PlanCuenta
+    from django.db.models import Max, Sum, F
+    from decimal import Decimal
+    import datetime
+    from django.http import JsonResponse
+    
+    try:
+        hoy = datetime.date.today()
+        ejercicio = EjercicioContable.objects.filter(cerrado=False).last()
+        if not ejercicio:
+            return JsonResponse({"ok": False, "error": "No hay ejercicio contable abierto"}, status=400)
+            
+        # Verificar si ya se hizo hoy
+        if Asiento.objects.filter(fecha__date=hoy, descripcion__contains="ASIENTO CMV").exists():
+             return JsonResponse({"ok": False, "error": "El asiento de CMV de hoy ya fue generado."}, status=400)
+             
+        # Calcular el costo total de lo vendido hoy
+        detalles = DetalleVenta.objects.filter(venta__fecha__date=hoy, venta__estado__in=["Emitida", "Pagada"])
+        total_costo = Decimal("0")
+        
+        for d in detalles:
+            costo_unitario = d.producto.costo
+            total_costo += d.cantidad * costo_unitario
+            
+        if total_costo == 0:
+            return JsonResponse({"ok": False, "error": "No hay movimientos de venta con costo para procesar hoy."}, status=400)
+            
+        cta_cmv = PlanCuenta.objects.filter(codigo__in=["5.1.01.001"]).first() or PlanCuenta.objects.filter(nombre__icontains="CMV", imputable=True).first()
+        cta_stock = PlanCuenta.objects.filter(codigo__in=["1.1.05.001", "1.1.03.001"]).first() or PlanCuenta.objects.filter(nombre__icontains="Mercader", imputable=True).first()
+        
+        if not (cta_cmv and cta_stock):
+            return JsonResponse({"ok": False, "error": "No se encontraron las cuentas de CMV o Mercaderías"}, status=400)
+            
+        num = (Asiento.objects.filter(ejercicio=ejercicio).aggregate(m=Max("numero"))["m"] or 0) + 1
+        asiento = Asiento.objects.create(
+            numero=num,
+            fecha=datetime.datetime.now(),
+            descripcion=f"ASIENTO CMV - CENTRALIZACION DIARIA {hoy}",
+            ejercicio=ejercicio,
+            origen="MANUAL"
+        )
+        
+        # DEBE: Gasto (CMV)
+        ItemAsiento.objects.create(asiento=asiento, cuenta=cta_cmv, debe=total_costo, haber=0)
+        # HABER: Activo (Stock)
+        ItemAsiento.objects.create(asiento=asiento, cuenta=cta_stock, debe=0, haber=total_costo)
+        
+        return JsonResponse({"ok": True, "mensaje": f"Asiento de CMV generado por ${total_costo:,.2f}."})
+    except Exception as e:
+        return JsonResponse({"ok": False, "error": str(e)}, status=500)

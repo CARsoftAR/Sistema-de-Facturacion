@@ -1,5 +1,6 @@
 
-import { Truck, Plus, Search, Trash2, Phone, Mail, MapPin, X, Save, Building2, CreditCard, RotateCcw, Users, Star, ShieldCheck, Pencil } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Truck, Plus, Search, Trash2, Phone, Mail, MapPin, X, Save, Building2, CreditCard, RotateCcw, Users, Star, ShieldCheck, Pencil, AlertCircle, Box, Info } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { BtnAdd, BtnEdit, BtnDelete, BtnAction, BtnClear, BtnGuardar, BtnCancelar } from '../components/CommonButtons';
 import { showDeleteAlert, showSuccessAlert, showErrorAlert } from '../utils/alerts';
@@ -108,10 +109,10 @@ const Proveedores = () => {
             if (data.ok || response.ok) {
                 fetchProveedores();
             } else {
-                alert("Error al eliminar: " + (data.error || "Desconocido"));
+                showErrorAlert("Error", data.error || "No se pudo eliminar el proveedor.");
             }
         } catch (e) {
-            alert("No se pudo eliminar el proveedor.");
+            showErrorAlert("Error", "Error de conexión.");
         }
     };
 
@@ -135,7 +136,7 @@ const Proveedores = () => {
                     setShowModal(true);
                 })
                 .catch(() => {
-                    alert("Error al cargar datos del proveedor");
+                    showErrorAlert("Error", "No se pudo cargar el proveedor.");
                 });
         } else {
             setEditingProvider(null);
@@ -160,7 +161,7 @@ const Proveedores = () => {
     };
 
     const handleSubmit = async (e) => {
-        e.preventDefault();
+        if (e) e.preventDefault();
 
         const url = editingProvider
             ? `/api/proveedores/${editingProvider.id}/editar/`
@@ -195,8 +196,8 @@ const Proveedores = () => {
             label: 'Proveedor',
             render: (v, p) => (
                 <div className="flex flex-col">
-                    <span className="font-black text-neutral-800 text-sm uppercase tracking-tight">{v}</span>
-                    <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider flex items-center gap-1">
+                    <span className="font-black text-slate-800 text-sm uppercase tracking-tight">{v}</span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
                         <MapPin size={10} /> {p.direccion || 'Sin dirección registrada'}
                     </span>
                 </div>
@@ -205,35 +206,35 @@ const Proveedores = () => {
         {
             key: 'cuit',
             label: 'Identificación',
-            width: '160px',
+            width: '180px',
             render: (v, p) => (
                 <div className="flex flex-col">
                     {v ? (
-                        <span className="font-mono text-xs font-black text-neutral-500 bg-neutral-100 px-2 py-1 rounded border border-neutral-200 w-fit">
+                        <span className="font-mono text-xs font-black text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200 w-fit">
                             {v}
                         </span>
-                    ) : <span className="text-neutral-300">---</span>}
-                    <span className="text-[10px] font-bold text-neutral-400 mt-1 uppercase tracking-widest">{p.condicion_fiscal || 'CF'}</span>
+                    ) : <span className="text-slate-300">---</span>}
+                    <span className="text-[10px] font-black text-indigo-500 mt-1 uppercase tracking-widest">{p.condicion_fiscal || 'CF'}</span>
                 </div>
             )
         },
         {
             key: 'contacto',
             label: 'Contacto',
-            width: '220px',
+            width: '240px',
             render: (_, p) => (
                 <div className="flex flex-col gap-0.5">
                     {p.telefono && (
-                        <span className="text-xs font-bold text-neutral-600 flex items-center gap-1.5">
-                            <Phone size={12} className="text-neutral-400" /> {p.telefono}
+                        <span className="text-xs font-bold text-slate-600 flex items-center gap-1.5">
+                            <Phone size={12} className="text-slate-400" /> {p.telefono}
                         </span>
                     )}
                     {p.email && (
-                        <span className="text-xs font-medium text-neutral-400 flex items-center gap-1.5 lowercase">
-                            <Mail size={12} className="text-neutral-300" /> {p.email}
+                        <span className="text-xs font-medium text-slate-400 flex items-center gap-1.5 lowercase">
+                            <Mail size={12} className="text-slate-300" /> {p.email}
                         </span>
                     )}
-                    {!p.telefono && !p.email && <span className="text-neutral-300">---</span>}
+                    {!p.telefono && !p.email && <span className="text-slate-300">---</span>}
                 </div>
             )
         },
@@ -244,16 +245,16 @@ const Proveedores = () => {
             width: '120px',
             sortable: false,
             render: (_, p) => (
-                <div className="flex justify-end gap-2">
+                <div className="flex justify-end gap-2 group-hover:opacity-100 transition-all">
                     <button
                         onClick={() => openModal(p)}
-                        className="p-2 text-neutral-400 hover:text-primary-600 hover:bg-primary-50 rounded-xl transition-all"
+                        className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
                     >
                         <Pencil size={18} />
                     </button>
                     <button
                         onClick={() => handleEliminar(p.id)}
-                        className="p-2 text-neutral-400 hover:text-error-600 hover:bg-error-50 rounded-xl transition-all"
+                        className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
                     >
                         <Trash2 size={18} />
                     </button>
@@ -267,22 +268,26 @@ const Proveedores = () => {
             {/* Header */}
             <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div className="space-y-1">
-                    <h1 className="text-3xl font-black text-neutral-900 tracking-tight flex items-center gap-3">
-                        <Truck className="text-blue-600" size={32} strokeWidth={2.5} />
-                        Cartera de Proveedores
-                    </h1>
-                    <p className="text-neutral-500 font-medium text-sm ml-1">
-                        Gestión centralizada de proveedores y condiciones comerciales.
+                    <div className="flex items-center gap-3">
+                        <div className="bg-gradient-to-br from-indigo-600 to-indigo-700 p-2.5 rounded-2xl text-white shadow-lg shadow-indigo-600/20">
+                            <Truck size={32} strokeWidth={2.5} />
+                        </div>
+                        <h1 className="text-3xl font-black text-slate-900 tracking-tight font-outfit uppercase">
+                            Cartera de Proveedores
+                        </h1>
+                    </div>
+                    <p className="text-slate-500 font-bold text-xs uppercase tracking-[0.15em] ml-14">
+                        Gestión centralizada de suministros y convenios.
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-neutral-200 text-neutral-700 rounded-xl font-bold text-sm hover:bg-neutral-50 transition-all shadow-sm">
+                    <button onClick={() => navigate('/contabilidad/cuentas-corrientes-proveedores')} className="flex items-center gap-2 px-5 py-3 bg-white border border-slate-200 text-slate-700 rounded-xl font-black text-[10px] tracking-widest uppercase hover:bg-slate-50 transition-all shadow-sm">
                         <CreditCard size={18} /> Cta. Corriente
                     </button>
                     <BtnAdd
                         label="NUEVO PROVEEDOR"
                         onClick={() => openModal()}
-                        className="!bg-blue-600 !hover:bg-blue-700 !rounded-xl !px-6 !py-3 !font-black !tracking-widest !text-xs !shadow-lg !shadow-blue-600/20"
+                        className="!bg-slate-900 !rounded-xl !px-8 !py-3.5 !font-black !tracking-widest !text-[11px] !shadow-xl !shadow-slate-900/20 active:scale-95 transition-all text-white"
                     />
                 </div>
             </header>
@@ -293,48 +298,49 @@ const Proveedores = () => {
                     label="Total Proveedores"
                     value={totalItems}
                     icon={Truck}
-                    color="primary"
+                    color="indigo"
                 />
                 <StatCard
                     label="Compras del Mes"
                     value="-- "
                     icon={ShieldCheck}
-                    color="success"
+                    color="emerald"
                 />
                 <StatCard
-                    label="Proveedores Activos"
-                    value={totalItems}
+                    label="Calificación Media"
+                    value="Excelente"
                     icon={Star}
-                    color="warning"
+                    color="amber"
                 />
             </BentoGrid>
 
             {/* Filtration & Content */}
-            <div className="flex flex-col flex-grow gap-4 min-h-0">
-                <PremiumFilterBar
-                    busqueda={busqueda}
-                    setBusqueda={(v) => { setBusqueda(v); setPage(1); }}
-                    showQuickFilters={false}
-                    showDateRange={false}
-                    onClear={() => { setBusqueda(''); setPage(1); }}
-                    placeholder="Buscar por nombre, CUIT o email..."
+            {/* Filtration & Content */}
+            <PremiumFilterBar
+                busqueda={busqueda}
+                setBusqueda={(v) => { setBusqueda(v); setPage(1); }}
+                showQuickFilters={false}
+                showDateRange={false}
+                onClear={() => { setBusqueda(''); setPage(1); }}
+                placeholder="Buscar por nombre, CUIT o email..."
+            />
+
+            <div className="flex-grow flex flex-col min-h-0">
+                <PremiumTable
+                    columns={columns}
+                    data={proveedores}
+                    loading={loading}
+                    className={cn("flex-grow shadow-lg", proveedores.length > 0 ? "rounded-b-none" : "")}
+                    emptyState={
+                        <EmptyState
+                            title="No se encontraron proveedores"
+                            description="Verifica los filtros o agrega un nuevo proveedor a tu base de datos."
+                            icon={Truck}
+                        />
+                    }
                 />
 
-                <div className="flex-grow flex flex-col min-h-0">
-                    <PremiumTable
-                        columns={columns}
-                        data={proveedores}
-                        loading={loading}
-                        className="flex-grow shadow-lg"
-                        emptyState={
-                            <EmptyState
-                                title="No se encontraron proveedores"
-                                description="Verifica los filtros o agrega un nuevo proveedor a tu base de datos."
-                                icon={Truck}
-                            />
-                        }
-                    />
-
+                {proveedores.length > 0 && (
                     <div className="bg-white border-x border-b border-neutral-200 rounded-b-[2rem] px-6 py-1 shadow-premium">
                         <TablePagination
                             currentPage={page}
@@ -349,51 +355,54 @@ const Proveedores = () => {
                             }}
                         />
                     </div>
-                </div>
+                )}
             </div>
 
             {/* Modal Premium (Tailwind) */}
             {showModal && (
-                <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="relative w-full max-w-4xl bg-white rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden transform transition-all scale-100 z-10 border border-slate-200">
-                        {/* Header */}
-                        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl">
-                                    <Truck size={24} strokeWidth={2.5} />
-                                </div>
-                                <div>
-                                    <h2 className="text-xl font-bold text-slate-800 tracking-tight">
-                                        {editingProvider ? 'Editar Proveedor' : 'Nuevo Proveedor'}
-                                    </h2>
-                                    <p className="text-sm text-slate-500 font-medium">
-                                        {editingProvider ? 'Modificar datos del proveedor' : 'Dar de alta un nuevo proveedor'}
-                                    </p>
-                                </div>
+                <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="relative w-full max-w-4xl bg-white rounded-[2.5rem] shadow-2xl flex flex-col max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-200">
+                        {/* Header Premium */}
+                        <div className="bg-slate-900 px-8 py-10 text-white relative flex-shrink-0">
+                            <div className="absolute top-0 right-0 p-8 opacity-10">
+                                <Truck size={160} strokeWidth={1} />
                             </div>
-                            <button
-                                onClick={() => setShowModal(false)}
-                                className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
-                            >
-                                <X size={24} />
-                            </button>
+                            <div className="relative z-10 flex justify-between items-start">
+                                <div>
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <div className="bg-white/10 p-2 rounded-xl backdrop-blur-md">
+                                            <Building2 size={20} className="text-indigo-400" />
+                                        </div>
+                                        <span className="text-[10px] font-black tracking-[0.2em] uppercase text-indigo-400">Proveedores / Suministros</span>
+                                    </div>
+                                    <h2 className="text-3xl font-black uppercase tracking-tight font-outfit">
+                                        {editingProvider ? 'Editar Proveedor' : 'Ficha de Proveedor'}
+                                    </h2>
+                                </div>
+                                <button
+                                    onClick={() => setShowModal(false)}
+                                    className="p-3 bg-white/10 hover:bg-white/20 rounded-2xl transition-all"
+                                >
+                                    <X size={24} />
+                                </button>
+                            </div>
                         </div>
 
                         {/* Body - Scrollable */}
-                        <div className="p-6 overflow-y-auto bg-white flex-1 custom-scrollbar">
-                            <form id="proveedor-form" onSubmit={handleSubmit} className="flex flex-col gap-5">
+                        <div className="p-8 overflow-y-auto bg-white flex-1 scrollbar-premium">
+                            <form id="proveedor-form" onSubmit={handleSubmit} className="space-y-8">
                                 {/* SECCIÓN 1: DATOS PRINCIPALES */}
-                                <div className="bg-slate-50/50 p-5 rounded-2xl border border-slate-100">
-                                    <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-                                        <Building2 size={16} /> Datos Principales
+                                <div className="space-y-4">
+                                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2 mb-4">
+                                        <Box size={14} className="text-indigo-600" /> Identificación Comercial
                                     </h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="col-span-1 md:col-span-2">
-                                            <label className="block text-xs font-bold text-slate-500 mb-1">RAZÓN SOCIAL / NOMBRE <span className="text-red-500">*</span></label>
+                                    <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                                        <div className="md:col-span-8 space-y-2">
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Razón Social / Nombre Comercial</label>
                                             <input
                                                 type="text"
-                                                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white text-slate-800 text-sm font-semibold transition-all placeholder:font-normal"
-                                                placeholder="Ej: Distribuidora S.A."
+                                                className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-500 focus:bg-white outline-none font-bold text-slate-700 transition-all uppercase"
+                                                placeholder="Ej: DISTRIBUIDORA NORTE S.A."
                                                 name="nombre"
                                                 value={formData.nombre}
                                                 onChange={handleInputChange}
@@ -401,19 +410,30 @@ const Proveedores = () => {
                                                 autoFocus
                                             />
                                         </div>
+                                        <div className="md:col-span-4 space-y-2">
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">CUIT / Identificación</label>
+                                            <input
+                                                type="text"
+                                                className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-500 focus:bg-white outline-none font-bold text-slate-700 transition-all font-mono"
+                                                name="cuit"
+                                                value={formData.cuit}
+                                                onChange={handleInputChange}
+                                                placeholder="30-XXXXXXXX-X"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
 
-                                {/* SECCIÓN 2: INFORMACIÓN FISCAL Y BANCARIA */}
-                                <div className="bg-slate-50/50 p-5 rounded-2xl border border-slate-100">
-                                    <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-                                        <CreditCard size={16} /> Información Fiscal
+                                {/* SECCIÓN 2: FISCAL Y BANCARIO */}
+                                <div className="space-y-4">
+                                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2 mb-4">
+                                        <CreditCard size={14} className="text-indigo-600" /> Configuración Fiscal y Pagos
                                     </h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-xs font-bold text-slate-500 mb-1">CONDICIÓN FISCAL</label>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Condición Frente al IVA</label>
                                             <select
-                                                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white text-slate-800 text-sm font-medium transition-all"
+                                                className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-500 focus:bg-white outline-none font-bold text-slate-700 transition-all appearance-none cursor-pointer"
                                                 name="condicion_fiscal"
                                                 value={formData.condicion_fiscal}
                                                 onChange={handleInputChange}
@@ -424,97 +444,88 @@ const Proveedores = () => {
                                                 <option value="CF">Consumidor Final</option>
                                             </select>
                                         </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-slate-500 mb-1">CUIT</label>
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">CBU de Cobro (22 dígitos)</label>
                                             <input
                                                 type="text"
-                                                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white text-slate-800 text-sm font-semibold transition-all font-mono"
-                                                name="cuit"
-                                                value={formData.cuit}
-                                                onChange={handleInputChange}
-                                                placeholder="XX-XXXXXXXX-X"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-slate-500 mb-1">CBU / CVU</label>
-                                            <input
-                                                type="text"
-                                                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white text-slate-800 text-sm font-semibold transition-all font-mono"
+                                                className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-500 focus:bg-white outline-none font-bold text-slate-700 transition-all font-mono"
                                                 name="cbu"
                                                 value={formData.cbu}
                                                 onChange={handleInputChange}
-                                                placeholder="22 dígitos"
+                                                placeholder="000000..."
                                                 maxLength="22"
                                             />
                                         </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-slate-500 mb-1">ALIAS</label>
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Alias Bancario</label>
                                             <input
                                                 type="text"
-                                                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white text-slate-800 text-sm font-semibold transition-all uppercase"
+                                                className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-500 focus:bg-white outline-none font-bold text-slate-700 transition-all uppercase"
                                                 name="alias"
                                                 value={formData.alias}
                                                 onChange={handleInputChange}
-                                                placeholder="MI.ALIAS"
+                                                placeholder="LUNA.SOL.NUBE"
                                             />
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* SECCIÓN 3: CONTACTO Y NOTAS */}
-                                <div className="bg-slate-50/50 p-5 rounded-2xl border border-slate-100">
-                                    <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-                                        <Phone size={16} /> Contacto
+                                {/* SECCIÓN 3: CONTACTO */}
+                                <div className="space-y-4">
+                                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2 mb-4">
+                                        <Phone size={14} className="text-indigo-600" /> Medios de Contacto y Logística
                                     </h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-xs font-bold text-slate-500 mb-1">TELÉFONO</label>
-                                            <div className="relative">
-                                                <Phone size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                                                <input
-                                                    type="text"
-                                                    className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white text-slate-800 text-sm font-semibold transition-all"
-                                                    name="telefono"
-                                                    value={formData.telefono}
-                                                    onChange={handleInputChange}
-                                                />
-                                            </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="space-y-2 text-indigo-600">
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1 flex items-center gap-2">
+                                                <Phone size={12} /> Teléfono Directo
+                                            </label>
+                                            <input
+                                                type="text"
+                                                className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-500 focus:bg-white outline-none font-bold text-slate-700 transition-all"
+                                                name="telefono"
+                                                value={formData.telefono}
+                                                onChange={handleInputChange}
+                                                placeholder="Ej: +54 9 11..."
+                                            />
                                         </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-slate-500 mb-1">EMAIL</label>
-                                            <div className="relative">
-                                                <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                                                <input
-                                                    type="email"
-                                                    className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white text-slate-800 text-sm font-semibold transition-all"
-                                                    name="email"
-                                                    value={formData.email}
-                                                    onChange={handleInputChange}
-                                                />
-                                            </div>
+                                        <div className="space-y-2 text-indigo-600">
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1 flex items-center gap-2">
+                                                <Mail size={12} /> Casilla de Email
+                                            </label>
+                                            <input
+                                                type="email"
+                                                className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-500 focus:bg-white outline-none font-bold text-slate-700 transition-all lowercase"
+                                                name="email"
+                                                value={formData.email}
+                                                onChange={handleInputChange}
+                                                placeholder="proveedor@empresa.com"
+                                            />
                                         </div>
-                                        <div className="col-span-1 md:col-span-2">
-                                            <label className="block text-xs font-bold text-slate-500 mb-1">DIRECCIÓN</label>
-                                            <div className="relative">
-                                                <MapPin size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                                                <input
-                                                    type="text"
-                                                    className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white text-slate-800 text-sm font-semibold transition-all"
-                                                    name="direccion"
-                                                    value={formData.direccion}
-                                                    onChange={handleInputChange}
-                                                />
-                                            </div>
+                                        <div className="md:col-span-2 space-y-2 text-indigo-600">
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1 flex items-center gap-2">
+                                                <MapPin size={12} /> Dirección de Despacho / Depósito
+                                            </label>
+                                            <input
+                                                type="text"
+                                                className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-500 focus:bg-white outline-none font-bold text-slate-700 transition-all"
+                                                name="direccion"
+                                                value={formData.direccion}
+                                                onChange={handleInputChange}
+                                                placeholder="Ej: Av. Rivadavia 1234, CABA"
+                                            />
                                         </div>
-                                        <div className="col-span-1 md:col-span-2">
-                                            <label className="block text-xs font-bold text-slate-500 mb-1">NOTAS</label>
+                                        <div className="md:col-span-2 space-y-2">
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1 flex items-center gap-2">
+                                                <Info size={12} /> Observaciones y Notas Internas
+                                            </label>
                                             <textarea
-                                                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white text-slate-800 text-sm font-normal transition-all"
+                                                className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-500 focus:bg-white outline-none font-medium text-slate-600 transition-all resize-none"
                                                 name="notas"
-                                                rows="2"
+                                                rows="3"
                                                 value={formData.notas}
                                                 onChange={handleInputChange}
-                                                placeholder="Información adicional..."
+                                                placeholder="Información adicional relevante..."
                                             ></textarea>
                                         </div>
                                     </div>
@@ -522,10 +533,23 @@ const Proveedores = () => {
                             </form>
                         </div>
 
-                        {/* Footer */}
-                        <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3 flex-shrink-0">
-                            <BtnCancelar onClick={() => setShowModal(false)} />
-                            <BtnGuardar label="Guardar" form="proveedor-form" />
+                        {/* Footer Premium */}
+                        <div className="p-8 bg-slate-50 border-t border-slate-100 flex justify-end gap-3 flex-shrink-0">
+                            <button
+                                type="button"
+                                onClick={() => setShowModal(false)}
+                                className="px-8 py-4 bg-white border-2 border-slate-200 text-slate-500 rounded-2xl font-black text-xs tracking-widest uppercase hover:bg-slate-100 transition-all"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                type="submit"
+                                form="proveedor-form"
+                                className="px-10 py-4 bg-slate-900 text-white rounded-2xl font-black text-xs tracking-widest uppercase hover:bg-slate-800 shadow-xl shadow-slate-900/20 active:scale-95 transition-all flex items-center gap-2"
+                            >
+                                <Save size={18} />
+                                {editingProvider ? 'ACTUALIZAR FICHA' : 'REGISTRAR PROVEEDOR'}
+                            </button>
                         </div>
                     </div>
                 </div>

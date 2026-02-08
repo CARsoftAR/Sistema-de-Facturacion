@@ -20,6 +20,7 @@ import {
     CreditCard,
     Landmark,
     TrendingUp,
+    TrendingDown,
     Briefcase,
     Sparkles,
     BarChart3,
@@ -39,7 +40,12 @@ import {
     Activity,
     HelpCircle,
     Info,
-    Building2
+    Building2,
+    Scale,
+    Truck,
+    Clock,
+    Zap,
+    Plus
 } from 'lucide-react';
 
 
@@ -227,58 +233,57 @@ const Sidebar = () => {
                         {/* Section: Operaciones */}
                         <div className="space-y-1">
                             <span className="px-4 text-[12px] font-black text-neutral-400 uppercase tracking-[0.15em]">Operaciones</span>
+                            <SidebarItem icon={ShoppingCart} label="Central Ventas" href="/ventas" permission="ventas" />
+                            <SidebarItem icon={Truck} label="Gestión Compras" href="/compras" permission="compras" />
+
+                            <SidebarItem icon={Package} label="Central Stock" href="/stock" permission="productos" />
+
                             <SidebarItem
-                                icon={ClipboardList}
-                                label="Comprobantes"
-                                isOpen={openSection === 'operaciones'}
-                                onToggle={() => toggleSection('operaciones')}
-                                subItems={[
-                                    { label: 'Ventas', href: '/ventas', permission: 'ventas' },
-                                    { label: 'Compras', href: '/compras', permission: 'compras' },
-                                    { label: 'Pedidos', href: '/pedidos', permission: 'pedidos' },
-                                    { label: 'Presupuestos', href: '/presupuestos', permission: 'presupuestos' },
-                                    { label: 'Notas de Crédito', href: '/notas-credito', permission: 'ventas' },
-                                    { label: 'Notas de Débito', href: '/notas-debito', permission: 'ventas' },
-                                    { label: 'Remitos', href: '/remitos', permission: 'remitos' },
-                                ]}
-                            />
-                            <SidebarItem
-                                icon={Package}
-                                label="Productos"
-                                isOpen={openSection === 'productos'}
-                                onToggle={() => toggleSection('productos')}
+                                icon={LayoutDashboard}
+                                label="Operativos"
+                                isOpen={openSection === 'sub-operaciones'}
+                                onToggle={() => toggleSection('sub-operaciones')}
                                 subItems={[
                                     { label: 'Stock General', href: '/productos', permission: 'productos' },
                                     { label: 'Ajustes Manuales', href: '/ajuste-stock', permission: 'productos' },
                                     { label: 'Movimientos', href: '/movimientos-stock', permission: 'productos' },
                                     { label: 'Precios', href: '/precios/actualizar', permission: 'productos' },
                                 ]}
-
                             />
-                            <SidebarItem icon={Users} label="Clientes" href="/clientes" permission="clientes" />
-                            <SidebarItem icon={Users} label="Proveedores" href="/proveedores" permission="proveedores" />
+
+                            <SidebarItem
+                                icon={Users}
+                                label="Entidades"
+                                isOpen={openSection === 'entidades'}
+                                onToggle={() => toggleSection('entidades')}
+                                subItems={[
+                                    { label: 'Clientes', href: '/clientes', permission: 'clientes' },
+                                    { label: 'Proveedores', href: '/proveedores', permission: 'proveedores' },
+                                ]}
+                            />
                         </div>
 
                         {/* Section: Tesorería */}
                         <div className="space-y-1">
                             <span className="px-4 text-[12px] font-black text-neutral-400 uppercase tracking-[0.15em]">Finanzas</span>
-                            <SidebarItem icon={Banknote} label="Caja" href="/caja" permission="caja" />
+                            <SidebarItem icon={Banknote} label="Centro Tesorería" href="/tesoreria" permission="caja" />
                             <SidebarItem
                                 icon={Landmark}
-                                label="Bancos"
+                                label="Fondos y Bancos"
                                 isOpen={openSection === 'bancos'}
                                 onToggle={() => toggleSection('bancos')}
                                 permission="bancos"
                                 subItems={[
+                                    { label: 'Movimientos Caja', href: '/caja' },
                                     { label: 'Cuentas Bancarias', href: '/bancos' },
                                     { label: 'Conciliación', href: '/bancos/conciliacion' },
-                                    { label: 'Cheques', href: '/cheques' },
+                                    { label: 'Manejo Cheques', href: '/cheques' },
                                 ]}
                             />
 
                             <SidebarItem
                                 icon={CreditCard}
-                                label="Ctas. Corrientes"
+                                label="Saldos Ctes."
                                 isOpen={openSection === 'ctas-corrientes'}
                                 onToggle={() => toggleSection('ctas-corrientes')}
                                 subItems={[
@@ -290,45 +295,32 @@ const Sidebar = () => {
 
                         {/* Section: Contabilidad */}
                         <div className="space-y-1">
-                            <span className="px-4 text-[12px] font-black text-neutral-400 uppercase tracking-[0.15em]">Core Contable</span>
+                            <span className="px-4 text-[12px] font-black text-neutral-400 uppercase tracking-[0.15em]">Gestión Profesional</span>
+                            <SidebarItem icon={Scale} label="Central Contable" href="/contabilidad" permission="contabilidad" />
                             <SidebarItem
                                 icon={FileText}
-                                label="Contabilidad"
+                                label="Módulos Contables"
                                 isOpen={openSection === 'contabilidad'}
                                 onToggle={() => toggleSection('contabilidad')}
                                 permission="contabilidad"
                                 subItems={[
-                                    { label: 'Plan de Cuentas', href: '/contabilidad/plan-cuentas/' },
-                                    { label: 'Asientos', href: '/contabilidad/asientos/' },
-                                    { label: 'Libro Mayor', href: '/contabilidad/mayor/' },
-                                    { label: 'Balance', href: '/contabilidad/balance/' },
-                                    { label: 'Reportes Contables', href: '/contabilidad/reportes/' },
+                                    { label: 'Plan de Cuentas', href: '/contabilidad/plan-cuentas' },
+                                    { label: 'Asientos', href: '/contabilidad/asientos' },
+                                    { label: 'Libro Mayor', href: '/contabilidad/mayor' },
+                                    { label: 'Balance', href: '/contabilidad/balance' },
+                                    { label: 'Ejercicios', href: '/contabilidad/ejercicios' },
+                                    { label: 'Reportes Contables', href: '/contabilidad/reportes' },
                                 ]}
-
                             />
                         </div>
 
                         {/* Section: Administración */}
                         <div className="space-y-1">
-                            <SidebarItem icon={Settings} label="Parámetros" href="/parametros" permission="configuracion" />
+                            <span className="px-4 text-[12px] font-black text-neutral-400 uppercase tracking-[0.15em]">Administración</span>
+                            <SidebarItem icon={Settings} label="Central Maestro" href="/maestro" />
                             <SidebarItem icon={Building2} label="Mi Empresa" href="/configuracion/empresa" permission="configuracion" />
-                            <SidebarItem icon={Users} label="Usuarios" href="/usuarios" permission="usuarios" />
-                            <SidebarItem icon={Database} label="Backups" href="/backups" permission="configuracion" />
-                            <SidebarItem
-                                icon={BookOpen}
-                                label="Maestro"
-                                isOpen={openSection === 'maestro'}
-                                onToggle={() => toggleSection('maestro')}
-                                subItems={[
-                                    { label: 'Localidades', href: '/localidades', permission: 'configuracion' },
-                                    { label: 'Marcas', href: '/marcas', permission: 'productos' },
-                                    { label: 'Rubros', href: '/rubros', permission: 'productos' },
-                                    { label: 'Unidades', href: '/unidades', permission: 'productos' },
-                                ]}
-                            />
-                            <SidebarItem icon={Shield} label="Auditoría" href="/auditoria" permission="auditoria" />
-                            <SidebarItem icon={Activity} label="Estado Sistema" href="/estado" permission="configuracion" isExternal={true} />
-
+                            <SidebarItem icon={Shield} label="Seguridad/Auditoría" href="/auditoria" permission="auditoria" />
+                            <SidebarItem icon={Activity} label="Estado Sistema" href="/estado" isExternal={true} />
                         </div>
 
                         {/* Section: Ayuda */}

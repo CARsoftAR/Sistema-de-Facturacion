@@ -469,5 +469,10 @@ urlpatterns = [
     # MANUAL DE USUARIO
     path("api/manual/listar/", views.api_manual_listar, name="api_manual_listar"),
     path("api/manual/leer/<str:slug>/", views.api_manual_leer, name="api_manual_leer"),
+    
+    # Automatizaciones Contables
+    path("api/contabilidad/automatizacion/ventas/", views.api_contabilidad_centralizar_ventas, name="api_contabilidad_centralizar_ventas"),
+    path("api/contabilidad/automatizacion/compras/", views.api_contabilidad_centralizar_compras, name="api_contabilidad_centralizar_compras"),
+    path("api/contabilidad/automatizacion/cmv/", views.api_contabilidad_centralizar_cmv, name="api_contabilidad_centralizar_cmv"),
 
 ]

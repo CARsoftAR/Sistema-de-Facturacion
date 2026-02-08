@@ -352,7 +352,7 @@ const NuevaCompra = () => {
                                 onKeyDown={handleCodigoKeyDown}
                                 onBlur={handleCodigoBlur}
                                 placeholder="----"
-                                className="w-full px-4 py-3 bg-white border border-neutral-300 rounded-xl focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all font-mono font-bold text-center text-primary-600 shadow-sm text-lg"
+                                className="w-full h-[46px] px-4 bg-white border border-neutral-300 rounded-full focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all font-mono font-bold text-center text-primary-600 shadow-sm text-sm"
                             />
                             {mostrarSugerenciasCodigo && codigosSugeridos.length > 0 && (
                                 <div ref={codigoListRef} className="absolute z-[150] top-full left-0 mt-2 w-[220%] bg-white border border-neutral-200 rounded-2xl shadow-2xl p-1 animate-in slide-in-from-top-2">
@@ -378,7 +378,7 @@ const NuevaCompra = () => {
                                 onKeyDown={handleProductoKeyDown}
                                 onBlur={handleProductoBlur}
                                 placeholder="Escriba para buscar..."
-                                className="w-full px-5 py-3 bg-white border border-neutral-300 rounded-xl focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all font-bold text-neutral-800 shadow-sm text-lg"
+                                className="w-full h-[46px] px-5 bg-white border border-neutral-300 rounded-full focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all font-bold text-neutral-800 shadow-sm text-sm"
                             />
                             {mostrarSugerenciasProducto && (
                                 <div ref={productoListRef} className="absolute z-[150] top-full left-0 w-full mt-2 bg-white border border-neutral-200 rounded-2xl shadow-2xl max-h-64 overflow-y-auto p-1 scrollbar-thin animate-in slide-in-from-top-2">
@@ -402,7 +402,7 @@ const NuevaCompra = () => {
                                 value={inputCantidad}
                                 onChange={(e) => setInputCantidad(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && costoRef.current?.focus()}
-                                className="w-full py-3 bg-white border border-neutral-300 rounded-xl focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 text-center font-black text-neutral-900 text-lg"
+                                className="w-full h-[46px] bg-white border border-neutral-300 rounded-full focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 text-center font-black text-neutral-900 text-sm"
                             />
                         </div>
                         <div className="col-span-1">
@@ -414,7 +414,7 @@ const NuevaCompra = () => {
                                 onChange={(e) => setInputCosto(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && handleAutoAdd(productoSeleccionado, parseFloat(inputCantidad), parseFloat(inputCosto))}
                                 placeholder="0.00"
-                                className="w-full py-3 bg-white border border-neutral-300 rounded-xl focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 text-center font-black text-emerald-600 text-lg"
+                                className="w-full h-[46px] bg-white border border-neutral-300 rounded-full focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 text-center font-black text-emerald-600 text-sm"
                             />
                         </div>
                         <div className="col-span-2">
@@ -422,11 +422,11 @@ const NuevaCompra = () => {
                                 onClick={() => handleAutoAdd(productoSeleccionado, parseFloat(inputCantidad), parseFloat(inputCosto))}
                                 disabled={!productoSeleccionado}
                                 className={cn(
-                                    "w-full h-[52px] rounded-xl flex items-center justify-center transition-all shadow-lg",
+                                    "w-full h-[46px] rounded-full flex items-center justify-center transition-all shadow-lg",
                                     productoSeleccionado ? "bg-primary-600 text-white hover:bg-primary-700 active:scale-95 shadow-primary-600/20" : "bg-neutral-100 text-neutral-300"
                                 )}
                             >
-                                <Plus size={24} strokeWidth={4} />
+                                <Plus size={20} strokeWidth={4} />
                             </button>
                         </div>
                     </div>

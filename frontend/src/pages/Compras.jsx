@@ -339,51 +339,52 @@ const Compras = () => {
             </BentoGrid>
 
             {/* Filtration Section (Compact/No Panel) */}
-            <div className="flex flex-col flex-grow gap-4 min-h-0">
-                <PremiumFilterBar
-                    busqueda={searchTerm}
-                    setBusqueda={setSearchTerm}
-                    dateRange={dateRange}
-                    setDateRange={setDateRange}
-                    onClear={() => {
-                        setSearchTerm('');
-                        setFilterEstado('TODOS');
-                        setDateRange({
-                            start: getLocalDate(new Date(new Date().getFullYear(), new Date().getMonth(), 1)),
-                            end: getLocalDate()
-                        });
-                        setPage(1);
-                    }}
-                    placeholder="Buscar por proveedor o N° de orden..."
+            {/* Filtration Section */}
+            <PremiumFilterBar
+                busqueda={searchTerm}
+                setBusqueda={setSearchTerm}
+                dateRange={dateRange}
+                setDateRange={setDateRange}
+                onClear={() => {
+                    setSearchTerm('');
+                    setFilterEstado('TODOS');
+                    setDateRange({
+                        start: getLocalDate(new Date(new Date().getFullYear(), new Date().getMonth(), 1)),
+                        end: getLocalDate()
+                    });
+                    setPage(1);
+                }}
+                placeholder="Buscar por proveedor o N° de orden..."
+            >
+                <select
+                    value={filterEstado}
+                    onChange={(e) => setFilterEstado(e.target.value)}
+                    className="bg-white border border-neutral-200 rounded-full px-6 h-[52px] text-[10px] font-black uppercase tracking-widest text-neutral-600 focus:ring-2 focus:ring-primary-500 transition-all outline-none shadow-sm cursor-pointer appearance-none pr-12 min-w-[200px] bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_1rem_center] bg-no-repeat"
                 >
-                    <select
-                        value={filterEstado}
-                        onChange={(e) => setFilterEstado(e.target.value)}
-                        className="bg-white border border-neutral-200 rounded-full px-6 h-[52px] text-[10px] font-black uppercase tracking-widest text-neutral-600 focus:ring-2 focus:ring-primary-500 transition-all outline-none shadow-sm cursor-pointer appearance-none pr-12 min-w-[200px] bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_1rem_center] bg-no-repeat"
-                    >
-                        <option value="TODOS">TODOS LOS ESTADOS</option>
-                        <option value="PENDIENTE">PENDIENTES</option>
-                        <option value="RECIBIDA">RECIBIDAS</option>
-                        <option value="CANCELADA">CANCELADAS</option>
-                    </select>
-                </PremiumFilterBar>
+                    <option value="TODOS">TODOS LOS ESTADOS</option>
+                    <option value="PENDIENTE">PENDIENTES</option>
+                    <option value="RECIBIDA">RECIBIDAS</option>
+                    <option value="CANCELADA">CANCELADAS</option>
+                </select>
+            </PremiumFilterBar>
 
-                <div className="flex-grow flex flex-col min-h-0">
-                    <div className="flex-grow overflow-hidden flex flex-col bg-white rounded-t-[2rem] border-x border-t border-neutral-200 shadow-lg mt-2">
-                        <PremiumTable
-                            columns={columns}
-                            data={itemsToShow}
-                            loading={loading}
-                            emptyState={
-                                <EmptyState
-                                    title="Sin órdenes de compra"
-                                    description="No se encontraron compras que coincidan con la búsqueda."
-                                />
-                            }
+            <div className="flex-grow flex flex-col min-h-0">
+                <PremiumTable
+                    columns={columns}
+                    data={itemsToShow}
+                    loading={loading}
+                    className={cn("flex-grow shadow-lg", itemsToShow.length > 0 ? "rounded-b-none" : "")}
+                    emptyState={
+                        <EmptyState
+                            title="Sin órdenes de compra"
+                            description="No se encontraron compras que coincidan con la búsqueda."
+                            icon={ShoppingBag}
                         />
-                    </div>
+                    }
+                />
 
-                    <div className="bg-white border-x border-b border-neutral-200 rounded-b-[2rem] px-6 py-1 shadow-premium relative z-10">
+                {itemsToShow.length > 0 && (
+                    <div className="bg-white border-x border-b border-neutral-200 rounded-b-[2rem] px-6 py-1 shadow-premium">
                         <TablePagination
                             currentPage={page}
                             totalPages={totalPages}
@@ -397,75 +398,75 @@ const Compras = () => {
                             }}
                         />
                     </div>
+                )}
+            </div>
+
+            <PaymentModal
+                isOpen={showPaymentModal}
+                onClose={() => setShowPaymentModal(false)}
+                onConfirm={handlePaymentConfirm}
+                total={ordenARecibir ? parseFloat(ordenARecibir.total_estimado) : 0}
+                mode="purchase"
+                clientName={ordenARecibir ? `Proveedor: ${ordenARecibir.proveedor}` : ''}
+                allowedMethods={['EFECTIVO', 'CTACTE', 'CHEQUE']}
+                initialMethod="EFECTIVO"
+            />
+
+            {showSuccessModal && (
+                <div className="fixed inset-0 z-[1600] flex items-center justify-center p-4 bg-neutral-950/80 backdrop-blur-md animate-in fade-in duration-300">
+                    <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-sm overflow-hidden text-center p-10 border border-neutral-200 animate-in zoom-in-95">
+                        <div className="mx-auto bg-emerald-50 w-20 h-20 rounded-full flex items-center justify-center mb-6 text-emerald-600 shadow-sm">
+                            <Check size={40} strokeWidth={3} />
+                        </div>
+                        <h4 className="text-2xl font-black text-neutral-900 mb-2 tracking-tight uppercase font-outfit">
+                            {successOrderData?.msg ? '¡Completado!' : '¡Orden Recibida!'}
+                        </h4>
+                        <p className="text-neutral-500 font-medium mb-10 leading-relaxed text-sm">
+                            {successOrderData?.msg || `La orden #${successOrderData?.orden_id} fue recibida y procesada con éxito.`}
+                        </p>
+                        <button
+                            className="w-full py-4 bg-emerald-600 text-white font-black rounded-2xl shadow-lg shadow-emerald-500/20 hover:bg-emerald-700 transition-all uppercase tracking-widest text-xs"
+                            onClick={() => setShowSuccessModal(false)}
+                        >
+                            CONTINUAR
+                        </button>
+                    </div>
                 </div>
+            )}
 
-                <PaymentModal
-                    isOpen={showPaymentModal}
-                    onClose={() => setShowPaymentModal(false)}
-                    onConfirm={handlePaymentConfirm}
-                    total={ordenARecibir ? parseFloat(ordenARecibir.total_estimado) : 0}
-                    mode="purchase"
-                    clientName={ordenARecibir ? `Proveedor: ${ordenARecibir.proveedor}` : ''}
-                    allowedMethods={['EFECTIVO', 'CTACTE', 'CHEQUE']}
-                    initialMethod="EFECTIVO"
-                />
-
-                {showSuccessModal && (
-                    <div className="fixed inset-0 z-[1600] flex items-center justify-center p-4 bg-neutral-950/80 backdrop-blur-md animate-in fade-in duration-300">
-                        <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-sm overflow-hidden text-center p-10 border border-neutral-200 animate-in zoom-in-95">
-                            <div className="mx-auto bg-emerald-50 w-20 h-20 rounded-full flex items-center justify-center mb-6 text-emerald-600 shadow-sm">
-                                <Check size={40} strokeWidth={3} />
-                            </div>
-                            <h4 className="text-2xl font-black text-neutral-900 mb-2 tracking-tight uppercase font-outfit">
-                                {successOrderData?.msg ? '¡Completado!' : '¡Orden Recibida!'}
-                            </h4>
-                            <p className="text-neutral-500 font-medium mb-10 leading-relaxed text-sm">
-                                {successOrderData?.msg || `La orden #${successOrderData?.orden_id} fue recibida y procesada con éxito.`}
-                            </p>
+            {showCancelConfirmModal && (
+                <div className="fixed inset-0 z-[1600] flex items-center justify-center p-4 bg-neutral-950/80 backdrop-blur-md animate-in fade-in duration-300">
+                    <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-sm overflow-hidden text-center p-10 border border-neutral-200 animate-in zoom-in-95">
+                        <div className="mx-auto bg-red-50 w-20 h-20 rounded-full flex items-center justify-center mb-6 text-red-500 shadow-sm">
+                            <XCircle size={40} strokeWidth={2} />
+                        </div>
+                        <h4 className="text-2xl font-black text-neutral-900 mb-2 tracking-tight uppercase font-outfit">¿Anular Orden?</h4>
+                        <p className="text-neutral-500 font-medium mb-10 leading-relaxed text-sm">
+                            Esta acción es irreversible. La orden de compra quedará anulada permanentemente.
+                        </p>
+                        <div className="flex gap-4">
                             <button
-                                className="w-full py-4 bg-emerald-600 text-white font-black rounded-2xl shadow-lg shadow-emerald-500/20 hover:bg-emerald-700 transition-all uppercase tracking-widest text-xs"
-                                onClick={() => setShowSuccessModal(false)}
+                                className="flex-1 py-4 bg-neutral-100 text-neutral-400 font-black rounded-2xl hover:bg-neutral-200 transition-all uppercase tracking-widest text-xs"
+                                onClick={() => setShowCancelConfirmModal(false)}
+                                disabled={cancelando}
                             >
-                                CONTINUAR
+                                VOLVER
+                            </button>
+                            <button
+                                className="flex-1 py-4 bg-red-600 text-white font-black rounded-2xl shadow-lg shadow-red-500/20 hover:bg-red-700 transition-all uppercase tracking-widest text-xs flex items-center justify-center"
+                                onClick={confirmCancelar}
+                                disabled={cancelando}
+                            >
+                                {cancelando ? (
+                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                ) : (
+                                    'CONFIRMAR'
+                                )}
                             </button>
                         </div>
                     </div>
-                )}
-
-                {showCancelConfirmModal && (
-                    <div className="fixed inset-0 z-[1600] flex items-center justify-center p-4 bg-neutral-950/80 backdrop-blur-md animate-in fade-in duration-300">
-                        <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-sm overflow-hidden text-center p-10 border border-neutral-200 animate-in zoom-in-95">
-                            <div className="mx-auto bg-red-50 w-20 h-20 rounded-full flex items-center justify-center mb-6 text-red-500 shadow-sm">
-                                <XCircle size={40} strokeWidth={2} />
-                            </div>
-                            <h4 className="text-2xl font-black text-neutral-900 mb-2 tracking-tight uppercase font-outfit">¿Anular Orden?</h4>
-                            <p className="text-neutral-500 font-medium mb-10 leading-relaxed text-sm">
-                                Esta acción es irreversible. La orden de compra quedará anulada permanentemente.
-                            </p>
-                            <div className="flex gap-4">
-                                <button
-                                    className="flex-1 py-4 bg-neutral-100 text-neutral-400 font-black rounded-2xl hover:bg-neutral-200 transition-all uppercase tracking-widest text-xs"
-                                    onClick={() => setShowCancelConfirmModal(false)}
-                                    disabled={cancelando}
-                                >
-                                    VOLVER
-                                </button>
-                                <button
-                                    className="flex-1 py-4 bg-red-600 text-white font-black rounded-2xl shadow-lg shadow-red-500/20 hover:bg-red-700 transition-all uppercase tracking-widest text-xs flex items-center justify-center"
-                                    onClick={confirmCancelar}
-                                    disabled={cancelando}
-                                >
-                                    {cancelando ? (
-                                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                    ) : (
-                                        'CONFIRMAR'
-                                    )}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-            </div>
+                </div>
+            )}
         </div>
     );
 };

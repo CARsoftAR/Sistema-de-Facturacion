@@ -24,6 +24,12 @@ const Presupuestos = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const [presupuestos, setPresupuestos] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [stats, setStats] = useState({
+        total: 0,
+        pendientes: 0,
+        aprobados: 0,
+        count: 0
+    });
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
@@ -85,6 +91,15 @@ const Presupuestos = () => {
                 setPresupuestos(data.data || []);
                 setTotalItems(data.total || 0);
                 setTotalPages(Math.ceil((data.total || 0) / itemsPerPage));
+
+                if (data.stats) {
+                    setStats({
+                        total: data.stats.total_monto,
+                        pendientes: data.stats.pendientes,
+                        aprobados: data.stats.aprobados,
+                        count: data.stats.count
+                    });
+                }
             } else {
                 setPresupuestos([]);
             }
@@ -93,7 +108,7 @@ const Presupuestos = () => {
         } finally {
             setLoading(false);
         }
-    }, [page, itemsPerPage, filters]);
+    }, [page, itemsPerPage, filters, dateRange]);
 
     useEffect(() => {
         const controller = new AbortController();
@@ -101,20 +116,7 @@ const Presupuestos = () => {
         return () => controller.abort();
     }, [fetchPresupuestos]);
 
-    // KPI Calculations
-    const stats = useMemo(() => {
-        const totalAmount = presupuestos.reduce((acc, p) => acc + parseFloat(p.total || 0), 0);
-        // Contamos tanto PENDIENTE como VENCIDO como "Pendientes" para los KPIs
-        const pendientes = presupuestos.filter(p => p.estado === 'PENDIENTE' || p.estado === 'VENCIDO').length;
-        const aprobados = presupuestos.filter(p => p.estado === 'APROBADO').length;
-
-        return {
-            total: totalAmount,
-            count: totalItems,
-            pendientes: pendientes,
-            aprobados: aprobados
-        };
-    }, [presupuestos, totalItems]);
+    // Removal of old stats useMemo as we now use stats state from API
 
     const handleClear = () => {
         setFilters({ busqueda: '', estado: '' });
@@ -285,7 +287,7 @@ const Presupuestos = () => {
     ];
 
     return (
-        <div className="p-6 w-full max-w-[1920px] mx-auto h-full overflow-hidden flex flex-col gap-6 animate-in fade-in duration-500 bg-slate-50/50">
+        <div className="p-6 w-full max-w-[1920px] mx-auto h-[calc(100vh-64px)] overflow-hidden flex flex-col gap-6 animate-in fade-in duration-500 bg-slate-50/50">
 
             {/* Header Section */}
             <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -365,30 +367,33 @@ const Presupuestos = () => {
                     columns={columns}
                     data={presupuestos}
                     loading={loading}
-                    className="flex-grow shadow-lg"
+                    className={cn("flex-grow shadow-lg", presupuestos.length > 0 ? "rounded-b-none" : "")}
                     emptyState={
                         <EmptyState
                             title="No hay presupuestos registrados"
                             description="Los presupuestos aparecerán aquí una vez generados en la terminal."
+                            icon={FileText}
                         />
                     }
                 />
 
-                {/* Pagination */}
-                <div className="bg-white border-x border-b border-neutral-200 rounded-b-[2rem] px-6 py-1 shadow-premium relative z-10">
-                    <TablePagination
-                        currentPage={page}
-                        totalPages={totalPages}
-                        totalItems={totalItems}
-                        itemsPerPage={itemsPerPage}
-                        onPageChange={setPage}
-                        onItemsPerPageChange={(newVal) => {
-                            setItemsPerPage(newVal);
-                            setPage(1);
-                            localStorage.setItem(STORAGE_KEY, newVal);
-                        }}
-                    />
-                </div>
+                {/* Pagination - Aligned with Sales Style */}
+                {presupuestos.length > 0 && (
+                    <div className="bg-white border-x border-b border-neutral-200 rounded-b-[2rem] px-6 py-1 shadow-premium">
+                        <TablePagination
+                            currentPage={page}
+                            totalPages={totalPages}
+                            totalItems={totalItems}
+                            itemsPerPage={itemsPerPage}
+                            onPageChange={setPage}
+                            onItemsPerPageChange={(newVal) => {
+                                setItemsPerPage(newVal);
+                                setPage(1);
+                                localStorage.setItem(STORAGE_KEY, newVal);
+                            }}
+                        />
+                    </div>
+                )}
             </div>
         </div>
     );

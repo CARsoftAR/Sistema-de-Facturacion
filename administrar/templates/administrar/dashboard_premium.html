@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Premium - CARSOFT PRO</title>
+    
+    <!-- External Libraries -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/sortablejs@latest/Sortable.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Premium CSS -->
+    <link href="/static/administrar/css/dashboard-premium.css" rel="stylesheet">
+    
+    <!-- Custom Tailwind Config -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    animation: {
+                        'fade-in-up': 'fadeInUp 0.6s ease-out',
+                        'pulse-slow': 'pulse 2s infinite',
+                        'slide-in': 'slideIn 0.4s ease-out',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gradient-to-br from-blue-500 to-purple-600">
+    
+    <!-- Premium Navigation -->
+    <nav class="premium-navbar">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-4">
+                    <a href="#" class="navbar-brand-premium">
+                        <i class="fas fa-cube mr-2"></i>CARSOFT PRO
+                    </a>
+                    <div class="hidden md:flex space-x-6">
+                        <a href="#" class="text-gray-700 hover:text-primary transition-colors duration-200">
+                            <i class="fas fa-chart-line mr-2"></i>Dashboard
+                        </a>
+                        <a href="{% url 'clientes' %}" class="text-gray-700 hover:text-primary transition-colors duration-200">
+                            <i class="fas fa-users mr-2"></i>Clientes
+                        </a>
+                        <a href="{% url 'productos' %}" class="text-gray-700 hover:text-primary transition-colors duration-200">
+                            <i class="fas fa-box mr-2"></i>Productos
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <button class="relative p-2 text-gray-600 hover:text-primary transition-colors">
+                        <i class="fas fa-bell"></i>
+                        <span class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                    </button>
+                    
+                    <div class="flex items-center space-x-2">
+                        <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                            {{ username|first|upper }}
+                        </div>
+                        <span class="text-gray-700 font-medium">{{ username }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Premium Dashboard -->
+    <main class="premium-dashboard">
+        <div class="max-w-7xl mx-auto">
+            
+            <!-- Dashboard Header -->
+            <header class="dashboard-header">
+                <h1 class="dashboard-title">
+                    <i class="fas fa-rocket mr-3"></i>Dashboard Premium
+                </h1>
+                <p class="dashboard-subtitle">
+                    Bienvenido de nuevo, <span class="font-bold">{{ username }}</span>. 
+                    Tu negocio ha <span class="text-green-500 font-semibold">crecido 12%</span> este mes.
+                </p>
+            </header>
+
+            <!-- Stats Widget Container -->
+            <div class="widgets-container" id="statsGrid">
+                <!-- Revenue Card -->
+                <div class="widget stat-card" data-widget="revenue">
+                    <div class="stat-change positive">
+                        <i class="fas fa-arrow-up mr-1"></i>+12%
+                    </div>
+                    <div class="stat-icon">
+                        <i class="fas fa-dollar-sign"></i>
+                    </div>
+                    <div class="stat-value">$24,563</div>
+                    <div class="stat-label">Ingresos Mensuales</div>
+                </div>
+
+                <!-- Customers Card -->
+                <div class="widget stat-card" data-widget="customers">
+                    <div class="stat-change positive">
+                        <i class="fas fa-arrow-up mr-1"></i>+8%
+                    </div>
+                    <div class="stat-icon" style="background: var(--secondary-gradient);">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-value">1,284</div>
+                    <div class="stat-label">Clientes Activos</div>
+                </div>
+
+                <!-- Orders Card -->
+                <div class="widget stat-card" data-widget="orders">
+                    <div class="stat-change negative">
+                        <i class="fas fa-arrow-down mr-1"></i>-3%
+                    </div>
+                    <div class="stat-icon" style="background: var(--warning-gradient);">
+                        <i class="fas fa-shopping-cart"></i>
+                    </div>
+                    <div class="stat-value">847</div>
+                    <div class="stat-label">Pedidos del Mes</div>
+                </div>
+
+                <!-- Performance Card -->
+                <div class="widget stat-card" data-widget="performance">
+                    <div class="stat-change positive">
+                        <i class="fas fa-arrow-up mr-1"></i>+15%
+                    </div>
+                    <div class="stat-icon" style="background: var(--success-gradient);">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="stat-value">94.2%</div>
+                    <div class="stat-label">Eficiencia Operativa</div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <section class="quick-actions-section">
+                <h2 class="text-2xl font-bold text-white mb-6 text-center">
+                    <i class="fas fa-bolt mr-2"></i>Acciones Rápidas
+                </h2>
+                <div class="quick-actions-container">
+                    <a href="{% url 'venta_nueva' %}" class="quick-action-btn">
+                        <i class="fas fa-plus-circle quick-action-icon"></i>
+                        <span class="quick-action-text">Nueva Venta</span>
+                    </a>
+                    
+                    <a href="{% url 'cliente_nuevo' %}" class="quick-action-btn">
+                        <i class="fas fa-user-plus quick-action-icon"></i>
+                        <span class="quick-action-text">Nuevo Cliente</span>
+                    </a>
+                    
+                    <a href="{% url 'producto_nuevo' %}" class="quick-action-btn">
+                        <i class="fas fa-box-plus quick-action-icon"></i>
+                        <span class="quick-action-text">Agregar Producto</span>
+                    </a>
+                    
+                    <a href="{% url 'caja' %}" class="quick-action-btn">
+                        <i class="fas fa-cash-register quick-action-icon"></i>
+                        <span class="quick-action-text">Mov. Caja</span>
+                    </a>
+                    
+                    <a href="#" class="quick-action-btn" onclick="openReportModal()">
+                        <i class="fas fa-file-export quick-action-icon"></i>
+                        <span class="quick-action-text">Generar Reporte</span>
+                    </a>
+                    
+                    <a href="{% url 'backup' %}" class="quick-action-btn">
+                        <i class="fas fa-cloud-download-alt quick-action-icon"></i>
+                        <span class="quick-action-text">Backup</span>
+                    </a>
+                </div>
+            </section>
+
+            <!-- Advanced Analytics Section -->
+            <div class="widgets-container">
+                <!-- Revenue Chart -->
+                <div class="widget chart-widget" data-widget="revenue-chart">
+                    <div class="chart-header">
+                        <h3 class="chart-title">Análisis de Ingresos</h3>
+                        <div class="chart-period">
+                            <button class="period-btn" data-period="day">Día</button>
+                            <button class="period-btn active" data-period="week">Semana</button>
+                            <button class="period-btn" data-period="month">Mes</button>
+                            <button class="period-btn" data-period="year">Año</button>
+                        </div>
+                    </div>
+                    <canvas id="revenueChart" width="400" height="200"></canvas>
+                </div>
+
+                <!-- Recent Activity Feed -->
+                <div class="widget" data-widget="activity">
+                    <div class="chart-header">
+                        <h3 class="chart-title">
+                            <i class="fas fa-stream mr-2"></i>Actividad Reciente
+                        </h3>
+                        <button class="text-primary hover:text-primary-dark transition-colors">
+                            <i class="fas fa-ellipsis-h"></i>
+                        </button>
+                    </div>
+                    <div class="activity-feed">
+                        <div class="activity-item">
+                            <div class="activity-icon">
+                                <i class="fas fa-shopping-bag"></i>
+                            </div>
+                            <div class="activity-content">
+                                <div class="activity-title">Nueva venta #1247</div>
+                                <div class="activity-time">Hace 2 minutos</div>
+                            </div>
+                        </div>
+                        
+                        <div class="activity-item">
+                            <div class="activity-icon" style="background: var(--secondary-gradient);">
+                                <i class="fas fa-user-plus"></i>
+                            </div>
+                            <div class="activity-content">
+                                <div class="activity-title">Nuevo cliente registrado</div>
+                                <div class="activity-time">Hace 15 minutos</div>
+                            </div>
+                        </div>
+                        
+                        <div class="activity-item">
+                            <div class="activity-icon" style="background: var(--warning-gradient);">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                            <div class="activity-content">
+                                <div class="activity-title">Stock bajo: iPhone 15 Pro</div>
+                                <div class="activity-time">Hace 1 hora</div>
+                            </div>
+                        </div>
+                        
+                        <div class="activity-item">
+                            <div class="activity-icon" style="background: var(--success-gradient);">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                            <div class="activity-content">
+                                <div class="activity-title">Backup completado</div>
+                                <div class="activity-time">Hace 3 horas</div>
+                            </div>
+                        </div>
+                        
+                        <div class="activity-item">
+                            <div class="activity-icon" style="background: var(--primary-gradient);">
+                                <i class="fas fa-truck"></i>
+                            </div>
+                            <div class="activity-content">
+                                <div class="activity-title">Orden de compra recibida</div>
+                                <div class="activity-time">Hace 5 horas</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Theme Toggle -->
+    <button class="theme-toggle" onclick="toggleTheme()">
+        <i class="fas fa-moon" id="themeIcon"></i>
+    </button>
+
+    <!-- Premium JavaScript -->
+    <script>
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeDashboard();
+            initializeCharts();
+            initializeDragDrop();
+            startRealTimeUpdates();
+            initializePredictions();
+        });
+
+        // Dashboard initialization
+        function initializeDashboard() {
+            console.log('🚀 CARSOFT PRO Dashboard Initialized');
+            
+            // Animate elements on load
+            animateValue('.stat-value', 1000);
+            setupPeriodButtons();
+            setupQuickActions();
+        }
+
+        // Initialize Revenue Chart
+        function initializeCharts() {
+            const ctx = document.getElementById('revenueChart').getContext('2d');
+            
+            const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+            gradient.addColorStop(0, 'rgba(99, 102, 241, 0.4)');
+            gradient.addColorStop(1, 'rgba(99, 102, 241, 0.01)');
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
+                    datasets: [{
+                        label: 'Ingresos',
+                        data: [3200, 4100, 3800, 5200, 4900, 6100, 5500],
+                        borderColor: '#6366f1',
+                        backgroundColor: gradient,
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#6366f1',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 6,
+                        pointHoverRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(30, 41, 59, 0.9)',
+                            titleColor: '#fff',
+                            bodyColor: '#fff',
+                            borderColor: '#6366f1',
+                            borderWidth: 1,
+                            cornerRadius: 8,
+                            padding: 12
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)',
+                                drawBorder: false
+                            },
+                            ticks: {
+                                color: 'rgba(255, 255, 255, 0.7)',
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString();
+                                }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                color: 'rgba(255, 255, 255, 0.7)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize Drag & Drop for widgets
+        function initializeDragDrop() {
+            const statsGrid = document.getElementById('statsGrid');
+            const widgetsContainer = document.querySelector('.widgets-container');
+            
+            if (statsGrid) {
+                new Sortable(statsGrid, {
+                    animation: 150,
+                    ghostClass: 'opacity-50',
+                    onEnd: function(evt) {
+                        saveWidgetLayout();
+                        showNotification('Layout actualizado', 'success');
+                    }
+                });
+            }
+
+            if (widgetsContainer) {
+                new Sortable(widgetsContainer, {
+                    animation: 150,
+                    ghostClass: 'opacity-50',
+                    onEnd: function(evt) {
+                        saveWidgetLayout();
+                        showNotification('Layout actualizado', 'success');
+                    }
+                });
+            }
+        }
+
+        // Real-time updates simulation
+        function startRealTimeUpdates() {
+            setInterval(() => {
+                updateRandomStat();
+                checkForNewActivity();
+            }, 5000);
+        }
+
+        // Update random stat for demo
+        function updateRandomStat() {
+            const stats = document.querySelectorAll('.stat-value');
+            const randomStat = stats[Math.floor(Math.random() * stats.length)];
+            const currentValue = parseInt(randomStat.textContent.replace(/[^0-9]/g, ''));
+            const change = Math.floor(Math.random() * 100) - 50;
+            const newValue = currentValue + change;
+            
+            animateValue(randomStat, 500, newValue);
+        }
+
+        // AI-Powered Predictions
+        function initializePredictions() {
+            setTimeout(() => {
+                showInsight('🧠 IA Insight: Tus ventas tienden a aumentar un 23% los fines de semana. Considera incrementar stock.');
+            }, 3000);
+            
+            setTimeout(() => {
+                showInsight('💡 Sugerencia: 3 clientes tienen compras recurrentes. Ofrece un plan premium.');
+            }, 8000);
+        }
+
+        // Show AI Insight
+        function showInsight(message) {
+            const insight = document.createElement('div');
+            insight.className = 'fixed bottom-4 right-4 glass-card p-4 max-w-sm animate-fade-in-up z-50';
+            insight.innerHTML = `
+                <div class="flex items-start space-x-3">
+                    <div class="text-2xl">🧠</div>
+                    <div>
+                        <div class="font-semibold text-sm mb-1">Insight Inteligente</div>
+                        <div class="text-xs opacity-90">${message}</div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(insight);
+            
+            setTimeout(() => {
+                insight.style.opacity = '0';
+                setTimeout(() => insight.remove(), 300);
+            }, 6000);
+        }
+
+        // Theme Toggle
+        function toggleTheme() {
+            const html = document.documentElement;
+            const icon = document.getElementById('themeIcon');
+            
+            if (html.getAttribute('data-theme') === 'dark') {
+                html.setAttribute('data-theme', 'light');
+                icon.className = 'fas fa-moon';
+                localStorage.setItem('theme', 'light');
+            } else {
+                html.setAttribute('data-theme', 'dark');
+                icon.className = 'fas fa-sun';
+                localStorage.setItem('theme', 'dark');
+            }
+        }
+
+        // Load saved theme
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            document.getElementById('themeIcon').className = 
+                savedTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+        }
+
+        // Animate number values
+        function animateValue(selector, duration, start = 0, end = null) {
+            const element = document.querySelector(selector);
+            if (!element) return;
+            
+            const text = element.textContent;
+            const isCurrency = text.includes('$');
+            const isPercentage = text.includes('%');
+            
+            if (end === null) {
+                end = parseInt(text.replace(/[^0-9]/g, ''));
+            }
+            
+            const range = end - start;
+            const increment = range / (duration / 16);
+            let current = start;
+            
+            const timer = setInterval(() => {
+                current += increment;
+                if ((increment > 0 && current >= end) || (increment < 0 && current <= end)) {
+                    current = end;
+                    clearInterval(timer);
+                }
+                
+                let displayValue = Math.floor(current).toLocaleString();
+                if (isCurrency) displayValue = '$' + displayValue;
+                if (isPercentage) displayValue = displayValue + '%';
+                
+                element.textContent = displayValue;
+            }, 16);
+        }
+
+        // Setup period buttons
+        function setupPeriodButtons() {
+            const buttons = document.querySelectorAll('.period-btn');
+            buttons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    buttons.forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    updateChartData(this.dataset.period);
+                });
+            });
+        }
+
+        // Update chart data based on period
+        function updateChartData(period) {
+            // Simulate fetching new data
+            const data = {
+                day: [1200, 1900, 1500, 2500, 2200, 3000, 2800],
+                week: [12000, 19000, 15000, 25000, 22000, 30000, 28000],
+                month: [48000, 76000, 60000, 100000, 88000, 120000, 112000],
+                year: [576000, 912000, 720000, 1200000, 1056000, 1440000, 1344000]
+            };
+            
+            // Update chart with new data
+            showNotification(`Datos actualizados: período ${period}`, 'info');
+        }
+
+        // Show notification
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 glass-card p-4 animate-fade-in-right z-50`;
+            
+            const colors = {
+                success: 'text-green-500',
+                error: 'text-red-500',
+                info: 'text-blue-500',
+                warning: 'text-yellow-500'
+            };
+            
+            notification.innerHTML = `
+                <div class="flex items-center space-x-3">
+                    <div class="${colors[type]}">
+                        <i class="fas fa-${type === 'success' ? 'check-circle' : 'info-circle'}"></i>
+                    </div>
+                    <div class="text-sm">${message}</div>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        // Save widget layout
+        function saveWidgetLayout() {
+            const layout = [];
+            document.querySelectorAll('.widget').forEach((widget, index) => {
+                layout.push({
+                    id: widget.dataset.widget,
+                    position: index
+                });
+            });
+            localStorage.setItem('widgetLayout', JSON.stringify(layout));
+        }
+
+        // Check for new activity
+        function checkForNewActivity() {
+            // Simulate checking for new activity
+            const hasNewActivity = Math.random() > 0.8;
+            if (hasNewActivity) {
+                const bell = document.querySelector('.fa-bell');
+                bell.classList.add('animate-bounce');
+                setTimeout(() => bell.classList.remove('animate-bounce'), 1000);
+            }
+        }
+
+        // Load saved theme on page load
+        loadTheme();
+    </script>
+</body>
+</html>

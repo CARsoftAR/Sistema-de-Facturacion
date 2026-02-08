@@ -4,6 +4,7 @@ import { ArrowLeft, Search, ListFilter, Download, ArrowUp, ArrowDown, Package, C
 import axios from 'axios';
 import TablePagination from '../components/common/TablePagination';
 import PremiumTable from '../components/premium/PremiumTable';
+import PremiumFilterBar from '../components/premium/PremiumFilterBar';
 import { BtnBack, BtnClear } from '../components/CommonButtons';
 import EmptyState from '../components/EmptyState';
 import { cn } from '../utils/cn';
@@ -18,8 +19,7 @@ const MovimientosStock = () => {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [tipoFiltro, setTipoFiltro] = useState('');
-    const [fechaDesde, setFechaDesde] = useState('');
-    const [fechaHasta, setFechaHasta] = useState('');
+    const [dateRange, setDateRange] = useState({ start: '', end: '' });
 
     // Paginación
     const [currentPage, setCurrentPage] = useState(1);
@@ -51,8 +51,8 @@ const MovimientosStock = () => {
                 per_page: itemsPerPage,
                 search: searchTerm,
                 tipo: tipoFiltro,
-                fecha_desde: fechaDesde,
-                fecha_hasta: fechaHasta
+                fecha_desde: dateRange.start,
+                fecha_hasta: dateRange.end
             };
 
             const response = await axios.get('/api/stock/movimientos/', { params });
@@ -66,7 +66,7 @@ const MovimientosStock = () => {
         } finally {
             setLoading(false);
         }
-    }, [currentPage, itemsPerPage, searchTerm, tipoFiltro, fechaDesde, fechaHasta]);
+    }, [currentPage, itemsPerPage, searchTerm, tipoFiltro, dateRange]);
 
     useEffect(() => {
         fetchMovimientos();
@@ -91,8 +91,7 @@ const MovimientosStock = () => {
     const limpiarFiltros = () => {
         setSearchTerm('');
         setTipoFiltro('');
-        setFechaDesde('');
-        setFechaHasta('');
+        setDateRange({ start: '', end: '' });
         setCurrentPage(1);
     };
 
@@ -180,123 +179,67 @@ const MovimientosStock = () => {
     ];
 
     return (
-        <div className="flex flex-col h-[calc(100vh-64px)] overflow-hidden bg-neutral-50/30">
-            {/* Header / Toolbar Area */}
-            <div className="p-8 pb-4">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-6">
-                    <div>
-                        <div className="flex items-center gap-3 mb-1">
-                            <div className="p-2 bg-emerald-600 rounded-2xl shadow-lg shadow-emerald-600/20">
-                                <RefreshCcw size={24} className="text-white" />
-                            </div>
-                            <h1 className="text-3xl font-black text-neutral-900 tracking-tight">Movimientos de Stock</h1>
-                        </div>
-                        <p className="text-neutral-500 font-medium ml-1">Historial completo detallado de entradas y salidas.</p>
-                    </div>
-
+        <div className="p-6 w-full max-w-[1920px] mx-auto h-[calc(100vh-64px)] overflow-hidden flex flex-col gap-6 animate-in fade-in duration-500 bg-slate-50/50">
+            {/* Header Section */}
+            <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div className="space-y-1">
+                    <h1 className="text-3xl font-black text-neutral-900 tracking-tight flex items-center gap-3">
+                        <RefreshCcw className="text-emerald-600" size={32} strokeWidth={2.5} />
+                        Movimientos de Stock
+                    </h1>
+                    <p className="text-neutral-500 font-medium text-sm ml-1">
+                        Historial completo detallado de entradas y salidas.
+                    </p>
+                </div>
+                <div className="flex items-center gap-3">
                     <button
                         onClick={handleExportExcel}
                         disabled={movimientos.length === 0}
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-emerald-200 hover:shadow-emerald-300 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex items-center gap-2 px-4 py-2.5 bg-white border border-neutral-200 text-neutral-700 rounded-xl font-bold text-sm hover:bg-neutral-50 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        <Download size={20} strokeWidth={3} />
-                        Exportar Excel
+                        <Download size={18} /> Exportar Excel
                     </button>
                 </div>
+            </header>
 
-                {/* Filtros */}
-                <div className="bg-white p-4 rounded-2xl shadow-sm border border-neutral-200/60">
-                    <div className="flex flex-col md:flex-row gap-3 items-end">
-                        <div className="relative flex-1 w-full">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400 block mb-1 ml-1">Búsqueda</label>
-                            <SearchInput
-                                placeholder="Buscar por código, descripción, referencia..."
-                                value={searchTerm}
-                                onSearch={setSearchTerm}
-                                className="!py-3 border-neutral-200"
-                            />
-                        </div>
+            <PremiumFilterBar
+                busqueda={searchTerm}
+                setBusqueda={setSearchTerm}
+                dateRange={dateRange}
+                setDateRange={setDateRange}
+                onClear={limpiarFiltros}
+                placeholder="Buscar por código, descripción, referencia..."
+            >
+                <select
+                    className="bg-white border border-neutral-200 rounded-full px-6 h-[52px] text-[10px] font-black uppercase tracking-widest text-neutral-600 focus:ring-2 focus:ring-emerald-500 transition-all outline-none shadow-sm cursor-pointer appearance-none pr-12 min-w-[200px] bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_1rem_center] bg-no-repeat"
+                    value={tipoFiltro}
+                    onChange={(e) => setTipoFiltro(e.target.value)}
+                >
+                    <option value="">TODOS</option>
+                    <option value="IN">ENTRADAS</option>
+                    <option value="OUT">SALIDAS</option>
+                </select>
+            </PremiumFilterBar>
 
-                        <div className="w-full md:w-48">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400 block mb-1 ml-1">Tipo</label>
-                            <div className="relative group">
-                                <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-                                    <ListFilter size={18} className="text-neutral-400 group-focus-within:text-emerald-600 transition-colors" />
-                                </div>
-                                <select
-                                    className="w-full pl-12 pr-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl outline-none focus:ring-4 focus:ring-emerald-600/5 focus:border-emerald-600 transition-all font-bold text-neutral-800 appearance-none cursor-pointer shadow-sm"
-                                    value={tipoFiltro}
-                                    onChange={(e) => setTipoFiltro(e.target.value)}
-                                >
-                                    <option value="">Todos</option>
-                                    <option value="IN">Entradas</option>
-                                    <option value="OUT">Salidas</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div className="w-full md:w-48">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400 block mb-1 ml-1">Desde</label>
-                            <div className="relative group">
-                                <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-                                    <Calendar size={18} className="text-neutral-400 group-focus-within:text-emerald-600 transition-colors" />
-                                </div>
-                                <input
-                                    type="date"
-                                    className="w-full pl-12 pr-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl outline-none focus:ring-4 focus:ring-emerald-600/5 focus:border-emerald-600 transition-all font-bold text-neutral-800 shadow-sm"
-                                    value={fechaDesde}
-                                    onChange={(e) => setFechaDesde(e.target.value)}
-                                />
-                            </div>
-                        </div>
-
-                        <div className="w-full md:w-48">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400 block mb-1 ml-1">Hasta</label>
-                            <div className="relative group">
-                                <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-                                    <Calendar size={18} className="text-neutral-400 group-focus-within:text-emerald-600 transition-colors" />
-                                </div>
-                                <input
-                                    type="date"
-                                    className="w-full pl-12 pr-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl outline-none focus:ring-4 focus:ring-emerald-600/5 focus:border-emerald-600 transition-all font-bold text-neutral-800 shadow-sm"
-                                    value={fechaHasta}
-                                    onChange={(e) => setFechaHasta(e.target.value)}
-                                />
-                            </div>
-                        </div>
-
-                        <button
-                            onClick={limpiarFiltros}
-                            className="p-4 bg-white border border-neutral-200 text-neutral-400 hover:text-neutral-900 hover:border-neutral-300 rounded-2xl transition-all shadow-sm"
-                            title="Limpiar Filtros"
-                        >
-                            <FilterX size={20} />
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            {/* Table Area */}
-            <div className="flex-1 px-8 pb-8 overflow-hidden min-h-0">
-                <div className="h-full bg-white rounded-[2.5rem] border border-neutral-200 shadow-xl shadow-neutral-200/50 flex flex-col overflow-hidden">
-                    <div className="flex-1 overflow-hidden">
-                        <PremiumTable
-                            columns={columns}
-                            data={movimientos}
-                            loading={loading}
-                            emptyMessage={
-                                <EmptyState
-                                    icon={Package}
-                                    title="No se encontraron movimientos"
-                                    description="Intenta ajustar los filtros para encontrar lo que buscas."
-                                    iconColor="text-emerald-500"
-                                    bgIconColor="bg-emerald-50"
-                                />
-                            }
+            <div className="flex-grow flex flex-col min-h-0">
+                <PremiumTable
+                    columns={columns}
+                    data={movimientos}
+                    loading={loading}
+                    className={cn("flex-grow shadow-lg", movimientos.length > 0 ? "rounded-b-none" : "")}
+                    emptyState={
+                        <EmptyState
+                            icon={Package}
+                            title="No se encontraron movimientos"
+                            description="Intenta ajustar los filtros para encontrar lo que buscas."
+                            iconColor="text-emerald-500"
+                            bgIconColor="bg-emerald-50"
                         />
-                    </div>
+                    }
+                />
 
-                    <div className="px-6 py-4 border-t border-neutral-100 bg-neutral-50/50">
+                {movimientos.length > 0 && (
+                    <div className="bg-white border-x border-b border-neutral-200 rounded-b-[2rem] px-6 py-1 shadow-premium">
                         <TablePagination
                             currentPage={currentPage}
                             totalPages={totalPages}
@@ -310,7 +253,7 @@ const MovimientosStock = () => {
                             }}
                         />
                     </div>
-                </div>
+                )}
             </div>
         </div>
     );

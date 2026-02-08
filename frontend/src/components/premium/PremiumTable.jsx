@@ -87,22 +87,12 @@ export const PremiumTable = ({
     };
 
     if (loading) {
-        return <TableSkeleton columns={columns.length} rows={5} />;
-    }
-
-    if (data.length === 0 && emptyState) {
-        return (
-            <BentoCard className="py-12">
-                <div className="text-center">
-                    {emptyState}
-                </div>
-            </BentoCard>
-        );
+        return <TableSkeleton columns={columns.length} rows={5} className={className} />;
     }
 
     return (
-        <BentoCard className={cn('overflow-hidden p-0', className)}>
-            <div className={cn("overflow-x-auto", ocultarScroll && "no-scrollbar")}>
+        <BentoCard className={cn('overflow-hidden p-0 flex flex-col', className)}>
+            <div className={cn("overflow-x-auto flex-grow", ocultarScroll && "no-scrollbar")}>
                 <table className="w-full" style={{ tableLayout: 'fixed' }}>
                     <thead className={cn(
                         'bg-neutral-50 border-b border-neutral-200',
@@ -138,38 +128,46 @@ export const PremiumTable = ({
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-neutral-100">
-                        {sortedData.map((row, rowIdx) => (
-                            <tr
-                                key={row.id || rowIdx}
-                                onClick={() => onRowClick?.(row)}
-                                className={cn(
-                                    'transition-all duration-150',
-                                    onRowClick && 'cursor-pointer hover:bg-primary-50/50 active:bg-primary-100/50',
-                                    !onRowClick && 'hover:bg-neutral-50',
-                                )}
-                            >
-                                {columns.map((column, colIdx) => (
-                                    <td
-                                        key={column.key || colIdx}
-                                        style={column.width ? {
-                                            width: column.width,
-                                            minWidth: column.width,
-                                            maxWidth: column.width
-                                        } : { maxWidth: 0 }}
-                                        className={cn(
-                                            'px-6 py-2 text-sm overflow-hidden',
-                                            column.align === 'center' && 'text-center',
-                                            column.align === 'right' && 'text-right',
-                                        )}
-                                    >
-                                        {column.render
-                                            ? column.render(row[column.key], row, rowIdx)
-                                            : row[column.key]
-                                        }
-                                    </td>
-                                ))}
+                        {data.length > 0 ? (
+                            sortedData.map((row, rowIdx) => (
+                                <tr
+                                    key={row.id || rowIdx}
+                                    onClick={() => onRowClick?.(row)}
+                                    className={cn(
+                                        'transition-all duration-150',
+                                        onRowClick && 'cursor-pointer hover:bg-primary-50/50 active:bg-primary-100/50',
+                                        !onRowClick && 'hover:bg-neutral-50',
+                                    )}
+                                >
+                                    {columns.map((column, colIdx) => (
+                                        <td
+                                            key={column.key || colIdx}
+                                            style={column.width ? {
+                                                width: column.width,
+                                                minWidth: column.width,
+                                                maxWidth: column.width
+                                            } : { maxWidth: 0 }}
+                                            className={cn(
+                                                'px-6 py-2 text-sm overflow-hidden',
+                                                column.align === 'center' && 'text-center',
+                                                column.align === 'right' && 'text-right',
+                                            )}
+                                        >
+                                            {column.render
+                                                ? column.render(row[column.key], row, rowIdx)
+                                                : row[column.key]
+                                            }
+                                        </td>
+                                    ))}
+                                </tr>
+                            ))
+                        ) : (
+                            <tr>
+                                <td colSpan={columns.length} className="py-20 text-center">
+                                    {emptyState}
+                                </td>
                             </tr>
-                        ))}
+                        )}
                     </tbody>
                 </table>
             </div>
@@ -181,9 +179,9 @@ export const PremiumTable = ({
  * TableSkeleton - Loading State Component
  * Provides visual feedback during data fetch
  */
-const TableSkeleton = ({ columns = 5, rows = 5 }) => {
+const TableSkeleton = ({ columns = 5, rows = 5, className = '' }) => {
     return (
-        <BentoCard className="overflow-hidden p-0">
+        <BentoCard className={cn("overflow-hidden p-0", className)}>
             <div className="animate-pulse">
                 {/* Header */}
                 <div className="bg-neutral-50 border-b border-neutral-200 px-6 py-2">
@@ -214,7 +212,7 @@ const TableSkeleton = ({ columns = 5, rows = 5 }) => {
 export const TableCell = {
     // ID Cell with primary color
     ID: ({ value }) => (
-        <span className="font-semibold text-primary-600">
+        <span className="font-semibold text-primary-600 whitespace-nowrap">
             #{value}
         </span>
     ),

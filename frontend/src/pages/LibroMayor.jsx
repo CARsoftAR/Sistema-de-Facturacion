@@ -1,7 +1,19 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import {
+    BookOpen, Search, FileSpreadsheet, Wallet2,
+    ArrowDownCircle, ArrowUpCircle, Clock, Layers, Download,
+    Book, RefreshCw, Hash, TrendingUp, TrendingDown, Calendar
+} from 'lucide-react';
+import axios from 'axios';
+import {
+    BentoCard, StatCard, PremiumTable, TableCell,
+    PremiumSelect, PremiumFilterBar, BentoGrid
+} from '../components/premium';
+import { SearchableSelect } from '../components/premium/SearchableSelect';
+import EmptyState from '../components/EmptyState';
+import { showSuccessAlert, showErrorAlert } from '../utils/alerts';
 import { formatNumber } from '../utils/formats';
-// Usaremos iconos de Bootstrap como en Productos.jsx
+import { cn } from '../utils/cn';
 
 const flattenCuentas = (nodes, result = []) => {
     nodes.forEach(node => {
@@ -19,10 +31,6 @@ const LibroMayor = () => {
     const [resumen, setResumen] = useState(null);
     const [cuenta, setCuenta] = useState(null);
 
-    // Paginación
-    const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage, setItemsPerPage] = useState(5);
-
     // Filtros
     const [filtros, setFiltros] = useState({
         cuenta_id: '',
@@ -35,46 +43,54 @@ const LibroMayor = () => {
     const [ejercicios, setEjercicios] = useState([]);
 
     useEffect(() => {
-        Promise.all([
-            fetch('/api/contabilidad/plan-cuentas/').then(r => r.json()),
-            fetch('/api/contabilidad/ejercicios/').then(r => r.json())
-        ]).then(([resCuentas, resEj]) => {
-            if (resCuentas.success) setCuentas(flattenCuentas(resCuentas.cuentas));
-            if (resEj.success) {
-                setEjercicios(resEj.ejercicios);
-                const active = resEj.ejercicios.find(e => !e.cerrado);
-                if (active) {
-                    setFiltros(prev => ({
-                        ...prev,
-                        ejercicio_id: active.id,
-                        fecha_desde: active.fecha_inicio,
-                        fecha_hasta: active.fecha_fin
-                    }));
+        const loadMaestros = async () => {
+            try {
+                const [resCuentas, resEj] = await Promise.all([
+                    axios.get('/api/contabilidad/plan-cuentas/'),
+                    axios.get('/api/contabilidad/ejercicios/')
+                ]);
+
+                if (resCuentas.data.success) setCuentas(flattenCuentas(resCuentas.data.cuentas));
+                if (resEj.data.success) {
+                    setEjercicios(resEj.data.ejercicios);
+                    const active = resEj.data.ejercicios.find(e => !e.cerrado);
+                    if (active) {
+                        setFiltros(prev => ({
+                            ...prev,
+                            ejercicio_id: active.id,
+                            fecha_desde: active.fecha_inicio,
+                            fecha_hasta: active.fecha_fin
+                        }));
+                    }
                 }
+            } catch (error) {
+                console.error("Error loading masters:", error);
             }
-        });
+        };
+        loadMaestros();
     }, []);
 
     const handleSearch = async (e) => {
         if (e) e.preventDefault();
-        if (!filtros.cuenta_id) return alert("Seleccione una cuenta");
+        if (!filtros.cuenta_id) {
+            showErrorAlert("Faltan Datos", "Debe seleccionar una cuenta contable para realizar la consulta.");
+            return;
+        }
 
         setLoading(true);
         try {
             const params = new URLSearchParams(filtros).toString();
-            const res = await fetch(`/api/contabilidad/mayor/consultar/?${params}`);
-            const data = await res.json();
+            const res = await axios.get(`/api/contabilidad/mayor/consultar/?${params}`);
 
-            if (data.success) {
-                setMovimientos(data.movimientos);
-                setResumen(data.resumen);
-                setCuenta(data.cuenta);
-                setCurrentPage(1);
+            if (res.data.success) {
+                setMovimientos(res.data.movimientos);
+                setResumen(res.data.resumen);
+                setCuenta(res.data.cuenta);
             } else {
-                alert(data.error);
+                showErrorAlert("Error", res.data.error || "No se pudo obtener el mayor");
             }
         } catch (err) {
-            console.error(err);
+            showErrorAlert("Error", "Ocurrió un error al consultar el Libro Mayor");
         } finally {
             setLoading(false);
         }
@@ -86,313 +102,220 @@ const LibroMayor = () => {
         window.open(`/api/contabilidad/mayor/exportar/?${params}`, '_blank');
     };
 
-    // Calculate pagination
-    const indexOfLastItem = currentPage * itemsPerPage;
-    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-    const currentItems = movimientos.slice(indexOfFirstItem, indexOfLastItem);
-    const totalPages = Math.ceil(movimientos.length / itemsPerPage);
-
-    // Filter change handler specific updates
     const handleFilterChange = (field, value) => {
         const newFiltros = { ...filtros, [field]: value };
 
-        // Auto-update dates if exercise changes
         if (field === 'ejercicio_id') {
             const ej = ejercicios.find(x => x.id == value);
             if (ej) {
                 newFiltros.fecha_desde = ej.fecha_inicio;
                 newFiltros.fecha_hasta = ej.fecha_fin;
-            } else {
-                newFiltros.fecha_desde = '';
-                newFiltros.fecha_hasta = '';
             }
         }
-
         setFiltros(newFiltros);
     };
 
-    // Helper para formato de fecha
-    const formatDate = (dateString) => {
-        if (!dateString) return '-';
-        const date = new Date(dateString);
-        return date.toLocaleDateString('es-AR', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric'
-        });
-    };
+    const columns = [
+        {
+            key: 'fecha',
+            label: 'FECHA',
+            width: '150px',
+            render: (val) => <TableCell.Date value={val} />
+        },
+        {
+            key: 'asiento_numero',
+            label: 'ASIENTO',
+            width: '120px',
+            render: (val) => (
+                <span className="font-bold text-primary-600">
+                    #{val}
+                </span>
+            )
+        },
+        {
+            key: 'descripcion',
+            label: 'DESCRIPCIÓN',
+            render: (val) => <TableCell.Primary value={val} />
+        },
+        {
+            key: 'debe',
+            label: 'DEBE',
+            width: '150px',
+            align: 'right',
+            render: (val) => val > 0 ? <span className="text-emerald-600 font-black tabular-nums">$ {formatNumber(val)}</span> : <span className="text-neutral-300">-</span>
+        },
+        {
+            key: 'haber',
+            label: 'HABER',
+            width: '150px',
+            align: 'right',
+            render: (val) => val > 0 ? <span className="text-primary-600 font-black tabular-nums">$ {formatNumber(val)}</span> : <span className="text-neutral-300">-</span>
+        },
+        {
+            key: 'saldo',
+            label: 'SALDO',
+            width: '150px',
+            align: 'right',
+            render: (val) => (
+                <span className={cn(
+                    "font-black tabular-nums",
+                    val < 0 ? "text-error-600" : "text-neutral-900"
+                )}>
+                    $ {formatNumber(val)}
+                </span>
+            )
+        }
+    ];
 
     return (
-        <div className="container-fluid px-4 mt-4">
-            {/* HEADER */}
-            <div className="d-flex justify-content-between align-items-center mb-4">
-                <div>
-                    <h2 className="text-primary fw-bold mb-0" style={{ fontSize: '2.2rem' }}>
-                        <i className="bi bi-book-half me-2" style={{ fontSize: '0.8em' }}></i>
+        <div className="p-6 w-full max-w-[1920px] mx-auto h-[calc(100vh-100px)] overflow-hidden flex flex-col gap-6 animate-in fade-in duration-500 bg-slate-50/50">
+            {/* Header Section */}
+            <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0">
+                <div className="space-y-1">
+                    <h1 className="text-3xl font-black text-neutral-900 tracking-tight flex items-center gap-3">
+                        <div className="p-2 bg-indigo-600 rounded-2xl text-white shadow-xl shadow-indigo-500/30">
+                            <Book size={30} strokeWidth={2.5} />
+                        </div>
                         Libro Mayor
-                    </h2>
-                    <p className="text-muted mb-0" style={{ fontSize: '1.1rem' }}>
-                        Consulta de movimientos y saldos por cuenta.
+                    </h1>
+                    <p className="text-neutral-500 font-medium text-sm ml-1 flex items-center gap-2">
+                        <Clock size={14} className="text-indigo-500" /> Consulta detallada de movimientos y evolución de saldos por cuenta.
                     </p>
                 </div>
-            </div>
+                <div className="flex items-center gap-3">
+                    {resumen && (
+                        <button
+                            onClick={handleExport}
+                            className="flex items-center gap-2 px-6 py-3 bg-white border border-neutral-200 text-neutral-700 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-neutral-50 transition-all shadow-sm"
+                        >
+                            <Download size={18} /> Exportar PDF
+                        </button>
+                    )}
+                    <button
+                        onClick={() => handleSearch()}
+                        disabled={loading || !filtros.cuenta_id}
+                        className={cn(
+                            "flex items-center gap-2 px-8 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all shadow-xl",
+                            loading || !filtros.cuenta_id
+                                ? "bg-neutral-200 text-neutral-400 cursor-not-allowed shadow-none"
+                                : "bg-primary-600 text-white shadow-primary-500/20 hover:bg-primary-700 active:scale-95"
+                        )}
+                    >
+                        <Search size={18} className={loading ? "animate-spin" : ""} />
+                        {loading ? 'Consultando...' : 'Consultar'}
+                    </button>
+                </div>
+            </header>
 
-            {/* FILTROS (Estilo Productos.jsx) */}
-            <div className="card border-0 shadow-sm mb-4">
-                <div className="card-body bg-light rounded">
-                    <form onSubmit={handleSearch}>
-                        <div className="row g-3">
-                            <div className="col-md-4">
-                                <div className="input-group">
-                                    <span className="input-group-text bg-white border-end-0"><i className="bi bi-search"></i></span>
-                                    <select
-                                        className="form-select border-start-0"
-                                        value={filtros.cuenta_id}
-                                        onChange={e => handleFilterChange('cuenta_id', e.target.value)}
-                                    >
-                                        <option value="">Seleccionar cuenta...</option>
-                                        {cuentas.map(c => (
-                                            <option key={c.id} value={c.id}>
-                                                {c.codigo} - {c.nombre}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                            </div>
-                            <div className="col-md-2">
-                                <select
-                                    className="form-select"
-                                    value={filtros.ejercicio_id}
-                                    onChange={e => handleFilterChange('ejercicio_id', e.target.value)}
-                                >
-                                    <option value="">Todos los Ejercicios</option>
-                                    {ejercicios.map(e => <option key={e.id} value={e.id}>{e.descripcion}</option>)}
-                                </select>
-                            </div>
-                            <div className="col-md-2">
+            {/* KPI Section */}
+            <BentoGrid cols={4} className="shrink-0">
+                <StatCard
+                    label="Saldo Inicial"
+                    value={`$${formatNumber(resumen?.saldo_inicial || 0)}`}
+                    icon={Wallet2}
+                    color="neutral"
+                    description="Balance al inicio del periodo"
+                />
+                <StatCard
+                    label="Total Debe (+)"
+                    value={`$${formatNumber(resumen?.total_debe || 0)}`}
+                    icon={TrendingUp}
+                    color="success"
+                    description="Sumatoria de débitos"
+                />
+                <StatCard
+                    label="Total Haber (-)"
+                    value={`$${formatNumber(resumen?.total_haber || 0)}`}
+                    icon={TrendingDown}
+                    color="primary"
+                    description="Sumatoria de créditos"
+                />
+                <StatCard
+                    label={resumen?.saldo_final < 0 ? "Saldo (Deudor)" : "Saldo (Acreedor)"}
+                    value={`$${formatNumber(resumen?.saldo_final || 0)}`}
+                    icon={Hash}
+                    color={resumen?.saldo_final < 0 ? "error" : "neutral"}
+                    className={cn(resumen?.saldo_final >= 0 && "!bg-neutral-900 !text-white")}
+                    description="Balance final calculado"
+                />
+            </BentoGrid>
+
+            {/* Content Area: Filter + Table */}
+            <div className="flex flex-col flex-1 min-h-0 gap-4">
+                <div className="flex flex-col lg:flex-row items-center gap-4 w-full shrink-0">
+                    <div className="flex-1 w-full overflow-visible">
+                        <SearchableSelect
+                            value={filtros.cuenta_id}
+                            onChange={(e) => handleFilterChange('cuenta_id', e.target.value)}
+                            options={cuentas.map(c => ({ value: c.id, label: `${c.codigo} - ${c.nombre}` }))}
+                            placeholder="Buscar y seleccionar cuenta contable..."
+                            className="shadow-sm"
+                        />
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto overflow-visible">
+                        <div className="w-48 overflow-visible">
+                            <PremiumSelect
+                                value={filtros.ejercicio_id}
+                                onChange={(e) => handleFilterChange('ejercicio_id', e.target.value)}
+                                options={[
+                                    { value: '', label: 'Ejercicio...' },
+                                    ...ejercicios.map(e => ({ value: e.id, label: e.descripcion }))
+                                ]}
+                                className="!h-[52px] !rounded-full border-neutral-200 shadow-sm bg-white font-bold text-xs"
+                            />
+                        </div>
+
+                        <div className="flex items-center gap-3 bg-white px-6 h-[52px] rounded-full border border-neutral-200 shadow-sm min-w-max">
+                            <div className="flex items-center gap-2">
+                                <Calendar size={16} className="text-neutral-400" />
+                                <span className="text-[10px] font-black text-neutral-400 uppercase tracking-widest whitespace-nowrap">Desde</span>
                                 <input
                                     type="date"
-                                    className="form-control"
                                     value={filtros.fecha_desde}
-                                    onChange={e => handleFilterChange('fecha_desde', e.target.value)}
-                                    title="Fecha Desde"
+                                    onChange={(e) => handleFilterChange('fecha_desde', e.target.value)}
+                                    className="text-xs font-bold text-neutral-700 bg-transparent outline-none cursor-pointer hover:text-primary-600 transition-colors uppercase"
                                 />
                             </div>
-                            <div className="col-md-2">
+                            <div className="w-[1px] h-4 bg-neutral-200 mx-1"></div>
+                            <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-black text-neutral-400 uppercase tracking-widest whitespace-nowrap">Hasta</span>
                                 <input
                                     type="date"
-                                    className="form-control"
                                     value={filtros.fecha_hasta}
-                                    onChange={e => handleFilterChange('fecha_hasta', e.target.value)}
-                                    title="Fecha Hasta"
+                                    onChange={(e) => handleFilterChange('fecha_hasta', e.target.value)}
+                                    className="text-xs font-bold text-neutral-700 bg-transparent outline-none cursor-pointer hover:text-primary-600 transition-colors uppercase"
                                 />
-                            </div>
-                            <div className="col-md-2">
-                                <button type="submit" className="btn btn-primary w-100 rounded-2 shadow-sm fw-bold">
-                                    <i className="bi bi-funnel-fill me-1"></i> Ver
-                                </button>
                             </div>
                         </div>
-                    </form>
+                    </div>
+                </div>
+
+                <div className="flex flex-col flex-1 min-h-0">
+                    {!resumen && !loading ? (
+                        <div className="flex-1 flex flex-col items-center justify-center bg-white border border-neutral-200/60 rounded-[2rem] shadow-sm">
+                            <EmptyState
+                                title="Consulta de Mayor"
+                                description="Selecciona una cuenta contable y presiona 'Consultar' para visualizar el historial de movimientos."
+                                icon={Search}
+                            />
+                        </div>
+                    ) : (
+                        <PremiumTable
+                            columns={columns}
+                            data={movimientos}
+                            loading={loading}
+                            className="flex-1 shadow-lg border border-neutral-200/60 !bg-white rounded-[2rem] overflow-hidden"
+                            emptyState={
+                                <EmptyState
+                                    title="No hay movimientos"
+                                    description="Esta cuenta no presenta registros para el periodo seleccionado."
+                                />
+                            }
+                        />
+                    )}
                 </div>
             </div>
-
-            {/* RESULTADOS */}
-            {resumen && (
-                <>
-                    {/* Tarjetas de Resumen Modernas */}
-                    <div className="row g-3 mb-4">
-                        {/* Saldo Inicial */}
-                        <div className="col-md-3">
-                            <div className="card border-0 shadow-sm rounded-3 h-100 position-relative overflow-hidden">
-                                <div className="card-body p-3 d-flex align-items-center justify-content-between">
-                                    <div>
-                                        <p className="text-uppercase text-muted fw-bold mb-1" style={{ fontSize: '0.75rem', letterSpacing: '0.5px' }}>Saldo Inicial</p>
-                                        <h4 className="fw-bold text-secondary mb-0 text-truncate" title={`$ ${formatNumber(resumen.saldo_inicial)}`}>
-                                            $ {formatNumber(resumen.saldo_inicial)}
-                                        </h4>
-                                    </div>
-                                    <div className="bg-secondary bg-opacity-10 p-3 rounded-circle d-flex align-items-center justify-content-center" style={{ width: '50px', height: '50px' }}>
-                                        <i className="bi bi-wallet2 text-secondary fs-4"></i>
-                                    </div>
-                                </div>
-                                <div className="position-absolute bottom-0 start-0 w-100 bg-secondary" style={{ height: '3px' }}></div>
-                            </div>
-                        </div>
-
-                        {/* Total Debe */}
-                        <div className="col-md-3">
-                            <div className="card border-0 shadow-sm rounded-3 h-100 position-relative overflow-hidden">
-                                <div className="card-body p-3 d-flex align-items-center justify-content-between">
-                                    <div>
-                                        <p className="text-uppercase text-muted fw-bold mb-1" style={{ fontSize: '0.75rem', letterSpacing: '0.5px' }}>Total Debe</p>
-                                        <h4 className="fw-bold text-success mb-0 text-truncate" title={`$ ${formatNumber(resumen.total_debe)}`}>
-                                            $ {formatNumber(resumen.total_debe)}
-                                        </h4>
-                                    </div>
-                                    <div className="bg-success bg-opacity-10 p-3 rounded-circle d-flex align-items-center justify-content-center" style={{ width: '50px', height: '50px' }}>
-                                        <i className="bi bi-arrow-down-circle-fill text-success fs-4"></i>
-                                    </div>
-                                </div>
-                                <div className="position-absolute bottom-0 start-0 w-100 bg-success" style={{ height: '3px' }}></div>
-                            </div>
-                        </div>
-
-                        {/* Total Haber */}
-                        <div className="col-md-3">
-                            <div className="card border-0 shadow-sm rounded-3 h-100 position-relative overflow-hidden">
-                                <div className="card-body p-3 d-flex align-items-center justify-content-between">
-                                    <div>
-                                        <p className="text-uppercase text-muted fw-bold mb-1" style={{ fontSize: '0.75rem', letterSpacing: '0.5px' }}>Total Haber</p>
-                                        <h4 className="fw-bold text-primary mb-0 text-truncate" title={`$ ${formatNumber(resumen.total_haber)}`}>
-                                            $ {formatNumber(resumen.total_haber)}
-                                        </h4>
-                                    </div>
-                                    <div className="bg-primary bg-opacity-10 p-3 rounded-circle d-flex align-items-center justify-content-center" style={{ width: '50px', height: '50px' }}>
-                                        <i className="bi bi-arrow-up-circle-fill text-primary fs-4"></i>
-                                    </div>
-                                </div>
-                                <div className="position-absolute bottom-0 start-0 w-100 bg-primary" style={{ height: '3px' }}></div>
-                            </div>
-                        </div>
-
-                        {/* Saldo Final */}
-                        <div className="col-md-3">
-                            <div className="card border-0 shadow-sm rounded-3 h-100 position-relative overflow-hidden">
-                                <div className="card-body p-3 d-flex align-items-center justify-content-between">
-                                    <div className="overflow-hidden me-2">
-                                        <p className="text-uppercase text-muted fw-bold mb-1" style={{ fontSize: '0.75rem', letterSpacing: '0.5px' }}>Saldo Final</p>
-                                        <h4 className={`fw-bold mb-0 text-truncate ${resumen.saldo_final < 0 ? 'text-danger' : 'text-dark'}`} title={`$ ${formatNumber(resumen.saldo_final)}`}>
-                                            $ {formatNumber(resumen.saldo_final)}
-                                        </h4>
-                                    </div>
-                                    <div className="d-flex flex-column gap-1">
-                                        <div className={`bg-opacity-10 p-2 rounded-circle d-flex align-items-center justify-content-center ${resumen.saldo_final < 0 ? 'bg-danger' : 'bg-dark'}`} style={{ width: '40px', height: '40px' }}>
-                                            <i className={`bi bi-cash-coin fs-5 ${resumen.saldo_final < 0 ? 'text-danger' : 'text-dark'}`}></i>
-                                        </div>
-                                        <button onClick={handleExport} className="btn btn-success text-white btn-sm p-1 d-flex align-items-center justify-content-center rounded-circle border-0 shadow-sm" style={{ width: '30px', height: '30px', margin: '0 auto' }} title="Exportar Excel">
-                                            <i className="bi bi-file-earmark-excel-fill"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                                <div className={`position-absolute bottom-0 start-0 w-100 ${resumen.saldo_final < 0 ? 'bg-danger' : 'bg-dark'}`} style={{ height: '3px' }}></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* TABLA (Estilo Productos.jsx) - ESTÁNDAR */}
-                    <div className="card border-0 shadow mb-4 flex-grow-1 overflow-hidden d-flex flex-column" style={{ minHeight: '400px' }}>
-                        <div className="card-body p-0 d-flex flex-column overflow-hidden">
-                            <div className="table-responsive flex-grow-1 overflow-auto">
-                                <table className="table align-middle mb-0">
-                                    <thead className="bg-white border-bottom">
-                                        <tr>
-                                            <th className="ps-4 py-3 text-dark fw-bold">Fecha</th>
-                                            <th className="py-3 text-dark fw-bold">Asiento</th>
-                                            <th className="py-3 text-dark fw-bold">Descripción</th>
-                                            <th className="text-end py-3 text-dark fw-bold">Debe</th>
-                                            <th className="text-end py-3 text-dark fw-bold">Haber</th>
-                                            <th className="text-end pe-4 py-3 text-dark fw-bold">Saldo</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {movimientos.length === 0 ? (
-                                            <tr>
-                                                <td colSpan="6" className="text-center py-5">
-                                                    <div className="text-muted opacity-50 mb-3">
-                                                        <i className="bi bi-journal-x fs-1"></i>
-                                                    </div>
-                                                    <p className="text-muted mb-0">No hay movimientos en el período seleccionado.</p>
-                                                </td>
-                                            </tr>
-                                        ) : (
-                                            currentItems.map((mov) => (
-                                                <tr key={mov.id} className="border-bottom-0">
-                                                    <td className="ps-4 text-dark fw-medium py-3">{formatDate(mov.fecha)}</td>
-                                                    <td className="fw-bold text-primary py-3">#{mov.asiento_numero}</td>
-                                                    <td className="text-secondary py-3">{mov.descripcion}</td>
-                                                    <td className="text-end text-success fw-bold py-3">
-                                                        {mov.debe > 0 ? `$ ${formatNumber(mov.debe)}` : '-'}
-                                                    </td>
-                                                    <td className="text-end text-danger fw-bold py-3">
-                                                        {mov.haber > 0 ? `$ ${formatNumber(mov.haber)}` : '-'}
-                                                    </td>
-                                                    <td className="text-end pe-4 fw-bold text-dark py-3">
-                                                        $ {formatNumber(mov.saldo)}
-                                                    </td>
-                                                </tr>
-                                            ))
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            {/* PAGINACIÓN */}
-                            {!loading && movimientos.length > 0 && (
-                                <div className="d-flex justify-content-between align-items-center p-3 border-top bg-light">
-                                    <div className="d-flex align-items-center gap-2">
-                                        <span className="text-muted small">
-                                            Mostrando {indexOfFirstItem + 1} a {Math.min(indexOfLastItem, movimientos.length)} de {movimientos.length} registros
-                                        </span>
-                                        <select
-                                            className="form-select form-select-sm border-secondary-subtle"
-                                            style={{ width: '70px' }}
-                                            value={itemsPerPage}
-                                            onChange={(e) => { setItemsPerPage(Number(e.target.value)); setCurrentPage(1); }}
-                                        >
-                                            <option value="5">5</option>
-                                            <option value="10">10</option>
-                                            <option value="20">20</option>
-                                            <option value="50">50</option>
-                                            <option value="100">100</option>
-                                        </select>
-                                        <span className="text-muted small">por pág.</span>
-                                    </div>
-
-                                    <nav>
-                                        <ul className="pagination mb-0 align-items-center gap-2">
-                                            <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
-                                                <button
-                                                    className="page-link border-0 text-secondary bg-transparent p-0"
-                                                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                                                    style={{ width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                                >
-                                                    <i className="bi bi-chevron-left"></i>
-                                                </button>
-                                            </li>
-
-                                            {[...Array(totalPages)].map((_, i) => {
-                                                if (totalPages > 10 && Math.abs(currentPage - (i + 1)) > 2 && i !== 0 && i !== totalPages - 1) return null;
-                                                return (
-                                                    <li key={i} className="page-item">
-                                                        <button
-                                                            className={`page-link border-0 rounded-circle fw-bold ${currentPage === i + 1 ? 'bg-primary text-white shadow-sm' : 'bg-transparent text-secondary'}`}
-                                                            onClick={() => setCurrentPage(i + 1)}
-                                                            style={{ width: '35px', height: '35px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                                        >
-                                                            {i + 1}
-                                                        </button>
-                                                    </li>
-                                                );
-                                            })}
-
-                                            <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
-                                                <button
-                                                    className="page-link border-0 text-secondary bg-transparent p-0"
-                                                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                                                    style={{ width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                                >
-                                                    <i className="bi bi-chevron-right"></i>
-                                                </button>
-                                            </li>
-                                        </ul>
-                                    </nav>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </>
-            )}
         </div>
     );
 };

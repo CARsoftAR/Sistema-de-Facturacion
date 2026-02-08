@@ -218,62 +218,55 @@ const NotasDebito = () => {
     ];
 
     return (
-        <div className="flex flex-col h-[calc(100vh-64px)] overflow-hidden bg-neutral-50/30">
-            {/* Header / Toolbar Area */}
-            <div className="p-8 pb-4">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                    <div className="flex-shrink-0">
-                        <div className="flex items-center gap-3 mb-1">
-                            <div className="p-2 bg-indigo-600 rounded-2xl shadow-lg shadow-indigo-600/20">
-                                <ArrowUpCircle size={24} className="text-white" />
-                            </div>
-                            <h1 className="text-3xl font-black text-neutral-900 tracking-tight whitespace-nowrap">Notas de Débito</h1>
-                        </div>
-                        <p className="text-neutral-500 font-medium ml-1">Gestión de recargos y ajustes financieros.</p>
-                    </div>
-
-                    <div className="flex items-center gap-4 w-full md:w-auto">
-                        <PremiumFilterBar
-                            busqueda={filters.busqueda}
-                            setBusqueda={(val) => setFilters(prev => ({ ...prev, busqueda: val }))}
-                            dateRange={dateRange}
-                            setDateRange={setDateRange}
-                            onClear={clearFilters}
-                            placeholder="Buscar número o cliente..."
-                            className="!px-0 flex-1"
-                        />
-                        <button
-                            onClick={() => navigate('/notas-debito/nuevo')}
-                            className="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl transition-all font-black text-sm shadow-lg shadow-indigo-600/20 uppercase tracking-widest flex-shrink-0"
-                        >
-                            <Plus size={18} strokeWidth={3} />
-                            Nueva Nota
-                        </button>
-                    </div>
+        <div className="p-6 w-full max-w-[1920px] mx-auto h-[calc(100vh-64px)] overflow-hidden flex flex-col gap-6 animate-in fade-in duration-500 bg-slate-50/50">
+            {/* Header Section */}
+            <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div className="space-y-1">
+                    <h1 className="text-3xl font-black text-neutral-900 tracking-tight flex items-center gap-3">
+                        <ArrowUpCircle className="text-indigo-600" size={32} strokeWidth={2.5} />
+                        Notas de Débito
+                    </h1>
+                    <p className="text-neutral-500 font-medium text-sm ml-1">
+                        Gestión de recargos y ajustes financieros.
+                    </p>
                 </div>
-            </div>
+                <div className="flex items-center gap-3">
+                    <BtnAdd
+                        label="NUEVA NOTA"
+                        onClick={() => navigate('/notas-debito/nuevo')}
+                        className="!bg-indigo-600 !hover:bg-indigo-700 !rounded-xl !px-6 !py-3 !font-black !tracking-widest !text-xs !shadow-lg !shadow-indigo-600/20"
+                    />
+                </div>
+            </header>
 
-            {/* Table Area */}
-            <div className="flex-1 px-8 pb-8 overflow-hidden min-h-0">
-                <div className="h-full bg-white rounded-[2.5rem] border border-neutral-200 shadow-xl shadow-neutral-200/50 flex flex-col overflow-hidden">
-                    <div className="flex-1 overflow-hidden">
-                        <PremiumTable
-                            columns={columns}
-                            data={notas}
-                            loading={loading}
-                            emptyMessage={
-                                <EmptyState
-                                    icon={ArrowUpCircle}
-                                    title="Sin Notas de Débito"
-                                    description="No se encontraron recargos que coincidan con los filtros."
-                                    iconColor="text-indigo-500"
-                                    bgIconColor="bg-indigo-50"
-                                />
-                            }
+            <PremiumFilterBar
+                busqueda={filters.busqueda}
+                setBusqueda={(val) => setFilters(prev => ({ ...prev, busqueda: val }))}
+                dateRange={dateRange}
+                setDateRange={setDateRange}
+                onClear={clearFilters}
+                placeholder="Buscar número o cliente..."
+            />
+
+            {/* Table Container */}
+            <div className="flex-grow flex flex-col min-h-0">
+                <PremiumTable
+                    columns={columns}
+                    data={notas}
+                    loading={loading}
+                    className={cn("flex-grow shadow-lg", notas.length > 0 ? "rounded-b-none" : "")}
+                    emptyState={
+                        <EmptyState
+                            icon={ArrowUpCircle}
+                            title="Sin Notas de Débito"
+                            description="No se encontraron recargos que coincidan con los filtros."
                         />
-                    </div>
+                    }
+                />
 
-                    <div className="px-6 py-4 border-t border-neutral-100 bg-neutral-50/50">
+                {/* Pagination */}
+                {notas.length > 0 && (
+                    <div className="bg-white border-x border-b border-neutral-200 rounded-b-[2rem] px-6 py-1 shadow-premium">
                         <TablePagination
                             currentPage={page}
                             totalPages={totalPages}
@@ -287,7 +280,7 @@ const NotasDebito = () => {
                             }}
                         />
                     </div>
-                </div>
+                )}
             </div>
         </div>
     );

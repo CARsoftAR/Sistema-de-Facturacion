@@ -1,16 +1,23 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Calendar, Trash2, Edit2, CheckCircle, XCircle } from 'lucide-react';
-import { BtnAdd } from '../components/CommonButtons';
-import { CalendarCheck } from 'lucide-react';
-import { showDeleteAlert } from '../utils/alerts';
+import {
+    Calendar, Trash2, Edit2, CheckCircle2, XCircle, Plus,
+    CalendarCheck, FileText, BarChart3, ChevronRight, X, Clock, AlertCircle, Save
+} from 'lucide-react';
+import axios from 'axios';
+import { BtnAdd, BtnSave, BtnCancel } from '../components/CommonButtons';
+import { showDeleteAlert, showSuccessAlert, showErrorAlert } from '../utils/alerts';
+import { BentoCard } from '../components/premium/BentoCard';
+import { PremiumTable, TableCell } from '../components/premium/PremiumTable';
+import { PremiumInput } from '../components/premium/PremiumInput';
+import { cn } from '../utils/cn';
 
 const Ejercicios = () => {
     const [ejercicios, setEjercicios] = useState([]);
     const [loading, setLoading] = useState(true);
     const [modalOpen, setModalOpen] = useState(false);
-    const navigate = useNavigate();
+    const [saving, setSaving] = useState(false);
+
     const [formData, setFormData] = useState({
         id: null,
         descripcion: '',
@@ -22,13 +29,13 @@ const Ejercicios = () => {
     const fetchEjercicios = async () => {
         setLoading(true);
         try {
-            const res = await fetch('/api/contabilidad/ejercicios/');
-            const data = await res.json();
-            if (data.success) {
-                setEjercicios(data.ejercicios);
+            const res = await axios.get('/api/contabilidad/ejercicios/');
+            if (res.data.success) {
+                setEjercicios(res.data.ejercicios);
             }
         } catch (error) {
             console.error("Error fetching ejercicios:", error);
+            showErrorAlert("Error", "No se pudieron cargar los ejercicios contables");
         } finally {
             setLoading(false);
         }
@@ -39,93 +46,70 @@ const Ejercicios = () => {
     }, []);
 
     const handleSave = async (e) => {
-        e.preventDefault();
+        if (e) e.preventDefault();
+
+        if (!formData.descripcion || !formData.fecha_inicio || !formData.fecha_fin) {
+            showErrorAlert("Campos Incompletos", "Por favor complete todos los campos obligatorios.");
+            return;
+        }
+
+        setSaving(true);
         const url = formData.id
             ? `/api/contabilidad/ejercicios/${formData.id}/editar/`
             : `/api/contabilidad/ejercicios/crear/`;
 
         try {
-            // Get CSRF
-            const getCookie = (name) => {
-                let cookieValue = null;
-                if (document.cookie && document.cookie !== '') {
-                    const cookies = document.cookie.split(';');
-                    for (let i = 0; i < cookies.length; i++) {
-                        const cookie = cookies[i].trim();
-                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                            break;
-                        }
-                    }
-                }
-                return cookieValue;
-            };
-
-            const res = await fetch(url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken')
-                },
-                body: JSON.stringify(formData)
+            const res = await axios.post(url, formData, {
+                headers: { 'X-CSRFToken': document.cookie.split('csrftoken=')[1]?.split(';')[0] }
             });
 
-            const data = await res.json();
-            if (data.ok || data.success) {
+            if (res.data.ok || res.data.success) {
                 setModalOpen(false);
                 fetchEjercicios();
+                showSuccessAlert("¡Enhorabuena!", "El ejercicio contable ha sido guardado con éxito.");
             } else {
-                alert(data.error || "Error al guardar");
+                showErrorAlert("Error", res.data.error || "No se pudo guardar el ejercicio.");
             }
         } catch (error) {
-            console.error(error);
-            alert("Error de conexión");
+            showErrorAlert("Error", "Error de comunicación con el servidor.");
+        } finally {
+            setSaving(false);
         }
     };
 
     const handleDelete = async (ej) => {
         const result = await showDeleteAlert(
             `¿Eliminar ejercicio ${ej.descripcion}?`,
-            "Esta acción eliminará el ejercicio contable y todos sus asientos asociados de forma permanente.",
-            'Eliminar',
-            {
-                iconComponent: (
-                    <div className="rounded-circle d-flex align-items-center justify-content-center bg-danger-subtle text-danger mx-auto" style={{ width: '80px', height: '80px' }}>
-                        <Calendar size={40} strokeWidth={1.5} />
-                    </div>
-                )
-            }
+            "Esta acción eliminará el ejercicio contable y todos sus asientos asociados de forma permanente. ¡No se puede deshacer!",
+            'Sí, eliminar todo'
         );
         if (!result.isConfirmed) return;
-        try {
-            const getCookie = (name) => {
-                let cookieValue = null;
-                if (document.cookie && document.cookie !== '') {
-                    const cookies = document.cookie.split(';');
-                    for (let i = 0; i < cookies.length; i++) {
-                        const cookie = cookies[i].trim();
-                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                            break;
-                        }
-                    }
-                }
-                return cookieValue;
-            };
 
-            const res = await fetch(`/api/contabilidad/ejercicios/${ej.id}/eliminar/`, {
-                method: 'POST',
-                headers: { 'X-CSRFToken': getCookie('csrftoken') }
+        try {
+            const res = await axios.post(`/api/contabilidad/ejercicios/${ej.id}/eliminar/`, {}, {
+                headers: { 'X-CSRFToken': document.cookie.split('csrftoken=')[1]?.split(';')[0] }
             });
-            const data = await res.json();
-            if (data.ok) {
+
+            if (res.data.ok || res.data.success) {
+                showSuccessAlert("Eliminado", "El ejercicio y sus datos asociados han sido borrados.");
                 fetchEjercicios();
             } else {
-                alert(data.error);
+                showErrorAlert("Error", res.data.error || "No se pudo eliminar el ejercicio.");
             }
         } catch (error) {
-            alert("Error al eliminar");
+            showErrorAlert("Error", "Error al intentar eliminar.");
         }
+    };
+
+    const openEdit = (ej) => {
+        setFormData({
+            id: ej.id,
+            descripcion: ej.descripcion,
+            fecha_inicio: ej.fecha_inicio.split(' ')[0],
+            fecha_fin: ej.fecha_fin.split(' ')[0],
+            cerrado: ej.cerrado
+        });
+        setModalOpen(true);
     };
 
     const openNew = () => {
@@ -139,220 +123,205 @@ const Ejercicios = () => {
         setModalOpen(true);
     };
 
-    const openEdit = (ej) => {
-        setFormData({
-            id: ej.id,
-            descripcion: ej.descripcion,
-            fecha_inicio: ej.fecha_inicio,
-            fecha_fin: ej.fecha_fin,
-            cerrado: ej.cerrado
-        });
-        setModalOpen(true);
-    };
-
-    return (
-        <div className="container-fluid px-4 py-4" style={{ backgroundColor: '#f8f9fa', minHeight: '100vh' }}>
-            {/* ESTILOS EXTRA */}
-            <style>{`
-                .hover-shadow:hover { box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08) !important; transform: translateY(-1px); }
-                .table-hover tbody tr:hover { background-color: rgba(13, 110, 253, 0.03); }
-            `}</style>
-
-            {/* HEADER */}
-            <div className="d-flex justify-content-between align-items-center mb-5">
-                <div>
-                    <h1 className="fw-bold mb-1" style={{ fontSize: '2rem', color: '#1a1a1a', letterSpacing: '-0.5px' }}>
-                        <i className="bi bi-calendar-check text-primary me-2"></i>
-                        Ejercicios Contables
-                    </h1>
-                    <p className="text-muted mb-0">Administra los períodos fiscales de la empresa.</p>
+    const columns = [
+        {
+            key: 'descripcion',
+            label: 'Descripción del Período',
+            render: (val, row) => (
+                <div className="flex items-center gap-3">
+                    <div className={cn(
+                        "p-2 rounded-lg",
+                        row.cerrado ? "bg-neutral-100 text-neutral-400" : "bg-primary-50 text-primary-600"
+                    )}>
+                        <CalendarCheck size={18} />
+                    </div>
+                    <div>
+                        <span className="font-black text-neutral-800 tracking-tight block">{val}</span>
+                        <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest leading-none">
+                            Período Fiscal
+                        </span>
+                    </div>
                 </div>
-                <BtnAdd label="Nuevo Ejercicio" icon={CalendarCheck} onClick={openNew} className="btn-lg shadow-sm" />
-            </div>
-
-            {/* CONTENIDO PRINCIPAL - ESTÁNDAR */}
-            <div className="card border-0 shadow mb-4 flex-grow-1 overflow-hidden d-flex flex-column">
-                <div className="card-body p-0 d-flex flex-column overflow-hidden">
-                    {loading ? (
-                        <div className="text-center py-5">
-                            <div className="spinner-border text-primary text-opacity-75" role="status" style={{ width: '3rem', height: '3rem' }}></div>
-                            <p className="mt-3 text-muted fw-bold">Cargando ejercicios...</p>
-                        </div>
-                    ) : ejercicios.length === 0 ? (
-                        <div className="text-center py-5">
-                            <div className="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3 text-muted" style={{ width: '80px', height: '80px' }}>
-                                <i className="bi bi-calendar-x fs-1 opacity-50"></i>
-                            </div>
-                            <h5 className="text-secondary fw-bold">No hay ejercicios registrados</h5>
-                            <p className="text-muted small">Crea un nuevo ejercicio para comenzar.</p>
-                        </div>
-                    ) : (
-                        <div className="table-responsive flex-grow-1 overflow-auto">
-                            <table className="table align-middle mb-0">
-                                <thead className="bg-white border-bottom">
-                                    <tr>
-                                        <th className="ps-4 py-3 text-dark fw-bold">Descripción</th>
-                                        <th className="py-3 text-dark fw-bold">Período</th>
-                                        <th className="text-center py-3 text-dark fw-bold">Asientos</th>
-                                        <th className="text-center py-3 text-dark fw-bold">Estado</th>
-                                        <th className="text-end pe-4 py-3 text-dark fw-bold">Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {ejercicios.map(ej => (
-                                        <tr key={ej.id} className="border-bottom-0">
-                                            <td className="ps-4 fw-bold text-dark py-3">{ej.descripcion}</td>
-                                            <td className="small text-muted py-3">
-                                                <div>{ej.fecha_inicio} al {ej.fecha_fin}</div>
-                                            </td>
-                                            <td className="text-center py-3">
-                                                <span className="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3">
-                                                    {ej.cantidad_asientos || 0}
-                                                </span>
-                                            </td>
-                                            <td className="text-center py-3">
-                                                <span className={`badge rounded-pill px-3 ${ej.cerrado ? 'bg-danger bg-opacity-10 text-danger' : 'bg-success bg-opacity-10 text-success'}`}>
-                                                    {ej.cerrado ? 'Cerrado' : 'Abierto'}
-                                                </span>
-                                            </td>
-                                            <td className="text-end pe-4 py-3">
-                                                <div className="d-flex justify-content-end gap-2">
-                                                    <button
-                                                        onClick={() => navigate(`/contabilidad/asientos/?ejercicio=${ej.id}`)}
-                                                        className="btn btn-secondary btn-sm d-flex align-items-center justify-content-center px-2 shadow-sm"
-                                                        title="Ver Asientos"
-                                                        style={{ width: '34px' }}
-                                                    >
-                                                        <i className="bi bi-journal-text fs-6"></i>
-                                                    </button>
-                                                    <button
-                                                        onClick={() => navigate(`/contabilidad/balance/?ejercicio=${ej.id}`)}
-                                                        className="btn btn-info btn-sm d-flex align-items-center justify-content-center px-2 shadow-sm text-white"
-                                                        title="Ver Balance"
-                                                        style={{ width: '34px' }}
-                                                    >
-                                                        <i className="bi bi-graph-up fs-6"></i>
-                                                    </button>
-                                                    <button
-                                                        onClick={() => openEdit(ej)}
-                                                        className="btn btn-primary btn-sm d-flex align-items-center justify-content-center px-2 shadow-sm"
-                                                        title="Editar"
-                                                        style={{ width: '34px' }}
-                                                    >
-                                                        <i className="bi bi-pencil fs-6"></i>
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDelete(ej)}
-                                                        className="btn btn-danger btn-sm d-flex align-items-center justify-content-center px-2 shadow-sm"
-                                                        title="Eliminar"
-                                                        style={{ width: '34px' }}
-                                                    >
-                                                        <i className="bi bi-trash fs-6"></i>
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+            )
+        },
+        {
+            key: 'fecha_inicio',
+            label: 'Inicio',
+            width: '150px',
+            render: (val) => <TableCell.Date value={val} />
+        },
+        {
+            key: 'fecha_fin',
+            label: 'Cierre',
+            width: '150px',
+            render: (val) => <TableCell.Date value={val} />
+        },
+        {
+            key: 'cerrado',
+            label: 'Estado',
+            width: '150px',
+            align: 'center',
+            render: (val) => val ? (
+                <div className="flex items-center justify-center gap-1.5 px-3 py-1 rounded-full bg-neutral-100 text-neutral-500 border border-neutral-200">
+                    <XCircle size={14} />
+                    <span className="text-[10px] font-black uppercase tracking-widest">Cerrado</span>
+                </div>
+            ) : (
+                <div className="flex items-center justify-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200">
+                    <CheckCircle2 size={14} />
+                    <span className="text-[10px] font-black uppercase tracking-widest">Abierto</span>
+                </div>
+            )
+        },
+        {
+            key: 'acciones',
+            label: 'Acciones',
+            width: '120px',
+            align: 'right',
+            sortable: false,
+            render: (_, row) => (
+                <div className="flex justify-end gap-1">
+                    <button
+                        onClick={(e) => { e.stopPropagation(); openEdit(row); }}
+                        className="p-2 text-primary-600 hover:bg-primary-50 rounded-xl transition-all"
+                        title="Modificar"
+                    >
+                        <Edit2 size={18} />
+                    </button>
+                    {!row.cerrado && (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); handleDelete(row); }}
+                            className="p-2 text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
+                            title="Eliminar"
+                        >
+                            <Trash2 size={18} />
+                        </button>
                     )}
                 </div>
+            )
+        }
+    ];
+
+    return (
+        <div className="flex flex-col h-[calc(100vh-100px)] p-6 gap-6 overflow-hidden bg-neutral-50/50">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
+                <div>
+                    <h1 className="text-3xl font-black text-neutral-800 tracking-tight flex items-center gap-3">
+                        <div className="p-2 bg-primary-600 rounded-xl text-white shadow-lg shadow-primary-500/20">
+                            <Calendar size={28} strokeWidth={2.5} />
+                        </div>
+                        Ejercicios Contables
+                    </h1>
+                    <p className="text-neutral-500 mt-1 font-medium flex items-center gap-2">
+                        <Clock size={14} /> Gestión de períodos fiscales y aperturas/cierres de libros
+                    </p>
+                </div>
+                <BtnAdd
+                    label="Nuevo Ejercicio"
+                    icon={Plus}
+                    onClick={openNew}
+                    className="!h-[52px] !px-8 !rounded-full shadow-xl shadow-primary-500/10 hover:shadow-primary-500/20 active:scale-95 transition-all text-white border-0 bg-primary-600"
+                />
             </div>
 
-            {/* MODAL */}
-            {
-                modalOpen && (
-                    <>
-                        <div className="modal-backdrop fade show" style={{ backgroundColor: 'rgba(255, 255, 255, 0.8)', backdropFilter: 'blur(5px)' }}></div>
-                        <div className="modal fade show d-block" tabIndex="-1">
-                            <div className="modal-dialog modal-dialog-centered">
-                                <div className="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
-                                    <div className="modal-header bg-white border-0 px-4 pt-4 pb-0">
-                                        <div>
-                                            <h5 className="modal-title fw-bold fs-4 text-dark mb-0">
-                                                {formData.id ? 'Editar Ejercicio' : 'Nuevo Ejercicio'}
-                                            </h5>
-                                            <p className="text-muted small mb-0">Información del período fiscal.</p>
-                                        </div>
-                                        <button type="button" className="btn-close" onClick={() => setModalOpen(false)}></button>
-                                    </div>
-                                    <div className="modal-body p-4">
-                                        <form onSubmit={handleSave}>
-                                            <div className="mb-3">
-                                                <label className="form-label small fw-bold text-secondary text-uppercase">Descripción</label>
-                                                <input
-                                                    type="text"
-                                                    className="form-control bg-light border-0 fw-bold"
-                                                    required
-                                                    value={formData.descripcion}
-                                                    onChange={e => setFormData({ ...formData, descripcion: e.target.value })}
-                                                    placeholder="Ej: Ejercicio 2026"
-                                                />
-                                            </div>
-                                            <div className="row g-3 mb-3">
-                                                <div className="col-6">
-                                                    <label className="form-label small fw-bold text-secondary text-uppercase">Inicio</label>
-                                                    <input
-                                                        type="date"
-                                                        className="form-control bg-light border-0"
-                                                        required
-                                                        value={formData.fecha_inicio}
-                                                        onChange={e => setFormData({ ...formData, fecha_inicio: e.target.value })}
-                                                    />
-                                                </div>
-                                                <div className="col-6">
-                                                    <label className="form-label small fw-bold text-secondary text-uppercase">Fin</label>
-                                                    <input
-                                                        type="date"
-                                                        className="form-control bg-light border-0"
-                                                        required
-                                                        value={formData.fecha_fin}
-                                                        onChange={e => setFormData({ ...formData, fecha_fin: e.target.value })}
-                                                    />
-                                                </div>
-                                            </div>
+            {/* Content Container */}
+            <div className="flex-1 min-h-0">
+                <PremiumTable
+                    columns={columns}
+                    data={ejercicios}
+                    loading={loading}
+                    className="h-full border border-neutral-200/60 shadow-2xl shadow-neutral-200/50"
+                />
+            </div>
 
-                                            {formData.id && (
-                                                <div className="mb-4">
-                                                    <div
-                                                        className={`d-flex align-items-center p-3 rounded-3 border cursor-pointer hover-shadow transition-all ${formData.cerrado ? 'bg-danger bg-opacity-10 border-danger border-opacity-25' : 'bg-success bg-opacity-10 border-success border-opacity-25'}`}
-                                                        onClick={() => setFormData({ ...formData, cerrado: !formData.cerrado })}
-                                                    >
-                                                        <div className="flex-grow-1">
-                                                            <div className={`fw-bold ${formData.cerrado ? 'text-danger' : 'text-success'}`}>
-                                                                {formData.cerrado ? 'Ejercicio Cerrado' : 'Ejercicio Abierto'}
-                                                            </div>
-                                                            <div className="small text-muted">
-                                                                {formData.cerrado ? 'No se permiten nuevos asientos.' : 'Se permiten registros contables.'}
-                                                            </div>
-                                                        </div>
-                                                        <div className="form-check form-switch ms-3">
-                                                            <input
-                                                                className="form-check-input fs-4"
-                                                                type="checkbox"
-                                                                checked={formData.cerrado}
-                                                                readOnly
-                                                                style={{ cursor: 'pointer' }}
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            <div className="d-flex justify-content-end gap-2 mt-4 pt-2 border-top">
-                                                <button type="button" className="btn btn-light text-muted px-4 rounded-pill fw-bold" onClick={() => setModalOpen(false)}>Cancelar</button>
-                                                <button type="submit" className="btn btn-primary px-5 rounded-pill fw-bold shadow-sm">Guardar</button>
-                                            </div>
-                                        </form>
-                                    </div>
+            {/* Modal */}
+            {modalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-900/40 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-300 border border-neutral-200/50">
+                        {/* Modal Header */}
+                        <div className="px-8 py-6 border-b border-neutral-100 flex justify-between items-center bg-neutral-50/50">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 bg-primary-50 text-primary-600 rounded-2xl">
+                                    <CalendarCheck size={24} />
+                                </div>
+                                <div>
+                                    <h3 className="font-black text-xl text-neutral-800">
+                                        {formData.id ? 'Editar Ejercicio' : 'Nuevo Ejercicio'}
+                                    </h3>
+                                    <p className="text-neutral-400 text-[10px] font-black uppercase tracking-widest mt-0.5">Definición de Período Fiscal</p>
                                 </div>
                             </div>
+                            <button
+                                onClick={() => setModalOpen(false)}
+                                className="p-2 hover:bg-neutral-100 rounded-full transition-all text-neutral-400"
+                            >
+                                <X size={24} />
+                            </button>
                         </div>
-                    </>
-                )
-            }
-        </div >
+
+                        {/* Modal Body */}
+                        <form onSubmit={handleSave} className="p-8 space-y-6">
+                            <div className="space-y-4">
+                                <PremiumInput
+                                    label="Nombre del Ejercicio"
+                                    placeholder="Ej: Ejercicio 2024"
+                                    icon={<FileText size={18} />}
+                                    value={formData.descripcion}
+                                    onChange={e => setFormData({ ...formData, descripcion: e.target.value })}
+                                />
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <PremiumInput
+                                        label="Fecha de Inicio"
+                                        type="date"
+                                        value={formData.fecha_inicio}
+                                        onChange={e => setFormData({ ...formData, fecha_inicio: e.target.value })}
+                                    />
+                                    <PremiumInput
+                                        label="Fecha de Cierre"
+                                        type="date"
+                                        value={formData.fecha_fin}
+                                        onChange={e => setFormData({ ...formData, fecha_fin: e.target.value })}
+                                    />
+                                </div>
+
+                                <div className="p-4 bg-neutral-50 rounded-2xl border border-neutral-100 flex items-center justify-between">
+                                    <div>
+                                        <p className="text-sm font-black text-neutral-800">Estado del Ejercicio</p>
+                                        <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Ejercicios cerrados no permiten ajustes</p>
+                                    </div>
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            className="sr-only peer"
+                                            checked={formData.cerrado}
+                                            onChange={e => setFormData({ ...formData, cerrado: e.target.checked })}
+                                        />
+                                        <div className="w-11 h-6 bg-neutral-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-4 pt-4">
+                                <BtnCancel
+                                    label="Cancelar"
+                                    onClick={() => setModalOpen(false)}
+                                    className="flex-1 !h-[56px] !rounded-2xl"
+                                />
+                                <BtnSave
+                                    label={saving ? "Guardando..." : "Guardar Cambios"}
+                                    icon={Save}
+                                    type="submit"
+                                    disabled={saving}
+                                    className="flex-1 !h-[56px] !rounded-2xl shadow-lg shadow-primary-500/20"
+                                />
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+        </div>
     );
 };
 

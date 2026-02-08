@@ -140,7 +140,7 @@ const Productos = () => {
         {
             key: 'codigo',
             label: '# Cód.',
-            width: '110px',
+            width: '180px',
             render: (v) => <TableCell.ID value={v} />
         },
         {
