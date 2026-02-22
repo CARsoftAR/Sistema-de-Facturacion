@@ -65,7 +65,8 @@ const ManualUsuario = () => {
     }, [selectedSlug]);
 
     const filteredCapitulos = capitulos.filter(c =>
-        c.nombre.toLowerCase().includes(searchTerm.toLowerCase())
+        c.nombre.toLowerCase().includes(searchTerm.toLowerCase()) &&
+        c.slug !== '12_CONTABILIDAD'
     );
 
     return (
@@ -92,7 +93,7 @@ const ManualUsuario = () => {
                             <div className="p-2 bg-primary-50 text-primary-600 rounded-xl">
                                 <BookOpen size={20} />
                             </div>
-                            <h2 className="font-black text-neutral-800 tracking-tight">Manual Pro</h2>
+                            <h2 className="font-black text-neutral-800 tracking-tight">Ayuda y Manuales</h2>
                         </div>
                         <button onClick={() => setSidebarOpen(false)} className="lg:hidden p-2 text-neutral-400 hover:text-neutral-600">
                             <X size={20} />
@@ -251,7 +252,7 @@ const ManualUsuario = () => {
 
                                 {/* Pagination simplistic */}
                                 <div className="mt-20 pt-8 border-t border-neutral-100 flex items-center justify-between text-neutral-400 text-sm">
-                                    <p>© 2025 Intelligent Pro ERP - Manual de Usuario</p>
+                                    <p>© 2025 Gestión Pro ERP - Manual de Usuario</p>
                                     <div className="flex gap-4">
                                         <button className="hover:text-primary-600 transition-colors">Soporte técnico</button>
                                         <button className="hover:text-primary-600 transition-colors">Reportar error</button>

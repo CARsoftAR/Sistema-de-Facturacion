@@ -245,7 +245,7 @@ const NuevaCompra = () => {
                         Volver
                     </button>
                     <h1 className="text-base font-black text-neutral-900 tracking-tight flex items-center gap-2 m-0 uppercase">
-                        Compras <Truck size={14} className="text-primary-600" />
+                        Carga de Compras <Truck size={14} className="text-primary-600" />
                     </h1>
                 </div>
 

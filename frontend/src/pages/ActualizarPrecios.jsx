@@ -146,12 +146,12 @@ const ActualizarPrecios = () => {
                 {/* Header */}
                 <header className="flex flex-col gap-1">
                     <div className="flex items-center gap-4">
-                        <div className="bg-gradient-to-br from-indigo-600 to-indigo-700 p-3 rounded-2xl text-white shadow-xl shadow-indigo-200">
+                        <div className="bg-gradient-to-br from-orange-600 to-orange-700 p-3 rounded-2xl text-white shadow-xl shadow-orange-200">
                             <RefreshCw size={24} strokeWidth={2.5} />
                         </div>
                         <div>
                             <h1 className="text-3xl font-black text-slate-900 tracking-tight leading-none uppercase font-outfit">
-                                Actualización Masiva de Precios
+                                Modificar Precios
                             </h1>
                             <p className="text-slate-500 font-medium text-sm mt-2">
                                 Ajusta los precios de tus productos globalmente, por rubro o marca.
@@ -168,7 +168,7 @@ const ActualizarPrecios = () => {
                         {/* Step 1: Alcance */}
                         <BentoCard className="p-8 border-slate-100" hover={false}>
                             <div className="flex items-center gap-4 mb-6">
-                                <span className="flex items-center justify-center w-8 h-8 rounded-full bg-indigo-600 text-white font-black text-xs">1</span>
+                                <span className="flex items-center justify-center w-8 h-8 rounded-full bg-orange-600 text-white font-black text-xs">1</span>
                                 <h3 className="font-extrabold text-slate-800 uppercase tracking-widest text-xs">ALCANCE</h3>
                             </div>
 
@@ -180,7 +180,7 @@ const ActualizarPrecios = () => {
                                         className={cn(
                                             "flex-1 py-3 rounded-[1.5rem] text-xs font-black uppercase tracking-tight transition-all duration-300",
                                             scope === opt
-                                                ? "bg-white text-indigo-600 shadow-md scale-[1.01]"
+                                                ? "bg-white text-orange-600 shadow-md scale-[1.01]"
                                                 : "text-slate-400 hover:text-slate-600"
                                         )}
                                     >
@@ -194,7 +194,7 @@ const ActualizarPrecios = () => {
                                     <div className="animate-in fade-in slide-in-from-top-4 duration-300">
                                         <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-2 ml-1">Seleccionar Rubro</label>
                                         <select
-                                            className="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-500 focus:bg-white outline-none font-bold text-slate-700 transition-all appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_1rem_center] bg-no-repeat"
+                                            className="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-orange-500 focus:bg-white outline-none font-bold text-slate-700 transition-all appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_1rem_center] bg-no-repeat"
                                             value={selectedRubro}
                                             onChange={(e) => setSelectedRubro(e.target.value)}
                                         >
@@ -227,7 +227,7 @@ const ActualizarPrecios = () => {
                         {/* Step 2: Ajuste */}
                         <BentoCard className="p-8 border-slate-100" hover={false}>
                             <div className="flex items-center gap-4 mb-6">
-                                <span className="flex items-center justify-center w-8 h-8 rounded-full bg-indigo-600 text-white font-black text-xs">2</span>
+                                <span className="flex items-center justify-center w-8 h-8 rounded-full bg-orange-600 text-white font-black text-xs">2</span>
                                 <h3 className="font-extrabold text-slate-800 uppercase tracking-widest text-xs">AJUSTE</h3>
                             </div>
 
@@ -263,7 +263,7 @@ const ActualizarPrecios = () => {
                                         className={cn(
                                             "flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all",
                                             valueType === 'PORCENTAJE'
-                                                ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20"
+                                                ? "bg-orange-600 text-white shadow-lg shadow-orange-600/20"
                                                 : "text-slate-400 hover:bg-white/50"
                                         )}
                                     >
@@ -274,7 +274,7 @@ const ActualizarPrecios = () => {
                                         className={cn(
                                             "flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all",
                                             valueType === 'MONTO'
-                                                ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20"
+                                                ? "bg-orange-600 text-white shadow-lg shadow-orange-600/20"
                                                 : "text-slate-400 hover:bg-white/50"
                                         )}
                                     >
@@ -284,7 +284,7 @@ const ActualizarPrecios = () => {
                             </div>
 
                             <div className="relative group">
-                                <div className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 font-extrabold text-2xl group-focus-within:text-indigo-500 transition-colors">
+                                <div className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 font-extrabold text-2xl group-focus-within:text-orange-500 transition-colors">
                                     {valueType === 'MONTO' ? '$' : '%'}
                                 </div>
                                 <input
@@ -292,7 +292,7 @@ const ActualizarPrecios = () => {
                                     value={value}
                                     onChange={(e) => setValue(e.target.value)}
                                     placeholder={valueType === 'MONTO' ? "0.00" : "Ej: 15"}
-                                    className="w-full pl-14 pr-8 py-6 text-4xl font-black text-slate-800 bg-white border-2 border-slate-100 rounded-[2rem] focus:border-indigo-500 outline-none transition-all placeholder:text-slate-200"
+                                    className="w-full pl-14 pr-8 py-6 text-4xl font-black text-slate-800 bg-white border-2 border-slate-100 rounded-[2rem] focus:border-orange-500 outline-none transition-all placeholder:text-slate-200"
                                 />
                             </div>
                         </BentoCard>
@@ -304,7 +304,7 @@ const ActualizarPrecios = () => {
                         {/* Scroll Content */}
                         <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-2 scrollbar-premium">
                             <div className="flex items-center gap-4 mb-6">
-                                <span className="flex items-center justify-center w-8 h-8 rounded-full bg-indigo-600 text-white font-black text-xs">3</span>
+                                <span className="flex items-center justify-center w-8 h-8 rounded-full bg-orange-600 text-white font-black text-xs">3</span>
                                 <h3 className="font-extrabold text-slate-800 uppercase tracking-widest text-xs">PRECIOS A IMPACTAR</h3>
                             </div>
 
@@ -320,20 +320,20 @@ const ActualizarPrecios = () => {
                                     className={cn(
                                         "flex items-center justify-between px-6 py-3.5 rounded-2xl border-2 cursor-pointer transition-all duration-300 active:scale-[0.98]",
                                         selectedFields[field.id]
-                                            ? "border-indigo-600 bg-indigo-50/50"
-                                            : "border-slate-50 bg-white hover:border-indigo-200"
+                                            ? "border-orange-600 bg-orange-50/50"
+                                            : "border-slate-50 bg-white hover:border-orange-200"
                                     )}
                                 >
                                     <span className={cn(
                                         "font-black text-[11px] uppercase tracking-tight transition-colors",
-                                        selectedFields[field.id] ? "text-indigo-700" : "text-slate-500"
+                                        selectedFields[field.id] ? "text-orange-700" : "text-slate-500"
                                     )}>
                                         {field.label}
                                     </span>
                                     <div className={cn(
                                         "w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all duration-300",
                                         selectedFields[field.id]
-                                            ? "bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-600/30"
+                                            ? "bg-orange-600 border-orange-600 text-white shadow-lg shadow-orange-600/30"
                                             : "border-slate-200 bg-white"
                                     )}>
                                         {selectedFields[field.id] ? (
@@ -366,7 +366,7 @@ const ActualizarPrecios = () => {
                                         "w-full py-4 rounded-2xl font-black text-white shadow-2xl flex items-center justify-center gap-3 transition-all duration-300 active:scale-[0.97] uppercase tracking-widest text-xs",
                                         loading
                                             ? "bg-slate-700 cursor-not-allowed opacity-50"
-                                            : "bg-indigo-600 hover:bg-indigo-500 shadow-indigo-500/20"
+                                            : "bg-orange-600 hover:bg-orange-500 shadow-orange-500/20"
                                     )}
                                 >
                                     {loading ? (

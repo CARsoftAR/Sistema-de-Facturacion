@@ -41,8 +41,8 @@ urlpatterns = [
     # MENÚ PRINCIPAL
     # ==========================
     path("", login_required(TemplateView.as_view(template_name="react_app.html")), name="menu"),
-    path("menu-legacy/", views.menu, name="menu_legacy"),
-    path("menu/", views.menu, name="menu_legacy_alias"),
+    path("menu-legacy/", login_required(TemplateView.as_view(template_name="react_app.html")), name="menu_legacy"),
+    path("menu/", login_required(TemplateView.as_view(template_name="react_app.html")), name="menu_legacy_alias"),
 
     path("dashboard/", login_required(TemplateView.as_view(template_name="react_app.html")), name="dashboard"),
     path("api/dashboard/stats/", views.api_dashboard_stats, name="api_dashboard_stats"),
@@ -93,9 +93,9 @@ urlpatterns = [
     path("api/contabilidad/plan-cuentas/<int:id>/editar/", views.api_plan_cuentas_editar, name="api_plan_cuentas_editar"),
     path("api/contabilidad/plan-cuentas/<int:id>/eliminar/", views.api_plan_cuentas_eliminar, name="api_plan_cuentas_eliminar"),
     
-    path("contabilidad/", views.contabilidad, name="contabilidad"),
+    path("contabilidad/", login_required(TemplateView.as_view(template_name="react_app.html")), name="contabilidad"),
     
-    path("reportes/", views.reportes, name="reportes"),
+    path("reportes/", login_required(TemplateView.as_view(template_name="react_app.html")), name="reportes"),
 
     # API Reportes y Estadísticas
     path("api/estadisticas/ventas/", views.api_estadisticas_ventas, name="api_estadisticas_ventas"),
@@ -146,7 +146,7 @@ urlpatterns = [
     # ==========================
     # BACKUPS
     # ==========================
-    path("backups/", views_backup.backups, name="backups"),
+    path("backups/", login_required(TemplateView.as_view(template_name="react_app.html")), name="backups"),
     path("api/backups/listar/", views_backup.api_listar_backups, name="api_listar_backups"),
     path("api/backups/crear/", views_backup.api_crear_backup, name="api_crear_backup"),
     path("api/backups/subir/", views_backup.api_subir_backup, name="api_subir_backup"),
@@ -154,7 +154,7 @@ urlpatterns = [
     path("api/backups/<int:id>/restaurar/", views_backup.api_restaurar_backup, name="api_restaurar_backup"),
     path("api/backups/<int:id>/eliminar/", views_backup.api_eliminar_backup, name="api_eliminar_backup"),
     
-    path("logs/", views.logs, name="logs"),
+    path("logs/", login_required(TemplateView.as_view(template_name="react_app.html")), name="logs"),
 
     # ==========================
     # USUARIOS Y SEGURIDAD (REACT)
@@ -171,7 +171,7 @@ urlpatterns = [
     # ==========================
     # AYUDA Y DOCUMENTACIÓN
     # ==========================
-    path("ayuda/", views.ayuda, name="ayuda"),
+    path("ayuda/", login_required(TemplateView.as_view(template_name="react_app.html")), name="ayuda"),
 
     # ==========================
     # CRUD PRODUCTOS (REACT)
@@ -370,9 +370,9 @@ urlpatterns = [
     path('notas-credito/nuevo/', login_required(TemplateView.as_view(template_name="react_app.html")), name='nota_credito_nueva_react'),
     path('notas-debito/nuevo/', login_required(TemplateView.as_view(template_name="react_app.html")), name='nota_debito_nueva_react'),
 
-    path("comprobantes/nc-nd/", views_comprobantes.lista_nc_nd, name="lista_nc_nd"),
+    path("comprobantes/nc-nd/", login_required(TemplateView.as_view(template_name="react_app.html")), name="lista_nc_nd"),
     path("api/notas-credito/listar/", views.api_notas_credito_listar, name="api_notas_credito_listar"),
-    path("comprobantes/remitos/", views_comprobantes.lista_remitos, name="lista_remitos"),
+    path("comprobantes/remitos/", login_required(TemplateView.as_view(template_name="react_app.html")), name="lista_remitos"),
     path("api/remitos/listar/", views.api_remitos_listar, name="api_remitos_listar"),
     path("comprobantes/nc/crear/<int:venta_id>/", views_comprobantes.crear_nota_credito, name="crear_nota_credito"),
     path("comprobantes/remito/crear/<int:venta_id>/", views_comprobantes.crear_remito, name="crear_remito"),
@@ -409,7 +409,7 @@ urlpatterns = [
     # CTA. CTE. (CLIENTES Y PROVEEDORES)
     # ==========================
     # HTML Views
-    path("ctacte/clientes/", views.cc_clientes_lista, name="cc_clientes_lista"),
+    path("ctacte/clientes/", login_required(TemplateView.as_view(template_name="react_app.html")), name="cc_clientes_lista"),
     path("ctacte/clientes/<int:id>/", views.cc_cliente_detalle, name="cc_cliente_detalle"),
     path("ctacte/proveedores/", login_required(TemplateView.as_view(template_name="react_app.html")), name="cc_proveedores_lista"),
     path("ctas-corrientes/proveedores/<int:id>/", login_required(TemplateView.as_view(template_name="react_app.html")), name="ctacte_proveedor_detalle"),
@@ -429,6 +429,8 @@ urlpatterns = [
     path("api/ctacte/proveedores/nuevo/", views.api_cc_proveedor_nuevo_movimiento, name="api_cc_proveedor_nuevo_movimiento"),
     path("api/ctacte/proveedores/<int:id>/registrar-pago/", views.api_cc_proveedor_registrar_pago, name="api_cc_proveedor_registrar_pago"),
     path("ctacte/proveedores/<int:id>/imprimir/", views.cc_proveedor_imprimir, name="cc_proveedor_imprimir"),
+    path("api/ctacte/proveedores/<int:id>/exportar/excel/", views.api_cc_proveedor_exportar_excel, name="api_cc_proveedor_exportar_excel"),
+    path("api/ctacte/proveedores/<int:id>/exportar/pdf/", views.api_cc_proveedor_exportar_pdf, name="api_cc_proveedor_exportar_pdf"),
     
     # API Recibos
     path("api/recibos/crear/", views.api_recibo_crear, name="api_recibo_crear"),

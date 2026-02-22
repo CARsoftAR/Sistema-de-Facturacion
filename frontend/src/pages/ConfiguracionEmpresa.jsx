@@ -117,19 +117,21 @@ const ConfiguracionEmpresa = () => {
     return (
         <div className="container-fluid h-100 d-flex flex-column bg-light p-0" style={{ maxHeight: '100vh', overflow: 'hidden' }}>
             {/* 1. Header Fijo */}
-            <div className="px-4 pt-4 pb-2 flex-shrink-0">
-                <div className="d-flex justify-content-between align-items-center mb-3">
-                    <div>
-                        <h2 className="text-primary fw-bold mb-0" style={{ fontSize: '2rem' }}>
-                            <Settings className="me-2 inline-block" size={32} />
-                            Datos de la Empresa
-                        </h2>
-                        <p className="text-muted mb-0 ps-1" style={{ fontSize: '1rem' }}>
-                            Información legal y fiscal para la facturación
-                        </p>
+            <header className="px-8 pt-8 pb-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 d-print-none">
+                <div className="space-y-1">
+                    <div className="flex items-center gap-3">
+                        <div className="bg-gradient-to-br from-indigo-600 to-indigo-700 p-2.5 rounded-2xl text-white shadow-lg shadow-indigo-600/20">
+                            <Building2 size={24} strokeWidth={2.5} />
+                        </div>
+                        <h1 className="text-3xl font-black text-slate-900 tracking-tight font-outfit uppercase">
+                            Mi Empresa
+                        </h1>
                     </div>
+                    <p className="text-slate-500 font-bold text-xs uppercase tracking-[0.15em] ml-14">
+                        Configuración de identidad legal y fiscal.
+                    </p>
                 </div>
-            </div>
+            </header>
 
             {/* 2. Contenido Scrollable */}
             <div className="flex-grow-1 overflow-auto px-4 pb-4">

@@ -189,8 +189,8 @@ def api_reportes_generar(request):
                 data.append({
                     'Fecha': '-',
                     'Usuario': '-',
-                    'Tipo': 'S. INICIAL',
-                    'Concepto': 'Saldo Acumulado Anterior',
+                    'Tipo': '-',
+                    'Concepto': 'SALDO INICIAL (Acum. de Períodos Anteriores)',
                     'Ingreso': 0.0,
                     'Egreso': 0.0,
                     'Saldo Acum.': saldo

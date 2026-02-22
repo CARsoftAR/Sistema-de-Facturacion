@@ -222,11 +222,15 @@ const NotasDebito = () => {
             {/* Header Section */}
             <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div className="space-y-1">
-                    <h1 className="text-3xl font-black text-neutral-900 tracking-tight flex items-center gap-3">
-                        <ArrowUpCircle className="text-indigo-600" size={32} strokeWidth={2.5} />
-                        Notas de Débito
-                    </h1>
-                    <p className="text-neutral-500 font-medium text-sm ml-1">
+                    <div className="flex items-center gap-3">
+                        <div className="bg-gradient-to-br from-orange-600 to-orange-700 p-2.5 rounded-2xl text-white shadow-lg shadow-orange-600/20">
+                            <ArrowUpCircle size={24} strokeWidth={2.5} />
+                        </div>
+                        <h1 className="text-3xl font-black text-slate-900 tracking-tight font-outfit uppercase">
+                            Notas de Débito
+                        </h1>
+                    </div>
+                    <p className="text-slate-500 font-bold text-xs uppercase tracking-[0.15em] ml-14">
                         Gestión de recargos y ajustes financieros.
                     </p>
                 </div>
@@ -234,7 +238,7 @@ const NotasDebito = () => {
                     <BtnAdd
                         label="NUEVA NOTA"
                         onClick={() => navigate('/notas-debito/nuevo')}
-                        className="!bg-indigo-600 !hover:bg-indigo-700 !rounded-xl !px-6 !py-3 !font-black !tracking-widest !text-xs !shadow-lg !shadow-indigo-600/20"
+                        className="!bg-orange-600 !border-none !hover:bg-orange-700 !rounded-xl !px-8 !py-3.5 !font-black !tracking-widest !text-[11px] !shadow-xl !shadow-orange-600/20 active:scale-95 transition-all text-white"
                     />
                 </div>
             </header>

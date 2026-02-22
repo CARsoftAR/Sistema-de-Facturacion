@@ -13,7 +13,7 @@ const TopNavbar = () => {
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
     const [notifications, setNotifications] = useState([
-        { id: 1, title: 'Optimización de Stock', detail: 'IA sugiere reponer Producto #104', path: '/productos' },
+        { id: 1, title: 'Optimización de Stock', detail: 'Sistema sugiere reponer Producto #104', path: '/productos' },
         { id: 2, title: 'Venta Inusual Detectada', detail: 'Nueva operación por $150,000', path: '/ventas' }
     ]);
     const dropdownRef = useRef(null);
@@ -46,7 +46,7 @@ const TopNavbar = () => {
         )}>
             <div className="flex items-center justify-between">
 
-                {/* 🔍 Intelligent Search */}
+                {/* 🔍 Buscador Global */}
                 <div className="hidden md:flex items-center flex-1 max-w-md group focus-within:max-w-xl transition-all duration-500">
                     <div className="relative w-full">
                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">

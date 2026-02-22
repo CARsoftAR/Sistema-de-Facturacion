@@ -19,7 +19,7 @@ import {
     Scale,
     Library,
     Banknote,
-    History,
+    History as HistoryIcon,
     Loader2
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
@@ -198,7 +198,7 @@ const AccountingDashboard = () => {
 
             {/* Metrics Overview */}
             <div className="mb-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                <MetricCard label="Total Asientos" value={stats.totalAsientos} trend={1} icon={History} color="blue" />
+                <MetricCard label="Total Asientos" value={stats.totalAsientos} trend={1} icon={HistoryIcon} color="blue" />
                 <MetricCard label="Cuentas Totales" value={stats.totalCuentas || '-'} icon={Library} color="indigo" />
                 <MetricCard label="Cuentas Imputables" value={stats.cuentasImputables} icon={Book} color="emerald" />
                 <MetricCard label="Última Actividad" value={stats.ultimoAsiento} icon={Calendar} color="orange" />

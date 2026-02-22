@@ -230,7 +230,7 @@ const Usuarios = () => {
                         <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-2.5 rounded-2xl text-white shadow-lg shadow-slate-900/20">
                             <ShieldCheck size={24} strokeWidth={2.5} />
                         </div>
-                        <h1 className="text-3xl font-black text-slate-900 tracking-tight">Equipos de Trabajo</h1>
+                        <h1 className="text-3xl font-black text-slate-900 tracking-tight">Usuarios y Permisos</h1>
                     </div>
                     <p className="text-slate-500 font-bold text-xs uppercase tracking-[0.15em] ml-14">
                         Control de identidades y privilegios del sistema.

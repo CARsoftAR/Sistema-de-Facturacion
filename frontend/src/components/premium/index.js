@@ -57,3 +57,6 @@ export {
     ComparisonCard,
     ProgressCard
 } from './PremiumStats';
+
+// Chart Components
+export { default as PremiumAreaChart } from './PremiumAreaChart';

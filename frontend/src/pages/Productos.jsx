@@ -239,11 +239,15 @@ const Productos = () => {
             {/* Header */}
             <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div className="space-y-1">
-                    <h1 className="text-3xl font-black text-neutral-900 tracking-tight flex items-center gap-3">
-                        <Package className="text-primary-600" size={32} strokeWidth={2.5} />
-                        Catálogo de Productos
-                    </h1>
-                    <p className="text-neutral-500 font-medium text-sm ml-1">
+                    <div className="flex items-center gap-3">
+                        <div className="bg-gradient-to-br from-emerald-600 to-emerald-700 p-2.5 rounded-2xl text-white shadow-lg shadow-emerald-600/20">
+                            <Package size={24} strokeWidth={2.5} />
+                        </div>
+                        <h1 className="text-3xl font-black text-slate-900 tracking-tight font-outfit uppercase">
+                            Catálogo de Productos
+                        </h1>
+                    </div>
+                    <p className="text-slate-500 font-bold text-xs uppercase tracking-[0.15em] ml-14">
                         Visualización maestra de inventario, precios y stock en tiempo real.
                     </p>
                 </div>
@@ -254,7 +258,7 @@ const Productos = () => {
                     <BtnAdd
                         label="NUEVO PRODUCTO"
                         onClick={() => navigate('/productos/nuevo')}
-                        className="!bg-primary-600 !hover:bg-primary-700 !rounded-xl !px-6 !py-3 !font-black !tracking-widest !text-xs !shadow-lg !shadow-primary-600/20"
+                        className="!bg-emerald-600 !border-none !hover:bg-emerald-700 !rounded-xl !px-8 !py-3.5 !font-black !tracking-widest !text-[11px] !shadow-xl !shadow-emerald-600/20 active:scale-95 transition-all text-white"
                     />
                 </div>
             </header>
@@ -265,7 +269,7 @@ const Productos = () => {
                     label="Items Totales"
                     value={totalItems}
                     icon={Archive}
-                    color="primary"
+                    color="emerald"
                 />
                 <StatCard
                     label="Valorizado Ventas"

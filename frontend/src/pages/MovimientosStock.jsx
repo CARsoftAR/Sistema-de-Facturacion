@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Search, ListFilter, Download, ArrowUp, ArrowDown, Package, Calendar, RefreshCcw, FilterX } from 'lucide-react';
+import { ArrowLeft, Search, ListFilter, Download, ArrowUp, ArrowDown, Package, Calendar, RefreshCcw, FilterX, History as HistoryIcon } from 'lucide-react';
 import axios from 'axios';
 import TablePagination from '../components/common/TablePagination';
 import PremiumTable from '../components/premium/PremiumTable';
@@ -183,11 +183,15 @@ const MovimientosStock = () => {
             {/* Header Section */}
             <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div className="space-y-1">
-                    <h1 className="text-3xl font-black text-neutral-900 tracking-tight flex items-center gap-3">
-                        <RefreshCcw className="text-emerald-600" size={32} strokeWidth={2.5} />
-                        Movimientos de Stock
-                    </h1>
-                    <p className="text-neutral-500 font-medium text-sm ml-1">
+                    <div className="flex items-center gap-3">
+                        <div className="bg-gradient-to-br from-indigo-600 to-indigo-700 p-2.5 rounded-2xl text-white shadow-lg shadow-indigo-600/20">
+                            <HistoryIcon size={24} strokeWidth={2.5} />
+                        </div>
+                        <h1 className="text-3xl font-black text-slate-900 tracking-tight font-outfit uppercase">
+                            Movimientos
+                        </h1>
+                    </div>
+                    <p className="text-slate-500 font-bold text-xs uppercase tracking-[0.15em] ml-14">
                         Historial completo detallado de entradas y salidas.
                     </p>
                 </div>

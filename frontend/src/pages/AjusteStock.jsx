@@ -136,12 +136,14 @@ const AjusteStock = () => {
                     <div className="flex items-center gap-3">
                         <BtnBack onClick={() => navigate('/productos')} />
                         <div>
-                            <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2">
+                            <div className="flex items-center gap-3">
                                 <span className="bg-gradient-to-br from-purple-600 to-purple-700 p-2 rounded-xl text-white shadow-md">
                                     <Package size={20} />
                                 </span>
-                                Ajuste de Stock
-                            </h1>
+                                <h1 className="text-2xl font-black text-slate-900 tracking-tight font-outfit uppercase">
+                                    Ajustes de Stock
+                                </h1>
+                            </div>
                             <p className="text-sm text-slate-600 font-medium mt-0.5">
                                 Registrar entradas o salidas manuales
                             </p>

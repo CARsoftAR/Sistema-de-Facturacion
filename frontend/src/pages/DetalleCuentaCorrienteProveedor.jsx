@@ -113,8 +113,15 @@ const DetalleCuentaCorrienteProveedor = () => {
     };
 
     const handleImprimir = () => {
-        // TODO: Implement backend endpoint if available or placeholder
         window.open(`/ctacte/proveedores/${id}/imprimir/`, '_blank');
+    };
+
+    const handleExportarExcel = () => {
+        window.open(`/api/ctacte/proveedores/${id}/exportar/excel/`, '_blank');
+    };
+
+    const handleExportarPDF = () => {
+        window.open(`/api/ctacte/proveedores/${id}/exportar/pdf/`, '_blank');
     };
 
     const handleRegistrarPago = async (paymentData) => {
@@ -295,9 +302,11 @@ const DetalleCuentaCorrienteProveedor = () => {
 
                     {/* Export Actions (Mini Card) */}
                     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-3 flex gap-2">
-                        {/* TODO: Implement export endpoints if needed */}
-                        <button disabled className="flex-1 py-1.5 bg-emerald-50 text-emerald-400 font-bold text-xs rounded-lg border border-emerald-100 flex flex-col items-center gap-0.5 opacity-50 cursor-not-allowed">
+                        <button onClick={handleExportarExcel} className="flex-1 py-1.5 bg-emerald-50 text-emerald-600 font-bold text-xs rounded-lg border border-emerald-100 hover:bg-emerald-100 transition-colors flex flex-col items-center gap-0.5">
                             <Download size={14} /> Excel
+                        </button>
+                        <button onClick={handleExportarPDF} className="flex-1 py-1.5 bg-red-50 text-red-600 font-bold text-xs rounded-lg border border-red-100 hover:bg-red-100 transition-colors flex flex-col items-center gap-0.5">
+                            <Download size={14} /> PDF
                         </button>
                         <button onClick={handleImprimir} className="flex-1 py-1.5 bg-slate-50 text-slate-700 font-bold text-xs rounded-lg border border-slate-200 hover:bg-slate-100 transition-colors flex flex-col items-center gap-0.5">
                             <Download size={14} /> Imprimir

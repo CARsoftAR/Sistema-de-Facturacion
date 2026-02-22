@@ -32,7 +32,6 @@ const NuevaVenta = () => {
     const navigate = useNavigate();
 
     // REFS
-    const codigoRef = useRef(null);
     const clienteInputRef = useRef(null);
     const cantidadRef = useRef(null);
 
@@ -87,24 +86,27 @@ const NuevaVenta = () => {
         }
     });
 
-    const handleForcedAdd = async (e) => {
+    const handleCombinedKeyDown = async (e) => {
         if (e.key === 'Enter') {
-            if (!productoSeleccionado && inputCodigo.trim()) {
+            if (!productoSeleccionado && inputProducto.trim()) {
                 try {
-                    const res = await fetch(`/api/productos/buscar/?q=${encodeURIComponent(inputCodigo.trim())}`);
+                    const res = await fetch(`/api/productos/buscar/?q=${encodeURIComponent(inputProducto.trim())}`);
                     const data = await res.json();
-                    const exactMatch = data.data?.find(p => p.codigo.toUpperCase() === inputCodigo.toUpperCase());
-                    if (exactMatch) {
-                        seleccionar(exactMatch);
-                        const precio = medioPago === 'TARJETA' ? exactMatch.precio_tarjeta : exactMatch.precio_efectivo;
-                        setTimeout(() => handleAutoAdd(exactMatch, 1, precio), 100);
+                    const exactMatch = data.data?.find(p => p.codigo.toUpperCase() === inputProducto.toUpperCase().trim());
+                    const singleResult = data.data?.length === 1 ? data.data[0] : null;
+                    const matchToSelect = exactMatch || singleResult;
+
+                    if (matchToSelect) {
+                        seleccionar(matchToSelect);
+                        const precio = medioPago === 'TARJETA' ? matchToSelect.precio_tarjeta : matchToSelect.precio_efectivo;
+                        setTimeout(() => handleAutoAdd(matchToSelect, 1, precio), 100);
                         return;
                     }
                 } catch (err) { console.error(err); }
             }
-            handleCodigoKeyDown(e);
+            handleProductoKeyDown(e);
         } else {
-            handleCodigoKeyDown(e);
+            handleProductoKeyDown(e);
         }
     };
 
@@ -141,7 +143,7 @@ const NuevaVenta = () => {
             }]);
         }
         limpiarCamposEntrada();
-        codigoRef.current?.focus();
+        productoRef.current?.focus();
     };
 
     const recalcularPrecios = (nuevoMedio) => {
@@ -172,7 +174,7 @@ const NuevaVenta = () => {
 
     useEffect(() => {
         setTimeout(() => {
-            if (config.auto_foco_codigo_barras) codigoRef.current?.focus();
+            if (config.auto_foco_codigo_barras) productoRef.current?.focus();
             else clienteInputRef.current?.focus();
         }, 400);
     }, [config]);
@@ -199,7 +201,7 @@ const NuevaVenta = () => {
         } else {
             setDiscriminarIVA(config.discriminar_iva_ventas);
         }
-        setTimeout(() => codigoRef.current?.focus(), 100);
+        setTimeout(() => productoRef.current?.focus(), 100);
     };
 
     const handleClienteKeyDown = (e) => {
@@ -293,7 +295,7 @@ const NuevaVenta = () => {
                         Volver
                     </button>
                     <h1 className="text-base font-black text-neutral-900 tracking-tight flex items-center gap-2 m-0 uppercase">
-                        Terminal <Zap size={14} className="text-primary-600" />
+                        Terminal de Ventas <Zap size={14} className="text-primary-600" />
                     </h1>
                 </div>
 
@@ -375,44 +377,21 @@ const NuevaVenta = () => {
                 {/* Search Inputs Bar - Contains High-Priority Dropdowns for Product Search */}
                 <div className="px-6 py-4 border-b border-neutral-200 bg-neutral-50/50 flex-shrink-0 relative z-[100] overflow-visible">
                     <div className="grid grid-cols-12 gap-4 items-end overflow-visible">
-                        <div className="col-span-2 relative overflow-visible">
-                            <label className="block text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em] mb-2 ml-1">CÓDIGO (F4)</label>
-                            <input
-                                ref={codigoRef}
-                                type="text"
-                                value={inputCodigo}
-                                onChange={(e) => setInputCodigo(e.target.value.toUpperCase())}
-                                onKeyDown={handleForcedAdd}
-                                onBlur={handleCodigoBlur}
-                                placeholder="----"
-                                className="w-full h-[46px] px-4 bg-white border border-neutral-300 rounded-full focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all font-mono font-bold text-center text-primary-600 shadow-sm text-sm"
-                            />
-                            {mostrarSugerenciasCodigo && codigosSugeridos.length > 0 && (
-                                <div ref={codigoListRef} className="absolute z-[150] top-full left-0 mt-2 w-[220%] bg-white border border-neutral-200 rounded-2xl shadow-2xl p-1 animate-in slide-in-from-top-2">
-                                    {codigosSugeridos.map((p, idx) => (
-                                        <div key={p.id} onClick={() => seleccionar(p)} className={cn("px-4 py-3 cursor-pointer rounded-xl flex justify-between items-center transition-all", idx === sugerenciaCodigoActiva ? "bg-primary-600 text-white shadow-lg scale-[1.02]" : "hover:bg-neutral-50")}>
-                                            <div className="flex flex-col">
-                                                <span className="text-sm font-black tracking-tight">{p.codigo}</span>
-                                                <span className={cn("text-[9px] font-bold uppercase", idx === sugerenciaCodigoActiva ? "text-primary-100" : "text-neutral-400")}>{p.descripcion}</span>
-                                            </div>
-                                            <span className="text-base font-black">${formatNumber(p.precio_efectivo)}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                        <div className="col-span-7 relative overflow-visible">
-                            <label className="block text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em] mb-2 ml-1">PRODUCTO / CONCEPTO</label>
-                            <input
-                                ref={productoRef}
-                                type="text"
-                                value={inputProducto}
-                                onChange={(e) => { setInputProducto(e.target.value); setProductoSeleccionado(null); }}
-                                onKeyDown={handleProductoKeyDown}
-                                onBlur={handleProductoBlur}
-                                placeholder="Escriba para buscar..."
-                                className="w-full h-[46px] px-5 bg-white border border-neutral-300 rounded-full focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all font-bold text-neutral-800 shadow-sm text-sm"
-                            />
+                        <div className="col-span-9 relative overflow-visible">
+                            <label className="block text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em] mb-2 ml-1">BUSCAR PRODUCTO O ESCANEAR CÓDIGO (F4)</label>
+                            <div className="relative flex items-center">
+                                <Search className="absolute left-4 text-neutral-400" size={18} />
+                                <input
+                                    ref={productoRef}
+                                    type="text"
+                                    value={inputProducto}
+                                    onChange={(e) => { setInputProducto(e.target.value); setProductoSeleccionado(null); }}
+                                    onKeyDown={handleCombinedKeyDown}
+                                    onBlur={handleProductoBlur}
+                                    placeholder="Escriba nombre o pase el escáner..."
+                                    className="w-full h-[46px] pl-12 pr-5 bg-white border border-neutral-300 rounded-full focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all font-bold text-neutral-800 shadow-sm text-sm"
+                                />
+                            </div>
                             {mostrarSugerenciasProducto && (
                                 <div ref={productoListRef} className="absolute z-[150] top-full left-0 w-full mt-2 bg-white border border-neutral-200 rounded-2xl shadow-2xl max-h-64 overflow-y-auto p-1 scrollbar-thin animate-in slide-in-from-top-2">
                                     {productosSugeridos.map((p, idx) => (

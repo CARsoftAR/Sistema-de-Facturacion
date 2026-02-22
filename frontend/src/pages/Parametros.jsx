@@ -216,9 +216,34 @@ const Parametros = () => {
 
     return (
         <div style={{ ...s.container, maxWidth: '1000px' }}>
-            <header style={s.header}>
-                <h1 style={s.title}>Parámetros del Sistema</h1>
-                <p style={s.subtitle}>Ajustes técnicos y comportamiento de módulos</p>
+            <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 d-print-none mb-8">
+                <div className="space-y-1">
+                    <div className="flex items-center gap-3">
+                        <div className="bg-gradient-to-br from-slate-600 to-slate-700 p-2.5 rounded-2xl text-white shadow-lg shadow-slate-600/20">
+                            <Settings size={24} strokeWidth={2.5} />
+                        </div>
+                        <h1 className="text-3xl font-black text-slate-900 tracking-tight font-outfit uppercase">
+                            Parámetros Globales
+                        </h1>
+                    </div>
+                    <p className="text-slate-500 font-bold text-xs uppercase tracking-[0.15em] ml-14">
+                        Ajustes técnicos y comportamiento de módulos.
+                    </p>
+                </div>
+
+                <button
+                    onClick={handleSave}
+                    disabled={saving}
+                    style={{
+                        ...s.saveBtn,
+                        display: 'flex', alignItems: 'center', gap: '8px',
+                        backgroundColor: '#2563eb', color: 'white', padding: '12px 24px',
+                        borderRadius: '12px', fontWeight: 'bold', border: 'none', cursor: 'pointer', transition: 'all 0.2s', position: 'static'
+                    }}
+                >
+                    {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+                    {saving ? 'Guardando...' : 'Guardar Cambios'}
+                </button>
             </header>
 
             <div style={{ display: 'flex', gap: '32px', alignItems: 'flex-start' }}>
@@ -255,19 +280,7 @@ const Parametros = () => {
                         </div>
                     </div>
 
-                    <button
-                        style={{
-                            ...s.saveBtn,
-                            marginTop: '24px',
-                            opacity: saving ? 0.7 : 1,
-                            cursor: saving ? 'not-allowed' : 'pointer'
-                        }}
-                        onClick={handleSave}
-                        disabled={saving}
-                    >
-                        {saving ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
-                        {saving ? 'Guardando...' : 'Guardar Todo'}
-                    </button>
+
                 </div>
 
                 {/* CONTENIDO (Columna derecha) */}

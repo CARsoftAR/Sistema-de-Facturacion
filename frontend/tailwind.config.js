@@ -4,6 +4,24 @@ export default {
         "./index.html",
         "./src/**/*.{js,ts,jsx,tsx}",
     ],
+    safelist: [
+        // Dynamic color classes for module cards
+        {
+            pattern: /bg-(amber|indigo|purple|emerald|rose|violet|orange|yellow|blue|primary)-(50|100|500|600|700)/,
+        },
+        {
+            pattern: /text-(amber|indigo|purple|emerald|rose|violet|orange|yellow|blue|primary)-(600|700)/,
+        },
+        {
+            pattern: /ring-(amber|indigo|purple|emerald|rose|violet|orange|yellow|blue|primary)-(100|200)/,
+        },
+        {
+            pattern: /border-(amber|indigo|purple|emerald|rose|violet|orange|yellow|blue|primary)-(200|300)/,
+        },
+        {
+            pattern: /shadow-(amber|indigo|purple|emerald|rose|violet|orange|yellow|blue|primary)-(200|600)\/20/,
+        },
+    ],
     theme: {
         extend: {
             // ═══════════════════════════════════════════════════════════

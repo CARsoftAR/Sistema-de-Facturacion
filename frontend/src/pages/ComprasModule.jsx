@@ -64,7 +64,7 @@ const ComprasModule = () => {
                         </div>
                         <div>
                             <h1 className="text-4xl font-black tracking-tighter text-neutral-900 uppercase">
-                                Gestión de Compras <span className="text-indigo-600">Pro</span>
+                                Compras & Recepción
                             </h1>
                             <div className="flex items-center gap-2 mt-1">
                                 <span className="h-1.5 w-1.5 rounded-full bg-indigo-500 animate-pulse" />
@@ -101,6 +101,7 @@ const ComprasModule = () => {
                     icon={ClipboardList}
                     color="blue"
                 />
+                {/* 
                 <QuickAction
                     title="Proveedores"
                     description="Administra tu base de proveedores, cuentas corrientes y contactos."
@@ -114,7 +115,8 @@ const ComprasModule = () => {
                     to="/productos"
                     icon={Package}
                     color="emerald"
-                />
+                /> 
+                */}
                 <QuickAction
                     title="Cuentas Corrientes"
                     description="Saldos pendientes con proveedores y gestión de pagos."
@@ -122,27 +124,15 @@ const ComprasModule = () => {
                     icon={Calculator}
                     color="rose"
                 />
+                {/* 
                 <QuickAction
                     title="Actualizar Precios"
                     description="Herramientas para actualización masiva de precios de costo y venta."
                     to="/precios/actualizar"
                     icon={TrendingDown}
                     color="orange"
-                />
-                <QuickAction
-                    title="Ordenes de Compra"
-                    description="Generación de pedidos a proveedores basados en stock crítico."
-                    to="#"
-                    icon={FileText}
-                    color="violet"
-                />
-                <QuickAction
-                    title="Marcas y Rubros"
-                    description="Clasificación jerárquica para una mejor organización del catálogo."
-                    to="/marcas"
-                    icon={Target}
-                    color="amber"
-                />
+                /> 
+                */}
             </div>
 
             {/* Bottom Section: Insights */}
@@ -166,7 +156,7 @@ const ComprasModule = () => {
 
                 <div className="rounded-[2.5rem] border border-neutral-100 bg-neutral-900 p-10 shadow-premium text-white flex flex-col justify-center">
                     <h3 className="text-xl font-black mb-4 uppercase tracking-tight flex items-center gap-2">
-                        Resumen Operativo <Clock size={20} className="text-indigo-400" />
+                        Resumen <Clock size={20} className="text-indigo-400" />
                     </h3>
                     <div className="space-y-6">
                         <div className="flex items-center justify-between border-b border-white/10 pb-4">

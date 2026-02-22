@@ -11,8 +11,8 @@ import {
     Wallet,
     FileText,
     BookOpen,
-    Settings,
     Shield,
+    ShieldCheck,
     ChevronDown,
     ChevronRight,
     Menu,
@@ -45,7 +45,9 @@ import {
     Truck,
     Clock,
     Zap,
-    Plus
+    Plus,
+    Boxes,
+    Layers
 } from 'lucide-react';
 
 
@@ -214,7 +216,7 @@ const Sidebar = () => {
                         </div>
                         <div className="flex flex-column">
                             <span className="text-sm font-bold text-neutral-900 tracking-tight text-truncate w-[160px]">{empresa.nombre}</span>
-                            <span className="text-[10px] text-primary-600 font-mono tracking-widest uppercase">Intelligent Pro</span>
+                            <span className="text-[10px] text-primary-600 font-mono tracking-widest uppercase">Gestión Pro</span>
                         </div>
                     </div>
                 </div>
@@ -223,113 +225,46 @@ const Sidebar = () => {
                 <div className={`flex-1 overflow-y-auto px-2 pb-6 ${hideScrollbar ? 'no-scrollbar' : 'scrollbar-thin'}`}>
                     <div className="space-y-6">
 
-                        {/* Section: Intelligence */}
+                        {/* Section: Principal */}
                         <div className="space-y-1">
-                            <span className="px-4 text-[12px] font-black text-neutral-400 uppercase tracking-[0.15em]">Inteligencia</span>
-                            <SidebarItem icon={LayoutDashboard} label="Dashboard" href="/dashboard" permission="reportes" />
-                            <SidebarItem icon={BarChart3} label="Reportes" href="/reportes" permission="reportes" />
+                            <span className="px-4 text-[12px] font-black text-neutral-400 uppercase tracking-[0.15em]">Visión General</span>
+                            <SidebarItem icon={LayoutDashboard} label="Panel de Control" href="/dashboard" permission="reportes" />
+                            <SidebarItem icon={BarChart3} label="Reportes y Analítica" href="/reportes" permission="reportes" />
                         </div>
 
                         {/* Section: Operaciones */}
                         <div className="space-y-1">
                             <span className="px-4 text-[12px] font-black text-neutral-400 uppercase tracking-[0.15em]">Operaciones</span>
-                            <SidebarItem icon={ShoppingCart} label="Central Ventas" href="/ventas" permission="ventas" />
-                            <SidebarItem icon={Truck} label="Gestión Compras" href="/compras" permission="compras" />
-
-                            <SidebarItem icon={Package} label="Central Stock" href="/stock" permission="productos" />
-
-                            <SidebarItem
-                                icon={LayoutDashboard}
-                                label="Operativos"
-                                isOpen={openSection === 'sub-operaciones'}
-                                onToggle={() => toggleSection('sub-operaciones')}
-                                subItems={[
-                                    { label: 'Stock General', href: '/productos', permission: 'productos' },
-                                    { label: 'Ajustes Manuales', href: '/ajuste-stock', permission: 'productos' },
-                                    { label: 'Movimientos', href: '/movimientos-stock', permission: 'productos' },
-                                    { label: 'Precios', href: '/precios/actualizar', permission: 'productos' },
-                                ]}
-                            />
-
-                            <SidebarItem
-                                icon={Users}
-                                label="Entidades"
-                                isOpen={openSection === 'entidades'}
-                                onToggle={() => toggleSection('entidades')}
-                                subItems={[
-                                    { label: 'Clientes', href: '/clientes', permission: 'clientes' },
-                                    { label: 'Proveedores', href: '/proveedores', permission: 'proveedores' },
-                                ]}
-                            />
+                            <SidebarItem icon={ShoppingCart} label="Ventas & Facturación" href="/ventas" permission="ventas" />
+                            <SidebarItem icon={Truck} label="Compras & Recepción" href="/compras" permission="compras" />
+                            <SidebarItem icon={Wallet} label="Caja y Finanzas" href="/tesoreria" permission="caja" />
                         </div>
 
-                        {/* Section: Tesorería */}
+                        {/* Section: Inventario */}
                         <div className="space-y-1">
-                            <span className="px-4 text-[12px] font-black text-neutral-400 uppercase tracking-[0.15em]">Finanzas</span>
-                            <SidebarItem icon={Banknote} label="Centro Tesorería" href="/tesoreria" permission="caja" />
-                            <SidebarItem
-                                icon={Landmark}
-                                label="Fondos y Bancos"
-                                isOpen={openSection === 'bancos'}
-                                onToggle={() => toggleSection('bancos')}
-                                permission="bancos"
-                                subItems={[
-                                    { label: 'Movimientos Caja', href: '/caja' },
-                                    { label: 'Cuentas Bancarias', href: '/bancos' },
-                                    { label: 'Conciliación', href: '/bancos/conciliacion' },
-                                    { label: 'Manejo Cheques', href: '/cheques' },
-                                ]}
-                            />
-
-                            <SidebarItem
-                                icon={CreditCard}
-                                label="Saldos Ctes."
-                                isOpen={openSection === 'ctas-corrientes'}
-                                onToggle={() => toggleSection('ctas-corrientes')}
-                                subItems={[
-                                    { label: 'Clientes', href: '/ctas-corrientes/clientes', permission: 'ctacte' },
-                                    { label: 'Proveedores', href: '/ctas-corrientes/proveedores', permission: 'ctacte' },
-                                ]}
-                            />
+                            <span className="px-4 text-[12px] font-black text-neutral-400 uppercase tracking-[0.15em]">Inventario</span>
+                            <SidebarItem icon={Boxes} label="Gestión de Stock" href="/stock" permission="productos" />
                         </div>
 
-                        {/* Section: Contabilidad */}
+                        {/* Section: Directorio */}
                         <div className="space-y-1">
-                            <span className="px-4 text-[12px] font-black text-neutral-400 uppercase tracking-[0.15em]">Gestión Profesional</span>
-                            <SidebarItem icon={Scale} label="Central Contable" href="/contabilidad" permission="contabilidad" />
-                            <SidebarItem
-                                icon={FileText}
-                                label="Módulos Contables"
-                                isOpen={openSection === 'contabilidad'}
-                                onToggle={() => toggleSection('contabilidad')}
-                                permission="contabilidad"
-                                subItems={[
-                                    { label: 'Plan de Cuentas', href: '/contabilidad/plan-cuentas' },
-                                    { label: 'Asientos', href: '/contabilidad/asientos' },
-                                    { label: 'Libro Mayor', href: '/contabilidad/mayor' },
-                                    { label: 'Balance', href: '/contabilidad/balance' },
-                                    { label: 'Ejercicios', href: '/contabilidad/ejercicios' },
-                                    { label: 'Reportes Contables', href: '/contabilidad/reportes' },
-                                ]}
-                            />
+                            <span className="px-4 text-[12px] font-black text-neutral-400 uppercase tracking-[0.15em]">Contactos</span>
+                            <SidebarItem icon={Users} label="Clientes" href="/clientes" permission="clientes" />
+                            <SidebarItem icon={Briefcase} label="Proveedores" href="/proveedores" permission="proveedores" />
                         </div>
 
                         {/* Section: Administración */}
                         <div className="space-y-1">
                             <span className="px-4 text-[12px] font-black text-neutral-400 uppercase tracking-[0.15em]">Administración</span>
-                            <SidebarItem icon={Settings} label="Central Maestro" href="/maestro" />
-                            <SidebarItem icon={Building2} label="Mi Empresa" href="/configuracion/empresa" permission="configuracion" />
-                            <SidebarItem icon={Shield} label="Seguridad/Auditoría" href="/auditoria" permission="auditoria" />
-                            <SidebarItem icon={Activity} label="Estado Sistema" href="/estado" isExternal={true} />
+                            <SidebarItem icon={Database} label="Gestión de Maestros" href="/maestro" permission="configuracion" />
+                            <SidebarItem icon={ShieldCheck} label="Copias de Seguridad" href="/backups" permission="configuracion" />
                         </div>
 
-                        {/* Section: Ayuda */}
+                        {/* Section: Soporte */}
                         <div className="space-y-1">
                             <span className="px-4 text-[12px] font-black text-neutral-400 uppercase tracking-[0.15em]">Soporte</span>
-                            <SidebarItem icon={HelpCircle} label="Manual de Usuario" href="/manual" />
-
+                            <SidebarItem icon={HelpCircle} label="Ayuda y Manuales" href="/manual" />
                         </div>
-
 
                     </div>
                 </div>

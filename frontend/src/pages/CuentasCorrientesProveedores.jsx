@@ -1,7 +1,12 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useLocation, useSearchParams, useNavigate } from 'react-router-dom';
-import { CreditCard, Search, Truck } from 'lucide-react';
-import { BtnView, BtnClear } from '../components/CommonButtons';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { CreditCard, Eye, Truck, DollarSign, Hash, TrendingDown, TrendingUp } from 'lucide-react';
+
+// Premium UI Components
+import { BentoCard, StatCard, PremiumTable, TableCell, PremiumFilterBar } from '../components/premium';
+import { BentoGrid } from '../components/premium/BentoCard';
+import { cn } from '../utils/cn';
+import { formatNumber } from '../utils/formats';
 import TablePagination from '../components/common/TablePagination';
 import EmptyState from '../components/EmptyState';
 
@@ -9,76 +14,76 @@ const STORAGE_KEY = 'table_prefs_ctacte_prov_items';
 
 const CuentasCorrientesProveedores = () => {
     const navigate = useNavigate();
-    const [searchParams] = useSearchParams();
-    const location = useLocation();
     const [proveedores, setProveedores] = useState([]);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
-    const [itemsPerPage, setItemsPerPage] = useState(() => {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        const parsed = parseInt(saved, 10);
-        return (parsed && parsed > 0) ? parsed : 10;
-    });
+    const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [busqueda, setBusqueda] = useState('');
+    const [estadoDeuda, setEstadoDeuda] = useState('todos');
 
     useEffect(() => {
-        if (!localStorage.getItem(STORAGE_KEY)) {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) setItemsPerPage(Number(saved));
+        else {
             fetch('/api/config/obtener/')
                 .then(res => res.json())
-                .then(data => {
-                    if (data.items_por_pagina) setItemsPerPage(data.items_por_pagina);
-                })
-                .catch(console.error);
+                .then(data => setItemsPerPage(data.items_por_pagina || 10))
+                .catch(() => setItemsPerPage(10));
         }
     }, []);
 
-    const handleItemsPerPageChange = (e) => {
-        const newValue = Number(e.target.value);
-        setItemsPerPage(newValue);
-        setPage(1);
-        localStorage.setItem(STORAGE_KEY, newValue);
-    };
-
-    // Filtros
-    const [filters, setFilters] = useState({
-        busqueda: '',
-        estado_deuda: 'todos' // todos, con_deuda, al_dia
-    });
-
-    // Helper para formatear moneda
-    const formatCurrency = (val) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(val);
-
     const fetchProveedores = useCallback(async (signal) => {
-        if (itemsPerPage === 0) return;
         setLoading(true);
         try {
             const params = new URLSearchParams({
-                page: page,
-                per_page: itemsPerPage,
-                busqueda: filters.busqueda,
-                ...filters
+                q: busqueda,
+                estado_deuda: estadoDeuda
             });
 
-            // Usamos la API de Cta Cte Proveedores
             const response = await fetch(`/api/ctacte/proveedores/listar/?${params}`, { signal });
             const data = await response.json();
 
-            // Asumiendo que la API devuelve { proveedores: [], total_pages: ... } o { data: [], ... }
-            // Ajustamos según respuesta estándar
-            const lista = data.proveedores || data.data || [];
-            setProveedores(lista);
-            setTotalPages(data.total_pages || 1);
-            setTotalItems(data.total || 0);
+            let allProveedores = data.proveedores || data.data || [];
+            if (Array.isArray(data)) allProveedores = data;
 
+            // Client-side filtering
+            if (busqueda) {
+                const q = busqueda.toLowerCase();
+                allProveedores = allProveedores.filter(p =>
+                    p.nombre.toLowerCase().includes(q) ||
+                    (p.cuit && p.cuit.toLowerCase().includes(q)) ||
+                    (p.telefono && p.telefono.toLowerCase().includes(q)) ||
+                    (p.email && p.email.toLowerCase().includes(q))
+                );
+            }
+
+            if (estadoDeuda !== 'todos') {
+                allProveedores = allProveedores.filter(p => {
+                    const saldo = parseFloat(p.saldo_actual || 0);
+                    if (estadoDeuda === 'con_deuda') return saldo > 0;
+                    if (estadoDeuda === 'al_dia') return saldo === 0;
+                    if (estadoDeuda === 'saldo_favor') return saldo < 0;
+                    return true;
+                });
+            }
+
+            setTotalItems(allProveedores.length);
+            setTotalPages(Math.ceil(allProveedores.length / itemsPerPage));
+
+            const start = (page - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
+            setProveedores(allProveedores.slice(start, end));
         } catch (error) {
             if (error.name !== 'AbortError') {
                 console.error("Error al cargar proveedores:", error);
+                setProveedores([]);
             }
         } finally {
             setLoading(false);
         }
-    }, [page, filters, itemsPerPage]);
+    }, [page, itemsPerPage, busqueda, estadoDeuda]);
 
     useEffect(() => {
         const controller = new AbortController();
@@ -86,157 +91,259 @@ const CuentasCorrientesProveedores = () => {
         return () => controller.abort();
     }, [fetchProveedores]);
 
-    const handleFilterChange = (e) => {
-        const { name, value } = e.target;
-        setFilters(prev => ({ ...prev, [name]: value }));
-        setPage(1);
-    };
+    // KPI Calculations
+    const stats = useMemo(() => {
+        const totalDeuda = proveedores.reduce((acc, p) => {
+            const saldo = parseFloat(p.saldo_actual || 0);
+            return saldo > 0 ? acc + saldo : acc;
+        }, 0);
 
-    // Navigate to Detail Screen
-    const handleVerHistorial = (proveedor) => {
-        navigate(`/ctas-corrientes/proveedores/${proveedor.id}`);
-    };
+        const totalAFavor = proveedores.reduce((acc, p) => {
+            const saldo = parseFloat(p.saldo_actual || 0);
+            return saldo < 0 ? acc + Math.abs(saldo) : acc;
+        }, 0);
+
+        const conDeuda = proveedores.filter(p => parseFloat(p.saldo_actual || 0) > 0).length;
+
+        return {
+            totalDeuda,
+            totalAFavor,
+            conDeuda,
+            count: totalItems
+        };
+    }, [proveedores, totalItems]);
+
+    // Table Column Definitions
+    const columns = [
+        {
+            key: 'nombre',
+            label: 'Proveedor',
+            render: (v, p) => (
+                <div className="flex flex-col">
+                    <TableCell.Primary value={v} />
+                    <span className="text-[10px] text-slate-400 font-medium mt-0.5">
+                        {p.direccion || 'Sin dirección'}
+                    </span>
+                </div>
+            )
+        },
+        {
+            key: 'cuit',
+            label: 'Documento',
+            width: '180px',
+            render: (v) => (
+                <span className="font-mono text-xs font-black text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200 w-fit">
+                    {v || '-'}
+                </span>
+            )
+        },
+        {
+            key: 'contacto',
+            label: 'Contacto',
+            width: '180px',
+            render: (_, p) => (
+                <span className="text-xs text-slate-500 font-medium">
+                    {p.telefono || p.email || '-'}
+                </span>
+            )
+        },
+        {
+            key: 'saldo_actual',
+            label: 'Saldo Actual',
+            align: 'right',
+            width: '180px',
+            render: (v) => {
+                const saldo = parseFloat(v || 0);
+                const tieneDeuda = saldo > 0;
+                const saldoAFavor = saldo < 0;
+
+                return (
+                    <span className={cn(
+                        "text-base font-black",
+                        tieneDeuda ? "text-rose-600" :
+                            saldoAFavor ? "text-emerald-600" :
+                                "text-slate-400"
+                    )}>
+                        <TableCell.Currency value={saldo} />
+                    </span>
+                );
+            }
+        },
+        {
+            key: 'estado',
+            label: 'Estado',
+            width: '180px',
+            align: 'center',
+            render: (_, p) => {
+                const saldo = parseFloat(p.saldo_actual || 0);
+                const tieneDeuda = saldo > 0;
+                const saldoAFavor = saldo < 0;
+
+                return (
+                    <TableCell.Status
+                        value={tieneDeuda ? 'Deuda Pendiente' : saldoAFavor ? 'Saldo a Favor' : 'Al Día'}
+                        variant={tieneDeuda ? 'error' : saldoAFavor ? 'success' : 'success'}
+                    />
+                );
+            }
+        },
+        {
+            key: 'acciones',
+            label: 'Acciones',
+            align: 'right',
+            width: '100px',
+            sortable: false,
+            render: (_, p) => (
+                <div className="flex justify-end gap-2">
+                    <button
+                        onClick={() => navigate(`/ctas-corrientes/proveedores/${p.id}`)}
+                        className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
+                        title="Ver Historial"
+                    >
+                        <Eye size={18} />
+                    </button>
+                </div>
+            )
+        }
+    ];
 
     return (
-        <div className="container-fluid px-4 pt-4 pb-0 bg-light fade-in main-content-container">
+        <div className="p-6 w-full max-w-[1920px] mx-auto h-full overflow-hidden flex flex-col gap-6 animate-in fade-in duration-500 bg-slate-50/50">
 
-            {/* HEADER */}
-            <div className="d-flex justify-content-between align-items-center mb-4">
-                <div>
-                    <h2 className="text-primary fw-bold mb-0" style={{ fontSize: '2rem' }}>
-                        <Truck className="me-2 inline-block" size={32} />
-                        Cta. Cte. Proveedores
-                    </h2>
-                    <p className="text-muted mb-0 ps-1" style={{ fontSize: '1rem' }}>
+            {/* Header Section */}
+            <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div className="space-y-1">
+                    <div className="flex items-center gap-3">
+                        <div className="bg-gradient-to-br from-rose-600 to-rose-700 p-2.5 rounded-2xl text-white shadow-lg shadow-rose-600/20">
+                            <CreditCard size={24} strokeWidth={2.5} />
+                        </div>
+                        <h1 className="text-3xl font-black text-slate-900 tracking-tight font-outfit uppercase">
+                            Cuentas Corrientes
+                        </h1>
+                    </div>
+                    <p className="text-slate-500 font-bold text-xs uppercase tracking-[0.15em] ml-14">
                         Gestión de saldos y deuda con proveedores.
                     </p>
                 </div>
-            </div>
+            </header>
 
-            {/* FILTROS */}
-            <div className="card border-0 shadow-sm mb-4">
-                <div className="card-body bg-light rounded">
-                    <div className="row g-3">
-                        <div className="col-md-6">
-                            <div className="input-group">
-                                <span className="input-group-text bg-white border-end-0"><Search size={18} className="text-muted" /></span>
+            {/* KPI Section */}
+            <BentoGrid cols={4}>
+                <StatCard
+                    label="Deuda Total"
+                    value={`$${formatNumber(stats.totalDeuda)}`}
+                    icon={TrendingDown}
+                    color="error"
+                />
+                <StatCard
+                    label="Saldo a Favor"
+                    value={`$${formatNumber(stats.totalAFavor)}`}
+                    icon={TrendingUp}
+                    color="success"
+                />
+                <StatCard
+                    label="Con Deuda"
+                    value={stats.conDeuda}
+                    icon={Hash}
+                    color="warning"
+                />
+                <StatCard
+                    label="Total Proveedores"
+                    value={stats.count}
+                    icon={Truck}
+                    color="rose"
+                />
+            </BentoGrid>
+
+            {/* Filtration & Main Content */}
+            <div className="flex flex-col flex-grow gap-4 min-h-0">
+                {/* Custom Filter Bar for Proveedores */}
+                <div className="bg-white rounded-[2rem] border border-slate-200 shadow-premium p-6">
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                        <div className="md:col-span-6">
+                            <div className="relative">
                                 <input
                                     type="text"
-                                    className="form-control border-start-0"
-                                    placeholder="Buscar proveedor por nombre, CUIT..."
-                                    name="busqueda"
-                                    value={filters.busqueda}
-                                    onChange={handleFilterChange}
+                                    value={busqueda}
+                                    onChange={(e) => {
+                                        setBusqueda(e.target.value);
+                                        setPage(1);
+                                    }}
+                                    placeholder="Buscar proveedor por nombre, CUIT, teléfono..."
+                                    className="w-full px-5 py-3.5 pl-12 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-rose-500 focus:bg-white outline-none font-bold text-slate-700 transition-all placeholder:text-slate-400 placeholder:font-medium"
                                 />
+                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                    </svg>
+                                </div>
                             </div>
                         </div>
-                        <div className="col-md-3">
-                            <select className="form-select" name="estado_deuda" value={filters.estado_deuda} onChange={handleFilterChange}>
+                        <div className="md:col-span-4">
+                            <select
+                                value={estadoDeuda}
+                                onChange={(e) => {
+                                    setEstadoDeuda(e.target.value);
+                                    setPage(1);
+                                }}
+                                className="w-full px-5 py-3.5 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-rose-500 focus:bg-white outline-none font-bold text-slate-700 transition-all appearance-none cursor-pointer"
+                            >
                                 <option value="todos">Todos los Estados</option>
                                 <option value="con_deuda">Con Deuda (Saldo Mayor a $0)</option>
                                 <option value="al_dia">Al Día (Saldo $0)</option>
                                 <option value="saldo_favor">A Favor (Saldo Menor a $0)</option>
                             </select>
                         </div>
-                        <div className="col-md-3">
-                            <BtnClear onClick={() => { setFilters({ busqueda: '', estado_deuda: 'todos' }); setPage(1); }} className="w-100" />
+                        <div className="md:col-span-2">
+                            <button
+                                onClick={() => {
+                                    setBusqueda('');
+                                    setEstadoDeuda('todos');
+                                    setPage(1);
+                                }}
+                                className="w-full px-5 py-3.5 bg-slate-100 border-2 border-slate-200 rounded-2xl font-black text-slate-600 hover:bg-slate-200 transition-all uppercase tracking-widest text-xs"
+                            >
+                                Limpiar
+                            </button>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            {/* TABLA */}
-            <div className="card border-0 shadow mb-4 flex-grow-1 overflow-hidden d-flex flex-column">
-                <div className="card-body p-0 d-flex flex-column overflow-hidden">
-                    <div className="table-responsive flex-grow-1 table-container-fixed">
-                        <table className="table align-middle mb-0">
-                            <thead className="table-dark" style={{ backgroundColor: '#212529', color: '#fff' }}>
-                                <tr>
-                                    <th className="ps-4 py-3 fw-bold">Proveedor</th>
-                                    <th className="py-3 fw-bold">Documento</th>
-                                    <th className="py-3 fw-bold">Contacto</th>
-                                    <th className="text-end py-3 fw-bold" style={{ minWidth: '150px' }}>Saldo Actual</th>
-                                    <th className="text-center py-3 fw-bold">Estado</th>
-                                    <th className="text-end pe-4 py-3 fw-bold">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {loading ? (
-                                    <tr>
-                                        <td colSpan="6" className="text-center py-5">
-                                            <div className="spinner-border text-primary" role="status"></div>
-                                        </td>
-                                    </tr>
-                                ) : proveedores.length === 0 ? (
-                                    <tr>
-                                        <td colSpan="6" className="py-5">
-                                            <EmptyState
-                                                icon={Truck}
-                                                title="No hay proveedores"
-                                                description="No se encontraron proveedores en cuenta corriente."
-                                                iconColor="text-blue-500"
-                                                bgIconColor="bg-blue-50"
-                                            />
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    proveedores.map(p => {
-                                        const saldo = parseFloat(p.saldo_actual || 0);
-                                        const tieneDeuda = saldo > 0; // Deuda con proveedor (Le debemos)
-                                        const saldoAFavor = saldo < 0; // A favor nuestro (Nos deben / anticipo)
-
-                                        return (
-                                            <tr key={p.id} className="border-bottom-0 hover-bg-light">
-                                                <td className="ps-4 py-3">
-                                                    <div className="fw-medium text-dark">{p.nombre}</div>
-                                                    <div className="small text-muted">{p.direccion || 'Sin dirección'}</div>
-                                                </td>
-                                                <td className="py-3 font-monospace text-secondary">{p.cuit || '-'}</td>
-                                                <td className="py-3 text-muted small">{p.telefono || p.email || '-'}</td>
-
-                                                <td className={`text-end py-3 fw-bold ${tieneDeuda ? 'text-danger' : saldoAFavor ? 'text-success' : 'text-secondary'}`} style={{ fontSize: '1.1rem' }}>
-                                                    {formatCurrency(saldo)}
-                                                </td>
-
-                                                <td className="text-center py-3">
-                                                    {tieneDeuda ? (
-                                                        <span className="badge bg-danger-subtle text-danger border border-danger px-3 py-2 rounded-pill">
-                                                            Deuda Pendiente
-                                                        </span>
-                                                    ) : saldoAFavor ? (
-                                                        <span className="badge bg-success-subtle text-success border border-success px-3 py-2 rounded-pill">
-                                                            Saldo a Favor
-                                                        </span>
-                                                    ) : (
-                                                        <span className="badge bg-success-subtle text-success border border-success px-3 py-2 rounded-pill">
-                                                            Al Día
-                                                        </span>
-                                                    )}
-                                                </td>
-
-                                                <td className="text-end pe-4 py-3">
-                                                    <BtnView onClick={() => handleVerHistorial(p)} />
-                                                </td>
-                                            </tr>
-                                        );
-                                    })
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <TablePagination
-                        currentPage={page}
-                        totalPages={totalPages}
-                        totalItems={totalItems}
-                        itemsPerPage={itemsPerPage}
-                        onPageChange={setPage}
-                        onItemsPerPageChange={(newVal) => {
-                            setItemsPerPage(newVal);
-                            setPage(1);
-                            localStorage.setItem(STORAGE_KEY, newVal);
-                        }}
+                {/* Table Container */}
+                <div className="flex-grow flex flex-col min-h-0">
+                    <PremiumTable
+                        columns={columns}
+                        data={proveedores}
+                        loading={loading}
+                        className={cn("flex-grow shadow-lg", proveedores.length > 0 ? "rounded-b-none" : "")}
+                        emptyState={
+                            <EmptyState
+                                icon={Truck}
+                                title="No hay proveedores"
+                                description="No se encontraron proveedores en cuenta corriente."
+                                iconColor="text-rose-500"
+                                bgIconColor="bg-rose-50"
+                            />
+                        }
                     />
+
+                    {/* Pagination */}
+                    {proveedores.length > 0 && (
+                        <div className="bg-white border-x border-b border-neutral-200 rounded-b-[2rem] px-6 py-1 shadow-premium">
+                            <TablePagination
+                                currentPage={page}
+                                totalPages={totalPages}
+                                totalItems={totalItems}
+                                itemsPerPage={itemsPerPage}
+                                onPageChange={setPage}
+                                onItemsPerPageChange={(newVal) => {
+                                    setItemsPerPage(newVal);
+                                    setPage(1);
+                                    localStorage.setItem(STORAGE_KEY, newVal);
+                                }}
+                            />
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

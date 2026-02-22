@@ -314,11 +314,15 @@ const Compras = () => {
 
             <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div className="space-y-1">
-                    <h1 className="text-3xl font-black text-neutral-900 tracking-tight flex items-center gap-3 uppercase font-outfit">
-                        <ShoppingBag className="text-primary-600" size={32} strokeWidth={2.5} />
-                        Gestión de Compras
-                    </h1>
-                    <p className="text-neutral-500 font-medium text-sm ml-1">
+                    <div className="flex items-center gap-3">
+                        <div className="bg-gradient-to-br from-blue-600 to-blue-700 p-2.5 rounded-2xl text-white shadow-lg shadow-blue-600/20">
+                            <ClipboardList size={24} strokeWidth={2.5} />
+                        </div>
+                        <h1 className="text-3xl font-black text-slate-900 tracking-tight font-outfit uppercase">
+                            Historial de Compras
+                        </h1>
+                    </div>
+                    <p className="text-slate-500 font-bold text-xs uppercase tracking-[0.15em] ml-14">
                         Control de abastecimiento y órdenes de compra externas.
                     </p>
                 </div>
@@ -326,16 +330,16 @@ const Compras = () => {
                     <BtnAdd
                         label="NUEVA COMPRA"
                         onClick={() => navigate('/compras/nueva')}
-                        className="!bg-primary-600 !hover:bg-primary-700 !rounded-xl !px-6 !py-3 !font-black !tracking-widest !text-xs !shadow-lg !shadow-primary-600/20"
+                        className="!bg-blue-600 !border-none !hover:bg-blue-700 !rounded-xl !px-8 !py-3.5 !font-black !tracking-widest !text-[11px] !shadow-xl !shadow-blue-600/20 active:scale-95 transition-all text-white"
                     />
                 </div>
             </header>
 
             <BentoGrid cols={4}>
-                <StatCard label="Abastecimiento Total" value={`$${formatNumber(stats.total)}`} icon={DollarSign} color="primary" />
+                <StatCard label="Abastecimiento Total" value={`$${formatNumber(stats.total)}`} icon={DollarSign} color="blue" />
                 <StatCard label="Ordenes Pendientes" value={stats.pendientes} icon={Clock} color="warning" />
                 <StatCard label="Material Recibido" value={stats.recibidas} icon={CheckCircle2} color="success" />
-                <StatCard label="Registros Totales" value={stats.count} icon={Hash} color="primary" />
+                <StatCard label="Registros Totales" value={stats.count} icon={Hash} color="blue" />
             </BentoGrid>
 
             {/* Filtration Section (Compact/No Panel) */}

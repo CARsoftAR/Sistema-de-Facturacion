@@ -119,7 +119,7 @@ const Parametros = () => {
                         <div className="bg-gradient-to-br from-indigo-600 to-indigo-700 p-2.5 rounded-2xl text-white shadow-lg shadow-indigo-600/20">
                             <Settings size={24} strokeWidth={2.5} />
                         </div>
-                        <h1 className="text-3xl font-black text-slate-900 tracking-tight">Preferencias del Sistema</h1>
+                        <h1 className="text-3xl font-black text-slate-900 tracking-tight">Parámetros Globales</h1>
                     </div>
                     <p className="text-slate-500 font-bold text-xs uppercase tracking-[0.15em] ml-14">
                         Ajustes técnicos, reglas de negocio y personalización.

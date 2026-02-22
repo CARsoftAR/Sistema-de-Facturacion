@@ -196,8 +196,8 @@ const Proveedores = () => {
             label: 'Proveedor',
             render: (v, p) => (
                 <div className="flex flex-col">
-                    <span className="font-black text-slate-800 text-sm uppercase tracking-tight">{v}</span>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                    <TableCell.Primary value={v} />
+                    <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider flex items-center gap-1">
                         <MapPin size={10} /> {p.direccion || 'Sin dirección registrada'}
                     </span>
                 </div>
@@ -210,11 +210,12 @@ const Proveedores = () => {
             render: (v, p) => (
                 <div className="flex flex-col">
                     {v ? (
-                        <span className="font-mono text-xs font-black text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200 w-fit">
-                            {v}
-                        </span>
-                    ) : <span className="text-slate-300">---</span>}
-                    <span className="text-[10px] font-black text-indigo-500 mt-1 uppercase tracking-widest">{p.condicion_fiscal || 'CF'}</span>
+                        <TableCell.Secondary
+                            value={v}
+                            className="font-mono bg-neutral-100 px-3 py-1 rounded-lg border border-neutral-200 w-fit"
+                        />
+                    ) : <span className="text-neutral-300">---</span>}
+                    <span className="text-[10px] font-black text-primary-500 mt-1 uppercase tracking-widest">{p.condicion_fiscal || 'CF'}</span>
                 </div>
             )
         },
@@ -225,16 +226,16 @@ const Proveedores = () => {
             render: (_, p) => (
                 <div className="flex flex-col gap-0.5">
                     {p.telefono && (
-                        <span className="text-xs font-bold text-slate-600 flex items-center gap-1.5">
-                            <Phone size={12} className="text-slate-400" /> {p.telefono}
+                        <span className="text-xs font-bold text-neutral-600 flex items-center gap-1.5">
+                            <Phone size={12} className="text-neutral-400" /> {p.telefono}
                         </span>
                     )}
                     {p.email && (
-                        <span className="text-xs font-medium text-slate-400 flex items-center gap-1.5 lowercase">
-                            <Mail size={12} className="text-slate-300" /> {p.email}
+                        <span className="text-xs font-medium text-neutral-400 flex items-center gap-1.5 lowercase">
+                            <Mail size={12} className="text-neutral-300" /> {p.email}
                         </span>
                     )}
-                    {!p.telefono && !p.email && <span className="text-slate-300">---</span>}
+                    {!p.telefono && !p.email && <span className="text-neutral-300">---</span>}
                 </div>
             )
         },
@@ -248,13 +249,13 @@ const Proveedores = () => {
                 <div className="flex justify-end gap-2 group-hover:opacity-100 transition-all">
                     <button
                         onClick={() => openModal(p)}
-                        className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
+                        className="p-2 text-neutral-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-all"
                     >
                         <Pencil size={18} />
                     </button>
                     <button
                         onClick={() => handleEliminar(p.id)}
-                        className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
+                        className="p-2 text-neutral-400 hover:text-error-600 hover:bg-error-50 rounded-lg transition-all"
                     >
                         <Trash2 size={18} />
                     </button>
@@ -269,11 +270,11 @@ const Proveedores = () => {
             <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div className="space-y-1">
                     <div className="flex items-center gap-3">
-                        <div className="bg-gradient-to-br from-indigo-600 to-indigo-700 p-2.5 rounded-2xl text-white shadow-lg shadow-indigo-600/20">
-                            <Truck size={32} strokeWidth={2.5} />
+                        <div className="bg-gradient-to-br from-primary-600 to-primary-700 p-2.5 rounded-2xl text-white shadow-lg shadow-primary-600/20">
+                            <Truck size={24} strokeWidth={2.5} />
                         </div>
                         <h1 className="text-3xl font-black text-slate-900 tracking-tight font-outfit uppercase">
-                            Cartera de Proveedores
+                            Proveedores
                         </h1>
                     </div>
                     <p className="text-slate-500 font-bold text-xs uppercase tracking-[0.15em] ml-14">
@@ -287,7 +288,7 @@ const Proveedores = () => {
                     <BtnAdd
                         label="NUEVO PROVEEDOR"
                         onClick={() => openModal()}
-                        className="!bg-slate-900 !rounded-xl !px-8 !py-3.5 !font-black !tracking-widest !text-[11px] !shadow-xl !shadow-slate-900/20 active:scale-95 transition-all text-white"
+                        className="!bg-primary-600 !border-none !hover:bg-primary-700 !rounded-xl !px-8 !py-3.5 !font-black !tracking-widest !text-[11px] !shadow-xl !shadow-primary-600/20 active:scale-95 transition-all text-white"
                     />
                 </div>
             </header>
@@ -298,7 +299,7 @@ const Proveedores = () => {
                     label="Total Proveedores"
                     value={totalItems}
                     icon={Truck}
-                    color="indigo"
+                    color="primary"
                 />
                 <StatCard
                     label="Compras del Mes"
@@ -371,9 +372,9 @@ const Proveedores = () => {
                                 <div>
                                     <div className="flex items-center gap-3 mb-2">
                                         <div className="bg-white/10 p-2 rounded-xl backdrop-blur-md">
-                                            <Building2 size={20} className="text-indigo-400" />
+                                            <Building2 size={20} className="text-primary-400" />
                                         </div>
-                                        <span className="text-[10px] font-black tracking-[0.2em] uppercase text-indigo-400">Proveedores / Suministros</span>
+                                        <span className="text-[10px] font-black tracking-[0.2em] uppercase text-primary-400">Proveedores / Suministros</span>
                                     </div>
                                     <h2 className="text-3xl font-black uppercase tracking-tight font-outfit">
                                         {editingProvider ? 'Editar Proveedor' : 'Ficha de Proveedor'}
@@ -394,14 +395,14 @@ const Proveedores = () => {
                                 {/* SECCIÓN 1: DATOS PRINCIPALES */}
                                 <div className="space-y-4">
                                     <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2 mb-4">
-                                        <Box size={14} className="text-indigo-600" /> Identificación Comercial
+                                        <Box size={14} className="text-primary-600" /> Identificación Comercial
                                     </h3>
                                     <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
                                         <div className="md:col-span-8 space-y-2">
                                             <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Razón Social / Nombre Comercial</label>
                                             <input
                                                 type="text"
-                                                className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-500 focus:bg-white outline-none font-bold text-slate-700 transition-all uppercase"
+                                                className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-primary-500 focus:bg-white outline-none font-bold text-slate-700 transition-all uppercase"
                                                 placeholder="Ej: DISTRIBUIDORA NORTE S.A."
                                                 name="nombre"
                                                 value={formData.nombre}
@@ -414,7 +415,7 @@ const Proveedores = () => {
                                             <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">CUIT / Identificación</label>
                                             <input
                                                 type="text"
-                                                className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-500 focus:bg-white outline-none font-bold text-slate-700 transition-all font-mono"
+                                                className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-primary-500 focus:bg-white outline-none font-bold text-slate-700 transition-all font-mono"
                                                 name="cuit"
                                                 value={formData.cuit}
                                                 onChange={handleInputChange}
@@ -427,13 +428,13 @@ const Proveedores = () => {
                                 {/* SECCIÓN 2: FISCAL Y BANCARIO */}
                                 <div className="space-y-4">
                                     <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2 mb-4">
-                                        <CreditCard size={14} className="text-indigo-600" /> Configuración Fiscal y Pagos
+                                        <CreditCard size={14} className="text-primary-600" /> Configuración Fiscal y Pagos
                                     </h3>
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                         <div className="space-y-2">
                                             <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Condición Frente al IVA</label>
                                             <select
-                                                className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-500 focus:bg-white outline-none font-bold text-slate-700 transition-all appearance-none cursor-pointer"
+                                                className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-primary-500 focus:bg-white outline-none font-bold text-slate-700 transition-all appearance-none cursor-pointer"
                                                 name="condicion_fiscal"
                                                 value={formData.condicion_fiscal}
                                                 onChange={handleInputChange}
@@ -448,7 +449,7 @@ const Proveedores = () => {
                                             <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">CBU de Cobro (22 dígitos)</label>
                                             <input
                                                 type="text"
-                                                className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-500 focus:bg-white outline-none font-bold text-slate-700 transition-all font-mono"
+                                                className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-primary-500 focus:bg-white outline-none font-bold text-slate-700 transition-all font-mono"
                                                 name="cbu"
                                                 value={formData.cbu}
                                                 onChange={handleInputChange}
@@ -460,7 +461,7 @@ const Proveedores = () => {
                                             <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Alias Bancario</label>
                                             <input
                                                 type="text"
-                                                className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-500 focus:bg-white outline-none font-bold text-slate-700 transition-all uppercase"
+                                                className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-primary-500 focus:bg-white outline-none font-bold text-slate-700 transition-all uppercase"
                                                 name="alias"
                                                 value={formData.alias}
                                                 onChange={handleInputChange}
@@ -473,42 +474,42 @@ const Proveedores = () => {
                                 {/* SECCIÓN 3: CONTACTO */}
                                 <div className="space-y-4">
                                     <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2 mb-4">
-                                        <Phone size={14} className="text-indigo-600" /> Medios de Contacto y Logística
+                                        <Phone size={14} className="text-primary-600" /> Medios de Contacto y Logística
                                     </h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div className="space-y-2 text-indigo-600">
+                                        <div className="space-y-2 text-primary-600">
                                             <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1 flex items-center gap-2">
                                                 <Phone size={12} /> Teléfono Directo
                                             </label>
                                             <input
                                                 type="text"
-                                                className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-500 focus:bg-white outline-none font-bold text-slate-700 transition-all"
+                                                className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-primary-500 focus:bg-white outline-none font-bold text-slate-700 transition-all"
                                                 name="telefono"
                                                 value={formData.telefono}
                                                 onChange={handleInputChange}
                                                 placeholder="Ej: +54 9 11..."
                                             />
                                         </div>
-                                        <div className="space-y-2 text-indigo-600">
+                                        <div className="space-y-2 text-primary-600">
                                             <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1 flex items-center gap-2">
                                                 <Mail size={12} /> Casilla de Email
                                             </label>
                                             <input
                                                 type="email"
-                                                className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-500 focus:bg-white outline-none font-bold text-slate-700 transition-all lowercase"
+                                                className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-primary-500 focus:bg-white outline-none font-bold text-slate-700 transition-all lowercase"
                                                 name="email"
                                                 value={formData.email}
                                                 onChange={handleInputChange}
                                                 placeholder="proveedor@empresa.com"
                                             />
                                         </div>
-                                        <div className="md:col-span-2 space-y-2 text-indigo-600">
+                                        <div className="md:col-span-2 space-y-2 text-primary-600">
                                             <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1 flex items-center gap-2">
                                                 <MapPin size={12} /> Dirección de Despacho / Depósito
                                             </label>
                                             <input
                                                 type="text"
-                                                className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-500 focus:bg-white outline-none font-bold text-slate-700 transition-all"
+                                                className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-primary-500 focus:bg-white outline-none font-bold text-slate-700 transition-all"
                                                 name="direccion"
                                                 value={formData.direccion}
                                                 onChange={handleInputChange}
@@ -520,7 +521,7 @@ const Proveedores = () => {
                                                 <Info size={12} /> Observaciones y Notas Internas
                                             </label>
                                             <textarea
-                                                className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-500 focus:bg-white outline-none font-medium text-slate-600 transition-all resize-none"
+                                                className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-primary-500 focus:bg-white outline-none font-medium text-slate-600 transition-all resize-none"
                                                 name="notas"
                                                 rows="3"
                                                 value={formData.notas}
@@ -545,7 +546,7 @@ const Proveedores = () => {
                             <button
                                 type="submit"
                                 form="proveedor-form"
-                                className="px-10 py-4 bg-slate-900 text-white rounded-2xl font-black text-xs tracking-widest uppercase hover:bg-slate-800 shadow-xl shadow-slate-900/20 active:scale-95 transition-all flex items-center gap-2"
+                                className="px-10 py-4 bg-primary-600 text-white rounded-2xl font-black text-xs tracking-widest uppercase hover:bg-primary-700 shadow-xl shadow-primary-600/20 active:scale-95 transition-all flex items-center gap-2"
                             >
                                 <Save size={18} />
                                 {editingProvider ? 'ACTUALIZAR FICHA' : 'REGISTRAR PROVEEDOR'}

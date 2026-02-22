@@ -202,11 +202,15 @@ const Remitos = () => {
             {/* Header Section */}
             <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div className="space-y-1">
-                    <h1 className="text-3xl font-black text-neutral-900 tracking-tight flex items-center gap-3">
-                        <Truck className="text-blue-600" size={32} strokeWidth={2.5} />
-                        Remitos
-                    </h1>
-                    <p className="text-neutral-500 font-medium text-sm ml-1">
+                    <div className="flex items-center gap-3">
+                        <div className="bg-gradient-to-br from-emerald-600 to-emerald-700 p-2.5 rounded-2xl text-white shadow-lg shadow-emerald-600/20">
+                            <Truck size={24} strokeWidth={2.5} />
+                        </div>
+                        <h1 className="text-3xl font-black text-slate-900 tracking-tight font-outfit uppercase">
+                            Remitos de Entrega
+                        </h1>
+                    </div>
+                    <p className="text-slate-500 font-bold text-xs uppercase tracking-[0.15em] ml-14">
                         Gestión de entregas y traslados de mercadería.
                     </p>
                 </div>

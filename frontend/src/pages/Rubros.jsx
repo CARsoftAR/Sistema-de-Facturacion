@@ -199,7 +199,7 @@ const Rubros = () => {
                             <Layers size={24} strokeWidth={2.5} />
                         </div>
                         <h1 className="text-3xl font-black text-slate-900 tracking-tight font-outfit uppercase">
-                            Rubros de Productos
+                            Rubros
                         </h1>
                     </div>
                     <p className="text-slate-500 font-bold text-xs uppercase tracking-[0.15em] ml-14">
@@ -210,7 +210,7 @@ const Rubros = () => {
                 <BtnAdd
                     label="NUEVO RUBRO"
                     onClick={() => openModal()}
-                    className="!bg-slate-900 !rounded-xl !px-8 !py-3.5 !font-black !tracking-widest !text-[11px] !shadow-xl !shadow-slate-900/20 active:scale-95 transition-all text-white"
+                    className="!bg-indigo-600 !border-none !rounded-xl !px-8 !py-3.5 !font-black !tracking-widest !text-[11px] !shadow-xl !shadow-indigo-600/20 hover:!bg-indigo-700 active:scale-95 transition-all text-white"
                 />
             </header>
 
@@ -258,16 +258,16 @@ const Rubros = () => {
                 <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
                     <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 animate-in zoom-in-95 duration-200">
                         {/* Modal Header */}
-                        <div className="bg-slate-900 px-8 py-10 text-white relative">
+                        <div className="bg-gradient-to-br from-indigo-800 via-indigo-900 to-slate-950 px-8 py-10 text-white relative">
                             <div className="absolute top-0 right-0 p-8 opacity-10">
                                 <Layers size={120} strokeWidth={1} />
                             </div>
                             <div className="relative z-10">
                                 <div className="flex items-center gap-3 mb-2">
                                     <div className="bg-white/10 p-2 rounded-xl backdrop-blur-md">
-                                        <Tag size={20} className="text-indigo-400" />
+                                        <Tag size={20} className="text-indigo-300" />
                                     </div>
-                                    <span className="text-[10px] font-black tracking-[0.2em] uppercase text-indigo-400">Rubros / Clasificación</span>
+                                    <span className="text-[10px] font-black tracking-[0.2em] uppercase text-indigo-300">Rubros / Clasificación</span>
                                 </div>
                                 <h2 className="text-3xl font-black uppercase tracking-tight font-outfit">
                                     {formData.id ? 'Editar Rubro' : 'Nuevo Registro'}
@@ -316,7 +316,7 @@ const Rubros = () => {
                                 <button
                                     type="submit"
                                     disabled={saving}
-                                    className="flex-1 py-4 bg-slate-900 text-white rounded-2xl font-black text-xs tracking-widest uppercase hover:bg-slate-800 shadow-xl shadow-slate-900/20 active:scale-95 transition-all flex items-center justify-center gap-2"
+                                    className="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black text-xs tracking-widest uppercase hover:bg-indigo-700 shadow-xl shadow-indigo-600/20 active:scale-95 transition-all flex items-center justify-center gap-2"
                                 >
                                     {saving ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Save size={18} />}
                                     {formData.id ? 'ACTUALIZAR' : 'REGISTRAR'}

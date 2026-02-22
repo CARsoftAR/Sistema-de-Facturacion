@@ -223,11 +223,15 @@ const Clientes = () => {
             {/* Header */}
             <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div className="space-y-1">
-                    <h1 className="text-3xl font-black text-neutral-900 tracking-tight flex items-center gap-3">
-                        <Users className="text-primary-600" size={32} strokeWidth={2.5} />
-                        Cartera de Clientes
-                    </h1>
-                    <p className="text-neutral-500 font-medium text-sm ml-1">
+                    <div className="flex items-center gap-3">
+                        <div className="bg-gradient-to-br from-indigo-600 to-indigo-700 p-2.5 rounded-2xl text-white shadow-lg shadow-indigo-600/20">
+                            <Users size={24} strokeWidth={2.5} />
+                        </div>
+                        <h1 className="text-3xl font-black text-slate-900 tracking-tight font-outfit uppercase">
+                            Gestión de Clientes
+                        </h1>
+                    </div>
+                    <p className="text-slate-500 font-bold text-xs uppercase tracking-[0.15em] ml-14">
                         Gestión centralizada de perfiles fiscales y cuentas corrientes.
                     </p>
                 </div>
@@ -238,7 +242,7 @@ const Clientes = () => {
                     <BtnAdd
                         label="NUEVO CLIENTE"
                         onClick={() => navigate('/clientes/nuevo')}
-                        className="!bg-primary-600 !hover:bg-primary-700 !rounded-xl !px-6 !py-3 !font-black !tracking-widest !text-xs !shadow-lg !shadow-primary-600/20"
+                        className="!bg-indigo-600 !border-none !hover:bg-indigo-700 !rounded-xl !px-8 !py-3.5 !font-black !tracking-widest !text-[11px] !shadow-xl !shadow-indigo-600/20 active:scale-95 transition-all text-white"
                     />
                 </div>
             </header>
@@ -249,7 +253,7 @@ const Clientes = () => {
                     label="Total Clientes"
                     value={totalItems}
                     icon={Users}
-                    color="primary"
+                    color="indigo"
                 />
                 <StatCard
                     label="Resp. Inscriptos"

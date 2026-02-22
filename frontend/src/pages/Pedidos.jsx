@@ -258,11 +258,15 @@ const Pedidos = () => {
             {/* Header Section */}
             <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div className="space-y-1">
-                    <h1 className="text-3xl font-black text-neutral-900 tracking-tight flex items-center gap-3 font-outfit uppercase">
-                        <ShoppingCart className="text-blue-600" size={32} strokeWidth={2.5} />
-                        Gestión de Pedidos
-                    </h1>
-                    <p className="text-neutral-500 font-medium text-sm ml-1">
+                    <div className="flex items-center gap-3">
+                        <div className="bg-gradient-to-br from-amber-600 to-amber-700 p-2.5 rounded-2xl text-white shadow-lg shadow-amber-600/20">
+                            <FileText size={24} strokeWidth={2.5} />
+                        </div>
+                        <h1 className="text-3xl font-black text-slate-900 tracking-tight font-outfit uppercase">
+                            Pedidos de Clientes
+                        </h1>
+                    </div>
+                    <p className="text-slate-500 font-bold text-xs uppercase tracking-[0.15em] ml-14">
                         Seguimiento y facturación de órdenes pendientes.
                     </p>
                 </div>
@@ -270,7 +274,7 @@ const Pedidos = () => {
                     <BtnAdd
                         label="NUEVO PEDIDO"
                         onClick={() => navigate('/pedidos/nuevo')}
-                        className="!bg-blue-600 !hover:bg-blue-700 !rounded-xl !px-6 !py-3 !font-black !tracking-widest !text-xs !shadow-lg !shadow-blue-600/20"
+                        className="!bg-amber-600 !border-none !hover:bg-amber-700 !rounded-xl !px-8 !py-3.5 !font-black !tracking-widest !text-[11px] !shadow-xl !shadow-amber-600/20 active:scale-95 transition-all text-white"
                     />
                 </div>
             </header>

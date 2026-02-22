@@ -53,6 +53,36 @@ const QuickAction = ({ icon: Icon, title, description, to, color = "primary" }) 
 );
 
 const VentasModule = () => {
+    const [stats, setStats] = React.useState(null);
+    const [loading, setLoading] = React.useState(true);
+
+    React.useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                // Fetch today's stats from the dashboard API
+                const today = new Date().toISOString().split('T')[0];
+                const response = await fetch(`/api/dashboard/stats/?fecha_start=${today}&fecha_end=${today}`);
+                if (!response.ok) throw new Error('Error al cargar estadísticas');
+                const data = await response.json();
+                setStats(data.kpi);
+            } catch (err) {
+                console.error("Error fetching Ventas stats:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchStats();
+    }, []);
+
+    const formatCurrency = (value) => {
+        return new Intl.NumberFormat('es-AR', {
+            style: 'currency',
+            currency: 'ARS',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        }).format(value);
+    };
+
     return (
         <div className="min-h-full bg-slate-50/50 p-6 md:p-10 font-sans overflow-auto animate-in fade-in duration-700">
             {/* Header Section */}
@@ -64,7 +94,7 @@ const VentasModule = () => {
                         </div>
                         <div>
                             <h1 className="text-4xl font-black tracking-tighter text-neutral-900 uppercase">
-                                Central de Ventas <span className="text-primary-600">Pro</span>
+                                Ventas & Facturación
                             </h1>
                             <div className="flex items-center gap-2 mt-1">
                                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -101,13 +131,15 @@ const VentasModule = () => {
                     icon={ClipboardList}
                     color="blue"
                 />
+                {/* 
                 <QuickAction
                     title="Gestión de Clientes"
                     description="Administra la base de datos de clientes, saldos y condiciones fiscales."
                     to="/clientes"
                     icon={Users}
                     color="indigo"
-                />
+                /> 
+                */}
                 <QuickAction
                     title="Pedidos de Clientes"
                     description="Gestión de órdenes de pedido pendientes de facturación o entrega."
@@ -134,7 +166,7 @@ const VentasModule = () => {
                     description="Cotizaciones y presupuestos formales para clientes."
                     to="/presupuestos"
                     icon={Target}
-                    color="violet"
+                    color="yellow"
                 />
                 <QuickAction
                     title="Remitos de Entrega"
@@ -166,22 +198,28 @@ const VentasModule = () => {
                     <div className="absolute -bottom-24 -right-24 h-64 w-64 rounded-full bg-primary-50 blur-3xl" />
                 </div>
 
-                <div className="rounded-[2.5rem] border border-neutral-100 bg-neutral-900 p-10 shadow-premium text-white flex flex-col justify-center">
-                    <h3 className="text-xl font-black mb-4 uppercase tracking-tight flex items-center gap-2">
-                        Estado Actual <Clock size={20} className="text-primary-400" />
+                <div className="rounded-[2.5rem] border border-neutral-100 bg-white p-10 shadow-premium text-neutral-900 flex flex-col justify-center">
+                    <h3 className="text-xl font-black mb-6 uppercase tracking-tight flex items-center gap-2">
+                        Estado Actual <Clock size={20} className="text-primary-500" />
                     </h3>
                     <div className="space-y-6">
-                        <div className="flex items-center justify-between border-b border-white/10 pb-4">
-                            <span className="text-neutral-400 font-bold text-xs uppercase tracking-widest">Pedidos Hoy</span>
-                            <span className="text-2xl font-black">12</span>
+                        <div className="flex items-center justify-between border-b border-neutral-100 pb-4">
+                            <span className="text-neutral-600 font-bold text-[12px] uppercase tracking-widest">Pedidos Hoy</span>
+                            <span className="text-2xl font-black">
+                                {loading ? '...' : (stats?.cantidad_pedidos_hoy || 0)}
+                            </span>
                         </div>
-                        <div className="flex items-center justify-between border-b border-white/10 pb-4">
-                            <span className="text-neutral-400 font-bold text-xs uppercase tracking-widest">Facturación Hoy</span>
-                            <span className="text-2xl font-black text-emerald-400">$245.800</span>
+                        <div className="flex items-center justify-between border-b border-neutral-100 pb-4">
+                            <span className="text-neutral-600 font-bold text-[12px] uppercase tracking-widest">Facturación Hoy</span>
+                            <span className="text-2xl font-black text-emerald-600">
+                                {loading ? '...' : formatCurrency(stats?.ventas_hoy || 0)}
+                            </span>
                         </div>
                         <div className="flex items-center justify-between">
-                            <span className="text-neutral-400 font-bold text-xs uppercase tracking-widest">Ctes. Activos</span>
-                            <span className="text-2xl font-black text-primary-400">142</span>
+                            <span className="text-neutral-600 font-bold text-[12px] uppercase tracking-widest">Ctes. Activos</span>
+                            <span className="text-2xl font-black text-primary-600">
+                                {loading ? '...' : (stats?.clientes_activos || 0)}
+                            </span>
                         </div>
                     </div>
                 </div>

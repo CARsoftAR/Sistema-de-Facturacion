@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-    History,
+    History as HistoryIcon,
     Search,
     Filter,
     User,
@@ -9,9 +9,12 @@ import {
     ArrowUpCircle,
     ArrowDownCircle,
     Eye,
-    RefreshCcw
+    RefreshCcw,
+    ClipboardList,
+    Activity
 } from 'lucide-react';
 import { BentoCard, BentoGrid, PremiumTable, TableCell, PremiumFilterBar } from '../components/premium';
+import { StatCard } from '../components/premium/BentoCard';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import { cn } from '../utils/cn';
@@ -22,6 +25,7 @@ const Auditoria = () => {
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
+    const [metrics, setMetrics] = useState(null);
     const [filtros, setFiltros] = useState({
         username: '',
         module: '',
@@ -54,6 +58,7 @@ const Auditoria = () => {
             if (response.data.ok) {
                 setLogs(response.data.data);
                 setTotalPages(response.data.pages);
+                setMetrics(response.data.metrics || null);
             }
         } catch (error) {
             console.error('Error fetching logs:', error);
@@ -115,9 +120,11 @@ const Auditoria = () => {
                 <div>
                     <div className="flex items-center gap-3 mb-1">
                         <div className="p-2.5 rounded-2xl bg-primary-600 text-white shadow-premium-sm">
-                            <History size={24} />
+                            <HistoryIcon size={24} />
                         </div>
-                        <h1 className="text-3xl font-bold tracking-tight text-neutral-900">Auditoría del Sistema</h1>
+                        <h1 className="text-3xl font-black text-slate-900 tracking-tight font-outfit uppercase">
+                            Auditoría
+                        </h1>
                     </div>
                     <p className="text-neutral-500 font-medium ml-1">Control y seguimiento de actividades de usuario</p>
                 </div>
@@ -169,6 +176,33 @@ const Auditoria = () => {
                     </select>
                 </div>
             </PremiumFilterBar>
+
+            {/* Dashboard Analítico de Auditoría */}
+            {metrics && (
+                <BentoGrid cols={3} className="mb-2">
+                    <StatCard
+                        label="Registros de Actividad (Filtro Actual)"
+                        value={metrics.total_filtered || 0}
+                        icon={ClipboardList}
+                        color="indigo"
+                        compact
+                    />
+                    <StatCard
+                        label="Módulo Más Activo"
+                        value={metrics.top_modules && metrics.top_modules.length > 0 ? metrics.top_modules[0].module : 'N/A'}
+                        icon={Layers}
+                        color="emerald"
+                        compact
+                    />
+                    <StatCard
+                        label="Acción Frecuente"
+                        value={metrics.top_actions && metrics.top_actions.length > 0 ? metrics.top_actions[0].action_type : 'N/A'}
+                        icon={Activity}
+                        color="amber"
+                        compact
+                    />
+                </BentoGrid>
+            )}
 
             {/* Tabla de Logs */}
             <BentoCard className="flex-1 overflow-hidden p-0">

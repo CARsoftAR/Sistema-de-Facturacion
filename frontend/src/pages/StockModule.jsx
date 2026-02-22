@@ -19,7 +19,7 @@ import {
     Settings,
     Shield,
     Archive,
-    History,
+    History as HistoryIcon,
     RefreshCcw,
     Truck,
     Plus,
@@ -55,6 +55,32 @@ const QuickAction = ({ icon: Icon, title, description, to, color = "primary" }) 
 );
 
 const StockModule = () => {
+    const [stats, setStats] = React.useState({
+        total_productos: 0,
+        valorizacion_total: 0,
+        cantidad_stock_bajo: 0
+    });
+    const [loading, setLoading] = React.useState(true);
+
+    React.useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const response = await fetch('/api/estadisticas/stock/');
+                const data = await response.json();
+                if (data.ok) {
+                    setStats(data);
+                }
+            } catch (error) {
+                console.error("Error fetching stock stats:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchStats();
+    }, []);
+
+    const formatCurrency = (val) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(val);
+
     return (
         <div className="min-h-full bg-slate-50/50 p-6 md:p-10 font-sans overflow-auto animate-in fade-in duration-700">
             {/* Header Section */}
@@ -66,7 +92,7 @@ const StockModule = () => {
                         </div>
                         <div>
                             <h1 className="text-4xl font-black tracking-tighter text-neutral-900 uppercase">
-                                Central de Stock <span className="text-orange-600">Pro</span>
+                                Gestión de Stock
                             </h1>
                             <div className="flex items-center gap-2 mt-1">
                                 <span className="h-1.5 w-1.5 rounded-full bg-orange-500 animate-pulse" />
@@ -107,7 +133,7 @@ const StockModule = () => {
                     title="Movimientos"
                     description="Trazabilidad histórica de entradas, salidas y transferencias."
                     to="/movimientos-stock"
-                    icon={History}
+                    icon={HistoryIcon}
                     color="indigo"
                 />
                 <QuickAction
@@ -118,30 +144,9 @@ const StockModule = () => {
                     color="success"
                 />
                 <QuickAction
-                    title="Marcas y Fabricantes"
-                    description="Gestión de identidades comerciales y procedencia de productos."
-                    to="/marcas"
-                    icon={Bookmark}
-                    color="amber"
-                />
-                <QuickAction
-                    title="Rubros y Familias"
-                    description="Organización lógica del catálogo por rubros y sub-rubros."
-                    to="/rubros"
-                    icon={Layers}
-                    color="violet"
-                />
-                <QuickAction
-                    title="Unidades de Medida"
-                    description="Definición de empaques, fracciones y pesos de cada item."
-                    to="/unidades"
-                    icon={Ruler}
-                    color="emerald"
-                />
-                <QuickAction
                     title="Stock Crítico"
                     description="Monitoreo de productos bajo el stock mínimo de seguridad."
-                    to="/dashboard"
+                    to="/productos?stock=bajo"
                     icon={Activity}
                     color="error"
                 />
@@ -172,16 +177,16 @@ const StockModule = () => {
                     </h3>
                     <div className="space-y-6">
                         <div className="flex items-center justify-between border-b border-white/10 pb-4">
-                            <span className="text-neutral-400 font-bold text-xs uppercase tracking-widest">Items con Movimientos</span>
-                            <span className="text-2xl font-black">2.450</span>
+                            <span className="text-neutral-400 font-bold text-xs uppercase tracking-widest">Items Totales</span>
+                            <span className="text-2xl font-black">{loading ? '...' : stats.total_productos}</span>
                         </div>
                         <div className="flex items-center justify-between border-b border-white/10 pb-4">
                             <span className="text-neutral-400 font-bold text-xs uppercase tracking-widest">Valor de Stock (Costo)</span>
-                            <span className="text-2xl font-black text-orange-400">$8.240.000</span>
+                            <span className="text-2xl font-black text-orange-400">{loading ? '...' : formatCurrency(stats.valorizacion_total)}</span>
                         </div>
                         <div className="flex items-center justify-between">
-                            <span className="text-neutral-400 font-bold text-xs uppercase tracking-widest">Rotación Media</span>
-                            <span className="text-2xl font-black text-primary-400">18 días</span>
+                            <span className="text-neutral-400 font-bold text-xs uppercase tracking-widest">Stock Crítico</span>
+                            <span className="text-2xl font-black text-error-400">{loading ? '...' : stats.cantidad_stock_bajo}</span>
                         </div>
                     </div>
                 </div>

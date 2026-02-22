@@ -263,11 +263,15 @@ const Ventas = () => {
             {/* Header Section */}
             <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div className="space-y-1">
-                    <h1 className="text-3xl font-black text-neutral-900 tracking-tight flex items-center gap-3">
-                        <ShoppingCart className="text-primary-600" size={32} strokeWidth={2.5} />
-                        Historial de Ventas
-                    </h1>
-                    <p className="text-neutral-500 font-medium text-sm ml-1">
+                    <div className="flex items-center gap-3">
+                        <div className="bg-gradient-to-br from-blue-600 to-blue-700 p-2.5 rounded-2xl text-white shadow-lg shadow-blue-600/20">
+                            <ShoppingCart size={24} strokeWidth={2.5} />
+                        </div>
+                        <h1 className="text-3xl font-black text-slate-900 tracking-tight font-outfit uppercase">
+                            Historial de Ventas
+                        </h1>
+                    </div>
+                    <p className="text-slate-500 font-bold text-xs uppercase tracking-[0.15em] ml-14">
                         Control exhaustivo de transacciones y estados administrativos.
                     </p>
                 </div>

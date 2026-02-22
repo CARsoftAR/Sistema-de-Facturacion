@@ -9,7 +9,7 @@ import {
     AlertCircle,   // For "Rechazados"
     Calendar,
     RefreshCw,
-    History,
+    History as HistoryIcon,
     ChevronDown
 } from 'lucide-react';
 import { showConfirmationAlert, showSuccessAlert, showErrorAlert, showDeleteAlert } from '../utils/alerts';

@@ -4,8 +4,7 @@ import {
     Download,
     Trash2,
     ShieldCheck,
-    History,
-    Clock,
+    History as HistoryIcon,
     PlusCircle,
     HardDrive,
     Search,
@@ -16,7 +15,14 @@ import {
     RefreshCw,
     Cloud,
     FolderArchive,
-    RotateCcw
+    RotateCcw,
+    Clock,
+    Activity,
+    Calendar,
+    LogIn,
+    LogOut,
+    Printer,
+    DollarSign
 } from 'lucide-react';
 import axios from 'axios';
 import { showSuccessAlert, showErrorAlert, showDeleteAlert } from '../utils/alerts';
@@ -114,7 +120,7 @@ const Backups = () => {
 
         if (result.isConfirmed) {
             try {
-                const response = await axios.delete(`/api/backups/eliminar/${backupId}/`);
+                const response = await axios.delete(`/api/backups/${backupId}/eliminar/`);
                 if (response.data.ok) {
                     await showSuccessAlert('Eliminado', 'El respaldo ha sido borrado');
                     fetchBackups();
@@ -225,7 +231,7 @@ const Backups = () => {
                 <div className="lg:col-span-8 flex flex-col h-full bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden min-h-[400px]">
                     <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
                         <h3 className="font-bold text-slate-800 uppercase text-[10px] tracking-wider flex items-center gap-1.5">
-                            <History size={14} className="text-blue-600" /> Historial de Copias
+                            <HistoryIcon size={14} className="text-blue-600" /> Historial de Copias
                         </h3>
                         <span className="text-[9px] font-bold text-slate-400 bg-white px-2 py-0.5 rounded-full border border-slate-200">{totalItems} registros</span>
                     </div>

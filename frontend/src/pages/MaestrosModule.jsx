@@ -62,7 +62,7 @@ const MaestrosModule = () => {
                         </div>
                         <div>
                             <h1 className="text-4xl font-black tracking-tighter text-neutral-900 uppercase">
-                                Archivos Maestros <span className="text-slate-500">Core</span>
+                                Archivos Maestros
                             </h1>
                             <div className="flex items-center gap-2 mt-1">
                                 <span className="h-1.5 w-1.5 rounded-full bg-slate-400 animate-pulse" />
@@ -95,19 +95,21 @@ const MaestrosModule = () => {
                     </h2>
                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
                         <QuickAction title="Localidades" description="Base de datos de ciudades y códigos postales." to="/localidades" icon={MapPin} color="rose" />
-                        <QuickAction title="Sucursales" description="Centros de venta y depósitos asociados." to="/empresa" icon={Building2} color="blue" />
+                        <QuickAction title="Sede Central" description="Datos de la empresa, sucursales y puntos de venta." to="/configuracion/empresa" icon={Building2} color="blue" />
                     </div>
                 </section>
 
                 {/* Configuración de Sistema */}
                 <section>
                     <h2 className="mb-6 flex items-center gap-3 text-sm font-black uppercase tracking-[0.2em] text-neutral-400">
-                        <Settings size={16} /> Configuración de Seguridad
+                        <Settings size={16} /> Configuración de Sistema
                     </h2>
                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+                        <QuickAction title="Parámetros" description="Parámetros globales y comportamiento del sistema." to="/parametros" icon={Settings} color="primary" />
                         <QuickAction title="Usuarios" description="Control de acceso y perfiles de usuario." to="/usuarios" icon={Users} color="slate" />
                         <QuickAction title="Auditoría" description="Registro histórico de acciones por usuario." to="/auditoria" icon={Shield} color="error" />
-                        <QuickAction title="Backups" description="Gestión de copias de seguridad de la base de datos." to="/backups" icon={Database} color="primary" />
+                        <QuickAction title="Estado" description="Monitoreo del servicio y latencia del servidor." to="/estado" icon={Activity} color="indigo" />
+                        <QuickAction title="Copias Seguras" description="Gestión de backups y restauración de base de datos." to="/backups" icon={Database} color="emerald" />
                     </div>
                 </section>
             </div>

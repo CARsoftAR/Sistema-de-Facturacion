@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
     Wallet, PlusCircle, ArrowUpCircle, ArrowDownCircle, Search, ListFilter, FilterX,
     Pencil, Trash2, CheckCircle2, AlertCircle, X, TrendingUp, TrendingDown,
-    Calendar, LogIn, LogOut, Printer, Clock, Activity, DollarSign, History
+    Calendar, LogIn, LogOut, Printer, Clock, Activity, DollarSign, History as HistoryIcon
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { BtnAdd, BtnAction } from '../components/CommonButtons';
@@ -377,7 +377,9 @@ const Caja = () => {
                         <div className="bg-gradient-to-br from-indigo-600 to-indigo-700 p-2.5 rounded-2xl text-white shadow-lg shadow-indigo-600/20">
                             <Wallet size={24} strokeWidth={2.5} />
                         </div>
-                        <h1 className="text-3xl font-black text-slate-900 tracking-tight">Caja y Arqueos</h1>
+                        <h1 className="text-3xl font-black text-slate-900 tracking-tight font-outfit uppercase">
+                            Caja y Finanzas
+                        </h1>
                     </div>
                     <div className="flex items-center gap-3 mt-1 ml-12">
                         <span className={cn(
@@ -400,7 +402,7 @@ const Caja = () => {
                         onClick={fetchHistory}
                         className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-xs hover:bg-slate-50 transition-all shadow-sm uppercase tracking-widest"
                     >
-                        <History size={18} className="text-slate-400" /> Historial Z
+                        <HistoryIcon size={18} className="text-slate-400" /> Historial de Cierres
                     </button>
                     {!cajaAbierta ? (
                         <BtnAdd
@@ -568,7 +570,7 @@ const Caja = () => {
                                 </div>
                             </div>
                             <button className="w-full py-5 bg-slate-900 text-white rounded-3xl font-black text-sm tracking-[0.15em] shadow-xl shadow-slate-900/20 hover:bg-slate-800 active:scale-[0.98] transition-all uppercase">
-                                PROCESAR CIERRE (Z)
+                                PROCESAR CIERRE DE CAJA
                             </button>
                         </form>
                     </div>
@@ -655,7 +657,7 @@ const Caja = () => {
                     <div className="bg-white rounded-[3rem] shadow-2xl w-full max-w-5xl h-[85vh] overflow-hidden border border-slate-200 flex flex-col">
                         <div className="p-8 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
                             <div className="flex items-center gap-4">
-                                <div className="bg-white p-3 rounded-2xl shadow-sm text-indigo-600 border border-slate-100"><History size={24} /></div>
+                                <div className="bg-white p-3 rounded-2xl shadow-sm text-indigo-600 border border-slate-100"><HistoryIcon size={24} /></div>
                                 <div>
                                     <h1 className="text-2xl font-black text-slate-900 tracking-tight">Historial de Cierres de Caja</h1>
                                     <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1">Reportes Z detallados por jornada</p>
@@ -732,7 +734,7 @@ const Caja = () => {
                                     <span className="text-2xl font-black text-rose-500 font-mono tracking-tight">${selectedCierre.egresos_totales.toLocaleString('es-AR')}</span>
                                 </div>
                                 <div className="bg-indigo-600 p-6 rounded-3xl shadow-xl shadow-indigo-600/20 flex flex-col gap-1 items-center text-white">
-                                    <span className="text-[10px] font-black text-white/50 uppercase tracking-widest">DIFERENCIA (Z)</span>
+                                    <span className="text-[10px] font-black text-white/50 uppercase tracking-widest">DIFERENCIA DE ARQUEO</span>
                                     <span className="text-2xl font-black font-mono tracking-tight">${(selectedCierre.caja.monto_real - selectedCierre.caja.monto_sistema).toLocaleString('es-AR')}</span>
                                 </div>
                             </div>

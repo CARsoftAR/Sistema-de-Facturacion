@@ -17,10 +17,12 @@ import {
     Sparkles,
     Zap,
     Target,
-    Activity
+    Activity,
+    LayoutDashboard
 } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { formatNumber } from '../utils/formats';
+import { PremiumAreaChart } from '../components/premium';
 
 const Dashboard = () => {
     const navigate = useNavigate();
@@ -106,10 +108,17 @@ const Dashboard = () => {
             {/* Header: Bienvenida e Inteligencia */}
             <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6">
                 <div className="flex-1">
-                    <h1 className="text-3xl font-black text-neutral-900 tracking-tight flex items-center gap-3">
-                        Bienvenido al Centro de Control <Sparkles className="text-primary-500" />
-                    </h1>
-                    <p className="text-neutral-400 font-medium">Aquí está el resumen inteligente de tu negocio.</p>
+                    <div className="flex items-center gap-3 mb-1">
+                        <div className="bg-gradient-to-br from-primary-600 to-primary-700 p-2.5 rounded-2xl text-white shadow-lg shadow-primary-600/20">
+                            <LayoutDashboard size={24} strokeWidth={2.5} />
+                        </div>
+                        <h1 className="text-3xl font-black text-slate-900 tracking-tight font-outfit uppercase">
+                            Panel de Control
+                        </h1>
+                    </div>
+                    <p className="text-slate-500 font-bold text-xs uppercase tracking-[0.15em] ml-14">
+                        Analítica inteligente y resumen operativo.
+                    </p>
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-center gap-3 w-full xl:w-auto">
@@ -198,22 +207,22 @@ const Dashboard = () => {
                     </div>
                 </div>
 
-                {/* Utilidad Card */}
+                {/* Compras Card */}
                 <div className="bg-white p-6 rounded-3xl shadow-premium border border-neutral-100 group hover:shadow-premium-lg transition-all border-l-4 border-l-indigo-500">
                     <div className="flex justify-between items-start mb-4">
                         <div className="p-3 bg-indigo-50 rounded-2xl text-indigo-600">
-                            <TrendingUp size={24} />
+                            <Truck size={24} />
                         </div>
                         <div className="text-right">
-                            <span className="text-[10px] font-bold text-indigo-600 block">Margen Neto</span>
+                            <span className="text-[10px] font-bold text-indigo-600 block">Movimiento Real</span>
                             <span className="text-sm font-bold text-neutral-900">
-                                {rentabilidad.margen}%
+                                {kpi.cantidad_compras || 0} facturas
                             </span>
                         </div>
                     </div>
                     <div>
-                        <p className="text-xs font-bold text-neutral-400 uppercase tracking-widest mb-1">Utilidad {getPeriodLabel()}</p>
-                        <h3 className="text-3xl font-black text-neutral-900">${formatNumber(rentabilidad.ganancia_neta || 0)}</h3>
+                        <p className="text-xs font-bold text-neutral-400 uppercase tracking-widest mb-1">Compras {getPeriodLabel()}</p>
+                        <h3 className="text-3xl font-black text-neutral-900">${formatNumber(kpi.total_compras || 0)}</h3>
                     </div>
                 </div>
 
@@ -276,78 +285,27 @@ const Dashboard = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
                 {/* 🎯 Intelligent Performance Graph (2/3 width) */}
-                <div className="lg:col-span-2 bg-gradient-to-br from-neutral-900 to-neutral-800 rounded-[2rem] p-8 text-white shadow-premium-2xl relative">
-                    <div className="relative z-10 h-full flex flex-column">
+                <div className="lg:col-span-2 bg-white rounded-[2rem] p-8 text-neutral-900 shadow-premium border border-neutral-100 relative">
+                    <div className="relative z-10 h-full flex flex-col">
                         <div className="flex justify-between items-center mb-8">
                             <div>
                                 <h3 className="text-xl font-bold flex items-center gap-2">
-                                    Rendimiento Operativo <Zap size={20} className="text-yellow-400" />
+                                    Estadísticas de Ventas <Activity size={20} className="text-primary-500" />
                                 </h3>
-                                <p className="text-neutral-400 text-sm">Historial de ventas de los últimos 6 meses</p>
-                            </div>
-                            <div className="text-right">
-                                <span className="text-3xl font-black text-primary-400">{rentabilidad?.margen}%</span>
-                                <p className="text-[10px] uppercase font-bold tracking-tighter text-neutral-500">Margen Neto Período</p>
+                                <p className="text-neutral-500 text-sm font-medium">Historial de facturación de los últimos 6 meses</p>
                             </div>
                         </div>
 
                         {/* Area de Visualización Inteligente */}
-                        <div className="flex-grow flex items-end gap-2 md:gap-4 px-2 pb-2">
-                            {(stats.chart?.data?.length > 0 ? stats.chart.data : [100, 250, 450, 300, 600, 450]).map((val, i) => {
-                                const costVal = stats.chart?.datasets?.[1]?.data?.[i] || 0;
-                                const maxVal = Math.max(...(stats.chart?.data || []), ...(stats.chart?.datasets?.[1]?.data || []), 1000);
-                                const heightPercent = Math.max(8, (val / (maxVal || 1)) * 100);
-                                const costPercent = Math.max(2, (costVal / (maxVal || 1)) * 100);
-                                const utilidad = val - costVal;
-
-                                return (
-                                    <div key={i} className="flex-1 flex flex-col items-center gap-3">
-                                        <div className="w-full relative group flex items-end cursor-pointer" style={{ height: '180px' }}>
-
-                                            {/* Hover Highlight Overlay */}
-                                            <div className="absolute inset-0 bg-white/0 group-hover:bg-white/5 transition-colors rounded-lg z-0"></div>
-
-                                            {/* Cost Bar (Red) - Overlay Bottom */}
-                                            <div
-                                                style={{ height: `${costPercent}%`, zIndex: 20 }}
-                                                className="w-full absolute bottom-0 bg-gradient-to-t from-red-600 to-red-500 rounded-t-sm opacity-90 shadow-[0_-2px_6px_rgba(220,38,38,0.4)]"
-                                            ></div>
-
-                                            {/* Sales Bar (Blue) - Main */}
-                                            <div
-                                                style={{ height: `${heightPercent}%`, zIndex: 10 }}
-                                                className="w-full absolute bottom-0 bg-gradient-to-t from-primary-600/40 to-primary-400 rounded-t-lg transition-all duration-700 group-hover:from-primary-500 group-hover:to-primary-300 group-hover:ring-4 ring-primary-500/20"
-                                            ></div>
-
-                                            {/* Labels (Always visible) */}
-                                            <div className="absolute -top-12 left-1/2 -translate-x-1/2 flex flex-col items-center z-30 w-max pointer-events-none">
-                                                <span className="text-white text-[10px] font-bold drop-shadow-md">
-                                                    ${formatNumber(val)}
-                                                </span>
-                                                <span className="text-red-400 text-[9px] font-bold drop-shadow-sm -mt-0.5">
-                                                    ${formatNumber(costVal)}
-                                                </span>
-                                            </div>
-
-                                            {/* Utility Tooltip (Visible on Hover) - Fixed Visibility */}
-                                            <div className="hidden group-hover:flex absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center bg-white p-3 rounded-xl shadow-2xl z-50 min-w-[100px] border border-neutral-200 animation-fade-in-up">
-                                                <span className="text-[9px] text-neutral-500 uppercase font-bold tracking-widest mb-1">UTILIDAD</span>
-                                                <span className={`text-lg font-black ${utilidad >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                                                    ${formatNumber(utilidad)}
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <span className="text-[10px] font-bold text-neutral-200 uppercase tracking-wider">
-                                            {stats.chart?.labels?.[i] || '---'}
-                                        </span>
-                                    </div>
-                                );
-                            })}
+                        <div className="flex-grow flex items-end pt-8">
+                            <PremiumAreaChart
+                                data={stats.chart?.data || []}
+                                costData={stats.chart?.datasets?.[1]?.data || []}
+                                labels={stats.chart?.labels || []}
+                                height={220}
+                            />
                         </div>
                     </div>
-
-                    {/* Background decoration */}
-                    <div className="absolute -bottom-20 -right-20 w-80 h-80 bg-primary-500/10 rounded-full blur-[100px]"></div>
                 </div>
 
                 {/* 🏆 Top de Productos (1/3 width) */}

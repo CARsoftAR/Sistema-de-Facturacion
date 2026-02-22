@@ -8,7 +8,7 @@ import {
     ChevronRight,
     TrendingUp,
     Wallet,
-    History,
+    History as HistoryIcon,
     FileText,
     ArrowUpRight,
     ArrowDownLeft,
@@ -123,13 +123,7 @@ const TesoreriaModule = () => {
                     icon={ArrowDownLeft}
                     color="rose"
                 />
-                <QuickAction
-                    title="Conciliación Bancaria"
-                    description="Herramientas para punteo y cruce de extractos bancarios."
-                    to="/bancos/conciliacion"
-                    icon={Scale}
-                    color="violet"
-                />
+
                 <QuickAction
                     title="Reportes Financieros"
                     description="Cash flow, proyección de fondos y estados de cuenta."
@@ -141,7 +135,7 @@ const TesoreriaModule = () => {
                     title="Histórico Pagos"
                     description="Consulta de recibos y órdenes de pago emitidas."
                     to="/caja"
-                    icon={History}
+                    icon={HistoryIcon}
                     color="orange"
                 />
             </div>
